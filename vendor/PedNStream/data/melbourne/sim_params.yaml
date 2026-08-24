@@ -1,0 +1,100 @@
+# Network Configuration
+network:
+  origin_nodes: [265]
+  destination_nodes: [286]
+
+#network:
+#  origin_nodes: [289]
+#  destination_nodes: [300]
+
+# Simulation Parameters
+simulation:
+  simulation_steps: 1692
+  seed: 42
+#  simulation_steps: 500
+  unit_time: 10
+#  path_finder:
+#    k_paths: 1
+  assign_flows_type: "classic"
+  path_finder:
+    k_paths: 1
+    theta: 10
+    alpha: 1
+    beta: 0.5
+    omega: 0.8
+
+# Controller Configuration (for dynamic rerouting at specific nodes)
+controllers:
+  enabled: false  # Set to true to enable controller-based path expansion
+  nodes: []  # Example: [50, 100, 150] - nodes that can create detour paths
+  # Optional: time-based activation
+  # schedule:
+  #   50: [[0, 200]]  # Node 50 active during steps 0-200
+  #   100: [[100, 300]]  # Node 100 active during steps 100-300
+
+# Default Link Parameters
+default_link:
+  length: 50
+  width: 8
+  free_flow_speed: 1.1
+  k_critical: 2
+  k_jam: 6
+  fd_type: "yperman"
+  activity_probability: 0.5
+  gamma: 0.1
+  speed_noise_std: 0.01
+
+# Link-specific Overrides (optional)
+#links:
+#  "1_2":
+#    length: 120
+#    width: 1.5
+#    free_flow_speed: 1.2
+#    k_critical: 2
+#    k_jam: 10
+#    activity_probability: 0.2
+#  "2_4":
+#    length: 80
+#    width: 2.0
+#    free_flow_speed: 1.1
+#    k_critical: 2
+#    k_jam: 10
+#    activity_probability: 0.2
+
+# Demand Configuration
+demand:
+#  origin_1:
+#    pattern: "constant"
+#    value: 8
+  origin_265:
+    pattern: "node_demand_from_data"
+
+#  origin_8172:
+#    pattern: "gaussian_peaks"
+#    peak_lambda: 30
+#    base_lambda: 10
+##
+#  origin_188:
+#    pattern: "sudden_demand"
+#    peak_lambda: 30
+#    base_lambda: 10
+#
+#  origin_88:
+#    pattern: "gaussian_peaks"
+#    peak_lambda: 30
+#    base_lambda: 10
+#
+#  origin_31:
+#    pattern: "gaussian_peaks"
+#    peak_lambda: 30
+#    base_lambda: 10
+#
+#  origin_203:
+#    pattern: "gaussian_peaks"
+#    peak_lambda: 30
+#    base_lambda: 5
+
+#OD Flow Configuration
+#od_flows:
+#  "1_4": 30
+#  "1_5": 5

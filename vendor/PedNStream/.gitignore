@@ -1,0 +1,45 @@
+/.idea
+*.ipynb
+*.pyc
+/__pycache__
+*.xlsx
+#data/*
+.DS_Store
+#*.json
+/cache
+*.mp4
+!video_outputs/delft.mp4
+*.csv
+/outputs
+/fig
+/rl/vis
+/.specstory
+/.cursorindexingignore
+.vscode
+Tables.xlsx
+# wandb
+/rl/wandb
+/rl/checkpoints
+
+#Sphinx build files
+docs/_build
+
+# ignore all checkpoints and all wandb logs
+**/wandb/
+**/checkpoints/
+/rl/analysis/parse_summaries.py
+/rl/outputs/
+
+# Python Chache
+__pycache__/
+
+# logs
+src/outputs/
+/rl/
+/mcp/
+*.log
+
+# Ignore specific simulation-related files
+src/pednstream/ltm/link_bi.py
+src/pednstream/ltm/link_org.py
+/experiments/
