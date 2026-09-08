@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "active": {
+    "free_walking_speed": {"unit": "m/s", "range": [1.0, 1.6], "default": 1.35, "consumer": "plan_executor.effective_speed", "source": "engineering assumption", "test": "F03/F08"},
+    "mobility": {"unit": "ratio", "range": [0.65, 1.0], "default": 1.0, "consumer": "plan_executor.effective_speed", "source": "engineering assumption", "test": "F03/F08"},
+    "perception_radius": {"unit": "m", "range": [6, 18], "default": 12, "consumer": "crowd_environment.observe", "source": "engineering assumption", "test": "F03/F04"},
+    "familiarity": {"unit": "ratio", "range": [0, 1], "default": 0.5, "consumer": "agent_decision.route_score", "source": "engineering assumption", "test": "F03/F10"},
+    "risk_tolerance": {"unit": "ratio", "range": [0, 1], "default": 0.5, "consumer": "agent_decision.rule_plan", "source": "engineering assumption", "test": "F03/F10"},
+    "patience": {"unit": "ratio", "range": [0, 1], "default": 0.5, "consumer": "agent_decision.wait_threshold", "source": "engineering assumption", "test": "F03/F10"},
+    "crowding_tolerance": {"unit": "ratio", "range": [0, 1], "default": 0.5, "consumer": "crowd_environment.perceived_crowding", "source": "engineering assumption", "test": "F03/F04"},
+    "following_tendency": {"unit": "ratio", "range": [0, 1], "default": 0.5, "consumer": "group_manager.candidates", "source": "engineering assumption", "test": "F03/F09"},
+    "authority_compliance": {"unit": "ratio", "range": [0, 1], "default": 0.5, "consumer": "information_model.deliver", "source": "engineering assumption", "test": "F03/F06"},
+    "information_trust": {"unit": "ratio by source", "range": [0, 1], "default": {}, "consumer": "information_model.deliver", "source": "engineering assumption", "test": "F03/F06"},
+    "group_cohesion": {"unit": "ratio", "range": [0, 1], "default": 0.5, "consumer": "group_manager.candidates", "source": "engineering assumption", "test": "F03/F09"},
+    "stress_susceptibility": {"unit": "ratio", "range": [0, 1], "default": 0.5, "consumer": "state_updater.update_all", "source": "engineering assumption", "test": "F03/F05"},
+    "recovery_seconds": {"unit": "s", "range": [20, 120], "default": 60, "consumer": "state_updater.update_all", "source": "engineering assumption", "test": "F03/F05"},
+    "endurance": {"unit": "ratio", "range": [0, 1], "default": 0.5, "consumer": "state_updater.update_all", "source": "engineering assumption", "test": "F03/F05"}
+  },
+  "background": {
+    "age_group": {"consumer": "profile initialization/display", "effective_decision_input": false},
+    "occupation": {"consumer": "display only", "effective_decision_input": false},
+    "nationality": {"consumer": "display only", "effective_decision_input": false},
+    "native_language": {"consumer": "display only", "effective_decision_input": false},
+    "visit_purpose": {"consumer": "activity candidate initialization", "effective_decision_input": false}
+  },
+  "deprecated": ["cultural_group", "personal_space", "density_tolerance", "barrier_compliance", "queue_mode", "shortest_path_weight", "low_density_path_weight", "language_delay", "symbol_accuracy", "same_culture_attraction", "help_seeking", "conflict_threshold", "panic_susceptibility", "stress_response", "counterflow_tendency"]
+}

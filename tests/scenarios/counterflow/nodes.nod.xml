@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nodes>
+    <node id="west" x="0" y="0" type="priority"/>
+    <node id="middle" x="50" y="0" type="priority"/>
+    <node id="east" x="100" y="0" type="priority"/>
+</nodes>

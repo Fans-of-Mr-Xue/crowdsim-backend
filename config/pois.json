@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "scenario": "shanghai_bund",
+  "pois": [
+    {"id": "activity_north_demo", "kind": "activity", "edge": "792385181#2", "position": "end", "open": [0, 3600], "stay_seconds": [30, 120], "visibility": "map", "basis": "demonstration annotation; not asserted as a real venue"},
+    {"id": "activity_center_demo", "kind": "activity", "edge": "553692653#1", "position": "end", "open": [0, 3600], "stay_seconds": [30, 120], "visibility": "map", "basis": "demonstration annotation; not asserted as a real venue"},
+    {"id": "exit_demo", "kind": "exit", "edge": "987437453#1", "position": "end", "open": [0, 3600], "stay_seconds": [0, 0], "visibility": "map", "basis": "demonstration exit on an existing reachable demand destination"}
+  ]
+}

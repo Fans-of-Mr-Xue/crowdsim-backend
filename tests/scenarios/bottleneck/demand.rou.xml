@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<routes>
+    <vType id="ped" vClass="pedestrian" maxSpeed="1.4"/>
+    <personFlow id="through_neck" type="ped" begin="0" end="30" period="0.25">
+        <walk edges="approach neck exit"/>
+    </personFlow>
+</routes>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2026-09-09 00:15:13 by Eclipse SUMO netconvert Version 1.24.0
+<netconvertConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
+
+    <input>
+        <node-files value="D:\AAAWorkSpace\code\crowdsim-backend\tests\scenarios\unidirectional_corridor\nodes.nod.xml"/>
+        <edge-files value="D:\AAAWorkSpace\code\crowdsim-backend\tests\scenarios\unidirectional_corridor\edges.edg.xml"/>
+    </input>
+
+    <output>
+        <output-file value="D:\AAAWorkSpace\code\crowdsim-backend\tests\scenarios\unidirectional_corridor\network.net.xml"/>
+    </output>
+
+    <junctions>
+        <no-turnarounds value="true"/>
+    </junctions>
+
+</netconvertConfiguration>
+-->
+
+<net version="1.20" junctionCornerDetail="5" limitTurnSpeed="5.50" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
+
+    <location netOffset="0.00,0.00" convBoundary="0.00,0.00,100.00,0.00" origBoundary="0.00,0.00,100.00,0.00" projParameter="!"/>
+
+    <edge id="in" from="n0" to="n1" priority="-1">
+        <lane id="in_0" index="0" allow="pedestrian" speed="1.50" length="60.00" width="3.00" shape="0.00,-1.50 60.00,-1.50"/>
+    </edge>
+    <edge id="out" from="n1" to="n2" priority="-1">
+        <lane id="out_0" index="0" allow="pedestrian" speed="1.50" length="40.00" width="3.00" shape="60.00,-1.50 100.00,-1.50"/>
+    </edge>
+
+    <junction id="n0" type="dead_end" x="0.00" y="0.00" incLanes="" intLanes="" shape="0.00,0.00 0.00,-3.00"/>
+    <junction id="n1" type="dead_end" x="60.00" y="0.00" incLanes="in_0" intLanes="" shape="60.00,0.00 60.00,-3.00 60.00,0.00"/>
+    <junction id="n2" type="dead_end" x="100.00" y="0.00" incLanes="out_0" intLanes="" shape="100.00,-3.00 100.00,0.00"/>
+
+</net>

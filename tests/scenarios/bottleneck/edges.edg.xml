@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<edges>
+    <edge id="approach" from="n0" to="n1" numLanes="1" speed="1.5" width="4.0" allow="pedestrian"/>
+    <edge id="neck" from="n1" to="n2" numLanes="1" speed="1.5" width="1.2" allow="pedestrian"/>
+    <edge id="exit" from="n2" to="n3" numLanes="1" speed="1.5" width="4.0" allow="pedestrian"/>
+</edges>

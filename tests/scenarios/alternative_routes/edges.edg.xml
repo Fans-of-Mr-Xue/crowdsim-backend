@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<edges>
+    <edge id="entry" from="start" to="fork" numLanes="1" speed="1.5" width="3.0" allow="pedestrian"/>
+    <edge id="upper_a" from="fork" to="upper" numLanes="1" speed="1.5" width="2.0" allow="pedestrian"/>
+    <edge id="upper_b" from="upper" to="merge" numLanes="1" speed="1.5" width="2.0" allow="pedestrian"/>
+    <edge id="lower_a" from="fork" to="lower" numLanes="1" speed="1.5" width="2.0" allow="pedestrian"/>
+    <edge id="lower_b" from="lower" to="merge" numLanes="1" speed="1.5" width="2.0" allow="pedestrian"/>
+    <edge id="exit" from="merge" to="goal" numLanes="1" speed="1.5" width="3.0" allow="pedestrian"/>
+</edges>

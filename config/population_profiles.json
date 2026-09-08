@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "seed": 20260908,
+  "active_attributes": {
+    "free_walking_speed": {"distribution": "uniform", "min": 1.0, "max": 1.6, "default": 1.35},
+    "mobility": {"distribution": "uniform", "min": 0.65, "max": 1.0, "default": 1.0},
+    "perception_radius": {"distribution": "uniform", "min": 6.0, "max": 18.0, "default": 12.0},
+    "familiarity": {"distribution": "uniform", "min": 0.0, "max": 1.0, "default": 0.5},
+    "risk_tolerance": {"distribution": "uniform", "min": 0.0, "max": 1.0, "default": 0.5},
+    "patience": {"distribution": "uniform", "min": 0.0, "max": 1.0, "default": 0.5},
+    "crowding_tolerance": {"distribution": "uniform", "min": 0.0, "max": 1.0, "default": 0.5},
+    "following_tendency": {"distribution": "uniform", "min": 0.0, "max": 1.0, "default": 0.5},
+    "authority_compliance": {"distribution": "uniform", "min": 0.0, "max": 1.0, "default": 0.5},
+    "information_trust": {"official": [0.6, 1.0], "companions": [0.5, 1.0], "strangers": [0.1, 0.6], "social_media": [0.1, 0.8]},
+    "group_cohesion": {"distribution": "uniform", "min": 0.0, "max": 1.0, "default": 0.5},
+    "stress_susceptibility": {"distribution": "uniform", "min": 0.0, "max": 1.0, "default": 0.5},
+    "recovery_seconds": {"distribution": "uniform", "min": 20.0, "max": 120.0, "default": 60.0},
+    "endurance": {"distribution": "uniform", "min": 0.0, "max": 1.0, "default": 0.5}
+  },
+  "background_attributes": {
+    "age_group": {"choices": ["young", "adult", "senior"], "weights": [0.2, 0.65, 0.15]},
+    "occupation": {"choices": ["unspecified", "worker", "student", "retired"], "weights": [0.4, 0.3, 0.2, 0.1]},
+    "nationality": {"choices": ["unspecified", "domestic", "international"], "weights": [0.4, 0.5, 0.1]},
+    "native_language": {"choices": ["unspecified", "zh", "en", "other"], "weights": [0.25, 0.6, 0.1, 0.05]},
+    "visit_purpose": {"choices": ["pass_through", "tourism", "commute", "leisure"], "weights": [0.35, 0.3, 0.2, 0.15]}
+  },
+  "calibration_status": "engineering_assumptions_not_fitted_to_observed_people"
+}

@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "position_projection_tolerance_meters": 0.1,
+  "wait_drift_tolerance_meters": 0.01,
+  "position_continuity_epsilon_meters": 0.05,
+  "floating_point_tolerance": 1e-9,
+  "stage1_runtime_seconds": 30.0,
+  "micro_scenario_runtime_seconds": 20.0,
+  "integration_test_timeout_seconds": 60.0,
+  "note": "These are engineering acceptance tolerances, not calibrated pedestrian-behavior parameters."
+}

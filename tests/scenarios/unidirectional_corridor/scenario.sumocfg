@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <input><net-file value="network.net.xml"/><route-files value="demand.rou.xml"/></input>
+    <time><begin value="0"/><end value="120"/><step-length value="0.5"/></time>
+    <processing><ignore-route-errors value="false"/><time-to-teleport value="-1"/><pedestrian.model value="striping"/><pedestrian.striping.jamtime value="121"/><pedestrian.striping.jamtime.crossing value="121"/><pedestrian.striping.jamtime.narrow value="121"/></processing>
+    <random_number><seed value="20260908"/></random_number>
+    <report><no-step-log value="true"/></report>
+</configuration>

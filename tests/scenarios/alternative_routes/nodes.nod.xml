@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nodes>
+    <node id="start" x="0" y="0" type="priority"/>
+    <node id="fork" x="20" y="0" type="priority"/>
+    <node id="upper" x="50" y="15" type="priority"/>
+    <node id="lower" x="50" y="-15" type="priority"/>
+    <node id="merge" x="80" y="0" type="priority"/>
+    <node id="goal" x="100" y="0" type="priority"/>
+</nodes>

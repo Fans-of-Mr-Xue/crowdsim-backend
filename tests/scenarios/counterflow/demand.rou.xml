@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<routes>
+    <vType id="ped" vClass="pedestrian" maxSpeed="1.4"/>
+    <personFlow id="eastbound" type="ped" begin="0" end="30" period="1">
+        <walk edges="wm me"/>
+    </personFlow>
+    <personFlow id="westbound" type="ped" begin="0.5" end="30" period="1">
+        <walk edges="em mw"/>
+    </personFlow>
+</routes>

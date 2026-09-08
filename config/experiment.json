@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "mode": "rule",
+  "seed": 20260908,
+  "duration_seconds": 3600.0,
+  "step_length_seconds": 0.5,
+  "demand": {
+    "mode": "route_file",
+    "count": null
+  },
+  "sumo": {
+    "tested_version": "1.24.0",
+    "pedestrian_model": "striping",
+    "ignore_route_errors": false,
+    "time_to_teleport_seconds": -1,
+    "striping": {
+      "jamtime_seconds": 3601.0,
+      "jamtime_crossing_seconds": 3601.0,
+      "jamtime_narrow_seconds": 3601.0,
+      "stripe_width_meters": 0.55,
+      "reserve_oncoming_fraction": 0.5
+    }
+  },
+  "decision": {
+    "period_seconds": 2.0,
+    "llm_concurrency": 4,
+    "llm_budget_per_tick": 12,
+    "timeout_seconds": 8.0,
+    "model_id": null
+  },
+  "metrics": {
+    "blocked_speed_threshold_mps": 0.2,
+    "blocked_duration_seconds": 5.0,
+    "trajectory_sample_seconds": 0.5
+  },
+  "parameter_status": "engineering_assumptions_not_calibrated_to_observed_crowd_data",
+  "sources": {
+    "sumo_config": "scenarios/shanghai_bund/bund.research.sumocfg",
+    "population_profiles": "config/population_profiles.json",
+    "pois": "config/pois.json"
+  }
+}

@@ -11,3 +11,4 @@ env/
 .ruff_cache/
 outputs/
 video_outputs/
+runs/
