@@ -10,9 +10,9 @@ import json
 import numpy as np
 import pickle
 import copy
-from frontend.src.views.crowdSim.backend.vendor.PedNStream.src.pednstream.ltm.network import Network
+from ..ltm.network import Network
 from pathlib import Path
-from frontend.src.views.crowdSim.backend.vendor.PedNStream.src.pednstream.utils.config import load_config
+from .config import load_config
 from typing import List, Callable
 
 

@@ -3,8 +3,8 @@ import json
 import pandas as pd
 from datetime import datetime
 from pathlib import Path
-from frontend.src.views.crowdSim.backend.vendor.PedNStream.src.pednstream.ltm.network import Network
-from frontend.src.views.crowdSim.backend.vendor.PedNStream.src.pednstream.ltm.link import Separator
+from ..ltm.link import Separator
+from ..ltm.network import Network
 
 
 class OutputHandler:

@@ -3,7 +3,7 @@ import yaml
 import numpy as np
 from pathlib import Path
 from typing import Dict, Any, Optional
-from frontend.src.views.crowdSim.backend.vendor.PedNStream.src.pednstream.exceptions import RequiredConfigError, InvalidConfigError
+from ..exceptions import InvalidConfigError, RequiredConfigError
 
 
 def _assemble_network_config(params: Dict[str, Any], config: Dict[str, Any]) -> Dict[str, Any]:

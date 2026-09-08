@@ -7,7 +7,7 @@ import os
 from tqdm import tqdm
 import numpy as np
 # from src.LTM.link import Separator
-from frontend.src.views.crowdSim.backend.vendor.PedNStream.src.pednstream.ltm.link import Separator
+from ..ltm.link import Separator
 
 class NetworkVisualizer:
     def __init__(self, network=None, simulation_dir=None, pos=None):

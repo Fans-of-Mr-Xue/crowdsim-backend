@@ -2,7 +2,7 @@ import networkx as nx
 import numpy as np
 from collections import defaultdict
 from heapq import heappush, heappop
-from frontend.src.views.crowdSim.backend.vendor.PedNStream.src.pednstream.ltm.node import Node
+from .node import Node
 
 
 def k_shortest_paths(graph, origin, dest, k):

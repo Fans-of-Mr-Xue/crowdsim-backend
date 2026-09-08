@@ -1,5 +1,5 @@
 import numpy as np
-from frontend.src.views.crowdSim.backend.vendor.PedNStream.src.pednstream.utils.functions import BiDirectionalFd, cal_link_flow_kv
+from ..utils.functions import BiDirectionalFd, cal_link_flow_kv
 
 
 class BaseLink:
