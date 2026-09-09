@@ -88,3 +88,14 @@ S(t)冻结快照
 ```
 
 明确不支持运行时任意多边形硬障碍、动态硬封路、火灾/积水物理场、身体接触压力或连续二维群体队形；相关请求必须明确拒绝。
+## 陈毅广场热点人群实验
+
+默认实验现在使用“外滩背景流 + 陈毅广场有限聚集”需求。需求不是运行中补人，而是在启动前生成包含明确出发、到达、停留和离场阶段的 SUMO person：
+
+```powershell
+D:\Anaconda\python.exe scripts\generate_hotspot_demand.py
+D:\Anaconda\python.exe scripts\run_hotspot_experiment.py
+D:\Anaconda\python.exe scripts\run_experiment.py --steps 1200
+```
+
+热点规模和时间窗见 `config/crowd_hotspots.json`。`runs/hotspot/chen_yi_square_report.json` 记录核心人数、密度、入口低速行人、外围速度及后期消散。当前数值是涌现机制演示参数，未经过外滩实测标定。

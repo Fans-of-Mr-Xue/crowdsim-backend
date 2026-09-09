@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "scenario": "shanghai_bund",
+  "parameter_status": "engineering_assumptions_not_calibrated_to_observed_crowd_data",
+  "hotspots": [
+    {
+      "id": "chen_yi_square",
+      "name": "陈毅广场",
+      "anchor": {"longitude": 121.4859637, "latitude": 31.2410283},
+      "anchor_basis": "OpenStreetMap node 476071294 (陈毅雕像) is used only as a geographic anchor",
+      "target_edge": "40301368#10",
+      "measurement_edges": ["40301368#9", "40301368#10", "40301368#12"],
+      "arrival_window_seconds": [240, 420],
+      "dwell_seconds": [240, 420],
+      "visitor_count": 600,
+      "background_count": 1330,
+      "approach_max_distance_meters": 250,
+      "reference_walking_speed_mps": 1.2,
+      "basis": "emergence demonstration settings; visitor volume, dwell time and effective hotspot boundary require Bund observation calibration"
+    }
+  ]
+}

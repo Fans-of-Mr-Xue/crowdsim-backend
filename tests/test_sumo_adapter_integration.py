@@ -3,7 +3,7 @@ from pathlib import Path
 import unittest
 
 from crowdsim.core.simulation_runtime import RuntimeState, SimulationRuntime
-from crowdsim.infrastructure.sumo_adapter import discover_sumo_binary
+from crowdsim.infrastructure.sumo_adapter import SumoAdapter, discover_sumo_binary
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -54,6 +54,18 @@ class SumoAdapterIntegrationTests(unittest.TestCase):
             runtime.initialize()
         self.assertEqual(RuntimeState.ERROR, runtime.state)
         self.assertTrue(runtime.adapter.closed)
+
+    def test_sparse_offline_advance_reaches_requested_boundary(self):
+        adapter = SumoAdapter(SCENARIO / "scenario.sumocfg")
+        try:
+            adapter.start()
+            step = adapter.advance_to(10.0)
+            self.assertAlmostEqual(10.0, step.time_seconds)
+            self.assertTrue(step.persons)
+            with self.assertRaises(ValueError):
+                adapter.advance_to(10.0)
+        finally:
+            adapter.close()
 
     def test_bund_projection_round_trip_and_internal_edges_preserve_identity(self):
         bund = ROOT / "scenarios" / "shanghai_bund"

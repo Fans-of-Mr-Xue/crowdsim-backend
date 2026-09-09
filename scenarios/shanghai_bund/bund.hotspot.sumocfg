@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
+    <input>
+        <net-file value="bund.net.xml"/>
+        <route-files value="bund_hotspot.rou.xml"/>
+    </input>
+    <time>
+        <begin value="0"/>
+        <end value="3600"/>
+        <step-length value="0.5"/>
+    </time>
+    <processing>
+        <ignore-route-errors value="false"/>
+        <time-to-teleport value="-1"/>
+        <pedestrian.model value="striping"/>
+        <pedestrian.striping.stripe-width value="0.55"/>
+        <pedestrian.striping.reserve-oncoming value="0.5"/>
+        <pedestrian.striping.jamtime value="3601"/>
+        <pedestrian.striping.jamtime.crossing value="3601"/>
+        <pedestrian.striping.jamtime.narrow value="3601"/>
+    </processing>
+    <random_number><seed value="20260908"/></random_number>
+    <report>
+        <verbose value="false"/>
+        <duration-log.statistics value="true"/>
+        <no-step-log value="true"/>
+    </report>
+</configuration>

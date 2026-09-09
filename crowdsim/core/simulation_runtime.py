@@ -22,6 +22,7 @@ from crowdsim.environment.event_manager import EventManager
 from crowdsim.environment.hazard_model import HazardModel, HazardZone
 from crowdsim.environment.information_model import InformationModel
 from crowdsim.environment.intervention_executor import InterventionExecutor
+from crowdsim.environment.hotspot_catalog import HotspotCatalog
 from crowdsim.environment.poi_catalog import PoiCatalog
 from crowdsim.infrastructure.experiment_recorder import ExperimentRecorder
 from crowdsim.infrastructure.frame_serializer import FrameSerializer
@@ -102,6 +103,7 @@ class SimulationRuntime:
         self.recorder: ExperimentRecorder | None = None
         self.poi_catalog: PoiCatalog | None = None
         self.activity_planner: ActivityPlanner | None = None
+        self.hotspot_catalog: HotspotCatalog | None = None
         self.decision_candidates = {}
         self._route_candidate_cache = {}
         self.unreachable_candidate_pairs: set[tuple[str, str]] = set()
@@ -145,6 +147,9 @@ class SimulationRuntime:
             if self.config_path.name.startswith("bund.") and poi_path.is_file():
                 self.poi_catalog = PoiCatalog(self.network, poi_path)
                 self.activity_planner = ActivityPlanner(self.poi_catalog)
+                hotspot_path = PROJECT_ROOT / "config" / "crowd_hotspots.json"
+                if hotspot_path.is_file():
+                    self.hotspot_catalog = HotspotCatalog(self.network, hotspot_path)
             if self.population.ledger.planned_ids:
                 self.prepared_demand_path = PROJECT_ROOT / "runs" / self.run_id / "demand.rou.xml"
                 self.population.prepare_demand(self.prepared_demand_path, self.demand_count)
@@ -159,7 +164,7 @@ class SimulationRuntime:
             self.population.reconcile(self.current)
             self.route_provider = RouteProvider(self.network, self.adapter)
             self.plan_executor = PlanExecutor(self.adapter, self.route_provider)
-            self.metrics_collector = MetricsCollector(self.network)
+            self.metrics_collector = MetricsCollector(self.network, hotspots=self.hotspot_catalog)
             self.latest_metrics = self.metrics_collector.measure(self.current, self.population.states, self.population.diagnostics())
             self.recorder = ExperimentRecorder(self.run_id, self.config_path, self.adapter.diagnostics)
             demand_source = self.prepared_demand_path or (self.population.route_files[0] if len(self.population.route_files) == 1 else None)
@@ -335,6 +340,11 @@ class SimulationRuntime:
         if self.activity_planner is None or self.poi_catalog is None or self.route_provider is None:
             return
         for person_id, observation in list(self.observations.items()):
+            if person_id in self.population.locked_itinerary_ids:
+                # This person already has an explicit walking/waiting/walking
+                # itinerary in the demand file.  Autonomous POI selection must
+                # not overwrite that externally declared scenario treatment.
+                continue
             state = self.population.states[person_id]
             profile = self.population.profile_for(person_id)
             self.activity_planner.initialize(profile, state)
@@ -455,7 +465,12 @@ class SimulationRuntime:
         return result
 
     def congestion_for(self, person_id: str) -> float:
-        return 0.0
+        observation = self.observations.get(person_id)
+        if observation is None or observation.objective_density_per_m2 is None:
+            return 0.0
+        # Display score only: objective density remains the authoritative metric.
+        # 0.5 person/m2 starts visible load and 3.5 person/m2 maps to full severity.
+        return max(0.0, min(1.0, (observation.objective_density_per_m2 - 0.5) / 3.0))
 
     def hazard_impact_for(self, person_id: str) -> float:
         motion = self.current.persons.get(person_id) if self.current else None

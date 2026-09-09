@@ -130,6 +130,26 @@ class SumoAdapter:
             self._close_after_failure()
             raise
 
+    def advance_to(self, time_seconds: float) -> SumoStepResult:
+        """Let SUMO execute all configured internal steps, then read one snapshot.
+
+        This is intended for sparse offline measurement.  The interactive runtime
+        must continue to call :meth:`step` at every decision boundary.
+        """
+        self._require_connection()
+        target = float(time_seconds)
+        if target <= self.time_seconds:
+            raise ValueError("advance target must be later than current SUMO time")
+        try:
+            self.connection.simulationStep(target)
+            return self.snapshot(
+                departed=self.connection.simulation.getDepartedPersonIDList(),
+                arrived=self.connection.simulation.getArrivedPersonIDList(),
+            )
+        except Exception:
+            self._close_after_failure()
+            raise
+
     def snapshot(
         self,
         *,

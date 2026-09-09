@@ -16,8 +16,8 @@ from crowdsim.core.simulation_runtime import RuntimeState, SimulationRuntime
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--sumo-config", type=Path, default=ROOT / "scenarios" / "shanghai_bund" / "bund.research.sumocfg")
-    parser.add_argument("--ped-routes", type=Path, default=ROOT / "scenarios" / "shanghai_bund" / "bund_ped.rou.xml")
+    parser.add_argument("--sumo-config", type=Path, default=ROOT / "scenarios" / "shanghai_bund" / "bund.hotspot.sumocfg")
+    parser.add_argument("--ped-routes", type=Path, default=ROOT / "scenarios" / "shanghai_bund" / "bund_hotspot.rou.xml")
     parser.add_argument("--count", type=int)
     parser.add_argument("--steps", type=int, default=120)
     parser.add_argument("--until-finished", action="store_true", help="run until SUMO reports no expected entities")

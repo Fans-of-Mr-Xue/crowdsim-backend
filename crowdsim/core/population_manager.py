@@ -37,6 +37,7 @@ class PopulationManager:
         self.profiles = {}
         self.profile_sampler = profile_sampler or PopulationProfileSampler()
         self._previous_active: set[str] = set()
+        self.locked_itinerary_ids = self._read_locked_itineraries()
 
     def _read_planned_ids(self) -> set[str]:
         planned: set[str] = set()
@@ -48,6 +49,17 @@ class PopulationManager:
                     planned.add(element.get("id"))
                 element.clear()
         return planned
+
+    def _read_locked_itineraries(self) -> set[str]:
+        locked: set[str] = set()
+        for route_file in self.route_files:
+            if not route_file.is_file():
+                continue
+            root = ET.parse(route_file).getroot()
+            for person in root.findall("person"):
+                if any(param.get("key") == "crowdsim.itinerary_locked" and param.get("value", "").lower() == "true" for param in person.findall("param")):
+                    locked.add(person.get("id"))
+        return locked
 
     def reconcile(self, step: SumoStepResult) -> None:
         current = set(step.persons)

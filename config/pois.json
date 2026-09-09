@@ -3,7 +3,7 @@
   "scenario": "shanghai_bund",
   "pois": [
     {"id": "activity_north_demo", "kind": "activity", "edge": "792385181#2", "position": "end", "open": [0, 3600], "stay_seconds": [30, 120], "visibility": "map", "basis": "demonstration annotation; not asserted as a real venue"},
-    {"id": "activity_center_demo", "kind": "activity", "edge": "553692653#1", "position": "end", "open": [0, 3600], "stay_seconds": [30, 120], "visibility": "map", "basis": "demonstration annotation; not asserted as a real venue"},
+    {"id": "chen_yi_square", "kind": "activity", "edge": "40301368#10", "position": "end", "open": [0, 3600], "stay_seconds": [240, 420], "visibility": "map", "basis": "geographic anchor: OSM node 476071294 (陈毅雕像); edge association and dwell range are engineering assumptions pending field calibration"},
     {"id": "exit_demo", "kind": "exit", "edge": "987437453#1", "position": "end", "open": [0, 3600], "stay_seconds": [0, 0], "visibility": "map", "basis": "demonstration exit on an existing reachable demand destination"}
   ]
 }
