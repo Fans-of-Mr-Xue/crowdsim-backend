@@ -1,0 +1,33 @@
+{
+  "agent_id": "person_1024",
+  "snapshot_id": "run-demo:10",
+  "time_seconds": 5.0,
+  "profile": {
+    "nationality": "CN",
+    "language": "zh",
+    "age_group": "adult",
+    "risk_tolerance": 0.4,
+    "crowding_tolerance": 0.5,
+    "familiarity": 0.6,
+    "patience": 0.5
+  },
+  "current_state": {
+    "status": "walking",
+    "speed": 0.45,
+    "stress": 0.72,
+    "fatigue": 0.18,
+    "flood_impact": 0.05,
+    "event_impact": 0.67,
+    "perceived_risk": 0.67,
+    "blocked_duration": 0.0
+  },
+  "surrounding_crowd": {
+    "nearby_people": 28,
+    "local_density": 4.2,
+    "density_level": "critical",
+    "perceived_crowding": 0.9
+  },
+  "candidates": [
+    {"target_id": "exit_demo", "target_kind": "exit", "cost_seconds": 42.5}
+  ]
+}

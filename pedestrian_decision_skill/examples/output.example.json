@@ -1,0 +1,16 @@
+{
+  "person_id": "person_1024",
+  "snapshot_id": "run-demo:10",
+  "proposed_action": "reroute",
+  "target_id": "exit_demo",
+  "route_edges": ["current_edge", "safe_edge", "exit_edge"],
+  "speed_limit": null,
+  "wait_until": null,
+  "activity_duration": null,
+  "next_route_edges": [],
+  "reason": "当前区域风险和密度较高，选择可达出口",
+  "confidence": 0.86,
+  "source": "llm",
+  "decided_at": 5.0,
+  "expires_at": null
+}

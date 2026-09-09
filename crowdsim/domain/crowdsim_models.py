@@ -101,6 +101,9 @@ class Observation:
     objective_density_per_m2: Optional[float] = None
     perceived_crowding: float = 0.0
     perceived_risk: float = 0.0
+    density_level: str = "unknown"
+    flood_impact: float = 0.0
+    event_impact: float = 0.0
     known_event_ids: Tuple[str, ...] = ()
     available_goal_ids: Tuple[str, ...] = ()
 
@@ -117,6 +120,7 @@ class BehaviorPlan:
     activity_duration: Optional[float] = None
     next_route_edges: Tuple[str, ...] = ()
     reason: str = ""
+    confidence: Optional[float] = None
     source: str = "rule"
     decided_at: float = 0.0
     expires_at: Optional[float] = None

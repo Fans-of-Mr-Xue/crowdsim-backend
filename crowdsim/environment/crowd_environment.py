@@ -24,6 +24,7 @@ class CrowdEnvironment:
         snapshot_id: str,
         hazards=(),
     ) -> Dict[str, Observation]:
+        hazards = tuple(hazards)
         by_edge: Dict[str, list[MotionSnapshot]] = {}
         for motion in motions.values():
             by_edge.setdefault(motion.edge_id, []).append(motion)
@@ -36,12 +37,19 @@ class CrowdEnvironment:
             density = None if area is None else (len(neighbours) + 1) / area
             perceived = 0.0 if density is None else min(1.0, density / (0.75 + 2.25 * profile.crowding_tolerance))
             perceived_risk = 0.0
+            flood_impact = 0.0
+            event_impact = 0.0
             for hazard in hazards:
                 distance = math.hypot(motion.x - hazard.x, motion.y - hazard.y)
                 if distance <= hazard.radius:
-                    perceived_risk = max(perceived_risk, hazard.intensity * (1.0 - distance / max(0.01, hazard.radius)))
+                    impact = hazard.intensity * (1.0 - distance / max(0.01, hazard.radius))
+                    perceived_risk = max(perceived_risk, impact)
+                    if hazard.hazard_type == "flood":
+                        flood_impact = max(flood_impact, impact)
+                    else:
+                        event_impact = max(event_impact, impact)
             state = states.get(person_id)
-            result[person_id] = Observation(person_id=person_id, snapshot_id=snapshot_id, time_seconds=motion.time_seconds, own_motion=motion, neighbour_ids=neighbours, local_people_count=len(neighbours) + 1, local_area_m2=area, objective_density_per_m2=density, perceived_crowding=perceived, perceived_risk=perceived_risk, known_event_ids=tuple(sorted(state.known_events)) if state else ())
+            result[person_id] = Observation(person_id=person_id, snapshot_id=snapshot_id, time_seconds=motion.time_seconds, own_motion=motion, neighbour_ids=neighbours, local_people_count=len(neighbours) + 1, local_area_m2=area, objective_density_per_m2=density, perceived_crowding=perceived, perceived_risk=perceived_risk, density_level=self.classify_density(density), flood_impact=flood_impact, event_impact=event_impact, known_event_ids=tuple(sorted(state.known_events)) if state else ())
         return result
 
     def _observation_area(self, edge_id: str, radius: float) -> float | None:

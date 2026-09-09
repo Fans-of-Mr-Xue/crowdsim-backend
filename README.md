@@ -43,6 +43,12 @@ D:\Anaconda\python.exe crowdsim_overlay_server.py --host 127.0.0.1 --port 8765
 
 默认地址为 `ws://127.0.0.1:8765`。协议见 `docs/websocket_protocol.md`。
 
+使用本地 `pedestrian_decision_skill/config.json` 中的 DeepSeek 配置启动 LLM 决策：
+
+```powershell
+D:\Anaconda\python.exe crowdsim_overlay_server.py --mode llm --host 127.0.0.1 --port 8765
+```
+
 ## 场景预检
 
 ```powershell
@@ -61,9 +67,9 @@ D:\Anaconda\python.exe scripts\replay_experiment.py runs\<run_id>
 
 运行产物写入 `runs/<run_id>/`，包括 manifest、实际需求、画像、命令、消息、决策、生命周期、轨迹、指标、SUMO 日志和摘要。回放只使用已保存计划，不调用 LLM，并比较位置、速度和人口账本。
 
-## LLM 预留接口
+## DeepSeek 行人决策 Skill
 
-当前不绑定模型厂商或 HTTP 协议。接入点是 `crowdsim/decision/llm_gateway.py:LlmGateway.complete(context)`；应用层提供实现并注入 `AgentDecisionEngine` 后，模型只能从后端给出的有限候选中选择。非法目标、超时或错误会明确记录，并使用同一 `BehaviorPlan` 合同的规则回退。在具体接入方法尚未提供前，`--mode llm` 会明确退回规则模式，验收也不会伪报真实模型已联通。
+`pedestrian_decision_skill` 已实现可注入 `DecisionScheduler` 的 DeepSeek 决策引擎。它读取冻结的画像、状态、周围人群和有限候选，直接生成 `BehaviorPlan`；道路、速度和等待时间均由可信后端数据补齐。非法目标、超时或错误会记录并回退到规则计划。配置缺失时 `enabled=false`，不会把规则结果统计成真实 LLM 决策。详细接口见 `pedestrian_decision_skill/INTEGRATION.md`。
 
 ## 测试与验收
 

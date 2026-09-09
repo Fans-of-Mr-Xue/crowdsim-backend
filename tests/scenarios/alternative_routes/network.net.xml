@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2026-09-09 00:15:14 by Eclipse SUMO netconvert Version 1.24.0
+<!-- generated on 2026-09-09T18:19:42.845865+08:00 by Eclipse SUMO netconvert 1.27.0
 <netconvertConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
 
     <input>
-        <node-files value="D:\AAAWorkSpace\code\crowdsim-backend\tests\scenarios\alternative_routes\nodes.nod.xml"/>
-        <edge-files value="D:\AAAWorkSpace\code\crowdsim-backend\tests\scenarios\alternative_routes\edges.edg.xml"/>
+        <node-files value="/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/tests/scenarios/alternative_routes/nodes.nod.xml"/>
+        <edge-files value="/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/tests/scenarios/alternative_routes/edges.edg.xml"/>
     </input>
 
     <output>
-        <output-file value="D:\AAAWorkSpace\code\crowdsim-backend\tests\scenarios\alternative_routes\network.net.xml"/>
+        <output-file value="/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/tests/scenarios/alternative_routes/network.net.xml"/>
     </output>
 
     <junctions>
@@ -24,7 +24,7 @@
     <location netOffset="0.00,15.00" convBoundary="0.00,0.00,100.00,30.00" origBoundary="0.00,-15.00,100.00,15.00" projParameter="!"/>
 
     <edge id="entry" from="start" to="fork" priority="-1">
-        <lane id="entry_0" index="0" allow="pedestrian" speed="1.50" length="18.50" width="3.00" shape="0.00,13.50 18.50,13.50"/>
+        <lane id="entry_0" index="0" allow="pedestrian" speed="1.50" length="18.50" width="3.00" shape="-0.00,13.50 18.50,13.50"/>
     </edge>
     <edge id="exit" from="merge" to="goal" priority="-1">
         <lane id="exit_0" index="0" allow="pedestrian" speed="1.50" length="18.50" width="3.00" shape="81.50,13.50 100.00,13.50"/>
@@ -46,7 +46,7 @@
     <junction id="goal" type="dead_end" x="100.00" y="15.00" incLanes="exit_0" intLanes="" shape="100.00,12.00 100.00,15.00"/>
     <junction id="lower" type="dead_end" x="50.00" y="0.00" incLanes="lower_a_0" intLanes="" shape="50.00,0.00 50.89,-1.79 50.30,-1.99 50.00,-2.01 49.70,-1.99 49.40,-1.91 49.11,-1.79"/>
     <junction id="merge" type="dead_end" x="80.00" y="15.00" incLanes="lower_b_0 upper_b_0" intLanes="" shape="81.50,15.00 81.50,12.00 79.82,12.05 79.23,12.04 78.65,11.94 77.99,11.72 77.13,11.33 76.24,13.12 76.94,13.62 77.05,13.86 77.00,14.10 76.79,14.33 76.42,14.55 77.32,16.34 78.79,15.56 79.32,15.30 79.88,15.13 80.56,15.03"/>
-    <junction id="start" type="dead_end" x="0.00" y="15.00" incLanes="" intLanes="" shape="0.00,15.00 0.00,12.00"/>
+    <junction id="start" type="dead_end" x="0.00" y="15.00" incLanes="" intLanes="" shape="-0.00,15.00 -0.00,12.00"/>
     <junction id="upper" type="dead_end" x="50.00" y="30.00" incLanes="upper_a_0" intLanes="" shape="50.89,29.55 50.00,27.76 49.11,29.55 49.70,29.75 50.00,29.78 50.30,29.75 50.60,29.68"/>
 
 </net>

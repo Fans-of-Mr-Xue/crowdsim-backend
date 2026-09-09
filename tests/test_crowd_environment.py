@@ -4,6 +4,7 @@ import unittest
 from crowdsim.environment.crowd_environment import CrowdEnvironment
 from crowdsim.domain.crowdsim_models import AgentProfile, AgentState, MotionSnapshot
 from crowdsim.infrastructure.network_adapter import ResearchNetwork
+from crowdsim.environment.hazard_model import HazardZone
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -42,6 +43,20 @@ class CrowdEnvironmentTests(unittest.TestCase):
         self.assertEqual("crowded", self.environment.classify_density(1.5))
         self.assertEqual("critical", self.environment.classify_density(3.5))
         self.assertEqual("unknown", self.environment.classify_density(None))
+
+    def test_observation_exposes_density_and_separate_hazard_impacts(self):
+        motions = {"p1": motion("p1", 1, 0)}
+        profiles = {"p1": AgentProfile("p1", perception_radius=5)}
+        states = {"p1": AgentState("p1")}
+        hazards = [
+            HazardZone("water", "flood", 1, 0, 10, 0.8, 0.5),
+            HazardZone("fire", "fire", 1, 0, 10, 0.6, 0.7),
+        ]
+        observation = self.environment.observe(motions, profiles, states, "s1", hazards)["p1"]
+        self.assertEqual("free", observation.density_level)
+        self.assertAlmostEqual(0.8, observation.flood_impact)
+        self.assertAlmostEqual(0.6, observation.event_impact)
+        self.assertAlmostEqual(0.8, observation.perceived_risk)
 
 
 if __name__ == "__main__":

@@ -26,6 +26,7 @@
 - `init` 保留 `center`、`speedFactor`、`step_length`、`real_step_interval`、`flood_points`、`flooded_roads`、`metrics`。
 - `update` 保留 `step`、`step_seconds`、`step_index`、`step_length`、`speed_factor`、`vehicles`、`pedestrians`、`events`、`metrics`、`event_state`。
 - 行人的 `edge` 是真实 SUMO 边；`display_edge` 在内部边期间提供最近普通道路；`data_source` 固定为 `sumo_simulation`。
+- 行人 `state` 包含 `nationality`、`native_language`、`decision`、`decision_reason`、可空的 `decision_confidence` 与 `decision_source`；置信度来自经过校验的 LLM 输出，规则计划可为 `null`。
 - `synthetic` 暂保留为兼容字段，固定为 `false`，已废弃，模型与统计不读取它。
 - 事件中的 `density_multiplier` 若输出，固定为 `1.0` 且标记废弃，任何计算不得读取。
 - 事件、危险、干预和群组命令先返回 `queued`；它们在下一仿真步边界生效后返回含 `applied_at` 与 `snapshot_id` 的 `applied` 或 `rejected` 结果。暂停状态下立即在当前边界处理。

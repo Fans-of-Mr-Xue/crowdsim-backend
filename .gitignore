@@ -12,3 +12,4 @@ env/
 outputs/
 video_outputs/
 runs/
+pedestrian_decision_skill/config.json

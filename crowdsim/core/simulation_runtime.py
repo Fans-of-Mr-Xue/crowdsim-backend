@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import replace
 from enum import Enum
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Any, Iterable, Optional
 import uuid
 import xml.etree.ElementTree as ET
 
@@ -57,6 +57,8 @@ class SimulationRuntime:
         pedestrian_route_files: Iterable[str | Path] = (),
         sumo_binary: str | None = None,
         extra_sumo_args: Optional[Iterable[str]] = None,
+        decision_engine: Any | None = None,
+        use_llm: bool = False,
     ) -> None:
         self.config_path = Path(config_path).resolve()
         self._pedestrian_route_files = tuple(Path(path).resolve() for path in pedestrian_route_files)
@@ -83,9 +85,9 @@ class SimulationRuntime:
         self.serialized_events: list[dict] = []
         self.event_state: dict = {"crowd_gathering": {"active": False, "decision": "", "step": -1}}
         self.active_policy = ""
-        self.decision_engine = AgentDecisionEngine()
+        self.decision_engine = decision_engine if decision_engine is not None else AgentDecisionEngine()
         self.decision_scheduler = DecisionScheduler(self.decision_engine)
-        self.use_llm = False
+        self.use_llm = bool(use_llm)
         self.environment: CrowdEnvironment | None = None
         self.state_updater = StateUpdater()
         self.information = InformationModel()
@@ -398,8 +400,10 @@ class SimulationRuntime:
         route_files = self._pedestrian_route_files
         sumo_binary = self._sumo_binary
         extra_args = self._extra_sumo_args
+        decision_engine = self.decision_engine
+        use_llm = self.use_llm
         self.close()
-        self.__init__(config_path, pedestrian_route_files=route_files, sumo_binary=sumo_binary, extra_sumo_args=extra_args)
+        self.__init__(config_path, pedestrian_route_files=route_files, sumo_binary=sumo_binary, extra_sumo_args=extra_args, decision_engine=decision_engine, use_llm=use_llm)
         if count is not None:
             self.configure_demand(count)
         return self.initialize()
@@ -548,6 +552,7 @@ class SimulationRuntime:
             "time_seconds": self.time_seconds,
             "last_error": self.last_error,
             "engine": self.adapter.diagnostics,
+            "decision_engine": self.decision_diagnostics,
             "population": self.population.diagnostics(),
             "routing": {"cached_candidates": len(self._route_candidate_cache), "unreachable_pairs": len(self.unreachable_candidate_pairs)},
         }
