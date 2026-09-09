@@ -55,7 +55,7 @@ Moussaïd 等对自然条件下约 1500 个行人群组的研究支持“同行�
 
 ## 5. 背景属性与文化边界
 
-`age_group`、`occupation`、`nationality`、`native_language`、`visit_purpose` 被保留。`visit_purpose` 可初始化活动候选，`age_group` 可用于未来有数据依据的条件分布；occupation、nationality、native_language 当前只展示，不进入有效规则输入或 LLM prompt。
+`age_group`、`occupation`、`nationality`、`native_language`、`visit_purpose` 被保留。`visit_purpose` 可初始化活动候选；`nationality`、`native_language` 和 `age_group` 可作为 DeepSeek Skill 的有限背景输入，但不得映射成固定服从、恐慌、从众或速度参数。`occupation` 当前只展示。
 
 系统不使用“某国籍固定更服从、更从众或走得更快”的文化查表。所有收到消息默认能够理解，但仍区分收到、采信和行动。旧字段 `language_delay`、`symbol_accuracy`、`same_culture_attraction` 等列入 registry 的 deprecated 区，模型与指标不读取。
 

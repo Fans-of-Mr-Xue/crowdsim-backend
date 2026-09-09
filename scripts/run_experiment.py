@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from crowdsim.core.simulation_runtime import RuntimeState, SimulationRuntime
+from pedestrian_decision_skill import PedestrianDecisionSkill
 
 
 def parse_args():
@@ -23,18 +24,19 @@ def parse_args():
     parser.add_argument("--until-finished", action="store_true", help="run until SUMO reports no expected entities")
     parser.add_argument("--max-steps", type=int, default=10000, help="safety limit used with --until-finished")
     parser.add_argument("--mode", choices=("rule", "llm"), default="rule")
+    parser.add_argument("--deepseek-config", type=Path)
     parser.add_argument("--pair-id")
     parser.add_argument("--variant", default="baseline")
     return parser.parse_args()
 
 
 async def run(args):
-    runtime = SimulationRuntime(args.sumo_config, pedestrian_route_files=[args.ped_routes])
+    decision_engine = PedestrianDecisionSkill(config_path=args.deepseek_config) if args.mode == "llm" else None
+    runtime = SimulationRuntime(args.sumo_config, pedestrian_route_files=[args.ped_routes], decision_engine=decision_engine, use_llm=args.mode == "llm")
     if args.count is not None:
         runtime.configure_demand(args.count)
     try:
         runtime.initialize()
-        runtime.use_llm = args.mode == "llm"
         runtime.recorder.update_manifest(mode=args.mode, model_id=runtime.decision_engine.model if runtime.use_llm else None, pair_id=args.pair_id, variant=args.variant)
         runtime.start()
         step_limit = args.max_steps if args.until_finished else args.steps

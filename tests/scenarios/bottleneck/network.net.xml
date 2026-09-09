@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2026-09-09 00:15:13 by Eclipse SUMO netconvert Version 1.24.0
+<!-- generated on 2026-09-09T18:19:42.490180+08:00 by Eclipse SUMO netconvert 1.27.0
 <netconvertConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
 
     <input>
-        <node-files value="D:\AAAWorkSpace\code\crowdsim-backend\tests\scenarios\bottleneck\nodes.nod.xml"/>
-        <edge-files value="D:\AAAWorkSpace\code\crowdsim-backend\tests\scenarios\bottleneck\edges.edg.xml"/>
+        <node-files value="/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/tests/scenarios/bottleneck/nodes.nod.xml"/>
+        <edge-files value="/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/tests/scenarios/bottleneck/edges.edg.xml"/>
     </input>
 
     <output>
-        <output-file value="D:\AAAWorkSpace\code\crowdsim-backend\tests\scenarios\bottleneck\network.net.xml"/>
+        <output-file value="/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/tests/scenarios/bottleneck/network.net.xml"/>
     </output>
 
     <junctions>

@@ -22,7 +22,7 @@ TEST_MAP = {
     "F07": ["tests/test_activity_planner.py", "tests/test_plan_executor_integration.py"],
     "F08": ["tests/test_plan_executor_integration.py"],
     "F09": ["tests/test_group_manager.py"],
-    "F10": ["tests/test_agent_decision.py"],
+    "F10": ["tests/test_agent_decision.py", "pedestrian_decision_skill/tests/test_skill.py", "tests/test_skill_integration.py"],
     "F11": ["tests/test_decision_scheduler.py"],
     "F12": ["tests/test_event_catalog.py"],
     "F13": ["tests/test_hazard_model.py"],
@@ -53,10 +53,10 @@ def main() -> int:
     replay = json.loads(replay_reports[0].read_text(encoding="utf-8")) if replay_reports else None
     reports["F16"] = {"status": "pass" if replay and replay.get("status") == "pass" else "partial", "evidence_path": str(replay_reports[0]) if replay_reports else None, "measured": replay}
     reports["F10"]["status"] = "partial" if reports["F10"]["status"] == "pass" else reports["F10"]["status"]
-    reports["F10"]["reason"] = "Provider-neutral gateway, contract and fallback tests pass; the concrete LLM integration method has intentionally not yet been supplied."
+    reports["F10"]["reason"] = "DeepSeek Skill, BehaviorPlan contract, fallback and SUMO integration tests pass; the paid live API request is intentionally excluded from automatic acceptance."
     reports["F15"]["status"] = "partial" if reports["F15"]["status"] == "pass" else reports["F15"]["status"]
     reports["F15"]["reason"] = "Backend protocol tests pass; actual frontend repository/runtime was not exercised by this command."
-    reports["F17"] = {"status": "partial", "reason": "Pair IDs and deterministic rule runs are supported; a paired real-LLM run waits for the concrete gateway integration method."}
+    reports["F17"] = {"status": "partial", "reason": "Pair IDs, deterministic rule runs and DeepSeek injection are supported; a paired paid real-LLM experiment has not yet been executed."}
     failures = [feature for feature, item in reports.items() if item["status"] == "fail"]
     partials = [feature for feature, item in reports.items() if item["status"] == "partial"]
     reports["F18"] = {"status": "fail" if failures else ("partial" if partials else "pass"), "reason": "Aggregate status preserves external and research-validation partials.", "failed_features": failures, "partial_features": partials}

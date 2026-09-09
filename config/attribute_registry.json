@@ -19,8 +19,8 @@
   "background": {
     "age_group": {"consumer": "profile initialization/display", "effective_decision_input": false},
     "occupation": {"consumer": "display only", "effective_decision_input": false},
-    "nationality": {"consumer": "display only", "effective_decision_input": false},
-    "native_language": {"consumer": "display only", "effective_decision_input": false},
+    "nationality": {"consumer": "pedestrian_decision_skill.build_context and display", "effective_decision_input": true},
+    "native_language": {"consumer": "pedestrian_decision_skill.build_context and display", "effective_decision_input": true},
     "visit_purpose": {"consumer": "activity candidate initialization", "effective_decision_input": false}
   },
   "deprecated": ["cultural_group", "personal_space", "density_tolerance", "barrier_compliance", "queue_mode", "shortest_path_weight", "low_density_path_weight", "language_delay", "symbol_accuracy", "same_culture_attraction", "help_seeking", "conflict_threshold", "panic_susceptibility", "stress_response", "counterflow_tendency"]

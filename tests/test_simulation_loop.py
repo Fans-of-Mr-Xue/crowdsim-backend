@@ -33,6 +33,11 @@ class SimulationLoopTests(unittest.TestCase):
         self.assertEqual(result.time_seconds, frame["step_seconds"])
         self.assertEqual(self.runtime.snapshot_id, frame["snapshot_id"])
         self.assertEqual("sumo", frame["metrics"]["pedestrian_engine"]["backend"])
+        if frame["pedestrians"]:
+            state = frame["pedestrians"][0]["state"]
+            self.assertIn("nationality", state)
+            self.assertIn("native_language", state)
+            self.assertIn("decision_confidence", state)
 
     def test_pause_prevents_tick_and_resume_advances(self):
         self.runtime.start()

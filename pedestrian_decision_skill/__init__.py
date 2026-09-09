@@ -23,6 +23,7 @@ from .contracts import (
     PedestrianDecisionContext,
     PedestrianDecisionResult,
     PedestrianProfile,
+    RouteCandidateContext,
     SurroundingCrowd,
 )
 from .prompts import ChatMessage, build_messages
@@ -32,7 +33,7 @@ from .fallback import (
     HIGH_STRESS_THRESHOLD,
     fallback_decision,
 )
-from .skill import PedestrianDecisionSkill, normalize_context
+from .skill import PedestrianDecisionSkill, build_decision_context, normalize_context
 from .validation import (
     DECISION_FIELDS,
     MAX_REASON_LENGTH,
@@ -65,9 +66,11 @@ __all__ = [
     "PedestrianDecisionResult",
     "PedestrianDecisionSkill",
     "PedestrianProfile",
+    "RouteCandidateContext",
     "MAX_REASON_LENGTH",
     "SurroundingCrowd",
     "build_messages",
+    "build_decision_context",
     "fallback_decision",
     "load_deepseek_config",
     "normalize_context",

@@ -57,6 +57,19 @@ class WebSocketContractTests(unittest.IsolatedAsyncioTestCase):
         await self.server._handle_message(json.dumps({"action": "magic", "request_id": "r1"}))
         self.assertEqual({"type": "error", "code": "unknown_action", "message": "Unknown action: magic", "request_id": "r1"}, self.client.messages[-1])
 
+    async def test_update_exposes_skill_decision_fields(self):
+        await self.server._handle_message(json.dumps({"action": "configure"}))
+        self.runtime.start()
+        await self.runtime.tick_async()
+        await self.server._send(self.runtime.frame())
+        update = self.client.messages[-1]
+        self.assertEqual("update", update["type"])
+        if update["pedestrians"]:
+            state = update["pedestrians"][0]["state"]
+            self.assertIn("decision_confidence", state)
+            self.assertIn("nationality", state)
+            self.assertIn("native_language", state)
+
     async def test_running_count_change_is_rejected(self):
         await self.server._handle_message(json.dumps({"action": "configure"}))
         await self.server._handle_message(json.dumps({"action": "start"}))

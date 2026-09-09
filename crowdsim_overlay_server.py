@@ -8,6 +8,7 @@ from pathlib import Path
 
 from crowdsim.core.simulation_runtime import SimulationRuntime
 from crowdsim.infrastructure.websocket_server import OverlayServer
+from pedestrian_decision_skill import PedestrianDecisionSkill
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -23,13 +24,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sumo-binary")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--mode", choices=("rule", "llm"), default="rule")
+    parser.add_argument("--deepseek-config", type=Path)
     return parser.parse_args()
 
 
 def build_runtime(args: argparse.Namespace) -> SimulationRuntime:
     config_path = Path(args.config).resolve()
     pedestrian_routes = [config_path.parent / "bund_ped.rou.xml"] if config_path.name.startswith("bund.") else []
-    return SimulationRuntime(config_path, pedestrian_route_files=pedestrian_routes, sumo_binary=args.sumo_binary)
+    decision_engine = PedestrianDecisionSkill(config_path=args.deepseek_config) if args.mode == "llm" else None
+    return SimulationRuntime(config_path, pedestrian_route_files=pedestrian_routes, sumo_binary=args.sumo_binary, decision_engine=decision_engine, use_llm=args.mode == "llm")
 
 
 def main() -> None:

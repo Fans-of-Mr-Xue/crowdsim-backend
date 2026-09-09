@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2026-09-09 00:15:14 by Eclipse SUMO netconvert Version 1.24.0
+<!-- generated on 2026-09-09T18:19:42.670503+08:00 by Eclipse SUMO netconvert 1.27.0
 <netconvertConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
 
     <input>
-        <node-files value="D:\AAAWorkSpace\code\crowdsim-backend\tests\scenarios\counterflow\nodes.nod.xml"/>
-        <edge-files value="D:\AAAWorkSpace\code\crowdsim-backend\tests\scenarios\counterflow\edges.edg.xml"/>
+        <node-files value="/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/tests/scenarios/counterflow/nodes.nod.xml"/>
+        <edge-files value="/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/tests/scenarios/counterflow/edges.edg.xml"/>
     </input>
 
     <output>
-        <output-file value="D:\AAAWorkSpace\code\crowdsim-backend\tests\scenarios\counterflow\network.net.xml"/>
+        <output-file value="/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/tests/scenarios/counterflow/network.net.xml"/>
     </output>
 
     <junctions>
@@ -30,14 +30,14 @@
         <lane id="me_0" index="0" allow="pedestrian" speed="1.50" length="50.00" width="2.00" shape="50.00,-1.00 100.00,-1.00"/>
     </edge>
     <edge id="mw" from="middle" to="west" priority="-1">
-        <lane id="mw_0" index="0" allow="pedestrian" speed="1.50" length="50.00" width="2.00" shape="50.00,1.00 0.00,1.00"/>
+        <lane id="mw_0" index="0" allow="pedestrian" speed="1.50" length="50.00" width="2.00" shape="50.00,1.00 -0.00,1.00"/>
     </edge>
     <edge id="wm" from="west" to="middle" priority="-1">
-        <lane id="wm_0" index="0" allow="pedestrian" speed="1.50" length="50.00" width="2.00" shape="0.00,-1.00 50.00,-1.00"/>
+        <lane id="wm_0" index="0" allow="pedestrian" speed="1.50" length="50.00" width="2.00" shape="-0.00,-1.00 50.00,-1.00"/>
     </edge>
 
     <junction id="east" type="dead_end" x="100.00" y="0.00" incLanes="me_0" intLanes="" shape="100.00,0.00 100.00,-2.00 100.00,0.00"/>
     <junction id="middle" type="dead_end" x="50.00" y="0.00" incLanes="em_0 wm_0" intLanes="" shape="50.00,2.00 50.00,-2.00 50.00,2.00"/>
-    <junction id="west" type="dead_end" x="0.00" y="0.00" incLanes="mw_0" intLanes="" shape="0.00,0.00 0.00,2.00 0.00,0.00"/>
+    <junction id="west" type="dead_end" x="0.00" y="0.00" incLanes="mw_0" intLanes="" shape="-0.00,0.00 -0.00,2.00 -0.00,0.00"/>
 
 </net>
