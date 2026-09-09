@@ -1,0 +1,6 @@
+{
+  "action": "avoid",
+  "reason": "局部密度较高且事件影响明显，建议避开当前区域",
+  "confidence": 0.86,
+  "source": "llm"
+}

@@ -1,0 +1,8 @@
+{
+  "api_key": "sk-your-deepseek-api-key",
+  "base_url": "https://api.deepseek.com",
+  "model": "deepseek-v4-flash",
+  "timeout_seconds": 10,
+  "max_tokens": 160,
+  "temperature": 0.1
+}

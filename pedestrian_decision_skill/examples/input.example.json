@@ -1,0 +1,20 @@
+{
+  "agent_id": "p_overlay_1024",
+  "profile": {
+    "nationality": "JP",
+    "language": "ja"
+  },
+  "current_state": {
+    "status": "hesitating",
+    "speed": 0.45,
+    "stress": 0.72,
+    "fatigue": 0.18,
+    "flood_impact": 0.05,
+    "event_impact": 0.67
+  },
+  "surrounding_crowd": {
+    "nearby_people": 28,
+    "local_density": 4.2,
+    "density_level": "crowded"
+  }
+}
