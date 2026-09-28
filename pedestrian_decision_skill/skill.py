@@ -310,8 +310,11 @@ class PedestrianDecisionSkill:
                 **common,
                 target_id=candidate.target_id,
                 route_edges=candidate.edges,
+                arrival_position=candidate.arrival_position,
                 activity_duration=candidate.activity_duration if action == "change_goal" else None,
                 next_route_edges=candidate.next_route_edges if action == "change_goal" else (),
+                next_arrival_position=candidate.next_arrival_position if action == "change_goal" else None,
+                next_target_id=candidate.next_target_id if action == "change_goal" else None,
             )
         return BehaviorPlan(**common)
 

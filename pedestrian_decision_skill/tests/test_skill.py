@@ -59,6 +59,8 @@ def route_candidate(kind="exit"):
         target_kind=kind,
         activity_duration=30.0 if kind == "activity" else None,
         next_route_edges=("e2", "e3") if kind == "activity" else (),
+        next_arrival_position=8.0 if kind == "activity" else None,
+        next_target_id="exit" if kind == "activity" else None,
     )
 
 
@@ -203,6 +205,7 @@ class SkillPlanTests(unittest.IsolatedAsyncioTestCase):
         plan = await skill.decide(*backend_values(), [candidate])
         self.assertEqual(candidate.edges, plan.route_edges)
         self.assertEqual(candidate.target_id, plan.target_id)
+        self.assertEqual(candidate.arrival_position, plan.arrival_position)
 
     async def test_change_goal_copies_activity_stages(self):
         client = StubDecisionClient(
@@ -213,6 +216,9 @@ class SkillPlanTests(unittest.IsolatedAsyncioTestCase):
         plan = await skill.decide(*backend_values(), [candidate])
         self.assertEqual(30.0, plan.activity_duration)
         self.assertEqual(candidate.next_route_edges, plan.next_route_edges)
+        self.assertEqual(candidate.arrival_position, plan.arrival_position)
+        self.assertEqual(candidate.next_arrival_position, plan.next_arrival_position)
+        self.assertEqual(candidate.next_target_id, plan.next_target_id)
 
     async def test_request_and_validation_failures_use_rule_plan(self):
         cases = [

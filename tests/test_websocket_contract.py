@@ -2,6 +2,8 @@ import asyncio
 import json
 from pathlib import Path
 import unittest
+from unittest.mock import patch
+import websockets
 
 from crowdsim.core.simulation_runtime import SimulationRuntime
 from crowdsim.infrastructure.sumo_adapter import discover_sumo_binary
@@ -82,6 +84,136 @@ class WebSocketContractTests(unittest.IsolatedAsyncioTestCase):
         await self.server._handle_message(json.dumps({"action": "configure", "count": 2}))
         self.assertEqual("unsupported_demand_count", self.client.messages[-1]["code"])
         self.assertEqual(first_run, self.runtime.run_id)
+
+    async def test_fixed_demand_ignores_client_count_and_exposes_timeline(self):
+        runtime = SimulationRuntime(
+            SCENARIO / "scenario.sumocfg",
+            pedestrian_route_files=[SCENARIO / "demand.rou.xml"],
+            scenario_name="hotspot",
+            demand_mode="fixed",
+            timeline_end_seconds=1200,
+        )
+        server = OverlayServer(runtime, "127.0.0.1", 0)
+        client = CapturingClient()
+        server.client = client
+        try:
+            await server._handle_message(json.dumps({"action": "configure", "count": 8000}))
+            init = client.messages[-1]
+            self.assertEqual("init", init["type"])
+            self.assertEqual("fixed", init["demand"]["mode"])
+            self.assertFalse(init["demand"]["count_configurable"])
+            self.assertEqual(8000, init["demand"]["requested_count_ignored"])
+            self.assertEqual(1200.0, init["scenario"]["timeline_end_seconds"])
+            self.assertEqual(2400, init["scenario"]["timeline_step_count"])
+            self.assertEqual("READY", init["runtime_state"])
+            self.assertIsNone(runtime.demand_count)
+            run_id = runtime.run_id
+            await server._handle_message(json.dumps({"action": "configure", "count": 9000, "request_id": "fixed-again"}))
+            self.assertEqual(run_id, runtime.run_id)
+            self.assertEqual("fixed-again", client.messages[-1]["request_id"])
+            self.assertEqual(9000, client.messages[-1]["demand"]["requested_count_ignored"])
+        finally:
+            runtime.close()
+
+    async def test_duplicate_configure_returns_existing_run_and_matches_request(self):
+        await self.server._handle_message(json.dumps({"action": "configure", "request_id": "init-1"}))
+        run_id = self.runtime.run_id
+        await self.server._handle_message(json.dumps({"action": "configure", "request_id": "init-2"}))
+        self.assertEqual(run_id, self.runtime.run_id)
+        self.assertEqual("init-2", self.client.messages[-1]["request_id"])
+        self.assertFalse(self.client.messages[-1]["demand"]["count_configurable"])
+        await self.server._handle_message(json.dumps({"action": "configure", "request_id": "init-2"}))
+        self.assertEqual("duplicate_request", self.client.messages[-1]["code"])
+
+    async def test_invalid_count_does_not_initialize_or_change_run(self):
+        run_id = self.runtime.run_id
+        await self.server._handle_message(json.dumps({"action": "configure", "count": -1, "request_id": "bad"}))
+        self.assertEqual("invalid_count", self.client.messages[-1]["code"])
+        self.assertEqual("CREATED", self.runtime.state.value)
+        self.assertIsNone(self.runtime.recorder)
+        self.assertEqual(run_id, self.runtime.run_id)
+
+    async def test_finished_configure_does_not_restart(self):
+        await self.server._handle_message(json.dumps({"action": "configure"}))
+        run_id = self.runtime.run_id
+        from crowdsim.core.simulation_runtime import RuntimeState
+        self.runtime.state = RuntimeState.FINISHED
+        await self.server._handle_message(json.dumps({"action": "configure", "request_id": "finished"}))
+        self.assertEqual(run_id, self.runtime.run_id)
+        self.assertEqual("FINISHED", self.client.messages[-1]["runtime_state"])
+
+    async def test_reset_waits_for_old_loop_and_closes_old_writer(self):
+        await self.server._handle_message(json.dumps({"action": "configure"}))
+        old = self.runtime.recorder
+        stopped = []
+
+        async def old_loop():
+            try:
+                await asyncio.Event().wait()
+            finally:
+                stopped.append(True)
+
+        self.server.task = asyncio.create_task(old_loop())
+        await asyncio.sleep(0)
+        reset = self.runtime.reset
+
+        def checked_reset(count):
+            self.assertEqual([True], stopped)
+            self.assertIsNone(self.server.task)
+            return reset(count)
+
+        with patch.object(self.runtime, "reset", side_effect=checked_reset):
+            await self.server._handle_message(json.dumps({"action": "reset", "request_id": "reset-1"}))
+        self.assertTrue(old.decision_writer.closed)
+        self.assertNotEqual(old.directory, self.runtime.recorder.directory)
+        self.assertEqual("reset-1", self.client.messages[-1]["request_id"])
+
+    async def test_cleanup_failure_still_releases_client_and_requests(self):
+        class EmptyClient(CapturingClient):
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                raise StopAsyncIteration
+
+        self.server.client = None
+        self.server.processed_request_ids.add("old")
+        with patch.object(self.runtime, "close", side_effect=OSError("forced close failure")):
+            with self.assertRaises(OSError):
+                await self.server._handler(EmptyClient())
+        self.assertIsNone(self.server.client)
+        self.assertEqual(set(), self.server.processed_request_ids)
+
+    async def test_real_socket_reconnect_creates_one_new_run_and_reuses_request_id(self):
+        self.server.client = None
+        async with websockets.serve(self.server._handler, "127.0.0.1", 0) as listener:
+            port = listener.sockets[0].getsockname()[1]
+            url = f"ws://127.0.0.1:{port}"
+            async with websockets.connect(url) as socket:
+                await socket.send(json.dumps({"action": "configure", "request_id": "connection-init"}))
+                first = json.loads(await socket.recv())
+                self.assertEqual("init", first["type"])
+                old_writer = self.runtime.recorder.decision_writer
+                await socket.send(json.dumps({"action": "configure", "request_id": "second-init"}))
+                repeated = json.loads(await socket.recv())
+                self.assertEqual(first["run_id"], repeated["run_id"])
+
+            async def wait_release():
+                while self.server.client is not None:
+                    await asyncio.sleep(0.01)
+
+            await asyncio.wait_for(wait_release(), 3)
+            self.assertTrue(old_writer.closed)
+            async with websockets.connect(url) as socket:
+                await socket.send(json.dumps({"action": "configure", "request_id": "connection-init"}))
+                second = json.loads(await socket.recv())
+                self.assertEqual("init", second["type"], second)
+                self.assertNotEqual(first["run_id"], second["run_id"])
+                self.assertEqual(0, self.runtime.snapshot_index)
+
+    async def test_non_object_message_returns_error(self):
+        await self.server._handle_message("[]")
+        self.assertEqual("invalid_message", self.client.messages[-1]["code"])
 
 
 if __name__ == "__main__":

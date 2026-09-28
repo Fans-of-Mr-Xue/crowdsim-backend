@@ -64,6 +64,7 @@ class SumoAdapter:
         self.connection = None
         self.started = False
         self.closed = False
+        self.close_error: str | None = None
         self._version: str | None = None
         self._last_normal_edge: Dict[str, str] = {}
 
@@ -86,6 +87,7 @@ class SumoAdapter:
             self._version = self.connection.getVersion()[1]
             self.started = True
             self.closed = False
+            self.close_error = None
             return self.snapshot()
         except Exception:
             self._close_after_failure()
@@ -111,6 +113,7 @@ class SumoAdapter:
             "config": str(self.config_path),
             "started": self.started,
             "closed": self.closed,
+            "close_error": self.close_error,
         }
 
     @property
@@ -187,6 +190,7 @@ class SumoAdapter:
                 stage_index=0,
                 stage_type=stage_type,
                 departed=person_id in departed_set,
+                remaining_stage_count=int(self.connection.person.getRemainingStages(person_id)),
             )
             if edge_id and not edge_id.startswith(":"):
                 self._last_normal_edge[person_id] = edge_id
@@ -226,6 +230,33 @@ class SumoAdapter:
         self._require_connection()
         return int(self.connection.person.getRemainingStages(person_id))
 
+    def remaining_person_stages(self, person_id: str) -> tuple[Stage, ...]:
+        return tuple(self.connection.person.getStage(person_id, index)
+                     for index in range(self.remaining_stage_count(person_id)))
+
+    def remove_future_person_stages(self, person_id: str) -> None:
+        # Never remove index 0: removing the current stage moves the person.
+        for index in range(self.remaining_stage_count(person_id) - 1, 0, -1):
+            self.connection.person.removeStage(person_id, index)
+
+    def anchor_current_person_stage(self, person_id: str) -> None:
+        """Keep the person at its current position between same-boundary writes.
+
+        SUMO retains a zero-duration waiting stage when the last stage is
+        removed. No simulationStep may occur until the walking stage is restored.
+        This avoids SUMO 1.27's convertTraCIStage using the old goal's arrivalPos
+        as a new walk's initial departPos (it ignores Stage.departPos).
+        """
+        self._require_connection()
+        if self.remaining_stage_count(person_id) != 1:
+            raise ValueError("anchoring requires future stages to be removed first")
+        self.connection.person.removeStage(person_id, 0)
+        if self.remaining_stage_count(person_id) != 1:
+            raise RuntimeError("SUMO did not retain the temporary position anchor")
+
+    def append_person_stage(self, person_id: str, stage: Stage) -> None:
+        self.connection.person.appendStage(person_id, stage)
+
     def replace_current_person_stage(self, person_id: str, stage: Stage) -> None:
         self._require_connection()
         self.connection.person.replaceStage(person_id, 0, stage)
@@ -250,7 +281,7 @@ class SumoAdapter:
         stages = self.connection.simulation.findIntermodalRoute(
             from_edge,
             to_edge,
-            modes="walk",
+            modes="",
             departPos=depart_pos,
             arrivalPos=arrival_pos,
         )
@@ -260,23 +291,28 @@ class SumoAdapter:
         if self.closed:
             return
         connection = self.connection
-        self.connection = None
-        self.closed = True
         if connection is not None:
             try:
                 connection.close(wait=True)
-            finally:
-                try:
-                    traci.removeConnection(self.label)
-                except Exception:
-                    pass
+            except Exception as exc:
+                # Keep the handle for a later cleanup attempt. A failed close
+                # cannot establish that the SUMO process has exited.
+                self.close_error = f"{type(exc).__name__}: {exc}"
+                raise
+            try:
+                traci.removeConnection(self.label)
+            except Exception:
+                pass
+        self.connection = None
+        self.closed = True
+        self.close_error = None
 
     def _close_after_failure(self) -> None:
         try:
             self.close()
         except Exception:
-            self.connection = None
-            self.closed = True
+            # Preserve the startup error and the truthful close diagnostics.
+            pass
 
     def _require_connection(self) -> None:
         if self.connection is None or self.closed:

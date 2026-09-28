@@ -11,7 +11,7 @@ import sumolib
 class ResearchNetwork:
     def __init__(self, net_path: str) -> None:
         self.net_path = os.path.abspath(net_path)
-        self.net = sumolib.net.readNet(self.net_path, withInternal=True)
+        self.net = sumolib.net.readNet(self.net_path, withInternal=True, withPedestrianConnections=True)
         self.edges = {edge.getID(): edge for edge in self.net.getEdges(withInternal=True)}
 
     @property

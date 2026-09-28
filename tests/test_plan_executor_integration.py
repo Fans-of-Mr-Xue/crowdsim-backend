@@ -1,6 +1,8 @@
 from pathlib import Path
 import unittest
 
+from traci import constants as tc
+
 from crowdsim.domain.crowdsim_models import AgentProfile, BehaviorPlan
 from crowdsim.decision.plan_executor import PlanExecutor
 from crowdsim.decision.route_provider import RouteProvider
@@ -48,6 +50,38 @@ class PlanExecutorIntegrationTests(unittest.TestCase):
         finally:
             runtime.close()
 
+    def test_short_target_does_not_inherit_long_original_arrival_position(self):
+        runtime = running_runtime("alternative_routes")
+        try:
+            motion = first_person(runtime)
+            original = runtime.adapter.current_person_stage(motion.person_id)
+            candidate = runtime.route_provider.build_candidate(motion, target_id="entry-stop", target_edge="entry", arrival_position=10)
+            plan = BehaviorPlan(motion.person_id, runtime.snapshot_id, "reroute", target_id=candidate.target_id,
+                                route_edges=candidate.edges, arrival_position=candidate.arrival_position)
+            result = runtime.apply_plan(plan)
+            self.assertEqual("applied", result.status, result.reason)
+            actual = runtime.adapter.current_person_stage(motion.person_id)
+            self.assertEqual(10, actual.arrivalPos)
+            self.assertNotEqual(original.arrivalPos, actual.arrivalPos)
+            self.assertEqual(("entry",), tuple(actual.edges))
+        finally:
+            runtime.close()
+
+    def test_replacing_activity_plan_does_not_duplicate_sumo_stages(self):
+        runtime = running_runtime("alternative_routes")
+        try:
+            motion = first_person(runtime)
+            plan = BehaviorPlan(motion.person_id, runtime.snapshot_id, "change_goal", target_id="museum",
+                                route_edges=("entry", "upper_a", "upper_b"), arrival_position=10,
+                                activity_duration=3, next_route_edges=("upper_b", "exit"), next_arrival_position=10)
+            for _ in range(2):
+                result = runtime.apply_plan(plan)
+                self.assertEqual("applied", result.status, result.reason)
+                self.assertEqual(3, runtime.adapter.remaining_stage_count(motion.person_id))
+            self.assertEqual(10, runtime.adapter.current_person_stage(motion.person_id).arrivalPos)
+        finally:
+            runtime.close()
+
     def test_wait_is_stationary_then_restores_motion(self):
         runtime = running_runtime("unidirectional_corridor")
         try:
@@ -62,6 +96,35 @@ class PlanExecutorIntegrationTests(unittest.TestCase):
             drift = ((stopped.x - start[0]) ** 2 + (stopped.y - start[1]) ** 2) ** 0.5
             self.assertLessEqual(drift, 0.01)
             executor.maintain(runtime.time_seconds)
+            before = (stopped.x, stopped.y)
+            for _ in range(4):
+                resumed = runtime.tick().persons[motion.person_id]
+            displacement = ((resumed.x - before[0]) ** 2 + (resumed.y - before[1]) ** 2) ** 0.5
+            self.assertGreater(displacement, 0.01)
+        finally:
+            runtime.close()
+
+    def test_activity_hold_is_independent_of_decision_strategy_and_restores_motion(self):
+        runtime = running_runtime("unidirectional_corridor")
+        try:
+            motion = first_person(runtime)
+            executor = runtime.plan_executor
+            executor.register_profile(AgentProfile(person_id=motion.person_id, free_walking_speed=1.35))
+            executor.hold_activity(motion.person_id, runtime.time_seconds + 3.0)
+            # A normal decision must not accidentally release a hotspot activity hold.
+            plan = BehaviorPlan(
+                person_id=motion.person_id,
+                snapshot_id=runtime.snapshot_id,
+                proposed_action="continue",
+                decided_at=runtime.time_seconds,
+            )
+            self.assertEqual("applied", runtime.apply_plan(plan).status)
+            start = (motion.x, motion.y)
+            for _ in range(4):
+                stopped = runtime.tick().persons[motion.person_id]
+            drift = ((stopped.x - start[0]) ** 2 + (stopped.y - start[1]) ** 2) ** 0.5
+            self.assertLessEqual(drift, 0.01)
+            executor.release_activity_hold(motion.person_id)
             before = (stopped.x, stopped.y)
             for _ in range(4):
                 resumed = runtime.tick().persons[motion.person_id]
@@ -86,6 +149,59 @@ class PlanExecutorIntegrationTests(unittest.TestCase):
             displacement = ((after.x - motion.x) ** 2 + (after.y - motion.y) ** 2) ** 0.5
             self.assertLessEqual(displacement, 1.35 * runtime.step_length + 0.05)
             self.assertEqual(motion.person_id, after.person_id)
+        finally:
+            runtime.close()
+
+    def test_hotspot_reroute_preserves_real_sumo_wait_and_onward_stages(self):
+        runtime = running_runtime("alternative_routes")
+        try:
+            motion = first_person(runtime)
+            # First establish a person-specific destination inside the final
+            # edge. The hotspot entrance switch must keep this exact position.
+            initial = BehaviorPlan(
+                person_id=motion.person_id,
+                snapshot_id=runtime.snapshot_id,
+                proposed_action="reroute",
+                target_id="monument",
+                route_edges=("entry", "upper_a", "upper_b", "exit"),
+                arrival_position=9.0,
+                reason="establish hotspot target position",
+            )
+            self.assertEqual("applied", runtime.apply_plan(initial).status)
+            runtime.adapter.append_waiting_stage(motion.person_id, 3.0, "hotspot_visit")
+            runtime.adapter.append_walking_stage(motion.person_id, ("exit",), 9.0)
+            plan = BehaviorPlan(
+                person_id=motion.person_id,
+                snapshot_id=runtime.snapshot_id,
+                proposed_action="reroute",
+                target_id="monument",
+                route_edges=("entry", "lower_a", "lower_b", "exit"),
+                arrival_position=9.0,
+                selected_entry_edge="lower_a",
+                preserve_future_stages=True,
+                reason="hotspot entrance switch integration test",
+            )
+
+            result = runtime.apply_plan(plan)
+
+            self.assertEqual("applied", result.status, result.reason)
+            stages = runtime.adapter.remaining_person_stages(motion.person_id)
+            self.assertEqual(3, len(stages))
+            self.assertEqual(9.0, stages[0].arrivalPos)
+            self.assertIn("hotspot_visit", stages[1].description)
+            self.assertEqual(("exit",), tuple(stages[2].edges))
+
+            waiting = None
+            for _ in range(180):
+                step = runtime.tick()
+                current = step.persons.get(motion.person_id)
+                if current is None:
+                    break
+                if current.stage_type == tc.STAGE_WAITING:
+                    waiting = current
+                    break
+            self.assertIsNotNone(waiting, "person never reached the preserved hotspot wait stage")
+            self.assertAlmostEqual(9.0, waiting.lane_position, delta=0.05)
         finally:
             runtime.close()
 

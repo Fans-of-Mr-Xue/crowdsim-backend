@@ -1,0 +1,8 @@
+{
+  "busy_density_person_per_m2": 0.5,
+  "crowded_density_person_per_m2": 1.5,
+  "stalled_high_risk_density_person_per_m2": 3.5,
+  "critical_density_person_per_m2": 4.0,
+  "low_speed_threshold_mps": 0.2,
+  "confirmation_duration_seconds": 5.0
+}

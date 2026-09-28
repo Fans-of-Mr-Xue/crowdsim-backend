@@ -1,4 +1,4 @@
-"""Generate the Bund background-flow plus Chen Yi Square hotspot demand."""
+"""Generate the Bund finite hotspot demand with optional background pedestrians."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ def main() -> None:
     parser.add_argument("--network", type=Path, default=ROOT / "scenarios" / "shanghai_bund" / "bund.net.xml")
     parser.add_argument("--config", type=Path, default=ROOT / "config" / "crowd_hotspots.json")
     parser.add_argument("--output", type=Path, default=ROOT / "scenarios" / "shanghai_bund" / "bund_hotspot.rou.xml")
-    parser.add_argument("--hotspot-id", default="chen_yi_square")
+    parser.add_argument("--hotspot-id", default="people_heroes_monument")
     parser.add_argument("--seed", type=int, default=20260908)
     parser.add_argument("--visitors", type=int)
     parser.add_argument("--background", type=int)

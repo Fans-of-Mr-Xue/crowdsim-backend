@@ -65,6 +65,7 @@ class MotionSnapshot:
     stage_index: int
     stage_type: int
     departed: bool = False
+    remaining_stage_count: int = 1
 
 
 @dataclass
@@ -87,6 +88,18 @@ class AgentState:
     rendezvous_id: Optional[str] = None
     current_plan: Optional["BehaviorPlan"] = None
     next_decision_time: float = 0.0
+    poi_initialized: bool = False
+    poi_plan_active: bool = False
+    pending_goal: Optional[str] = None
+    hotspot_entry_edge: Optional[str] = None
+    hotspot_last_route_change_time: Optional[float] = None
+    hotspot_next_route_check: float = 0.0
+    hotspot_dwell_until: Optional[float] = None
+    # Display evidence is separate from blocked_duration used by behavior rules.
+    low_speed_duration: float = 0.0
+    critical_density_duration: float = 0.0
+    dense_low_speed_duration: float = 0.0
+    visual_blocked_duration: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -124,6 +137,11 @@ class BehaviorPlan:
     source: str = "rule"
     decided_at: float = 0.0
     expires_at: Optional[float] = None
+    arrival_position: Optional[float] = None
+    next_arrival_position: Optional[float] = None
+    next_target_id: Optional[str] = None
+    selected_entry_edge: Optional[str] = None
+    preserve_future_stages: bool = False
 
 
 @dataclass(frozen=True)

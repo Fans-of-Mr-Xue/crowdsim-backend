@@ -11,9 +11,11 @@ import xml.etree.ElementTree as ET
 
 from crowdsim.decision.agent_decision import AgentDecisionEngine
 from crowdsim.decision.decision_scheduler import DecisionScheduler
+from crowdsim.decision.hotspot_route_choice import HotspotRouteChoice
 from crowdsim.decision.plan_executor import PlanExecutor
 from crowdsim.decision.route_provider import RouteProvider
 from crowdsim.domain.crowdsim_models import AgentProfile, GroupRecord
+from crowdsim.domain.crowd_visual_state import CrowdVisualPolicy, STATE_COLORS
 from crowdsim.domain.group_manager import GroupManager
 from crowdsim.environment.activity_planner import ActivityPlanner
 from crowdsim.environment.crowd_environment import CrowdEnvironment
@@ -32,6 +34,9 @@ from crowdsim.infrastructure.sumo_adapter import SumoAdapter, SumoStepResult
 from crowdsim.core.population_manager import PopulationManager
 from crowdsim.core.runtime_commands import RuntimeCommand, RuntimeCommandQueue
 from crowdsim.core.state_updater import StateUpdater
+from crowdsim.infrastructure.performance_probe import PerformanceProbe, timed
+from crowdsim.scenarios.generated_hotspot_demand import HotspotDemandSpec
+from traci import constants as tc
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -59,12 +64,27 @@ class SimulationRuntime:
         extra_sumo_args: Optional[Iterable[str]] = None,
         decision_engine: Any | None = None,
         use_llm: bool = False,
+        scenario_name: str = "custom",
+        demand_mode: str = "configurable",
+        timeline_end_seconds: float | None = None,
+        hotspot_demand_spec: HotspotDemandSpec | None = None,
     ) -> None:
+        if demand_mode not in {"configurable", "fixed", "generated_hotspot"}:
+            raise ValueError("unknown demand_mode")
+        if demand_mode == "generated_hotspot" and hotspot_demand_spec is None:
+            raise ValueError("generated_hotspot requires hotspot_demand_spec")
+        if timeline_end_seconds is not None and float(timeline_end_seconds) <= 0:
+            raise ValueError("timeline_end_seconds must be positive")
         self.config_path = Path(config_path).resolve()
         self._pedestrian_route_files = tuple(Path(path).resolve() for path in pedestrian_route_files)
         self._sumo_binary = sumo_binary
         self._extra_sumo_args = tuple(extra_sumo_args or ())
+        if demand_mode == "generated_hotspot" and any(
+            arg == "--route-files" or arg.startswith("--route-files=") for arg in self._extra_sumo_args
+        ):
+            raise ValueError("generated_hotspot cannot be combined with an explicit route-file override")
         self.run_id = f"run-{uuid.uuid4().hex}"
+        self.performance = PerformanceProbe(self.run_id)
         self.network: ResearchNetwork | None = None
         self.adapter = SumoAdapter(
             self.config_path,
@@ -76,6 +96,8 @@ class SimulationRuntime:
         self.current: SumoStepResult | None = None
         self.snapshot_index = 0
         self.last_error: str | None = None
+        self._close_complete = False
+        self.close_errors: list[dict] = []
         self.sim_speed_factor = 1.0
         self.push_fps = 8.0
         self.step_length = 0.5
@@ -88,8 +110,17 @@ class SimulationRuntime:
         self.decision_engine = decision_engine if decision_engine is not None else AgentDecisionEngine()
         self.decision_scheduler = DecisionScheduler(self.decision_engine)
         self.use_llm = bool(use_llm)
+        self.scenario_name = str(scenario_name)
+        self.demand_mode = demand_mode
+        self.hotspot_demand_spec = hotspot_demand_spec
+        self.demand_generation_report = None
+        self.demand_capabilities = hotspot_demand_spec.capabilities() if hotspot_demand_spec else {}
+        self.timeline_end_seconds = float(timeline_end_seconds) if timeline_end_seconds is not None else None
+        self.ignored_demand_count: int | None = None
         self.environment: CrowdEnvironment | None = None
-        self.state_updater = StateUpdater()
+        self.visual_policy = CrowdVisualPolicy.load()
+        self.visual_states = {}
+        self.state_updater = StateUpdater(self.visual_policy)
         self.information = InformationModel()
         self.hazards = HazardModel()
         self.interventions = InterventionExecutor(self.information)
@@ -106,9 +137,8 @@ class SimulationRuntime:
         self.poi_catalog: PoiCatalog | None = None
         self.activity_planner: ActivityPlanner | None = None
         self.hotspot_catalog: HotspotCatalog | None = None
+        self.hotspot_route_choice: HotspotRouteChoice | None = None
         self.decision_candidates = {}
-        self._route_candidate_cache = {}
-        self.unreachable_candidate_pairs: set[tuple[str, str]] = set()
         self.commands = RuntimeCommandQueue()
 
     @property
@@ -140,6 +170,7 @@ class SimulationRuntime:
             self.step_length = self._config_float("time", "step-length", 0.5)
             run_directory = PROJECT_ROOT / "runs" / self.run_id
             run_directory.mkdir(parents=True, exist_ok=True)
+            self.performance.attach(run_directory)
             if "--log" not in self.adapter.extra_args:
                 self.adapter.extra_args.extend(["--log", str(run_directory / "sumo.log")])
             self.network = ResearchNetwork(str(self._net_path_from_config()))
@@ -152,22 +183,46 @@ class SimulationRuntime:
                 hotspot_path = PROJECT_ROOT / "config" / "crowd_hotspots.json"
                 if hotspot_path.is_file():
                     self.hotspot_catalog = HotspotCatalog(self.network, hotspot_path)
+            if self.demand_mode == "generated_hotspot":
+                source, self.demand_generation_report = self.hotspot_demand_spec.generate(
+                    run_directory, self._net_path_from_config(), self.demand_count
+                )
+                if self.hotspot_catalog is not None:
+                    self.hotspot_catalog.apply_demand_timing(self.demand_generation_report)
+                self.population = PopulationManager([source], profile_sampler=self.population.profile_sampler)
+                # Empty baseline runs must still replace the preset route file.
+                self.prepared_demand_path = source
             if self.population.ledger.planned_ids:
                 self.prepared_demand_path = PROJECT_ROOT / "runs" / self.run_id / "demand.rou.xml"
-                self.population.prepare_demand(self.prepared_demand_path, self.demand_count)
+                self.population.prepare_demand(
+                    self.prepared_demand_path,
+                    None if self.demand_mode == "generated_hotspot" else self.demand_count,
+                )
+            if self.prepared_demand_path is not None:
                 # Replay and specialised experiments may already provide a complete
                 # route-file override.  SUMO rejects duplicate occurrences of this
                 # option, so only construct the normal override when none exists.
                 if "--route-files" not in self.adapter.extra_args:
-                    route_files = [path for path in self._route_files_from_config() if path not in self.population.route_files]
+                    replaced = set(self._pedestrian_route_files) | set(self.population.route_files)
+                    route_files = [path for path in self._route_files_from_config() if path not in replaced]
                     route_files.append(self.prepared_demand_path)
                     self.adapter.extra_args.extend(["--route-files", ",".join(str(path) for path in route_files)])
             self.current = self.adapter.start()
             self.population.reconcile(self.current)
             self.route_provider = RouteProvider(self.network, self.adapter)
+            if self.hotspot_catalog is not None:
+                self.hotspot_route_choice = HotspotRouteChoice(self.network, self.route_provider)
             self.plan_executor = PlanExecutor(self.adapter, self.route_provider)
-            self.metrics_collector = MetricsCollector(self.network, hotspots=self.hotspot_catalog)
+            for person_id in self.current.persons:
+                self.plan_executor.register_profile(self.population.profile_for(person_id))
+            self._update_hotspot_activity(self.current)
+            self.metrics_collector = MetricsCollector(
+                self.network,
+                hotspots=self.hotspot_catalog,
+                population_manager=self.population,
+            )
             self.latest_metrics = self.metrics_collector.measure(self.current, self.population.states, self.population.diagnostics())
+            self._refresh_visual_states()
             self.recorder = ExperimentRecorder(self.run_id, self.config_path, self.adapter.diagnostics)
             demand_source = self.prepared_demand_path or (self.population.route_files[0] if len(self.population.route_files) == 1 else None)
             if demand_source is not None:
@@ -177,14 +232,20 @@ class SimulationRuntime:
                 model_id=self.decision_engine.model if self.use_llm else None,
                 step_length=self.step_length,
                 profile_seed=self.population.profile_sampler.seed,
+                crowd_visual_state=self.visual_policy.metadata(),
+                demand=self.demand_diagnostics(),
+                demand_generation=self.demand_generation_report,
+                performance_measurement={'enabled': self.performance.enabled, 'interval_wall_seconds': self.performance.interval, 'version': 1},
                 pedestrian_route_files=[str(path) for path in self.population.route_files],
             )
             self.state = RuntimeState.READY
+            self.performance.start_system(self)
+            self.recorder.update_manifest(system_performance_measurement=self.performance.system_metadata())
             return self.current
         except Exception as exc:
             self.last_error = f"{type(exc).__name__}: {exc}"
             self.state = RuntimeState.ERROR
-            self.adapter.close()
+            self._abort_resources()
             raise
 
     def start(self) -> None:
@@ -202,12 +263,13 @@ class SimulationRuntime:
             raise RuntimeError(f"tick is invalid in state {self.state.value}")
         try:
             due = self._prepare_boundary()
-            plans = self.decision_scheduler.resolve_rule(due, self.population.profiles, self.population.states, self.observations, self.decision_candidates)
+            with self.performance.measure('decision_resolve'):
+                plans = self.decision_scheduler.resolve_rule(due, self.population.profiles, self.population.states, self.observations, self.decision_candidates)
             return self._step_after_plans(plans)
         except Exception as exc:
             self.last_error = f"{type(exc).__name__}: {exc}"
             self.state = RuntimeState.ERROR
-            self.adapter.close()
+            self._abort_resources()
             raise
 
     async def tick_async(self) -> SumoStepResult:
@@ -215,16 +277,18 @@ class SimulationRuntime:
             raise RuntimeError(f"tick is invalid in state {self.state.value}")
         try:
             due = self._prepare_boundary()
-            plans = await self.decision_scheduler.resolve(due, self.population.profiles, self.population.states, self.observations, use_llm=self.use_llm, candidates=self.decision_candidates)
+            with self.performance.measure('decision_resolve'):
+                plans = await self.decision_scheduler.resolve(due, self.population.profiles, self.population.states, self.observations, use_llm=self.use_llm, candidates=self.decision_candidates)
             if self.state != RuntimeState.RUNNING:
                 return self.current
             return self._step_after_plans(plans)
         except Exception as exc:
             self.last_error = f"{type(exc).__name__}: {exc}"
             self.state = RuntimeState.ERROR
-            self.adapter.close()
+            self._abort_resources()
             raise
 
+    @timed('boundary_total')
     def _prepare_boundary(self) -> list[str]:
         self.process_pending_commands()
         self.hazards.update(self.time_seconds)
@@ -240,6 +304,7 @@ class SimulationRuntime:
             if self.recorder is not None:
                 self.recorder.record_messages(deliveries)
         if self.plan_executor is not None:
+            self._maintain_hotspot_activity(self.time_seconds)
             self.plan_executor.maintain(self.time_seconds)
             for person_id, state in self.population.states.items():
                 if state.planned_wait_until is not None and person_id not in self.plan_executor.wait_until:
@@ -249,7 +314,10 @@ class SimulationRuntime:
                     profile = self.population.profile_for(person_id)
                     base_speed = profile.free_walking_speed * profile.mobility
                     self.plan_executor.set_hazard_limit(person_id, self.hazards.speed_limit_for(motion, base_speed))
-        return self.decision_scheduler.collect_due(self.population.states, self.observations, self.time_seconds)
+        due = self.decision_scheduler.collect_due(self.population.states, self.observations, self.time_seconds)
+        with self.performance.measure('route_context'):
+            self._refresh_agent_context(due)
+        return due
 
     def queue_command(self, action: str, payload: dict, request_id=None) -> dict:
         command = RuntimeCommand(
@@ -313,72 +381,286 @@ class SimulationRuntime:
         if self.current is not None and self.plan_executor is not None:
             for plan in plans:
                 if plan.person_id in self.current.persons:
-                    self.apply_plan(plan)
-        result = self.adapter.step()
+                    execution = self.apply_plan(plan)
+                    if execution.status == "partial_failure":
+                        raise RuntimeError(execution.reason)
+        with self.performance.measure('sumo_step'):
+            result = self.adapter.step()
         self.population.reconcile(result)
+        if self.plan_executor is not None:
+            self.plan_executor.retain_active(result.persons)
         for person_id in result.persons:
             if self.plan_executor is not None and person_id not in self.plan_executor.base_limits:
                 self.plan_executor.register_profile(self.population.profile_for(person_id))
+        self._update_hotspot_activity(result)
         old_states = dict(self.population.states)
         if self.environment is not None:
-            observations = self.environment.observe(result.persons, self.population.profiles, old_states, f"{self.run_id}:{self.snapshot_index + 1}", self.hazards.zones.values())
-            new_states = self.state_updater.update_all(old_states, self.population.profiles, observations, self.step_length)
+            with self.performance.measure('neighbour_observation'):
+                observations = self.environment.observe(result.persons, self.population.profiles, old_states, f"{self.run_id}:{self.snapshot_index + 1}", self.hazards.zones.values())
+            with self.performance.measure('state_update'):
+                new_states = self.state_updater.update_all(old_states, self.population.profiles, observations, self.step_length)
             self.population.commit_states(new_states)
             self.observations = observations
-            self._refresh_agent_context()
             self.groups.update_groups(self.population.states)
         self.current = result
         self.snapshot_index += 1
         if self.metrics_collector is not None:
-            self.latest_metrics = self.metrics_collector.measure(result, self.population.states, self.population.diagnostics())
+            with self.performance.measure('metrics'):
+                self.latest_metrics = self.metrics_collector.measure(result, self.population.states, self.population.diagnostics())
+        self._refresh_visual_states()
         if self.recorder is not None:
-            self.recorder.record_step(self, result, self.latest_metrics)
-        if self.adapter.min_expected_number <= 0:
+            with self.performance.measure('record_step'):
+                self.recorder.record_step(self, result, self.latest_metrics)
+        reached_timeline_end = (
+            self.timeline_end_seconds is not None
+            and result.time_seconds + 1e-9 >= self.timeline_end_seconds
+        )
+        if reached_timeline_end or self.adapter.min_expected_number <= 0:
             self.state = RuntimeState.FINISHED
         return result
 
-    def _refresh_agent_context(self) -> None:
+    @timed('visual_classification')
+    def _refresh_visual_states(self) -> None:
+        self.visual_states = {
+            person_id: self.visual_policy.classify(motion, self.observations.get(person_id), self.population.states[person_id])
+            for person_id, motion in self.current.persons.items()
+        }
+        counts = dict.fromkeys(STATE_COLORS, 0)
+        for indicator in self.visual_states.values():
+            counts[indicator["visual_state"]] += 1
+        self.latest_metrics["visual_state_counts"] = counts
+        self.latest_metrics["visual_density_unknown_count"] = sum(
+            not indicator["density_valid"] for indicator in self.visual_states.values()
+        )
+
+    def _refresh_agent_context(self, person_ids=()) -> None:
         self.decision_candidates = {}
-        if self.activity_planner is None or self.poi_catalog is None or self.route_provider is None:
+        if self.route_provider is None:
             return
-        for person_id, observation in list(self.observations.items()):
+        for person_id in person_ids:
+            observation = self.observations[person_id]
             if person_id in self.population.locked_itinerary_ids:
                 # This person already has an explicit walking/waiting/walking
                 # itinerary in the demand file.  Autonomous POI selection must
                 # not overwrite that externally declared scenario treatment.
                 continue
+            hotspot_id = getattr(self.population, "goal_locked_hotspot_ids", {}).get(person_id)
+            if hotspot_id is not None and self._refresh_hotspot_route_context(person_id, hotspot_id, observation):
+                continue
+            if self.activity_planner is None or self.poi_catalog is None:
+                continue
             state = self.population.states[person_id]
             profile = self.population.profile_for(person_id)
             self.activity_planner.initialize(profile, state)
+            motion = observation.own_motion
+            if state.poi_plan_active and motion.stage_type == tc.STAGE_WALKING and self.adapter.remaining_stage_count(person_id) == 1:
+                # SUMO has finished the activity walk AND waiting stage. Advance
+                # only now, not when a rule/LLM emits an intervening continue.
+                if state.current_goal in state.activity_plan:
+                    index = state.activity_plan.index(state.current_goal)
+                    state.activity_plan = state.activity_plan[index + 1:]
+                state.current_goal = state.pending_goal
+                state.pending_goal = None
+                state.poi_plan_active = False
+            if (motion.stage_type != tc.STAGE_WALKING or motion.edge_id.startswith(":")
+                    or not self.plan_executor.route_ready(person_id, self.time_seconds)):
+                self.observations[person_id] = replace(observation, available_goal_ids=())
+                self.route_provider.counters["candidate_refresh_deferred"] += 1
+                continue
             known_ids = set(state.activity_plan)
             if state.rendezvous_id:
                 known_ids.add(state.rendezvous_id)
             available = tuple(item["id"] for item in self.poi_catalog.available(self.time_seconds, known_ids))
-            self.observations[person_id] = replace(observation, available_goal_ids=available)
+            order = {target_id: index for index, target_id in enumerate(state.activity_plan)}
+            available = tuple(sorted(available, key=lambda target_id: order.get(target_id, len(order))))
             candidates = []
+            last_error = None
             for target_id in available:
                 target = self.poi_catalog.pois[target_id]
-                next_id = next((item for item in state.activity_plan if item != target_id), None)
-                next_target = self.poi_catalog.pois.get(next_id) if next_id else None
-                cache_key = (observation.own_motion.edge_id, target_id, next_id)
-                if cache_key not in self._route_candidate_cache:
+                if target.get("kind") == "activity":
+                    index = state.activity_plan.index(target_id) if target_id in state.activity_plan else -1
+                    onward = [item for item in state.activity_plan[index + 1:] if item != target_id and item in available]
+                else:
+                    onward = [None]
+                for next_id in onward:
+                    next_target = self.poi_catalog.pois.get(next_id) if next_id else None
                     try:
-                        self._route_candidate_cache[cache_key] = self.route_provider.build_activity_candidate(observation.own_motion, target, next_target)
-                    except ValueError:
-                        self._route_candidate_cache[cache_key] = None
-                        self.unreachable_candidate_pairs.add((observation.own_motion.edge_id, target_id))
-                candidate = self._route_candidate_cache[cache_key]
-                if candidate is not None:
-                    candidates.append(candidate)
+                        candidate = self.route_provider.build_activity_candidate(motion, target, next_target)
+                        candidates.append(candidate)
+                        break
+                    except ValueError as exc:
+                        last_error = str(exc)
+                    except Exception as exc:
+                        # Retry transport failures later; don't poison topology cache.
+                        last_error = f"{type(exc).__name__}: {exc}"
+                        break
+            if candidates and not state.poi_plan_active and not any(item.target_id == state.current_goal for item in candidates):
+                # Skip an inaccessible/closed preferred POI, rather than retrying
+                # the same goal every decision period or cycling back to it.
+                state.current_goal = candidates[0].target_id
+                self.route_provider.counters["goal_fallbacks"] += 1
+            if not candidates and available:
+                self.plan_executor.defer_route(person_id, self.time_seconds, last_error or "no reachable onward POI")
             self.decision_candidates[person_id] = tuple(candidates)
+            self.observations[person_id] = replace(observation, available_goal_ids=tuple(item.target_id for item in candidates))
+
+    def _refresh_hotspot_route_context(self, person_id, hotspot_id, observation) -> bool:
+        if self.hotspot_catalog is None or self.hotspot_route_choice is None or self.plan_executor is None:
+            return False
+        hotspot = self.hotspot_catalog.hotspots.get(hotspot_id)
+        if hotspot is None or not hotspot.get("route_choice", {}).get("enabled"):
+            return False
+        assigned_target = getattr(self.population, "hotspot_target_edges", {}).get(
+            person_id, hotspot.get("target_edge")
+        )
+        if assigned_target is not None and assigned_target not in hotspot.get("target_edges", (assigned_target,)):
+            raise ValueError(
+                f"hotspot visitor {person_id} has target outside {hotspot_id}: {assigned_target}"
+            )
+        assigned_position = getattr(self.population, "hotspot_target_positions", {}).get(person_id)
+        if assigned_position is None:
+            self.plan_executor.defer_route(
+                person_id,
+                self.time_seconds,
+                f"hotspot visitor {person_id} has no preserved target position",
+            )
+            self.decision_candidates[person_id] = ()
+            self.observations[person_id] = replace(observation, available_goal_ids=())
+            return True
+        route_hotspot = {
+            **hotspot,
+            **({"target_edge": assigned_target} if assigned_target is not None else {}),
+            "target_position": assigned_position,
+        }
+        state = self.population.states[person_id]
+        if state.activity_state in {"hotspot_dwelling", "hotspot_departing"}:
+            self.decision_candidates[person_id] = ()
+            self.observations[person_id] = replace(observation, available_goal_ids=())
+            return True
+        if state.hotspot_entry_edge is None:
+            state.hotspot_entry_edge = getattr(
+                self.population, "hotspot_initial_entry_edges", {}
+            ).get(person_id)
+        state.current_goal = hotspot_id
+        motion = observation.own_motion
+        if (motion.stage_type != tc.STAGE_WALKING or motion.edge_id.startswith(":")
+                or not self.plan_executor.route_ready(person_id, self.time_seconds)):
+            self.observations[person_id] = replace(observation, available_goal_ids=())
+            self.route_provider.counters["candidate_refresh_deferred"] += 1
+            return True
+        try:
+            candidates = self.hotspot_route_choice.build_candidates(
+                motion,
+                self.population.profile_for(person_id),
+                state,
+                route_hotspot,
+                self.latest_metrics.get("edges", {}),
+            )
+        except ValueError as exc:
+            self.plan_executor.defer_route(person_id, self.time_seconds, str(exc))
+            candidates = ()
+        self.decision_candidates[person_id] = tuple(candidates)
+        available = (hotspot_id,) if candidates else ()
+        self.observations[person_id] = replace(observation, available_goal_ids=available)
+        return True
+
+    def _update_hotspot_activity(self, step: SumoStepResult) -> None:
+        """Start a position-preserving hotspot dwell after the arrival walk ends."""
+        if self.plan_executor is None:
+            return
+        hotspot_ids = getattr(self.population, "hotspot_ids", {})
+        target_edges = getattr(self.population, "hotspot_target_edges", {})
+        dwell_seconds = getattr(self.population, "hotspot_dwell_seconds", {})
+        release_times = getattr(self.population, "hotspot_release_times", {})
+        for person_id, motion in step.persons.items():
+            if person_id not in hotspot_ids:
+                continue
+            state = self.population.states[person_id]
+            if state.activity_state == "walking":
+                state.activity_state = "hotspot_approaching"
+            if state.activity_state != "hotspot_approaching":
+                continue
+            target_edge = target_edges.get(person_id)
+            if (
+                target_edge is None
+                or motion.stage_type != tc.STAGE_WALKING
+                or motion.edge_id != target_edge
+                or motion.remaining_stage_count > 1
+            ):
+                continue
+            release_time = release_times.get(person_id)
+            duration = dwell_seconds.get(person_id)
+            if release_time is not None:
+                deadline = float(release_time)
+            elif duration is not None:
+                deadline = step.time_seconds + float(duration)
+            else:
+                raise ValueError(
+                    f"hotspot visitor {person_id} has no dwell duration or release time"
+                )
+            self.plan_executor.hold_activity(person_id, deadline)
+            state.activity_state = "hotspot_dwelling"
+            state.hotspot_dwell_until = deadline
+            state.current_goal = hotspot_ids[person_id]
+            state.next_decision_time = max(state.next_decision_time, deadline)
+
+    def _maintain_hotspot_activity(self, now: float) -> None:
+        """Release completed hotspot dwells without changing the walking stage."""
+        if self.plan_executor is None:
+            return
+        for person_id, deadline in tuple(self.plan_executor.activity_hold_until.items()):
+            if now + 1e-9 < deadline:
+                continue
+            self.plan_executor.release_activity_hold(person_id)
+            state = self.population.states.get(person_id)
+            if state is not None:
+                state.activity_state = "hotspot_departing"
+                state.hotspot_dwell_until = None
+
+    def _abort_resources(self) -> None:
+        self._cleanup_resources()
+
+    def _record_close_error(self, stage, exc) -> None:
+        message = f"{type(exc).__name__}: {exc}"
+        item = {"stage": stage, "error": message}
+        if item not in self.close_errors:
+            self.close_errors.append(item)
+            detail = f"close {stage}: {message}"
+            self.last_error = f"{self.last_error}; {detail}" if self.last_error else detail
+
+    def _cleanup_resources(self) -> list[Exception]:
+        errors = []
+        # Each cleanup is attempted even if the previous one fails.
+        for stage, cleanup in (
+            ("system_performance", self.performance.close_system),
+            ("engine", self.adapter.close),
+            ("decision_log", lambda: self.recorder.close_logs(self) if self.recorder is not None else None),
+        ):
+            try:
+                cleanup()
+            except Exception as exc:
+                errors.append(exc)
+                self._record_close_error(stage, exc)
+        return errors
 
     def close(self) -> None:
-        if self.state == RuntimeState.CLOSED:
+        if self._close_complete:
             return
-        self.state = RuntimeState.CLOSED
+        self.performance.flush(self, force=True)
+        errors = self._cleanup_resources()
+        self.state = RuntimeState.ERROR if errors else RuntimeState.CLOSED
         if self.recorder is not None:
-            self.recorder.finalize(self)
-        self.adapter.close()
+            try:
+                self.recorder.write_summary(self)
+            except Exception as exc:
+                errors.append(exc)
+                self._record_close_error("summary", exc)
+                self.state = RuntimeState.ERROR
+        self._close_complete = not errors
+        if errors:
+            # Retain every failure in diagnostics, and propagate the first one.
+            # A later explicit close may retry unfinished cleanup/publication.
+            raise errors[0]
 
     def set_playback(self, *, speed_factor=None, push_fps=None) -> None:
         if isinstance(speed_factor, (int, float)) and speed_factor > 0:
@@ -386,34 +668,66 @@ class SimulationRuntime:
         if isinstance(push_fps, (int, float)) and push_fps > 0:
             self.push_fps = max(1.0, min(60.0, float(push_fps)))
 
-    def configure_demand(self, count) -> None:
-        if self.state != RuntimeState.CREATED:
-            raise RuntimeError("count can only be changed before SUMO initialization; use reset")
+    @property
+    def demand_count_configurable(self) -> bool:
+        return self.demand_mode == "generated_hotspot" or (
+            self.demand_mode == "configurable" and self.population.count_configurable
+        )
+
+    def configure_demand(self, count) -> bool:
         if not isinstance(count, int) or isinstance(count, bool) or count < 0:
             raise ValueError("count must be a non-negative integer")
-        if not self.population.ledger.planned_ids:
+        if self.demand_mode == "generated_hotspot":
+            self.hotspot_demand_spec.validate_count(count)
+        if self.demand_mode == "fixed":
+            self.ignored_demand_count = count
+            return False
+        if not self.demand_count_configurable:
             raise ValueError("count requires a demand file with explicit <person> elements")
+        if self.state != RuntimeState.CREATED:
+            raise RuntimeError("count can only be changed before SUMO initialization; use reset")
         self.demand_count = count
+        return True
 
-    def reset(self, count=None):
+    def reset(self, count=None, *, use_default_count=False):
+        count = self.demand_count if count is None and not use_default_count else count
         config_path = self.config_path
         route_files = self._pedestrian_route_files
         sumo_binary = self._sumo_binary
         extra_args = self._extra_sumo_args
         decision_engine = self.decision_engine
         use_llm = self.use_llm
+        scenario_name = self.scenario_name
+        demand_mode = self.demand_mode
+        timeline_end_seconds = self.timeline_end_seconds
+        hotspot_demand_spec = self.hotspot_demand_spec
         self.close()
-        self.__init__(config_path, pedestrian_route_files=route_files, sumo_binary=sumo_binary, extra_sumo_args=extra_args, decision_engine=decision_engine, use_llm=use_llm)
+        self.__init__(
+            config_path,
+            pedestrian_route_files=route_files,
+            sumo_binary=sumo_binary,
+            extra_sumo_args=extra_args,
+            decision_engine=decision_engine,
+            use_llm=use_llm,
+            scenario_name=scenario_name,
+            demand_mode=demand_mode,
+            timeline_end_seconds=timeline_end_seconds,
+            hotspot_demand_spec=hotspot_demand_spec,
+        )
         if count is not None:
             self.configure_demand(count)
         return self.initialize()
 
+    @timed('frame_build')
     def frame(self) -> dict:
         return self.serializer.build_frame(self)
 
     def init_frame(self) -> dict:
-        return self.serializer.build_init(self)
+        return {**self.serializer.build_init(self), 'performance_measurement': {
+            'enabled': self.performance.enabled, 'interval_wall_seconds': self.performance.interval, 'version': 1,
+        }}
 
+    @timed('plan_apply_including_log')
     def apply_plan(self, plan):
         if self.current is None or self.plan_executor is None:
             raise RuntimeError("runtime is not initialized")
@@ -421,9 +735,19 @@ class SimulationRuntime:
         if motion is None:
             raise ValueError(f"person is not active: {plan.person_id}")
         result = self.plan_executor.apply(plan, motion, self.snapshot_id, self.time_seconds)
+        if result.status == "partial_failure":
+            self.last_error = result.reason
+            self.state = RuntimeState.ERROR
         if result.status == "applied":
             state = self.population.states[plan.person_id]
             state.current_plan = plan
+            if plan.proposed_action in {"reroute", "change_goal"}:
+                state.current_goal = plan.target_id
+                state.poi_plan_active = plan.proposed_action == "change_goal" and plan.activity_duration is not None
+                state.pending_goal = plan.next_target_id if state.poi_plan_active else None
+                if plan.selected_entry_edge is not None:
+                    state.hotspot_entry_edge = plan.selected_entry_edge
+                    state.hotspot_last_route_change_time = self.time_seconds
             if plan.proposed_action == "wait":
                 state.planned_wait_until = plan.wait_until
             elif plan.proposed_action == "continue":
@@ -431,16 +755,17 @@ class SimulationRuntime:
             hold_until = plan.wait_until or (self.time_seconds + self.decision_scheduler.period_seconds)
             state.next_decision_time = max(state.next_decision_time, hold_until)
         if self.recorder is not None:
-            self.recorder.record_decision(
-                plan,
-                result,
-                context={
-                    "profile": self.population.profile_for(plan.person_id),
-                    "state": self.population.states.get(plan.person_id),
-                    "observation": self.observations.get(plan.person_id),
-                },
-                candidates=self.decision_candidates.get(plan.person_id, ()),
-            )
+            with self.performance.measure('decision_log'):
+                self.recorder.record_decision(
+                    plan,
+                    result,
+                    context={
+                        "profile": self.population.profile_for(plan.person_id),
+                        "state": self.population.states.get(plan.person_id),
+                        "observation": self.observations.get(plan.person_id),
+                    },
+                    candidates=self.decision_candidates.get(plan.person_id, ()),
+                )
         return result
 
     @property
@@ -551,10 +876,48 @@ class SimulationRuntime:
             "snapshot_index": self.snapshot_index,
             "time_seconds": self.time_seconds,
             "last_error": self.last_error,
+            "close_errors": list(self.close_errors),
             "engine": self.adapter.diagnostics,
             "decision_engine": self.decision_diagnostics,
+            "decision_log": self.recorder.decision_log_diagnostics if self.recorder else None,
+            "performance": {"enabled": self.performance.enabled, "error": self.performance.error,
+                            "system": self.performance.system_metadata()},
             "population": self.population.diagnostics(),
-            "routing": {"cached_candidates": len(self._route_candidate_cache), "unreachable_pairs": len(self.unreachable_candidate_pairs)},
+            "scenario": self.scenario_diagnostics(),
+            "demand": self.demand_diagnostics(),
+            "routing": self.routing_diagnostics,
+        }
+
+    @property
+    def routing_diagnostics(self) -> dict:
+        return {**(self.route_provider.diagnostics if self.route_provider else {}),
+                "execution": {**self.plan_executor.diagnostics, "cooldown_people": sum(
+                    deadline > self.time_seconds for deadline in self.plan_executor.route_retry_after.values())}
+                if self.plan_executor else {}}
+
+    def scenario_diagnostics(self) -> dict:
+        steps = None
+        if self.timeline_end_seconds is not None:
+            steps = int(round(self.timeline_end_seconds / self.step_length))
+        configured_hotspots = set(getattr(self.population, "hotspot_ids", {}).values())
+        active_hotspot_id = next(iter(configured_hotspots)) if len(configured_hotspots) == 1 else None
+        return {
+            "name": self.scenario_name,
+            "active_hotspot_id": active_hotspot_id,
+            "timeline_start_seconds": 0.0,
+            "timeline_end_seconds": self.timeline_end_seconds,
+            "timeline_step_count": steps,
+        }
+
+    def demand_diagnostics(self) -> dict:
+        return {
+            **self.population.diagnostics(),
+            **self.demand_capabilities,
+            "mode": self.demand_mode,
+            "requested_count": self.demand_count,
+            "effective_count": len(self.population.ledger.planned_ids),
+            "count_configurable": self.demand_count_configurable,
+            "requested_count_ignored": self.ignored_demand_count,
         }
 
     def __enter__(self) -> "SimulationRuntime":

@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "scenario": "shanghai_bund",
+  "default_hotspot_id": "people_heroes_monument",
   "parameter_status": "engineering_assumptions_not_calibrated_to_observed_crowd_data",
   "hotspots": [
     {
@@ -9,14 +10,214 @@
       "anchor": {"longitude": 121.4859637, "latitude": 31.2410283},
       "anchor_basis": "OpenStreetMap node 476071294 (陈毅雕像) is used only as a geographic anchor",
       "target_edge": "40301368#10",
+      "target_edges": ["40301368#10"],
       "measurement_edges": ["40301368#9", "40301368#10", "40301368#12"],
       "arrival_window_seconds": [240, 420],
       "dwell_seconds": [240, 420],
       "visitor_count": 600,
       "background_count": 1330,
+      "background_departure_window_seconds": [0, 1199.5],
       "approach_max_distance_meters": 250,
       "reference_walking_speed_mps": 1.2,
+      "phase_thresholds": {
+        "building_person_count": 50,
+        "building_core_density_person_per_m2": 0.15,
+        "congested_core_density_person_per_m2": 1.5,
+        "rising_rate_person_per_second": 0.1,
+        "falling_rate_person_per_second": -0.1,
+        "cleared_person_count": 10,
+        "cleared_peak_fraction": 0.02,
+        "cleared_core_density_person_per_m2": 0.05,
+        "residual_backlog_person_count": 20,
+        "cleared_remaining_visitor_count": 10,
+        "cleared_blocked_person_count": 5,
+        "trend_window_seconds": 20,
+        "confirmation_seconds": 10
+      },
       "basis": "emergence demonstration settings; visitor volume, dwell time and effective hotspot boundary require Bund observation calibration"
+    },
+    {
+      "id": "people_heroes_monument",
+      "name": "上海人民英雄纪念塔",
+      "anchor": {"longitude": 121.4869337, "latitude": 31.2442744},
+      "anchor_basis": "centroid of OpenStreetMap way 47007059 (人民英雄纪念塔); geographic anchor only",
+      "target_edge": "679361567#1",
+      "target_edges": [
+        "679361567#1",
+        "679361567#2"
+      ],
+      "entry_edges": [
+        "178411801#0",
+        "177931018#0"
+      ],
+      "access_portals": [
+        {
+          "id": "west_gate",
+          "edge": "178411801#0",
+          "outside_side": "auto",
+          "inside_side": "auto"
+        },
+        {
+          "id": "south_gate",
+          "edge": "177931018#0",
+          "outside_side": "auto",
+          "inside_side": "auto"
+        }
+      ],
+      "park_access_edges": [
+        "177931046",
+        "906417851#0",
+        "906417851#1",
+        "906417852#0",
+        "906417852#1",
+        "906417852#2",
+        "906417852#3",
+        "906417852#4",
+        "906417852#5",
+        "906417852#6",
+        "906417852#7",
+        "906417852#8",
+        "906417852#9",
+        "906417852#10",
+        "906417853#0",
+        "906417853#1",
+        "906417854",
+        "906417855#1",
+        "906417855#2"
+      ],
+      "measurement_edges": [
+        "679361567#1",
+        "679361567#2"
+      ],
+      "excluded_edges": [
+        "178411801#1",
+        "679361566#1",
+        "177931018#1",
+        "679361565#1",
+        "679361565#2",
+        "679361563",
+        "679361564"
+      ],
+      "visitor_spawn_edges": [
+        "906417851#0",
+        "906417852#7",
+        "906417852#8",
+        "906417852#9",
+        "906417852#10"
+      ],
+      "spawn_distribution": "edge_length_weighted_random",
+      "spawn_position_margin_meters": 2.0,
+      "visitor_destination_edges": [
+        "906417851#0",
+        "906417852#7",
+        "906417852#8",
+        "906417852#9",
+        "906417852#10"
+      ],
+      "destination_distribution": "edge_uniform_random",
+      "destination_position_margin_meters": 2.0,
+      "park_entry_edges": [
+        "906417851#0",
+        "906417852#8"
+      ],
+      "external_approach_edges": [
+        "47438461#1",
+        "-177579664",
+        "-177579659#0",
+        "-177579659#1",
+        "-47270944#9",
+        "177574806#0",
+        "469632301#1",
+        "469632301#0",
+        "47270944#9",
+        "178564465#2",
+        "178412507#4",
+        "178412238#1",
+        "909084827#0",
+        "177993351#1",
+        "177993351#0",
+        "178412507#6",
+        "178412507#5",
+        "1298040464"
+      ],
+      "target_distribution": "weighted_viewing_arcs",
+      "viewing_zones": [
+        {
+          "id": "east_best_view",
+          "edge": "679361567#1",
+          "position_range_meters": [35, 90],
+          "weight": 0.55
+        },
+        {
+          "id": "north_secondary_view",
+          "edge": "679361567#1",
+          "position_range_meters": [15, 35],
+          "weight": 0.15
+        },
+        {
+          "id": "south_secondary_view",
+          "edge": "679361567#1",
+          "position_range_meters": [90, 110],
+          "weight": 0.15
+        },
+        {
+          "id": "northwest_overflow",
+          "edge": "679361567#1",
+          "position_range_meters": [2, 15],
+          "weight": 0.05
+        },
+        {
+          "id": "southwest_overflow",
+          "edge": "679361567#1",
+          "position_range_meters": [110, 119.78],
+          "weight": 0.04
+        },
+        {
+          "id": "west_back_overflow",
+          "edge": "679361567#2",
+          "position_range_meters": [2, 17.83],
+          "weight": 0.06
+        }
+      ],
+      "align_first_visitor_to_zero": true,
+      "visitor_arrival_profile": [
+        {"window_seconds": [240, 360], "fraction": 0.10},
+        {"window_seconds": [360, 540], "fraction": 0.75},
+        {"window_seconds": [540, 660], "fraction": 0.15}
+      ],
+      "activity_window_seconds": [600, 800],
+      "visitor_release_delay_seconds": [0, 90],
+      "visitor_count": 700,
+      "background_count": 0,
+      "background_departure_window_seconds": [0, 1799.5],
+      "approach_max_distance_meters": 750,
+      "reference_walking_speed_mps": 1.2,
+      "phase_thresholds": {
+        "building_person_count": 50,
+        "building_core_density_person_per_m2": 0.15,
+        "congested_core_density_person_per_m2": 0.65,
+        "rising_rate_person_per_second": 0.1,
+        "falling_rate_person_per_second": -0.1,
+        "cleared_person_count": 10,
+        "cleared_peak_fraction": 0.02,
+        "cleared_core_density_person_per_m2": 0.05,
+        "residual_backlog_person_count": 20,
+        "cleared_remaining_visitor_count": 10,
+        "cleared_blocked_person_count": 5,
+        "trend_window_seconds": 20,
+        "confirmation_seconds": 10
+      },
+      "route_choice": {
+        "enabled": true,
+        "decision_interval_seconds": 10,
+        "switch_cooldown_seconds": 15,
+        "minimum_savings_seconds": 20,
+        "free_flow_density_person_per_m2": 0.5,
+        "congested_density_person_per_m2": 1.5,
+        "speed_floor_mps": 0.2
+      },
+      "spatial_model_status": "hotspot-visitors-only demand, random west-side park-path spawning, direct park-internal approach, single outer-ring destination zone, park-internal profile-aware route choice, independently sampled west-side dispersal destinations, weighted viewing arcs, concentrated pre-event arrivals, common event release and gradual dispersal defined",
+      "basis": "the scenario intentionally contains no background pedestrians; visitors start at length-weighted random positions on five pedestrian edges along the west side of Huangpu Park, skip the external park-entry stage because they are already inside the park network, and gather only on the outer ground-level pedestrian ring around the monument; the inner surface ring and OpenStreetMap level=-1/deeper ring edges are explicitly excluded from visitor routes; each visitor independently selects one of the same five west-side park edges with equal edge probability and a random on-edge position as the dispersal destination, without linking it to the spawn location or forcing a monument exit; the eastern arc is treated as the best-view engineering assumption, 75 percent of visitors are planned to arrive in the main pre-event wave, the event runs from 600 to 800 seconds, and individual release is spread across the following 90 seconds; timing, viewing preference and volume remain engineering assumptions pending calibration"
     }
   ]
 }

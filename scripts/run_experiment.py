@@ -20,7 +20,7 @@ def parse_args():
     parser.add_argument("--sumo-config", type=Path, default=ROOT / "scenarios" / "shanghai_bund" / "bund.hotspot.sumocfg")
     parser.add_argument("--ped-routes", type=Path, default=ROOT / "scenarios" / "shanghai_bund" / "bund_hotspot.rou.xml")
     parser.add_argument("--count", type=int)
-    parser.add_argument("--steps", type=int, default=120)
+    parser.add_argument("--steps", type=int, default=3600, help="SUMO steps to run; 3600 × 0.5 s covers the 1800 s hotspot observation timeline")
     parser.add_argument("--until-finished", action="store_true", help="run until SUMO reports no expected entities")
     parser.add_argument("--max-steps", type=int, default=10000, help="safety limit used with --until-finished")
     parser.add_argument("--mode", choices=("rule", "llm"), default="rule")

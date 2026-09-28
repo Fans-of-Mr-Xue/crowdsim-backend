@@ -71,6 +71,8 @@ def diagnostics() -> dict:
 - `reroute`：目标必须属于 `RouteCandidate`，道路从候选复制；
 - `change_goal`：目标必须是 activity 候选，活动时长和后续路线从候选复制。
 
+路线计划也复制候选的 `arrival_position`；活动计划额外复制 `next_arrival_position` 和 `next_target_id`。这些字段由后端寻路和 POI 校验生成，模型不能提供或覆盖。活动完成后的目标推进、失败冷却与完整行程恢复由后端处理，见 [POI 重规划补强](../docs/poi_replanning.md)。
+
 `PlanExecutor` 仍会验证 person、snapshot、动作、路线连通性和计划时效。模型永远不能直接提供道路、速度或等待时间。
 
 ## 5. 运行时注入

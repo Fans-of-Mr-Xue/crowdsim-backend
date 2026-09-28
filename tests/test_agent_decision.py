@@ -47,6 +47,85 @@ class AgentDecisionTests(unittest.TestCase):
         self.assertNotIn("nationality", prompt["profile"])
         self.assertNotIn("native_language", prompt["profile"])
 
+    def test_hotspot_initial_route_uses_lowest_expected_time_and_locks_goal_only(self):
+        engine = AgentDecisionEngine()
+        profile, state, observation = context()
+        slower = RouteCandidate("monument", "ring", 5, ("e", "north", "ring"), 50,
+                                target_kind="hotspot_route", entry_edge="north",
+                                base_cost_seconds=40, congestion_delay_seconds=10,
+                                minimum_savings_seconds=20, switch_cooldown_seconds=15)
+        faster = RouteCandidate("monument", "ring", 5, ("e", "south", "ring"), 30,
+                                target_kind="hotspot_route", entry_edge="south",
+                                base_cost_seconds=30, minimum_savings_seconds=20,
+                                switch_cooldown_seconds=15)
+
+        plan = engine.rule_plan(profile, state, observation, (slower, faster))
+
+        self.assertEqual("reroute", plan.proposed_action)
+        self.assertEqual("monument", plan.target_id)
+        self.assertEqual("south", plan.selected_entry_edge)
+        self.assertTrue(plan.preserve_future_stages)
+
+    def test_hotspot_profile_can_switch_away_from_congested_entrance(self):
+        engine = AgentDecisionEngine()
+        profile = AgentProfile("p", familiarity=1, crowding_tolerance=0, patience=0,
+                               mobility=1, endurance=1, following_tendency=0)
+        state = AgentState("p", hotspot_entry_edge="north", hotspot_last_route_change_time=-100)
+        _, _, observation = context()
+        north = RouteCandidate("monument", "ring", 5, ("e", "north", "ring"), 100,
+                              target_kind="hotspot_route", entry_edge="north",
+                              base_cost_seconds=35, congestion_delay_seconds=65,
+                              minimum_savings_seconds=20, switch_cooldown_seconds=15)
+        south = RouteCandidate("monument", "ring", 5, ("e", "south", "ring"), 40,
+                              target_kind="hotspot_route", entry_edge="south",
+                              base_cost_seconds=40, minimum_savings_seconds=20,
+                              switch_cooldown_seconds=15)
+
+        plan = engine.rule_plan(profile, state, observation, (north, south))
+
+        self.assertEqual("reroute", plan.proposed_action)
+        self.assertEqual("south", plan.selected_entry_edge)
+
+    def test_hotspot_patient_crowd_tolerant_profile_keeps_queue(self):
+        engine = AgentDecisionEngine()
+        profile = AgentProfile("p", familiarity=0, crowding_tolerance=1, patience=1,
+                               mobility=0.65, endurance=0, following_tendency=1)
+        state = AgentState("p", hotspot_entry_edge="north", hotspot_last_route_change_time=-100)
+        _, _, observation = context()
+        north = RouteCandidate("monument", "ring", 5, ("e", "north", "ring"), 100,
+                              target_kind="hotspot_route", entry_edge="north",
+                              base_cost_seconds=35, congestion_delay_seconds=65,
+                              minimum_savings_seconds=20, switch_cooldown_seconds=15)
+        south = RouteCandidate("monument", "ring", 5, ("e", "south", "ring"), 40,
+                              target_kind="hotspot_route", entry_edge="south",
+                              base_cost_seconds=40, minimum_savings_seconds=20,
+                              switch_cooldown_seconds=15)
+
+        plan = engine.rule_plan(profile, state, observation, (north, south))
+
+        self.assertEqual("continue", plan.proposed_action)
+        self.assertIn("queue", plan.reason)
+
+    def test_hotspot_switch_cooldown_prevents_route_oscillation(self):
+        engine = AgentDecisionEngine()
+        profile = AgentProfile("p", familiarity=1, crowding_tolerance=0, patience=0,
+                               mobility=1, endurance=1, following_tendency=0)
+        state = AgentState("p", hotspot_entry_edge="north", hotspot_last_route_change_time=0)
+        _, _, observation = context()
+        north = RouteCandidate("monument", "ring", 5, ("e", "north", "ring"), 100,
+                              target_kind="hotspot_route", entry_edge="north",
+                              base_cost_seconds=35, congestion_delay_seconds=65,
+                              minimum_savings_seconds=20, switch_cooldown_seconds=15)
+        south = RouteCandidate("monument", "ring", 5, ("e", "south", "ring"), 40,
+                              target_kind="hotspot_route", entry_edge="south",
+                              base_cost_seconds=40, minimum_savings_seconds=20,
+                              switch_cooldown_seconds=15)
+
+        plan = engine.rule_plan(profile, state, observation, (north, south))
+
+        self.assertEqual("continue", plan.proposed_action)
+        self.assertIn("cooldown", plan.reason)
+
 
 if __name__ == "__main__":
     unittest.main()

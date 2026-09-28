@@ -6,6 +6,7 @@ from dataclasses import replace
 from typing import Dict
 
 from crowdsim.domain.crowdsim_models import AgentProfile, AgentState, Observation
+from crowdsim.domain.crowd_visual_state import CrowdVisualPolicy
 
 
 def _clip(value: float) -> float:
@@ -13,6 +14,9 @@ def _clip(value: float) -> float:
 
 
 class StateUpdater:
+    def __init__(self, visual_policy=None):
+        self.visual_policy = visual_policy or CrowdVisualPolicy()
+
     def update_all(
         self,
         old_states: Dict[str, AgentState],
@@ -34,6 +38,10 @@ class StateUpdater:
                 fatigue = _clip(old.fatigue + dt * 0.002 * effort * (1.25 - profile.endurance))
             else:
                 fatigue = _clip(old.fatigue - dt * 0.004 * (0.5 + profile.endurance))
-            blocked = old.blocked_duration + dt if observation.own_motion.speed < 0.2 and old.planned_wait_until is None else 0.0
-            updated[person_id] = replace(old, stress=stress, fatigue=fatigue, perceived_risk=observation.perceived_risk, perceived_crowding=observation.perceived_crowding, blocked_duration=blocked, known_events=dict(old.known_events), received_messages=list(old.received_messages), activity_plan=list(old.activity_plan), companion_ids=list(old.companion_ids))
+            planned_stop = (
+                old.planned_wait_until is not None
+                or old.activity_state == "hotspot_dwelling"
+            )
+            blocked = old.blocked_duration + dt if observation.own_motion.speed < 0.2 and not planned_stop else 0.0
+            updated[person_id] = replace(old, stress=stress, fatigue=fatigue, perceived_risk=observation.perceived_risk, perceived_crowding=observation.perceived_crowding, blocked_duration=blocked, known_events=dict(old.known_events), received_messages=list(old.received_messages), activity_plan=list(old.activity_plan), companion_ids=list(old.companion_ids), **self.visual_policy.durations(old, observation, dt))
         return updated

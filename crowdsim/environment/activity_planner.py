@@ -13,7 +13,8 @@ class ActivityPlanner:
         self.catalog = catalog
 
     def initialize(self, profile: AgentProfile, state: AgentState) -> None:
-        if state.activity_plan:
+        if state.poi_initialized or state.activity_plan:
+            state.poi_initialized = True
             return
         exits = sorted(item["id"] for item in self.catalog.pois.values() if item["kind"] == "exit")
         activities = sorted(item["id"] for item in self.catalog.pois.values() if item["kind"] == "activity")
@@ -22,10 +23,11 @@ class ActivityPlanner:
         known_activities = ranked[:known_count]
         if profile.visit_purpose in {"tourism", "leisure"} and known_activities:
             count = len(known_activities) if profile.visit_purpose == "tourism" else 1
-            state.activity_plan = [*known_activities[:count], *exits[:1]]
+            state.activity_plan = [*known_activities[:count], *exits]
         else:
-            state.activity_plan = exits[:1]
+            state.activity_plan = exits
         state.current_goal = state.activity_plan[0] if state.activity_plan else None
+        state.poi_initialized = True
 
     def available_ids(self, state: AgentState, now: float) -> tuple[str, ...]:
         planned = set(state.activity_plan)

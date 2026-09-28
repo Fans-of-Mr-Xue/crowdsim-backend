@@ -1,0 +1,10 @@
+"""Names of route-file person parameters shared across demand and runtime code."""
+
+ITINERARY_LOCK_PARAM = "crowdsim.itinerary_locked"
+GOAL_LOCK_PARAM = "crowdsim.goal_locked"
+HOTSPOT_ID_PARAM = "crowdsim.hotspot_id"
+HOTSPOT_TARGET_EDGE_PARAM = "crowdsim.hotspot_target_edge"
+HOTSPOT_DWELL_SECONDS_PARAM = "crowdsim.hotspot_dwell_seconds"
+HOTSPOT_RELEASE_TIME_PARAM = "crowdsim.hotspot_release_time"
+HOTSPOT_PARK_ENTRY_EDGE_PARAM = "crowdsim.hotspot_park_entry_edge"
+HOTSPOT_ENTRY_EDGE_PARAM = "crowdsim.hotspot_entry_edge"

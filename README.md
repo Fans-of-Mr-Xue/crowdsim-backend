@@ -43,6 +43,20 @@ D:\Anaconda\python.exe crowdsim_overlay_server.py --host 127.0.0.1 --port 8765
 
 默认地址为 `ws://127.0.0.1:8765`。协议见 `docs/websocket_protocol.md`。
 
+默认启动普通外滩研究场景。启动“上海人民英雄纪念塔有限聚集”热点场景时，使用场景预设，让 SUMO 配置与行人路线保持成对选择；该热点预设目前只包含热点访客，不包含背景行人：
+
+```powershell
+D:\Anaconda\python.exe crowdsim_overlay_server.py --scenario hotspot --host 127.0.0.1 --port 8765
+```
+
+热点预设使用固定需求，前端 `configure.count` 不会裁剪其中 700 名热点访客；该场景不包含背景行人。后台按 240—660 s 的三段目标到达曲线倒推每名访客的刷新时刻，活动在 600 s 开始、1000 s 结束，并在之后 120 s 内逐渐释放离场。服务向初始化帧输出 0—1800 s 的热点观察时间轴，共 3600 个 0.5 s 步。
+
+如需使用自定义 SUMO 配置，必须同时指定配置中实际引用的行人路线；已内置的两个配置可以省略 `--ped-routes`：
+
+```powershell
+D:\Anaconda\python.exe crowdsim_overlay_server.py --config scenarios\custom\scenario.sumocfg --ped-routes scenarios\custom\pedestrians.rou.xml
+```
+
 使用本地 `pedestrian_decision_skill/config.json` 中的 DeepSeek 配置启动 LLM 决策：
 
 ```powershell
@@ -62,12 +76,15 @@ D:\Anaconda\python.exe scripts\validate_scenario.py --all --duration 30 --output
 ```powershell
 D:\Anaconda\python.exe scripts\run_experiment.py --count 20 --steps 120 --mode rule
 D:\Anaconda\python.exe scripts\run_experiment.py --count 20 --until-finished --mode rule
-D:\Anaconda\python.exe scripts\replay_experiment.py runs\<run_id>
+# 兼容旧内联日志与新拆表日志；报告写入新的回放运行目录
+D:\Anaconda\python.exe scripts\replay_experiment.py runs\<source_run_id>
 ```
 
-运行产物写入 `runs/<run_id>/`，包括 manifest、实际需求、画像、命令、消息、决策、生命周期、轨迹、指标、SUMO 日志和摘要。回放只使用已保存计划，不调用 LLM，并比较位置、速度和人口账本。
+运行产物写入 `runs/<run_id>/`，包括 manifest、实际需求、画像、命令、消息、决策、生命周期、轨迹、指标、SUMO 日志和摘要。新决策日志默认使用六个 JSONL 表无损去重，不引入数据库；格式和测试见 [决策日志拆表](docs/decision_log_format.md)。读取器兼容旧格式与新格式，按需解析计划和路线；基础回放按时间批次消费计划与轨迹，不生成新规则或 LLM 决策，并比较位置、速度和人口账本。历史日志不会自动转换或改写。基础回放不支持包含已记录外部命令的实验，也不等于完整 context 复原或所有场景均可精确复现。
 
 ## DeepSeek 行人决策 Skill
+
+背景行人 POI 重规划的可达性、合法位置、完整行程执行、重试冷却及诊断说明见 [POI 重规划补强](docs/poi_replanning.md)。功能保持开启，热点访客的锁定行程不被自主 POI 选择覆盖。
 
 `pedestrian_decision_skill` 已实现可注入 `DecisionScheduler` 的 DeepSeek 决策引擎。它读取冻结的画像、状态、周围人群和有限候选，直接生成 `BehaviorPlan`；道路、速度和等待时间均由可信后端数据补齐。非法目标、超时或错误会记录并回退到规则计划。配置缺失时 `enabled=false`，不会把规则结果统计成真实 LLM 决策。详细接口见 `pedestrian_decision_skill/INTEGRATION.md`。
 
@@ -94,14 +111,16 @@ S(t)冻结快照
 ```
 
 明确不支持运行时任意多边形硬障碍、动态硬封路、火灾/积水物理场、身体接触压力或连续二维群体队形；相关请求必须明确拒绝。
-## 陈毅广场热点人群实验
+## 上海人民英雄纪念塔热点人群实验
 
-默认实验现在使用“外滩背景流 + 陈毅广场有限聚集”需求。需求不是运行中补人，而是在启动前生成包含明确出发、到达、停留和离场阶段的 SUMO person：
+默认实验现在使用“上海人民英雄纪念塔有限聚集”需求，只包含热点访客，不再生成背景行人。需求不是运行中补人，而是在启动前生成包含明确出发、到达、活动停留和离场阶段的 SUMO person。热点访客按三段目标到达曲线倒推出发时间，并按可用长度加权随机刷新到黄浦公园西侧的五条园内人行道路上。由于刷新位置已经属于公园路网，行人不再先折返南、北公园入口，而是直接在园内选择路线前往两个纪念塔入口；进入园内道路后允许根据画像和拥堵重新选择纪念塔入口。访客随后进入地面环道，按最佳、次优和普通观赏弧段的权重选择目标位置，停留到统一活动结束时刻后在 120 s 内逐渐离场，最后经公园道路离开至园外道路：
 
 ```powershell
 D:\Anaconda\python.exe scripts\generate_hotspot_demand.py
 D:\Anaconda\python.exe scripts\run_hotspot_experiment.py
-D:\Anaconda\python.exe scripts\run_experiment.py --steps 1200
+D:\Anaconda\python.exe scripts\run_experiment.py --steps 3600
 ```
 
-热点规模和时间窗见 `config/crowd_hotspots.json`。`runs/hotspot/chen_yi_square_report.json` 记录核心人数、密度、入口低速行人、外围速度及后期消散。当前数值是涌现机制演示参数，未经过外滩实测标定。
+热点规模和时间窗见 `config/crowd_hotspots.json`。`runs/hotspot/people_heroes_monument_report.json` 记录环道人数、密度、入口低速行人、外围速度及后期消散。当前数值是涌现机制演示参数，未经过外滩实测标定。
+
+在线帧把观测区拆成 `core`（外圈两条地面环道边）、`entries`（纪念塔两个入口）、`park`（黄浦公园内部道路）、`park_entries`（公园南北入口）和 `external_approach`（园外接近道路）。内侧地面环道和更深层环道不参与访客目标、路线或核心区测量。当前访客从 `park` 区域开始，`park_entries` 仍用于网络观测和离场过程，不再作为到访必经点。`core_process_state` 描述环道自身的 `normal → building → congested → dispersing → cleared`；安全口径的 `process_state` 还会检查园内、园外未完成访客与低速积压，必要时进入 `residual_congestion`，避免环道清空后误报整体消散。`visit_lifecycle` 给出未出发、园外接近/排队、园内接近/排队、进入环道、聚集停留、离场、完成和未完成人数。其中 `stopped_count` 表示计划停留，`slow_walking_count` 才表示步行阶段的低速人数。

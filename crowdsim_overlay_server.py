@@ -4,41 +4,168 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Sequence
+import xml.etree.ElementTree as ET
 
 from crowdsim.core.simulation_runtime import SimulationRuntime
 from crowdsim.infrastructure.websocket_server import OverlayServer
+from crowdsim.scenarios.generated_hotspot_demand import HotspotDemandSpec
 from pedestrian_decision_skill import PedestrianDecisionSkill
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
+SCENARIO_DIR = PROJECT_ROOT / "scenarios" / "shanghai_bund"
+
+
+@dataclass(frozen=True)
+class ServiceScenario:
+    name: str
+    config_path: Path
+    pedestrian_route_files: tuple[Path, ...]
+    demand_mode: str = "configurable"
+    timeline_end_seconds: float | None = None
+
+
+SCENARIO_PRESETS = {
+    "research": ServiceScenario(
+        "research",
+        (SCENARIO_DIR / "bund.research.sumocfg").resolve(),
+        ((SCENARIO_DIR / "bund_ped.rou.xml").resolve(),),
+    ),
+    "hotspot": ServiceScenario(
+        "hotspot",
+        (SCENARIO_DIR / "bund.hotspot.sumocfg").resolve(),
+        ((SCENARIO_DIR / "bund_hotspot.rou.xml").resolve(),),
+        demand_mode="generated_hotspot",
+        timeline_end_seconds=1800.0,
+    ),
+}
 
 
 def default_scenario_dir() -> str:
     return str(PROJECT_ROOT / "scenarios" / "shanghai_bund")
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="SUMO-native CrowdSim backend")
-    parser.add_argument("--config", default=str(PROJECT_ROOT / "scenarios" / "shanghai_bund" / "bund.research.sumocfg"))
+    parser.add_argument(
+        "--scenario",
+        choices=tuple(SCENARIO_PRESETS),
+        default="research",
+        help="built-in scenario preset; hotspot selects the People’s Heroes Monument demand",
+    )
+    parser.add_argument(
+        "--config",
+        type=Path,
+        help="custom SUMO config; use together with --ped-routes unless it matches a built-in preset",
+    )
+    parser.add_argument(
+        "--ped-routes",
+        type=Path,
+        nargs="+",
+        help="pedestrian route files referenced by a custom --config",
+    )
     parser.add_argument("--sumo-binary")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--mode", choices=("rule", "llm"), default="rule")
     parser.add_argument("--deepseek-config", type=Path)
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-def build_runtime(args: argparse.Namespace) -> SimulationRuntime:
-    config_path = Path(args.config).resolve()
-    pedestrian_routes = [config_path.parent / "bund_ped.rou.xml"] if config_path.name.startswith("bund.") else []
+def resolve_service_scenario(args: argparse.Namespace) -> ServiceScenario:
+    preset = SCENARIO_PRESETS[args.scenario]
+
+    if args.config is None:
+        if args.ped_routes:
+            raise ValueError("--ped-routes requires --config")
+        selection = preset
+    else:
+        config_path = args.config.resolve()
+        route_files = tuple(path.resolve() for path in args.ped_routes or ())
+        matched_preset = next(
+            (item for item in SCENARIO_PRESETS.values() if config_path == item.config_path),
+            None,
+        )
+        if not route_files and matched_preset is not None:
+            route_files = matched_preset.pedestrian_route_files
+        if not route_files:
+            raise ValueError("custom --config requires at least one --ped-routes file")
+        selection = ServiceScenario(
+            matched_preset.name if matched_preset else "custom",
+            config_path,
+            route_files,
+            demand_mode=matched_preset.demand_mode if matched_preset else "configurable",
+            timeline_end_seconds=matched_preset.timeline_end_seconds if matched_preset else None,
+        )
+
+    _validate_service_scenario(selection)
+    return selection
+
+
+def _validate_service_scenario(selection: ServiceScenario) -> None:
+    if not selection.config_path.is_file():
+        raise FileNotFoundError(selection.config_path)
+    for route_file in selection.pedestrian_route_files:
+        if not route_file.is_file():
+            raise FileNotFoundError(route_file)
+
+    root = ET.parse(selection.config_path).getroot()
+    route_element = root.find("./input/route-files")
+    configured = set()
+    if route_element is not None:
+        configured = {
+            (selection.config_path.parent / value.strip()).resolve()
+            for value in route_element.get("value", "").split(",")
+            if value.strip()
+        }
+    missing = [path for path in selection.pedestrian_route_files if path not in configured]
+    if missing:
+        names = ", ".join(str(path) for path in missing)
+        raise ValueError(f"pedestrian route files are not referenced by {selection.config_path}: {names}")
+    if selection.timeline_end_seconds is not None:
+        end_element = root.find("./time/end")
+        configured_end = float(end_element.get("value", 0.0)) if end_element is not None else 0.0
+        if configured_end < selection.timeline_end_seconds:
+            raise ValueError(
+                f"scenario ends at {configured_end}s before its required "
+                f"{selection.timeline_end_seconds}s timeline"
+            )
+
+
+def build_runtime(args: argparse.Namespace, selection: ServiceScenario | None = None) -> SimulationRuntime:
+    selection = selection or resolve_service_scenario(args)
     decision_engine = PedestrianDecisionSkill(config_path=args.deepseek_config) if args.mode == "llm" else None
-    return SimulationRuntime(config_path, pedestrian_route_files=pedestrian_routes, sumo_binary=args.sumo_binary, decision_engine=decision_engine, use_llm=args.mode == "llm")
+    return SimulationRuntime(
+        selection.config_path,
+        pedestrian_route_files=selection.pedestrian_route_files,
+        sumo_binary=args.sumo_binary,
+        decision_engine=decision_engine,
+        use_llm=args.mode == "llm",
+        scenario_name=selection.name,
+        demand_mode=selection.demand_mode,
+        timeline_end_seconds=selection.timeline_end_seconds,
+        hotspot_demand_spec=HotspotDemandSpec(
+            source_path=SCENARIO_DIR / "bund_ped.rou.xml",
+            config_path=PROJECT_ROOT / "config/crowd_hotspots.json",
+        ) if selection.demand_mode == "generated_hotspot" else None,
+    )
 
 
 def main() -> None:
     args = parse_args()
-    runtime = build_runtime(args)
+    try:
+        selection = resolve_service_scenario(args)
+    except (FileNotFoundError, ValueError, ET.ParseError) as exc:
+        raise SystemExit(f"[CrowdSim] invalid scenario selection: {exc}") from exc
+    print(
+        f"[CrowdSim] scenario={selection.name} config={selection.config_path} "
+        f"pedestrian_routes={','.join(str(path) for path in selection.pedestrian_route_files)} "
+        f"demand_mode={selection.demand_mode} timeline_end={selection.timeline_end_seconds}"
+    )
+    runtime = build_runtime(args, selection)
     asyncio.run(OverlayServer(runtime, args.host, args.port).start())
 
 

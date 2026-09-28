@@ -25,25 +25,83 @@ class AgentDecisionEngine:
     def rule_plan(self, profile: AgentProfile, state: AgentState, observation: Observation, candidates: Iterable[RouteCandidate] = ()) -> BehaviorPlan:
         candidates = tuple(candidates)
         common = dict(person_id=profile.person_id, snapshot_id=observation.snapshot_id, decided_at=observation.time_seconds, source="rule")
+        hotspot_candidates = tuple(item for item in candidates if item.target_kind == "hotspot_route")
+        if hotspot_candidates:
+            return self._hotspot_route_plan(profile, state, observation, hotspot_candidates, common)
         goal_candidate = next((item for item in candidates if item.target_id == state.current_goal), None)
         visible_companions = set(state.companion_ids) & set(observation.neighbour_ids)
         rendezvous = next((item for item in candidates if item.target_id == state.rendezvous_id), None)
         if state.current_plan is None and state.group_id and state.companion_ids and not visible_companions and rendezvous is not None:
-            return BehaviorPlan(**common, proposed_action="change_goal" if rendezvous.target_kind == "activity" else "reroute", target_id=rendezvous.target_id, route_edges=rendezvous.edges, activity_duration=rendezvous.activity_duration, next_route_edges=rendezvous.next_route_edges, reason="rejoin companions at known rendezvous")
-        if state.current_plan is None and goal_candidate is not None and goal_candidate.target_kind == "activity":
-            return BehaviorPlan(**common, proposed_action="change_goal", target_id=goal_candidate.target_id, route_edges=goal_candidate.edges, activity_duration=goal_candidate.activity_duration, next_route_edges=goal_candidate.next_route_edges, reason="visit-purpose activity plan")
+            return BehaviorPlan(**common, proposed_action="change_goal" if rendezvous.target_kind == "activity" else "reroute", target_id=rendezvous.target_id, route_edges=rendezvous.edges, arrival_position=rendezvous.arrival_position, activity_duration=rendezvous.activity_duration, next_route_edges=rendezvous.next_route_edges, next_arrival_position=rendezvous.next_arrival_position, next_target_id=rendezvous.next_target_id, reason="rejoin companions at known rendezvous")
+        if not state.poi_plan_active and goal_candidate is not None and goal_candidate.target_kind == "activity":
+            return BehaviorPlan(**common, proposed_action="change_goal", target_id=goal_candidate.target_id, route_edges=goal_candidate.edges, arrival_position=goal_candidate.arrival_position, activity_duration=goal_candidate.activity_duration, next_route_edges=goal_candidate.next_route_edges, next_arrival_position=goal_candidate.next_arrival_position, next_target_id=goal_candidate.next_target_id, reason="visit-purpose activity plan")
         if state.perceived_risk >= max(0.35, profile.risk_tolerance) and candidates:
             candidate = min(candidates, key=lambda item: item.estimated_cost_seconds * (1.2 - 0.2 * profile.familiarity))
-            return BehaviorPlan(**common, proposed_action="reroute", target_id=candidate.target_id, route_edges=candidate.edges, reason="known risk exceeds tolerance")
+            return BehaviorPlan(**common, proposed_action="reroute", target_id=candidate.target_id, route_edges=candidate.edges, arrival_position=candidate.arrival_position, reason="known risk exceeds tolerance")
         if observation.perceived_crowding >= max(0.45, profile.crowding_tolerance):
             return BehaviorPlan(**common, proposed_action="slow_down", speed_limit=max(0.2, profile.free_walking_speed * profile.mobility * 0.65), reason="perceived crowding exceeds tolerance")
         if state.blocked_duration >= 5.0 and profile.patience < 0.35:
             return BehaviorPlan(**common, proposed_action="wait", wait_until=observation.time_seconds + 2.0, reason="blocked and low patience")
         return BehaviorPlan(**common, proposed_action="continue", reason="current plan remains acceptable")
 
+    @staticmethod
+    def _hotspot_route_plan(profile, state, observation, candidates, common) -> BehaviorPlan:
+        candidates = tuple(sorted(candidates, key=lambda item: (item.estimated_cost_seconds, item.entry_edge or "")))
+        best = candidates[0]
+
+        def reroute(candidate, reason):
+            return BehaviorPlan(
+                **common,
+                proposed_action="reroute",
+                target_id=candidate.target_id,
+                route_edges=candidate.edges,
+                arrival_position=candidate.arrival_position,
+                selected_entry_edge=candidate.entry_edge,
+                preserve_future_stages=True,
+                reason=reason,
+            )
+
+        current = next((item for item in candidates if item.entry_edge == state.hotspot_entry_edge), None)
+        if state.hotspot_entry_edge is None:
+            return reroute(best, "select shortest expected-time hotspot entrance")
+
+        last_change = state.hotspot_last_route_change_time
+        cooldown = best.switch_cooldown_seconds
+        if last_change is not None and observation.time_seconds - last_change < cooldown:
+            return BehaviorPlan(**common, proposed_action="continue", reason="hotspot route switch cooldown")
+        if current is None:
+            return reroute(best, "current hotspot entrance is no longer reachable")
+        if best.entry_edge == current.entry_edge:
+            return BehaviorPlan(**common, proposed_action="continue", reason="current hotspot entrance remains fastest")
+
+        savings = current.estimated_cost_seconds - best.estimated_cost_seconds
+        diversion = (
+            0.25 * profile.familiarity
+            + 0.25 * (1.0 - profile.crowding_tolerance)
+            + 0.15 * profile.mobility
+            + 0.10 * profile.endurance
+            + 0.10 * (1.0 - profile.following_tendency)
+            + 0.15 * (1.0 - profile.group_cohesion)
+        )
+        queue_preference = (
+            0.40 * profile.patience
+            + 0.30 * profile.crowding_tolerance
+            + 0.15 * profile.following_tendency
+            + 0.15 * profile.group_cohesion
+        )
+        threshold = current.minimum_savings_seconds * (1.25 - 0.5 * diversion)
+        if current.congestion_delay_seconds > 0 and savings >= threshold and diversion > queue_preference:
+            return reroute(best, f"profile accepts detour saving {savings:.1f}s")
+        return BehaviorPlan(**common, proposed_action="continue", reason="profile prefers current entrance queue")
+
     async def decide(self, profile: AgentProfile, state: AgentState, observation: Observation, candidates: Iterable[RouteCandidate] = ()) -> BehaviorPlan:
         candidates = tuple(candidates)
         fallback = self.rule_plan(profile, state, observation, candidates)
+        if any(item.target_kind == "hotspot_route" for item in candidates):
+            # Hotspot alternatives are constrained by deterministic network and
+            # profile rules; an LLM must not invent an unvalidated entrance.
+            self.fallback_decisions += 1
+            return fallback
         if not self.enabled:
             self.fallback_decisions += 1
             return fallback
@@ -88,7 +146,7 @@ class AgentDecisionEngine:
             wait_until = observation.time_seconds + max(0.5, min(30.0, float(result.get("wait_seconds", 2.0))))
         activity_duration = candidate.activity_duration if action == "change_goal" else None
         next_route_edges = candidate.next_route_edges if action == "change_goal" else ()
-        return BehaviorPlan(profile.person_id, observation.snapshot_id, action, target_id=target_id, route_edges=route_edges, speed_limit=speed_limit, wait_until=wait_until, activity_duration=activity_duration, next_route_edges=next_route_edges, reason=str(result.get("reason", "model decision"))[:240], source="llm", decided_at=observation.time_seconds)
+        return BehaviorPlan(profile.person_id, observation.snapshot_id, action, target_id=target_id, route_edges=route_edges, speed_limit=speed_limit, wait_until=wait_until, activity_duration=activity_duration, next_route_edges=next_route_edges, arrival_position=candidate.arrival_position if route_edges else None, next_arrival_position=candidate.next_arrival_position if action == "change_goal" else None, next_target_id=candidate.next_target_id if action == "change_goal" else None, reason=str(result.get("reason", "model decision"))[:240], source="llm", decided_at=observation.time_seconds)
 
     def diagnostics(self) -> dict[str, Any]:
         return {"enabled": self.enabled, "model": self.model, "llm_decisions": self.llm_decisions, "fallback_decisions": self.fallback_decisions, "last_error": self.last_error}
