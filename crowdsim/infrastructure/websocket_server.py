@@ -12,16 +12,29 @@ from typing import Any, Dict, Optional
 import websockets
 
 from crowdsim.core.simulation_runtime import RuntimeState
+from crowdsim.domain.requirement_spec import RequirementSpec, RequirementValidationError
+from crowdsim.infrastructure.requirement_repository import (
+    RequirementNotFoundError,
+    RequirementRepository,
+)
 
 
 class OverlayServer:
-    def __init__(self, simulator: Any, host: str, port: int) -> None:
+    def __init__(
+        self,
+        simulator: Any,
+        host: str,
+        port: int,
+        *,
+        requirement_repository: RequirementRepository | None = None,
+    ) -> None:
         self.simulator = simulator
         self.host = host
         self.port = port
         self.client: Any = None
         self.task: Optional[asyncio.Task] = None
         self.processed_request_ids: set[str] = set()
+        self.requirements = requirement_repository or RequirementRepository()
 
     async def start(self) -> None:
         server = await websockets.serve(self._handler, self.host, self.port)
@@ -106,7 +119,48 @@ class OverlayServer:
                 raise
 
     async def _configure(self, data, request_id) -> None:
+        requirement_record = None
+        requirement_id = data.get("requirement_id")
+        if requirement_id is not None:
+            try:
+                requirement_record = self.requirements.load(requirement_id)
+            except RequirementNotFoundError as exc:
+                raise CommandError("unknown_requirement", str(exc)) from exc
+            except (OSError, ValueError) as exc:
+                raise CommandError("invalid_requirement_record", str(exc)) from exc
+            location_status = requirement_record.get("capabilities", {}).get("location")
+            if location_status != "supported":
+                location_id = requirement_record["requirement"]["spatial_scope"]["location_id"]
+                raise CommandError(
+                    "unsupported_requirement_location",
+                    f"location {location_id} is stored but cannot initialize the current SUMO scenario",
+                )
+            if not self.simulator.supports_requirement(requirement_record):
+                raise CommandError(
+                    "unsupported_runtime_scenario",
+                    "this requirement needs the hotspot backend preset; start the server with --scenario hotspot",
+                )
+            current_requirement_id = getattr(self.simulator, "requirement_id", None)
+            if (
+                current_requirement_id
+                and current_requirement_id != requirement_id
+                and self.simulator.state not in {RuntimeState.CREATED, RuntimeState.CLOSED, RuntimeState.ERROR}
+            ):
+                raise CommandError(
+                    "requirement_requires_reset",
+                    "changing requirement requires a closed runtime or explicit reset",
+                )
+            self.simulator.configure_requirement(requirement_record)
+
         count = data.get("count")
+        if requirement_record is not None:
+            requirement_count = int(requirement_record["requirement"]["population"]["total"])
+            if count is not None and count != requirement_count:
+                raise CommandError(
+                    "requirement_count_mismatch",
+                    "count must match requirement.population.total",
+                )
+            count = requirement_count
         if count is not None and (type(count) is not int or count < 0):
             raise CommandError("invalid_count", "count must be a non-negative integer")
         if (self.simulator.state in {RuntimeState.RUNNING, RuntimeState.PAUSED}
@@ -137,6 +191,25 @@ class OverlayServer:
         self.simulator.set_playback(speed_factor=data.get("speedFactor"), push_fps=data.get("pushFps"))
         await self._send_init(request_id)
 
+    async def _submit_requirement(self, data, request_id) -> None:
+        try:
+            spec = RequirementSpec.parse(data.get("requirement"))
+            record = self.requirements.create(spec)
+        except RequirementValidationError as exc:
+            raise CommandError("invalid_requirement", str(exc)) from exc
+        except OSError as exc:
+            raise CommandError("requirement_storage_failed", str(exc)) from exc
+        await self._send({
+            "type": "requirement_accepted",
+            "request_id": request_id,
+            "requirement_id": record["requirement_id"],
+            "schema_version": record["schema_version"],
+            "fingerprint": record["fingerprint"],
+            "status": record["status"],
+            "capabilities": record["capabilities"],
+            "warnings": record["capabilities"].get("warnings", []),
+        })
+
     async def _handle_message(self, raw: str) -> None:
         try:
             data = json.loads(raw)
@@ -157,7 +230,9 @@ class OverlayServer:
             await self._send(self._error("duplicate_request", "request_id was already processed", request_id))
             return
         try:
-            if action == "configure":
+            if action == "submit_requirement":
+                await self._submit_requirement(data, request_id)
+            elif action == "configure":
                 await self._configure(data, request_id)
             elif action == "set_speed":
                 self.simulator.set_playback(speed_factor=data.get("speedFactor"))

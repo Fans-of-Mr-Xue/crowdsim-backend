@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from enum import Enum
+import json
 from pathlib import Path
 from typing import Any, Iterable, Optional
 import uuid
@@ -17,6 +18,7 @@ from crowdsim.decision.route_provider import RouteProvider
 from crowdsim.domain.crowdsim_models import AgentProfile, GroupRecord
 from crowdsim.domain.crowd_visual_state import CrowdVisualPolicy, STATE_COLORS
 from crowdsim.domain.group_manager import GroupManager
+from crowdsim.domain.requirement_spec import requirement_runtime_summary
 from crowdsim.environment.activity_planner import ActivityPlanner
 from crowdsim.environment.crowd_environment import CrowdEnvironment
 from crowdsim.environment.event_catalog import event_defaults
@@ -68,6 +70,7 @@ class SimulationRuntime:
         demand_mode: str = "configurable",
         timeline_end_seconds: float | None = None,
         hotspot_demand_spec: HotspotDemandSpec | None = None,
+        requirement_record: dict | None = None,
     ) -> None:
         if demand_mode not in {"configurable", "fixed", "generated_hotspot"}:
             raise ValueError("unknown demand_mode")
@@ -140,6 +143,10 @@ class SimulationRuntime:
         self.hotspot_route_choice: HotspotRouteChoice | None = None
         self.decision_candidates = {}
         self.commands = RuntimeCommandQueue()
+        self.requirement_record: dict | None = None
+        self.requirement_id: str | None = None
+        if requirement_record is not None:
+            self.configure_requirement(requirement_record)
 
     @property
     def time_seconds(self) -> float:
@@ -170,6 +177,11 @@ class SimulationRuntime:
             self.step_length = self._config_float("time", "step-length", 0.5)
             run_directory = PROJECT_ROOT / "runs" / self.run_id
             run_directory.mkdir(parents=True, exist_ok=True)
+            if self.requirement_record is not None:
+                (run_directory / "requirement.json").write_text(
+                    json.dumps(self.requirement_record, ensure_ascii=False, indent=2) + "\n",
+                    encoding="utf-8",
+                )
             self.performance.attach(run_directory)
             if "--log" not in self.adapter.extra_args:
                 self.adapter.extra_args.extend(["--log", str(run_directory / "sumo.log")])
@@ -235,6 +247,7 @@ class SimulationRuntime:
                 crowd_visual_state=self.visual_policy.metadata(),
                 demand=self.demand_diagnostics(),
                 demand_generation=self.demand_generation_report,
+                requirement=self.requirement_diagnostics(),
                 performance_measurement={'enabled': self.performance.enabled, 'interval_wall_seconds': self.performance.interval, 'version': 1},
                 pedestrian_route_files=[str(path) for path in self.population.route_files],
             )
@@ -674,6 +687,23 @@ class SimulationRuntime:
             self.demand_mode == "configurable" and self.population.count_configurable
         )
 
+    def configure_requirement(self, record: dict) -> None:
+        requirement = record.get("requirement") if isinstance(record, dict) else None
+        if not isinstance(requirement, dict):
+            raise ValueError("invalid requirement record")
+        distributions = requirement.get("population", {}).get("distributions")
+        if not isinstance(distributions, dict):
+            raise ValueError("requirement population distributions are missing")
+        self.requirement_record = json.loads(json.dumps(record, ensure_ascii=False))
+        self.requirement_id = str(record.get("requirement_id") or "") or None
+        self.population.profile_sampler.configure_distributions(distributions)
+
+    def supports_requirement(self, record: dict) -> bool:
+        location_id = record.get("requirement", {}).get("spatial_scope", {}).get("location_id")
+        if location_id == "memorial-tower":
+            return self.demand_mode == "generated_hotspot"
+        return False
+
     def configure_demand(self, count) -> bool:
         if not isinstance(count, int) or isinstance(count, bool) or count < 0:
             raise ValueError("count must be a non-negative integer")
@@ -701,6 +731,7 @@ class SimulationRuntime:
         demand_mode = self.demand_mode
         timeline_end_seconds = self.timeline_end_seconds
         hotspot_demand_spec = self.hotspot_demand_spec
+        requirement_record = self.requirement_record
         self.close()
         self.__init__(
             config_path,
@@ -713,6 +744,7 @@ class SimulationRuntime:
             demand_mode=demand_mode,
             timeline_end_seconds=timeline_end_seconds,
             hotspot_demand_spec=hotspot_demand_spec,
+            requirement_record=requirement_record,
         )
         if count is not None:
             self.configure_demand(count)
@@ -885,6 +917,7 @@ class SimulationRuntime:
             "population": self.population.diagnostics(),
             "scenario": self.scenario_diagnostics(),
             "demand": self.demand_diagnostics(),
+            "requirement": self.requirement_diagnostics(),
             "routing": self.routing_diagnostics,
         }
 
@@ -919,6 +952,9 @@ class SimulationRuntime:
             "count_configurable": self.demand_count_configurable,
             "requested_count_ignored": self.ignored_demand_count,
         }
+
+    def requirement_diagnostics(self) -> dict | None:
+        return requirement_runtime_summary(self.requirement_record)
 
     def __enter__(self) -> "SimulationRuntime":
         self.initialize()

@@ -49,7 +49,11 @@ D:\Anaconda\python.exe crowdsim_overlay_server.py --host 127.0.0.1 --port 8765
 D:\Anaconda\python.exe crowdsim_overlay_server.py --scenario hotspot --host 127.0.0.1 --port 8765
 ```
 
-热点预设使用固定需求，前端 `configure.count` 不会裁剪其中 700 名热点访客；该场景不包含背景行人。后台按 240—660 s 的三段目标到达曲线倒推每名访客的刷新时刻，活动在 600 s 开始、1000 s 结束，并在之后 120 s 内逐渐释放离场。服务向初始化帧输出 0—1800 s 的热点观察时间轴，共 3600 个 0.5 s 步。
+热点预设默认生成 700 名访客，也支持通过 `configure.count` 在 0—10000 人范围内重建需求，
+或使用已保存需求的 `population.total`（1—10000 人）；该场景不包含背景行人。需求界定详情、
+`requirement_id` 及运行快照见 `docs/websocket_protocol.md`。后台按 240—660 s 的三段目标到达曲线
+倒推每名访客的刷新时刻，活动在 600 s 开始、1000 s 结束，并在之后 120 s 内逐渐释放离场。
+服务向初始化帧输出 0—1800 s 的热点观察时间轴，共 3600 个 0.5 s 步。
 
 如需使用自定义 SUMO 配置，必须同时指定配置中实际引用的行人路线；已内置的两个配置可以省略 `--ped-routes`：
 

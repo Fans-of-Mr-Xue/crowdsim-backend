@@ -173,6 +173,7 @@ class PopulationManager:
                 if index >= len(people):
                     person.set("id", f"{person.get('id')}__rep{index // len(people)}")
                 selected.append(person)
+        self.profile_sampler.prepare_population(person.get("id") for person in selected)
         for person in people:
             root.remove(person)
         existing_types = {element.get("id") for element in root.findall("vType")}

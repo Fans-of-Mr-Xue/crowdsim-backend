@@ -15,6 +15,29 @@
 | `event_decision` / `set_policy` / `apply_policy` | 提交引导或建议干预 |
 | `set_group` | 登记真实 `member_ids`、可选 `leader_id` 与已配置的 `rendezvous_id` |
 
+## 需求界定提交
+
+需求界定页面通过同一 WebSocket 发送 `submit_requirement`。该操作只校验并以不可变 JSON
+保存需求，不初始化 SUMO：
+
+```json
+{"action":"submit_requirement","request_id":"submit-...","requirement":{"schema_version":1}}
+```
+
+成功响应为 `requirement_accepted`，包含后端生成的 `requirement_id`、SHA-256 指纹、能力状态和
+警告。前端后续在 `configure` 中发送该 ID：
+
+```json
+{"action":"configure","request_id":"configure-...","requirement_id":"req-..."}
+```
+
+后端读取 `runs/requirements/<requirement_id>.json`，以其中的总人数和画像分布初始化运行，并把
+不可变快照复制到 `runs/<run_id>/requirement.json`。初始化成功后，`init.requirement` 返回需求的
+`project`、`spatial_scope`、`population`、`scenario` 和 `observation` 信息；前端应以该响应和
+`init.demand.planned` 作为运行界面的权威数据。当前只有 `memorial-tower` 对应的热点场景可
+初始化，服务必须用 `--scenario hotspot` 启动；其他地点可以保存，但 configure 会明确拒绝而不是
+静默回退到错误场景。
+
 ## 查询命令
 
 - `get_status`：返回状态机、需求账本、引擎版本和能力状态，不推进仿真。

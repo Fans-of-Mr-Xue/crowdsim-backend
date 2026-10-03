@@ -47,6 +47,10 @@ class AgentProfile:
     nationality: str = "unspecified"
     native_language: str = "unspecified"
     visit_purpose: str = "pass_through"
+    crowd_role: str = "unspecified"
+    age_band: str = "unspecified"
+    gender: str = "unspecified"
+    origin: str = "unspecified"
 
 
 @dataclass(frozen=True)
