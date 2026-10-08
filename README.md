@@ -10,6 +10,7 @@ crowdsim/
 ├─ core/            仿真生命周期、人口账本、状态更新、命令队列
 ├─ environment/     局部感知、事件、信息、危险、干预、POI
 ├─ decision/        规则/LLM接口、调度、路线候选、计划执行
+├─ experiments/     C0—C5控制器、配对实验、统计报告和独立HTTP/SSE服务
 └─ infrastructure/  SUMO/路网适配、WebSocket、帧、指标、实验记录
 
 arde_emergency/     ARDE 状态、双层决策、奖励、动作映射与兼容接口
@@ -35,9 +36,8 @@ D:\Anaconda\python.exe -m pip install -e .
 D:\sumo-1.24.0\bin\sumo.exe --version
 ```
 
-`pip install -e .` 将仓库内的 `arde_emergency` 安装为可导入包。MACE 可以直接
-`from arde_emergency import ArdeController`；若 MACE 与本仓库相邻，也会通过
-适配器自动发现。分开部署时，将 `ARDE_BACKEND_PATH` 设置为本仓库根目录。
+`pip install -e .` 会安装仓库内的 `crowdsim` 与 `arde_emergency`。C0—C5 对比实验、
+ARDE 算法和 SUMO 仿真全部由本仓库提供，运行时不依赖 MACE。
 
 `traci`、`sumolib` 和 SUMO 二进制必须使用相同版本。仅安装 Python 包不包含完整 SUMO 仿真程序。
 
@@ -49,6 +49,28 @@ D:\Anaconda\python.exe crowdsim_overlay_server.py --host 127.0.0.1 --port 8765
 ```
 
 默认地址为 `ws://127.0.0.1:8765`。协议见 `docs/websocket_protocol.md`。
+
+另开一个终端启动 C0—C5 对比实验服务：
+
+```powershell
+D:\Anaconda\python.exe -m crowdsim.experiments --host 127.0.0.1 --port 8766 --gateway-url ws://127.0.0.1:8765
+```
+
+前端控制接口为 `http://127.0.0.1:8766/crowdSim/control`，运行事件使用同一服务的 SSE。
+实验配置、逐次运行、观测、决策、动作回执和报告默认保存到
+`runs/control_experiments/`，不需要 MongoDB。控制方法包括：
+
+- C0：无调控观测基线；
+- C1：固定阈值规则；
+- C2：大模型单次决策；
+- C3：大模型周期决策；
+- C4：大模型事件触发决策；
+- C5：ARDE 动态双层调控。
+
+C2—C4 使用 OpenAI 兼容接口。正式运行前设置 `CROWDSIM_LLM_BASE_URL`、
+`CROWDSIM_LLM_API_KEY` 和 `CROWDSIM_LLM_MODEL`。未提供密钥或模型调用失败时，
+控制器会明确记录 `fallback` 并使用 C1 规则结果，报告不会把回退结果描述成真实大模型基线。
+模型密钥只能由后端环境变量提供；实验接口拒绝接收或持久化 API Key、令牌与密码。
 
 默认启动普通外滩研究场景。启动“上海人民英雄纪念塔有限聚集”热点场景时，使用场景预设，让 SUMO 配置与行人路线保持成对选择；该热点预设目前只包含热点访客，不包含背景行人：
 
