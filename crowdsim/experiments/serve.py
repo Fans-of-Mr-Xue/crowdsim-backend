@@ -146,6 +146,11 @@ class ControlRequestHandler(BaseHTTPRequestHandler):
         user_id, workspace_id = self._context()
         try:
             data = self._json_body()
+            if path == f"{CONTROL_PREFIX}/requirements":
+                requirement = data.get("requirement") if "requirement" in data else data
+                if not isinstance(requirement, dict):
+                    raise ValueError("requirement must be a JSON object")
+                return self._send_json(201, self.bundle.submit_requirement(requirement))
             if path == f"{CONTROL_PREFIX}/experiments":
                 return self._send_json(201, self.bundle.orchestrator.create_experiment(user_id, workspace_id, data))
             match = re.fullmatch(rf"{CONTROL_PREFIX}/experiments/([^/]+)/start", path)

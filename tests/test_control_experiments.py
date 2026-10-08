@@ -228,6 +228,33 @@ def test_gateway_correlates_decoded_websocket_ack():
     assert result["request_id"] == "req-test"
 
 
+def test_control_service_relays_requirement_through_owned_gateway(tmp_path):
+    bundle = ControlServiceBundle(data_dir=str(tmp_path))
+
+    class Gateway:
+        def submit(self, payload):
+            self.payload = payload
+            return "req-requirement"
+
+        def wait_for_ack(self, request_id, timeout):
+            assert request_id == "req-requirement"
+            assert timeout == 20.0
+            return {
+                "type": "requirement_accepted",
+                "request_id": request_id,
+                "requirement_id": "req-accepted",
+            }
+
+    gateway = Gateway()
+    bundle.gateway = gateway
+    result = bundle.submit_requirement({"schema_version": 1})
+    assert result["requirement_id"] == "req-accepted"
+    assert gateway.payload == {
+        "action": "submit_requirement",
+        "requirement": {"schema_version": 1},
+    }
+
+
 def test_gateway_submit_from_listener_thread_queues_send_without_blocking():
     class Loop:
         def __init__(self):

@@ -25,3 +25,24 @@ class ControlServiceBundle:
         self.orchestrator = ExperimentOrchestrator(self.repository, self.gateway, self.registry, event_bus=self.events)
         self.reports = ReportService(self.repository)
         self.routing = RoutingService(self.gateway, llm_client=llm_client)
+
+    def submit_requirement(self, requirement: dict, *, timeout: float = 20.0) -> dict:
+        """Submit a requirement through the gateway's single CrowdSim connection."""
+        try:
+            request_id = self.gateway.submit({
+                "action": "submit_requirement",
+                "requirement": requirement,
+            })
+        except RuntimeError as exc:
+            raise RuntimeError("CROWDSIM_UNAVAILABLE") from exc
+        result = self.gateway.wait_for_ack(request_id, timeout=timeout)
+        if result is None:
+            self.gateway.forget_request(request_id)
+            raise TimeoutError("CROWDSIM_REQUIREMENT_TIMEOUT")
+        if result.get("type") == "error":
+            code = str(result.get("code") or "INVALID_REQUIREMENT")
+            message = str(result.get("message") or "requirement submission failed")
+            raise ValueError(f"{code}: {message}")
+        if result.get("type") != "requirement_accepted":
+            raise RuntimeError("CROWDSIM_REQUIREMENT_INVALID_RESPONSE")
+        return result
