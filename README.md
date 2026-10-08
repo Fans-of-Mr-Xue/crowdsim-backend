@@ -48,13 +48,15 @@ $env:SUMO_HOME='D:\sumo-1.24.0'
 D:\Anaconda\python.exe crowdsim_overlay_server.py --host 127.0.0.1 --port 8765
 ```
 
-默认地址为 `ws://127.0.0.1:8765`。协议见 `docs/websocket_protocol.md`。
+默认 WebSocket 地址为 `ws://127.0.0.1:8765`，事后阶段任务 HTTP API 同时挂在 `http://127.0.0.1:8765/api/v1/post`；只需启动这一个 8765 进程。WebSocket 协议见 `docs/websocket_protocol.md`，事后请求与响应契约见 [事后任务 API 规范](postanalysis_api/README.md)。启动前须安装更新后的 `requirements.txt`（新增 `aiohttp`，用于同一端口处理 HTTP 与 WebSocket）。
 
-另开一个终端启动 C0—C5 对比实验服务：
+如需运行原有、独立的 C0—C5 控制实验，可另开终端启动其 8766 服务；**事后反事实工作台和新任务 API 不依赖它**：
 
 ```powershell
 D:\Anaconda\python.exe -m crowdsim.experiments --host 127.0.0.1 --port 8766 --gateway-url ws://127.0.0.1:8765
 ```
+
+新事后 API 位于 8765 的 `/api/v1/post/*`，原有 8766 `/crowdSim/control/*` 行为不变。当前批量 SUMO 执行器和场景区域映射尚未接入，创建草稿可用，启动真实批次会明确返回 `503 CAPABILITY_UNAVAILABLE`。
 
 前端控制接口为 `http://127.0.0.1:8766/crowdSim/control`，运行事件使用同一服务的 SSE。
 实验配置、逐次运行、观测、决策、动作回执和报告默认保存到

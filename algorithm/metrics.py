@@ -241,35 +241,40 @@ def mean_movement_speed(samples: Sequence[Mapping]) -> float | None:
     return numerator / denominator if denominator else None
 
 
-def max_contact_pressure(samples: Sequence[Sequence[Mapping]], stiffness: float) -> float | None:
-    """二维圆盘模型身体接触力之和除以周长，单位 N/m。"""
-    k = _number(stiffness, "stiffness")
-    if k < 0:
-        raise ValueError("stiffness must be nonnegative")
-    if not samples:
-        return None
-    peak = 0.0
-    for people in samples:
-        for i, person in enumerate(people):
-            radius = _number(person["radius"], "radius")
-            if radius <= 0:
-                raise ValueError("radius must be positive")
-            x, y = [_number(v, "position") for v in person["position"]]
-            force = 0.0
-            for j, other in enumerate(people):
-                if i == j:
-                    continue
-                ox, oy = [_number(v, "position") for v in other["position"]]
-                overlap = radius + _number(other["radius"], "radius") - math.hypot(x - ox, y - oy)
-                force += k * max(0.0, overlap)
-            for distance in person.get("wall_distances", ()):
-                force += k * max(0.0, radius - _number(distance, "wall_distance"))
-            peak = max(peak, force / (2 * math.pi * radius))
-    return peak
+# def max_contact_pressure(samples: Sequence[Sequence[Mapping]], stiffness: float) -> float | None:
+#     """二维圆盘模型身体接触力之和除以周长，单位 N/m。"""
+#     k = _number(stiffness, "stiffness")
+#     if k < 0:
+#         raise ValueError("stiffness must be nonnegative")
+#     if not samples:
+#         return None
+#     peak = 0.0
+#     for people in samples:
+#         for i, person in enumerate(people):
+#             radius = _number(person["radius"], "radius")
+#             if radius <= 0:
+#                 raise ValueError("radius must be positive")
+#             x, y = [_number(v, "position") for v in person["position"]]
+#             force = 0.0
+#             for j, other in enumerate(people):
+#                 if i == j:
+#                     continue
+#                 ox, oy = [_number(v, "position") for v in other["position"]]
+#                 overlap = radius + _number(other["radius"], "radius") - math.hypot(x - ox, y - oy)
+#                 force += k * max(0.0, overlap)
+#             for distance in person.get("wall_distances", ()):
+#                 force += k * max(0.0, radius - _number(distance, "wall_distance"))
+#             peak = max(peak, force / (2 * math.pi * radius))
+#     return peak
 
 
 def kernel_crowd_pressure(people: Sequence[Mapping], point: tuple[float, float], radius: float) -> dict:
-    """核密度乘加权速度方差，与机械接触压力分开记录。"""
+    """
+    核密度乘加权速度方差，与机械接触压力分开记录。
+    阈值待确认，单位人/m²·(m/s)²。速度方差为 None 时返回 None。
+    目前使用高斯核，带宽为 radius；可改为 Epanechnikov 核。
+    目前阈值划分采用规则模型页面同款，CrowdSim/postanalysis/postchat/PostArtificialSociety.vue line 107
+    """
     kernel_radius = _number(radius, "radius")
     if kernel_radius <= 0:
         raise ValueError("kernel radius must be positive")

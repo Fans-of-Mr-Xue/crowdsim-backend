@@ -1,4 +1,5 @@
 websockets>=10.0
+aiohttp>=3.9,<4.0
 httpx>=0.27,<1.0
 traci==1.24.0
 sumolib==1.24.0

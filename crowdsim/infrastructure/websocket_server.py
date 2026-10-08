@@ -6,10 +6,16 @@ import asyncio
 from contextlib import nullcontext
 from dataclasses import asdict
 import json
+import os
+from pathlib import Path
 import time
 from typing import Any, Dict, Optional
 
+from aiohttp import WSMsgType, web
 import websockets
+
+from postanalysis_api.main import handle_http
+from postanalysis_api.services.application import PostAnalysisApp
 
 from crowdsim.core.simulation_runtime import RuntimeState
 from crowdsim.domain.requirement_spec import RequirementSpec, RequirementValidationError
@@ -35,23 +41,52 @@ class OverlayServer:
         self.task: Optional[asyncio.Task] = None
         self.processed_request_ids: set[str] = set()
         self.requirements = requirement_repository or RequirementRepository()
+        self.post_app: PostAnalysisApp | None = None
 
     async def start(self) -> None:
-        server = await websockets.serve(self._handler, self.host, self.port)
-        print(f"[CrowdSim] WebSocket listening at ws://{self.host}:{self.port}")
-        await server.wait_closed()
+        data_dir = os.environ.get("CROWDSIM_POST_DATA_DIR") or Path(__file__).resolve().parents[2] / "runs" / "postanalysis"
+        self.post_app = PostAnalysisApp(data_dir)
+        app = web.Application()
+        app.router.add_get("/", self._aio_websocket_handler)
+        app.router.add_route("*", "/api/v1/post", self._post_http_handler)
+        app.router.add_route("*", "/api/v1/post/{tail:.*}", self._post_http_handler)
+        runner = web.AppRunner(app)
+        await runner.setup()
+        try:
+            site = web.TCPSite(runner, self.host, self.port)
+            await site.start()
+            print(f"[CrowdSim] WebSocket and post API listening at {self.host}:{self.port}")
+            await asyncio.Future()
+        finally:
+            await runner.cleanup()
+
+    async def _post_http_handler(self, request: web.Request) -> web.Response:
+        if self.post_app is None:
+            raise web.HTTPServiceUnavailable(text="post analysis API is not initialized")
+        return await handle_http(request, self.post_app)
+
+    async def _aio_websocket_handler(self, request: web.Request) -> web.WebSocketResponse:
+        websocket = web.WebSocketResponse()
+        await websocket.prepare(request)
+        await self._handler(websocket)
+        return websocket
 
     async def _handler(self, websocket: Any) -> None:
         if self.client is not None:
-            await websocket.send(json.dumps(self._error("single_client_only", "Only one client is supported.")))
+            await self._send_text(websocket, json.dumps(self._error("single_client_only", "Only one client is supported.")))
             await websocket.close()
             return
         self.client = websocket
         self.processed_request_ids.clear()
         try:
             async for message in websocket:
-                await self._handle_message(message)
-        except websockets.ConnectionClosed:
+                if isinstance(message, str):
+                    await self._handle_message(message)
+                elif message.type == WSMsgType.TEXT:
+                    await self._handle_message(message.data)
+                elif message.type == WSMsgType.ERROR:
+                    break
+        except (websockets.ConnectionClosed, ConnectionResetError):
             pass
         finally:
             try:
@@ -242,6 +277,8 @@ class OverlayServer:
                 self.simulator.set_playback(speed_factor=data.get("speedFactor"))
                 await self._send({"type": "speed", "request_id": request_id, "speedFactor": self.simulator.sim_speed_factor, "step_length": self.simulator.step_length, "real_step_interval": self.simulator.real_step_interval})
             elif action == "start":
+                if data.get("mode") == "counterfactual_batch":
+                    raise CommandError("batch_adapter_unavailable", "事后批量实验需通过 /api/v1/post/experiments 提交；当前执行器尚未接入")
                 if self.simulator.state == RuntimeState.CREATED:
                     await self._prepare(request_id, None)
                 self.simulator.start()
@@ -354,6 +391,11 @@ class OverlayServer:
     def _error(code: str, message: str, request_id: Any = None) -> Dict[str, Any]:
         return {"type": "error", "code": code, "message": message, "request_id": request_id}
 
+    @staticmethod
+    async def _send_text(websocket: Any, value: str) -> None:
+        sender = getattr(websocket, "send_str", None) or websocket.send
+        await sender(value)
+
     async def _send(self, payload: Dict[str, Any]) -> None:
         if self.client is not None:
             probe = self.simulator.performance
@@ -364,9 +406,9 @@ class OverlayServer:
                 # bytes here, BEFORE WebSocket compression/framing.
                 probe.sample('update_payload_bytes', len(encoded), 'bytes')
                 with probe.measure('websocket_send'):
-                    await self.client.send(encoded)
+                    await self._send_text(self.client, encoded)
             else:
-                await self.client.send(json.dumps(payload, default=str))
+                await self._send_text(self.client, json.dumps(payload, default=str))
 
 
 class CommandError(RuntimeError):
