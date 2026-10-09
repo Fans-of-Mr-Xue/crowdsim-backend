@@ -15,6 +15,8 @@ crowdsim/
 
 arde_emergency/     ARDE 状态、双层决策、奖励、动作映射与兼容接口
 
+data_service/       独立 MongoDB 与知识库数据接口；connectors/、crawlers/ 预留气象连接器及采集任务
+
 config/             参数、属性注册表和POI
 scenarios/          正式外滩SUMO场景
 scripts/            运行、回放和验收工具
@@ -42,6 +44,25 @@ ARDE 算法和 SUMO 仿真全部由本仓库提供，运行时不依赖 MACE。
 `traci`、`sumolib` 和 SUMO 二进制必须使用相同版本。仅安装 Python 包不包含完整 SUMO 仿真程序。
 
 ## 启动
+
+共享 MongoDB 数据集接口、前端连接和独立数据库服务启动见[数据库接入说明](docs/database_api.md)。数据服务使用独立 8768 进程：
+
+```sh
+python -m pip install -r requirements.txt
+python -m data_service --port 8768
+```
+
+本机开发时，前后端交互与数据库连接使用不同端口：
+
+```text
+前端（通过开发代理调用 HTTP 接口）
+  → 本机 127.0.0.1:8768：Python 数据服务
+  → 本机 127.0.0.1:27018：SSH 隧道入口
+  → 服务器 127.0.0.1:27018：MongoDB
+```
+
+`8768` 是数据服务的 HTTP 监听端口；后端通过本机 `27018` 连接数据库，SSH 隧道再将连接转发到服务器的 `27018`。启动数据服务时须保持SSH端口映射隧道运行。
+SUMO 的 8765 进程不加载数据服务；爬虫也应单独执行。
 
 ```powershell
 $env:SUMO_HOME='D:\sumo-1.24.0'
