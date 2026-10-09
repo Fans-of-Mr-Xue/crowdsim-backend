@@ -1,1 +1,1 @@
-"""Reserved for weather source clients and normalization adapters."""
+"""External service clients, including LLM and future weather connectors."""

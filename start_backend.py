@@ -137,7 +137,7 @@ def tunnel_settings(kind):
 
 
 def ensure_tunnels(supervisor, *, enabled=True):
-    from data_service.repository import DatasetRepository
+    from data_service.repositories.datasets import DatasetRepository
     repository = DatasetRepository()
     try:
         database_probe = lambda: repository.status()["connected"]

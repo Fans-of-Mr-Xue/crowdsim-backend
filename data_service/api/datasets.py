@@ -6,7 +6,7 @@ import json
 from aiohttp import web
 from pymongo.errors import PyMongoError
 
-from .repository import DatasetConflictError, DatasetRepository
+from ..repositories.datasets import DatasetConflictError, DatasetRepository
 
 
 def reject_nonfinite(value):
@@ -78,10 +78,4 @@ def register_database_routes(app, repository=None):
         app.router.add_get(prefix + "/datasets/{identifier}", handle)
         app.router.add_put(prefix + "/datasets/{identifier}", handle)
     return repository
-
-
-def create_app(repository=None):
-    app = web.Application(client_max_size=8 * 1024 * 1024)
-    register_database_routes(app, repository)
-    return app
 
