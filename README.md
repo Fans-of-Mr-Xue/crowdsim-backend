@@ -45,6 +45,40 @@ ARDE 算法和 SUMO 仿真全部由本仓库提供，运行时不依赖 MACE。
 
 ## 启动
 
+日常使用只需在仓库根目录执行一个后端命令：
+
+```sh
+./run.sh
+```
+
+统一入口 `start_backend.py` 自动检查 SUMO 和依赖，复用或建立模型（本机 8800 → 服务器 8800）与数据库（本机 27018 → 服务器 27018）的 SSH 隧道，然后启动 SUMO（8765）、对话存储（8767）和数据服务（8768）。这些模块仍以独立进程运行，不会把爬虫或数据库操作加入仿真循环。前端仍用 `npm run dev` 单独启动，无需再手动启动对话服务或执行 SSH 映射命令。
+
+首次配置时，复制 `.env.example` 为 `.env` 并填写 MongoDB 密码和 SSH 参数；已有 `.env` 按模板补齐 `CROWDSIM_MODEL_SSH_*` 即可。默认模板使用已知数据库 SSH 账号 `hyq`；如果模型服务器账号不同，请修改 `CROWDSIM_MODEL_SSH_USER`。远程模型服务需要已经运行并提供本机 8800 对应的 OpenAI 兼容接口，启动器负责建立连接，不负责在远端部署模型。
+
+SSH 使用现有密钥或 ssh-agent，也可在终端按提示输入密码；密码不会写入配置。统一入口使用明确的 SSH 连接参数，不读取用户 SSH 配置中的其他转发规则。已有可用服务和连接会被复用；Ctrl+C 会停止本次创建的服务和隧道，复用的外部进程会保留。启动失败时会清理本次创建的进程，输出失败原因。
+
+统一入口要求 Python 3.10 或更新版本。`run.sh` 优先使用 `CROWDSIM_PYTHON`，其次使用明确设置的 `CROWDSIM_CONDA` 环境，再使用本仓库 `.venv-backend/bin/python`，最后使用 PATH 中的 `python`。如需在其他电脑初始化独立环境，可执行：
+
+```sh
+python -m venv .venv-backend
+.venv-backend/bin/python -m pip install -r requirements.txt
+```
+
+需要 SUMO 1.24.0 二进制程序；已经安装 SUMO 的电脑可设置 `SUMO_HOME` 或 `SUMO_BINARY`。也可按 [SUMO 官方安装说明](https://sumo.dlr.de/docs/Downloads.php#python_packages__virtual_environments) 在该环境中安装匹配版本的程序：
+
+```sh
+.venv-backend/bin/python -m pip install eclipse-sumo==1.24.0
+```
+
+也可以直接用自己的 Python 环境启动或只做环境检查：
+
+```sh
+python start_backend.py
+./run.sh --check
+```
+
+默认使用热点场景，可通过 `./run.sh --scenario research` 切换。`--no-tunnels` 表示只复用现有数据库和模型连接，不创建 SSH 隧道。原有模块入口仍可单独使用，下面是分别启动时的说明。
+
 共享 MongoDB 数据集接口、前端连接和独立数据库服务启动见[数据库接入说明](docs/database_api.md)。数据服务使用独立 8768 进程：
 
 ```sh

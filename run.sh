@@ -3,21 +3,16 @@
 set -euo pipefail
 
 BACKEND_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-CONDA_BIN="${CROWDSIM_CONDA:-/opt/miniconda3/bin/conda}"
-CONDA_ENV="${CROWDSIM_CONDA_ENV:-sumo}"
-
-if [[ ! -x "${CONDA_BIN}" ]]; then
-  echo "[CrowdSim] 未找到 Conda：${CONDA_BIN}" >&2
-  echo "请通过 CROWDSIM_CONDA 指定 Conda 可执行文件。" >&2
-  exit 1
-fi
-
 cd "${BACKEND_ROOT}"
 export PYTHONPATH="${BACKEND_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
 
-exec "${CONDA_BIN}" run --no-capture-output -n "${CONDA_ENV}" \
-  python "${BACKEND_ROOT}/crowdsim_overlay_server.py" \
-  --scenario hotspot \
-  --host "${CROWDSIM_HOST:-127.0.0.1}" \
-  --port "${CROWDSIM_PORT:-8765}" \
-  "$@"
+if [[ -n "${CROWDSIM_PYTHON:-}" ]]; then
+  exec "${CROWDSIM_PYTHON}" "${BACKEND_ROOT}/start_backend.py" "$@"
+elif [[ -n "${CROWDSIM_CONDA:-}" ]]; then
+  exec "${CROWDSIM_CONDA}" run --no-capture-output -n "${CROWDSIM_CONDA_ENV:-sumo}" \
+    python "${BACKEND_ROOT}/start_backend.py" "$@"
+elif [[ -x "${BACKEND_ROOT}/.venv-backend/bin/python" ]]; then
+  exec "${BACKEND_ROOT}/.venv-backend/bin/python" "${BACKEND_ROOT}/start_backend.py" "$@"
+else
+  exec python "${BACKEND_ROOT}/start_backend.py" "$@"
+fi
