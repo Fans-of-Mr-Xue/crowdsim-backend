@@ -11,15 +11,18 @@ import json
 import logging
 
 from aiohttp import web
+from pymongo.errors import PyMongoError
 
-from .api import datasets, experiments, model_connections, results, simulations
+from .api import datasets, experiments, model_connections, results, review_plans, simulations
 from .api.common import PREFIX, Request, response
 from .schemas.common import ApiError
 from .services.application import PostAnalysisApp
 
 
-ROUTES = (datasets.handle, simulations.handle, experiments.handle, results.handle, model_connections.handle)
+ROUTES = (datasets.handle, simulations.handle, experiments.handle, review_plans.handle,
+          results.handle, model_connections.handle)
 ALLOWED_ORIGINS = {"http://localhost:8080", "http://127.0.0.1:8080"}
+MAX_REQUEST_BYTES = 16 * 1024 * 1024
 
 
 def _dispatch(request: Request) -> tuple[int, dict, bool]:
@@ -57,11 +60,11 @@ async def handle_http(http_request: web.Request, app: PostAnalysisApp) -> web.Re
         path = path[len(PREFIX):] or "/"
         body = {}
         if http_request.method == "POST":
-            if http_request.content_length is not None and http_request.content_length > 8 * 1024 * 1024:
-                raise ApiError("PAYLOAD_TOO_LARGE", "请求体超过 8 MiB", 413)
-            raw = await http_request.content.read(8 * 1024 * 1024 + 1)
-            if len(raw) > 8 * 1024 * 1024:
-                raise ApiError("PAYLOAD_TOO_LARGE", "请求体超过 8 MiB", 413)
+            if http_request.content_length is not None and http_request.content_length > MAX_REQUEST_BYTES:
+                raise ApiError("PAYLOAD_TOO_LARGE", "请求体超过 16 MiB", 413)
+            raw = await http_request.content.read(MAX_REQUEST_BYTES + 1)
+            if len(raw) > MAX_REQUEST_BYTES:
+                raise ApiError("PAYLOAD_TOO_LARGE", "请求体超过 16 MiB", 413)
             if raw:
                 if http_request.content_type != "application/json":
                     raise ApiError("UNSUPPORTED_MEDIA_TYPE", "请求体必须是 application/json", 415)
@@ -85,6 +88,11 @@ async def handle_http(http_request: web.Request, app: PostAnalysisApp) -> web.Re
         status = 400
         payload = {"success": False, "data": None,
                    "error": {"code": "INVALID_QUERY", "message": str(exc), "field": None}}
+    except PyMongoError:
+        logging.getLogger("postanalysis_api").exception("post analysis MongoDB operation failed")
+        status = 503
+        payload = {"success": False, "data": None,
+                   "error": {"code": "STORAGE_UNAVAILABLE", "message": "MongoDB 暂不可用，请检查后端环境配置", "field": None}}
     except Exception:
         logging.getLogger("postanalysis_api").exception("post analysis request failed")
         status = 500

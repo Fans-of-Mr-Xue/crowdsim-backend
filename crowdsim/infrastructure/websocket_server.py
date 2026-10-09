@@ -59,6 +59,8 @@ class OverlayServer:
             await asyncio.Future()
         finally:
             await runner.cleanup()
+            if self.post_app is not None:
+                self.post_app.close()
 
     async def _post_http_handler(self, request: web.Request) -> web.Response:
         if self.post_app is None:

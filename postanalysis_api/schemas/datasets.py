@@ -15,7 +15,7 @@ def validate_dataset(payload: dict) -> dict:
     seen = set()
     for index, raw in enumerate(observations):
         field = f"observations[{index}]"
-        row = object_(raw, field, keys={"timeSeconds", "regionId", "population", "density", "meanSpeed", "pressureProxy"})
+        row = object_(raw, field, keys={"timeSeconds", "regionId", "population", "density", "meanSpeed", "pressureProxy", "sourceTime", "state"})
         time = integer(row.get("timeSeconds"), f"{field}.timeSeconds", 0, 86400)
         region = text_(row.get("regionId"), f"{field}.regionId", max_len=64,
                        pattern=r"[A-Za-z0-9][A-Za-z0-9_-]*")
@@ -27,6 +27,8 @@ def validate_dataset(payload: dict) -> dict:
                      "population": integer(row.get("population"), f"{field}.population", 0, 1000000),
                      "density": optional_number(row.get("density"), f"{field}.density", 0, 1000),
                      "meanSpeed": optional_number(row.get("meanSpeed"), f"{field}.meanSpeed", 0, 30),
-                     "pressureProxy": optional_number(row.get("pressureProxy"), f"{field}.pressureProxy", 0, 1e9)})
+                     "pressureProxy": optional_number(row.get("pressureProxy"), f"{field}.pressureProxy", 0, 1e9),
+                     "sourceTime": text_(row.get("sourceTime", str(time)), f"{field}.sourceTime", max_len=80),
+                     "state": text_(row.get("state", ""), f"{field}.state", min_len=0, max_len=500)})
     rows.sort(key=lambda item: (item["timeSeconds"], item["regionId"]))
     return {"name": name, "sourceKind": source, "sourceNote": note, "observations": rows}
