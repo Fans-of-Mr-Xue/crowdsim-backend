@@ -1,6 +1,6 @@
 # 事后阶段本地任务 API：v1 契约与联调说明
 
-本目录提供挂载在 SUMO 8765 服务内的 HTTP 接口骨架、后端字段校验、本地 JSON/JSONL 存储和真实结果计算入口。**当前没有 F-00/CF 批量 SUMO 执行器及 A/B/C、A/B 汇流区、安全区的路网/面积映射**。因此任务可以导入、创建和查询，但 `start` 返回 `503 CAPABILITY_UNAVAILABLE`；不会计时模拟任务、伪造完成次数或生成示例指标。SUMO 同事接入 `workers/executor.py` 的执行器并声明能力后，才允许真正启动。
+本目录提供挂载在 SUMO 8765 服务内的 HTTP 接口骨架、后端字段校验、MongoDB 持久化和真实结果计算入口。事后数据集、事实校准目标、方案草案、实验任务、运行记录和结果分别存入 `postanalysis_datasets`、`postanalysis_review_plans` 等独立集合，不与共享数据服务的 `datasets` 集合混用；上传原件保存在 `postanalysis_files` GridFS bucket。**当前没有 F-00/CF 批量 SUMO 执行器及 A/B/C、A/B 汇流区、安全区的路网/面积映射**。因此任务可以导入、创建和查询，但 `start` 返回 `503 CAPABILITY_UNAVAILABLE`；不会计时模拟任务、伪造完成次数或生成示例指标。SUMO 同事接入 `workers/executor.py` 的执行器并声明能力后，才允许真正启动。
 
 ## 进程、路径与目录
 
@@ -10,7 +10,7 @@ postanalysis_api/
 ├─ schemas/             严格的请求校验、指标定义和版本
 ├─ services/            数据集、任务、指标、配对比较与 PC 分析
 ├─ workers/             可注入的真实 SUMO 批量执行器边界
-├─ repositories/        本机 JSON 快照与追加式 JSONL 事件
+├─ repositories/        MongoDB 文档、GridFS 原件与追加式事件
 └─ main.py              挂载到 SUMO 8765 服务的 HTTP 请求适配器，不单独监听端口
 ```
 
@@ -20,11 +20,11 @@ postanalysis_api/
 python crowdsim_overlay_server.py --host 127.0.0.1 --port 8765
 ```
 
-同一个 8765 服务继续提供 `ws://127.0.0.1:8765/` 的原有实时仿真 WebSocket，并提供 `http://127.0.0.1:8765/api/v1/post` 的事后 HTTP 接口；不再为事后阶段启动 8766 进程。原有 C0—C5 控制服务如需使用，仍可独立运行于 8766，与新事后接口无关。前端仍在 **8080**，本地 vLLM 仍在 **8800**，8767 为对话服务。默认数据目录为 `Crowdbackend/runs/postanalysis/`，可用 `CROWDSIM_POST_DATA_DIR` 指定，无需 MongoDB。安装更新后的 `requirements.txt` 中的 `aiohttp` 后再启动 SUMO 服务；同一端口承载 HTTP 和 WebSocket 的方式见 [aiohttp 官方文档](https://docs.aiohttp.org/en/stable/web_quickstart.html)。
+同一个 8765 服务继续提供 `ws://127.0.0.1:8765/` 的原有实时仿真 WebSocket，并提供 `http://127.0.0.1:8765/api/v1/post` 的事后 HTTP 接口；不再为事后阶段启动 8766 进程。原有 C0—C5 控制服务如需使用，仍可独立运行于 8766，与新事后接口无关。前端仍在 **8080**，本地 vLLM 仍在 **8800**，8767 为对话服务。启动前请按 `Crowdbackend/.env.example` 配置 MongoDB；连接变量与共享数据集服务一致，未连接 MongoDB 时数据写入接口会返回 `503 STORAGE_UNAVAILABLE`。安装更新后的 `requirements.txt` 中的 `aiohttp` 后再启动 SUMO 服务；同一端口承载 HTTP 和 WebSocket 的方式见 [aiohttp 官方文档](https://docs.aiohttp.org/en/stable/web_quickstart.html)。
 
 事后 HTTP 路径仅允许本机回环客户端访问；跨域仅允许 `http://localhost:8080` 和 `http://127.0.0.1:8080`。`X-CrowdSim-User` 和 `X-CrowdSim-Workspace` 都是必填、长度 1—64 的字母数字/下划线/短横线标识，资源按两者隔离。**这些浏览器可填写的标识不是身份认证**；如需从其他机器访问事后 HTTP 接口，须先补真正的登录鉴权与权限服务。
 
-所有成功响应：`{"success":true,"data":...,"error":null}`。失败响应：`{"success":false,"data":null,"error":{"code":"...","message":"...","field":"...或null"}}`。`POST` 一律使用 `Content-Type: application/json`、UTF-8、最大 8 MiB，并携带 `Idempotency-Key`（1—128 字符，同一用户/工作区/方法/路径/键下，相同请求返回首次响应和 `Idempotency-Replayed: true`，不同请求返回 409）。服务在执行前持久化幂等占位；极端情况下进程中断在操作完成与响应封存之间，重试返回 `REQUEST_IN_PROGRESS`，需核对本地记录后用新键继续，避免静默重复执行。请求体任何层级不得带 `password`、`apiKey`、`secret`、`authorization`、`sshKey` 或以 `token` 结尾的字段。不要把 SSH 凭据放进实验方案。
+所有成功响应：`{"success":true,"data":...,"error":null}`。失败响应：`{"success":false,"data":null,"error":{"code":"...","message":"...","field":"...或null"}}`。`POST` 一律使用 `Content-Type: application/json`、UTF-8、最大 16 MiB，并携带 `Idempotency-Key`（1—128 字符，同一用户/工作区/方法/路径/键下，相同请求返回首次响应和 `Idempotency-Replayed: true`，不同请求返回 409）。服务在执行前持久化幂等占位；极端情况下进程中断在操作完成与响应封存之间，重试返回 `REQUEST_IN_PROGRESS`，需核对 MongoDB 记录后用新键继续，避免静默重复执行。请求体任何层级不得带 `password`、`apiKey`、`secret`、`authorization`、`sshKey` 或以 `token` 结尾的字段。不要把 SSH 凭据放进实验方案。
 
 ## 能力与资源接口
 
@@ -33,6 +33,7 @@ python crowdsim_overlay_server.py --host 127.0.0.1 --port 8765
 | `GET /capabilities` | 契约版本、执行器场景/模型/区域/动作/指标/并行上限、规则与指标目录 | 可用；当前 `simulation.ready=false` |
 | `GET /model-connections` | 只读检查 `http://127.0.0.1:8800/v1/models`，返回配置模型是否可见 | 可用；无密钥时不返回密钥 |
 | `POST /datasets`、`GET /datasets`、`GET /datasets/{id}` | 导入标准化时间线、列表、详情 | 可用 |
+| `POST /review-plans`、`GET /review-plans`、`GET /review-plans/{id}` | 保存和读取事实校准目标及完整事后方案草案 | 可用 |
 | `GET /datasets/{id}/timeline?fromSeconds=0&toSeconds=15600&regionId=A&offset=0&limit=500` | 按秒、区域分页读取；区间含两端 | 可用 |
 | `POST /simulations`、`GET /simulations`、`GET /simulations/{id}` | 创建/查询一次事实仿真草稿 | 可用 |
 | `POST /simulations/{id}/start`、`POST /simulations/{id}/cancel`、`GET /simulations/{id}/events?after=0` | 启动、取消、按游标查进度事件 | 启动等执行器 |
@@ -45,7 +46,7 @@ python crowdsim_overlay_server.py --host 127.0.0.1 --port 8765
 
 ## 数据集请求
 
-`POST /datasets` 请求字段全部必填：
+`POST /datasets` 请求字段必填；前端上传数据时还需提供 `rawFile`，原件存入 GridFS：
 
 | 字段 | 类型、范围 | 含义 |
 | --- | --- | --- |
@@ -59,8 +60,13 @@ python crowdsim_overlay_server.py --host 127.0.0.1 --port 8765
 | `observations[].density` | 数值或 `null`，0—1000 | 人/m²；缺失用 `null` |
 | `observations[].meanSpeed` | 数值或 `null`，0—30 | m/s |
 | `observations[].pressureProxy` | 数值或 `null`，0—1e9 | 已给出的参考值，不作为 SUMO 真值 |
+| `observations[].sourceTime`、`observations[].state` | 可选字符串 | 保留原始时间标签和状态描述 |
 
-导入后返回 `id`、SHA-256 `version`、`observationCount`。原始 Markdown 需由导入适配器解析为上述字段，前端不得把自由文本或磁盘路径直接当作可执行仿真输入。后端仍重新验证标准化数据。`sourceKind=synthetic_reference` 的数据只作参考曲线/校准目标，**不能代替 20:00 的 SUMO 初态，也不能作为 PC 的独立运行样本**。
+`rawFile` 结构为 `{ "name": "...", "contentType": "text/csv", "data": "data:...;base64,..." }`；原件最大 5 MiB。服务端独立校验原件编码和解析后的标准化记录，并返回 `originalFile` 元数据。解析行的 `crowd/density/speed/pressure` 分别映射为 `population/density/meanSpeed/pressureProxy`，区域标为 `global`；时间转换为从 20:00 起的仿真秒数，原始时间保存在 `sourceTime`。
+
+导入后返回 `id`、SHA-256 `version`、`observationCount`。后端重新验证标准化数据。`sourceKind=synthetic_reference` 的数据只作参考曲线/校准目标，**不能代替 20:00 的 SUMO 初态，也不能作为 PC 的独立运行样本**。
+
+`POST /review-plans` 接受方案名称、可选 `datasetId`/`datasetVersion`、校准评分与确认状态、校准目标，以及完整前端方案草案。提交时校验数据集所有者/工作区和版本；草案保存到 `review_plans` 集合，不会被误当成已可运行的 SUMO 批次。
 
 ## 事实仿真与反事实批次请求
 
@@ -184,7 +190,7 @@ python crowdsim_overlay_server.py --host 127.0.0.1 --port 8765
 | 404 | `NOT_FOUND` | 资源或路径不存在 |
 | 409 | `IDEMPOTENCY_CONFLICT`、`REQUEST_IN_PROGRESS`、`INVALID_TASK_STATE`、`DATASET_VERSION_MISMATCH`、`RESULT_VERSION_MISMATCH` | 幂等键冲突、状态/版本冲突 |
 | 409 | `RESULT_NOT_READY`、`ANALYSIS_UNAVAILABLE`、`RUN_SET_MISMATCH`、`TASK_NOT_TERMINAL`、`DUPLICATE_RUN` | 结果未形成或运行集合不一致 |
-| 413 | `PAYLOAD_TOO_LARGE` | 请求体超过 8 MiB |
+| 413 | `PAYLOAD_TOO_LARGE` | 请求体超过 16 MiB |
 | 415 | `UNSUPPORTED_MEDIA_TYPE` | 非 JSON 请求体 |
 | 422 | `VALIDATION_ERROR`、`SECRET_FIELD_FORBIDDEN`、`TIME_ORDER_INVALID`、`SEED_RANGE_EXCEEDED` | 字段、时间或种子无效 |
 | 422 | `SCENARIO_UNSUPPORTED`、`MODEL_UNSUPPORTED`、`MODEL_VERSION_MISMATCH`、`GEOMETRY_VERSION_MISMATCH`、`RULE_VERSION_MISMATCH` | SUMO 场景、模型或版本不匹配 |
