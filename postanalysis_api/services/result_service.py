@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from statistics import mean
 
-from algorithm._inference import paired_summary
+from algorithms._inference import paired_summary
 from postanalysis_api.schemas.common import ApiError, metric_value
 from postanalysis_api.schemas.metrics import METRICS, METRIC_VERSION
 from .causal_analysis import analyze_completed_batch, _finite

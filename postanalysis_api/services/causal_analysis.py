@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import math
 
-from algorithm._inference import paired_summary
-from algorithm.pc import pc_discovery
+from algorithms._inference import paired_summary
+from algorithms.pc import pc_discovery
 from postanalysis_api.schemas.common import ApiError
 from postanalysis_api.schemas.metrics import METRICS
 

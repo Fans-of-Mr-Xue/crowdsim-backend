@@ -18,12 +18,17 @@
 | PC/PC-stable | `pc.py` | `fisher_z_ci`、`pc_discovery` |
 | 可选全局敏感度 Sobol | `sobol.py` | `sobol_indices` |
 | 可选 Morris 筛选 | `morris.py` | `morris_elementary_effects` |
+| SUMO 事后因果分析适配 | `causal_engine.py` | `build_experiment_dataframe`、`discover_causal_candidates`、`validate_causal_path`、`causal_summary` |
 
 运行仿真的方法通过 `simulate` 回调接入任意仿真器，或读取完整运行级别的结果数组。本库不提供真实 SUMO 接口，也不从同一轨迹的时间步制造独立样本。置信区间使用完整独立运行块的百分位自助抽样；运行失败会被返回为不完整结果或直接报错，不会静默删去失败组。中介模块只实现文档中的**线性、无 A×M 交互**模型，且要求调用方显式确认时序和识别假设。正交设计需要调用方提供已选设计表并验证两两平衡及可估秩；PC 的经典假设、未定向边与冲突标记见模块说明。
 
 指标由 `metrics.py` 计算：九项影响因素分别通过 `aggregation_start`、`population_factors` / `active_population_counts`、`arrival_rates`、`gate_capacity`、`response_delays`、`normalized_intensity`、`information_coverage`、`bottleneck_width` 等函数组合得到；四项响应指标由 `peak_grid_density`、`mean_movement_speed`、`max_contact_pressure`、`evacuation_time` 给出。`kernel_crowd_pressure` / `max_kernel_crowd_pressure` 是与机械接触压力**不同**的可选人群压力指标。调用方须传入固定网格有效面积、时间步长、目标人群、安全到达记录，以及接触模型所需的半径和刚度；缺失数据返回 `None` 或显式报错，不用本场景默认值填补。
 
 本次未实现离散数据 G² 版 PC、非线性中介模型、正交表自动生成和敏感性假设检验；对应函数会要求连续高斯数据、线性中介模型或调用方提供设计表。输出仅表示给定仿真模型中的统计或干预估计，不能直接称为现实人群的因果效应。
+
+`causal_engine.py` 适配 `postanalysis_api` 的 SUMO 运行契约：输入 task 与按 `planId + seed` 标识的终态 runs，宽表一行对应一次完整运行。候选因果图和配对干预方向复用 `postanalysis_api.services.causal_analysis` 与 `algorithms.pc`；`validate_causal_path` 逐边检查 PC 邻接、配对干预效应、时间窗口顺序及干预隔离证据。此适配层不再连接旧多智能体 `simulation.scene.flaskServer` 或旧 `experimentResult` 集合，也不把 tick/帧作为独立样本。
+
+PC 样本不足、特征恒定或 PC 假设/方差检查失败时，`causal_engine.py` 会尝试以按窗口排序的 SUMO 特征做偏相关与两阶段 OLS 筛选；也可将用户上传的时间线观测按区域转为三个连续观测步的滞后行，生成 `provisional_sem`。此回退只生成待验证路径草案，不报告已确认因果或 p 值；响应带有未测混杂、反向因果、样本相关性和后续独立干预验证提醒。上传时间线滚动窗口有重叠，因此其行数不能作为独立样本数解释。
 
 | 模块 | 本轮实现 | 对应前端实现 |
 | --- | --- | --- |
