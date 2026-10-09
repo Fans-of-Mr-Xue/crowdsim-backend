@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "source": "OpenStreetMap",
+  "license": "ODbL-1.0",
+  "verifiedAt": "2026-10-09",
+  "regions": {
+    "zhengzhou-portrait-region": [
+      {
+        "id": "osm:node/6489312485",
+        "name": "沙口路站",
+        "aliases": [
+          "沙口路站"
+        ],
+        "coordinates": [
+          34.7714077,
+          113.6340128
+        ],
+        "coordinateSystem": "WGS84",
+        "precision": "poi",
+        "sourceUrl": "https://www.openstreetmap.org/node/6489312485"
+      },
+      {
+        "id": "osm:node/8241908789",
+        "name": "海滩寺站",
+        "aliases": [
+          "海滩寺街站",
+          "海滩寺站"
+        ],
+        "coordinates": [
+          34.775325,
+          113.6437062
+        ],
+        "coordinateSystem": "WGS84",
+        "precision": "poi",
+        "sourceUrl": "https://www.openstreetmap.org/node/8241908789"
+      },
+      {
+        "id": "osm:way/1191554568",
+        "name": "郑大一附院河医院区",
+        "aliases": [
+          "河医院区"
+        ],
+        "coordinates": [
+          34.753785,
+          113.6403725
+        ],
+        "coordinateSystem": "WGS84",
+        "precision": "area_center",
+        "sourceUrl": "https://www.openstreetmap.org/way/1191554568"
+      },
+      {
+        "id": "osm:way/732794366",
+        "name": "京广北路隧道",
+        "aliases": [
+          "京广快速路北隧道",
+          "京广北路隧道",
+          "京广隧道"
+        ],
+        "coordinates": [
+          34.7436974,
+          113.6481018
+        ],
+        "coordinateSystem": "WGS84",
+        "precision": "road_center",
+        "sourceUrl": "https://www.openstreetmap.org/way/732794366"
+      },
+      {
+        "id": "osm:way/966101030",
+        "name": "郭家咀水库",
+        "aliases": [
+          "郭家咀水库"
+        ],
+        "coordinates": [
+          34.6604347,
+          113.6136648
+        ],
+        "coordinateSystem": "WGS84",
+        "precision": "area_center",
+        "sourceUrl": "https://www.openstreetmap.org/way/966101030"
+      },
+      {
+        "id": "osm:node/6960865878",
+        "name": "米河镇",
+        "aliases": [
+          "米河镇"
+        ],
+        "coordinates": [
+          34.724644,
+          113.2328948
+        ],
+        "coordinateSystem": "WGS84",
+        "precision": "settlement",
+        "sourceUrl": "https://www.openstreetmap.org/node/6960865878"
+      }
+    ]
+  }
+}

@@ -1,5 +1,5 @@
 """Shared validation; each library owns its fields, prompts and extraction limits."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 
 
@@ -14,9 +14,10 @@ class DocumentProfile:
     model_limits: dict
     max_tags: int = 30
     max_tag_chars: int = 80
+    list_fields: dict = field(default_factory=dict)
 
     def validate(self, payload, *, require_name=True, for_model=False):
-        if not isinstance(payload, dict) or set(payload) - (set(self.fields) | {"tags"}):
+        if not isinstance(payload, dict) or set(payload) - (set(self.fields) | set(self.list_fields) | {"tags"}):
             raise ValueError("元数据包含不支持的字段")
         limits = {**self.fields, **self.model_limits} if for_model else self.fields
         data = {}
@@ -31,11 +32,16 @@ class DocumentProfile:
         if not isinstance(tags, list) or len(tags) > self.max_tags or any(not isinstance(tag, str) or len(tag) > self.max_tag_chars for tag in tags):
             raise ValueError(f"tags 最多 {self.max_tags} 项，每项须为不超过 {self.max_tag_chars} 个字符的字符串")
         data["tags"] = list(dict.fromkeys(tag.strip() for tag in tags if tag.strip()))
+        for key, choices in self.list_fields.items():
+            values = payload.get(key, [])
+            if not isinstance(values, list) or len(values) > len(choices) or any(not isinstance(value, str) or value not in choices for value in values):
+                raise ValueError(f"{key} 必须是最多 {len(choices)} 项的数组，只能使用 {', '.join(choices)}")
+            data[key] = list(dict.fromkeys(values))
         return data
 
     def constraints(self):
         limits = {**self.fields, **self.model_limits}
-        return "\n".join(f"- {key}（{self.labels[key]}）：字符串，最多 {limit} 个字符。" for key, limit in limits.items()) + f"\n- tags：字符串数组，最多 {self.max_tags} 项，每项最多 {self.max_tag_chars} 个字符。"
+        return "\n".join(f"- {key}（{self.labels[key]}）：字符串，最多 {limit} 个字符。" for key, limit in limits.items()) + f"\n- tags：字符串数组，最多 {self.max_tags} 项，每项最多 {self.max_tag_chars} 个字符。" + "".join(f"\n- {key}（{self.labels[key]}）：数组，最多 {len(choices)} 项，只能使用 {', '.join(choices)}；无对应内容时返回 []。" for key, choices in self.list_fields.items())
 
     def example(self):
-        return json.dumps({**dict.fromkeys(self.fields, ""), "tags": []}, ensure_ascii=False)
+        return json.dumps({**dict.fromkeys(self.fields, ""), "tags": [], **{key: [] for key in self.list_fields}}, ensure_ascii=False)

@@ -19,10 +19,10 @@ crowdsim-backend/
     ├── services/             PDF 解析与后台业务流程
     ├── prompts/              提取、合并和字段修复提示词
     ├── connectors/           模型客户端与预留气象连接器
-    └── crawlers/             预留独立爬虫与定时任务
+    └── crawlers/             独立新闻爬虫与并行任务队列
 ```
 
-数据服务不加载 SUMO，也不启动爬虫。后续爬虫应提供独立进程入口，由任务调度工具执行，并通过数据服务接口或共享仓储写入数据库。
+数据服务不加载 SUMO，也不启动爬虫。新闻爬虫通过独立进程入口运行，并通过共享仓储写入数据库。
 
 ## 数据链路与端口
 
@@ -233,23 +233,14 @@ curl -X POST http://127.0.0.1:8768/api/crowdSim/database/smoke-test
 
 如果启动时提示端口占用，先确认是否已有数据服务监听 `8768`，或已有 SSH 隧道监听 `27018`，避免重复启动。如果状态接口返回 503，检查 SSH 隧道是否运行、MongoDB 端口是否为 `27018`、业务库是否为 `crowdsim`，以及账号密码和认证库 `admin` 是否正确。如果直接访问 `8768` 正常但前端失败，检查前端代理目标和开发服务是否已重启。
 
-## 后续爬虫接入
+## 新闻爬虫接入
 
-爬虫可调用相同 HTTP 接口，也可以在独立进程中复用仓储。直接使用仓储的示例：
+新闻采集已接入共享数据库，所有事件的新闻存入一个 `news_articles` 集合，任务存入
+`news_collection_tasks`。独立启动 `./run_crawlers.sh` 可提供 8769 采集接口及并行队列消费者，
+不需要 SUMO 或模型服务；追加 `--worker-only` 可启动更多消费者，`--once` 可执行当前队列后退出。
+前端页面每 5 秒读取最新状态，新闻通过校验后立即展示，刷新可恢复持久化结果。
+同一事件只保留一个采集任务，再次提交表示追加条数；删除任务会停止采集并移出列表，保留已入库新闻，再次提交可恢复任务。
 
-```python
-from data_service.repository import DatasetRepository
-
-repository = DatasetRepository()
-try:
-    saved = repository.create({
-        "name": "采集结果",
-        "source": "crawler",
-        "records": [{"value": 12}],
-    })
-    result = repository.get(saved["id"])
-finally:
-    repository.close()
-```
-
-当前已实现共享数据集的新增、读取和更新。`connectors/` 与 `crawlers/` 仅预留模块边界，尚未实现 NOAA/NASA 自动采集、自动入库或定时任务；前端现有天气请求仍使用原来的服务。原有浏览器本地知识库数据迁移和仿真日志数据库化也尚未启用。
+完整接口、字段、索引、时间窗和去重规则见[新闻采集说明](news_collection.md)。
+`connectors/` 已包含公共网页连接器；NOAA/NASA 自动采集、原有浏览器本地知识库迁移和
+仿真日志数据库化仍未启用。

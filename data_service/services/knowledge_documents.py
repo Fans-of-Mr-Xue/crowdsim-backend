@@ -5,6 +5,7 @@ import asyncio
 from contextlib import suppress
 import json
 import logging
+import re
 import tempfile
 from uuid import uuid4
 
@@ -14,6 +15,7 @@ from pymongo.errors import PyMongoError
 from .document_sources import file_io, next_chunk, source_chunks
 from .pdf_images import extract_region_image
 from .regulations import check_source_evidence
+from .research_documents import check_source_evidence as check_research_evidence, separate_regulations
 from ..connectors.llm import ModelError
 from ..prompts import load_prompt
 
@@ -52,7 +54,12 @@ def model_metadata(value, profile):
             normalized[key] = text(normalized[key])
     if isinstance(normalized.get("tags"), str):
         normalized["tags"] = [normalized["tags"]]
-    return profile.validate(normalized, require_name=False, for_model=True)
+    metadata = profile.validate(normalized, require_name=False, for_model=True)
+    if profile.prompt_prefix == "emergency_plan":
+        actions = re.findall(r"(?m)^\s*(?:\d+[.、．)）]|[-•])\s*", metadata.get("core_actions", ""))
+        if len(actions) > 6:
+            raise ValueError("core_actions 最多包含 6 个编号要点，请合并同类动作，保留条件与动作的对应关系")
+    return metadata
 
 
 class DocumentParser:
@@ -75,6 +82,8 @@ class DocumentParser:
                 raise ModelError("模型返回的资料字段仍不符合要求，请重新解析或手工补充元数据；原始资料已保存") from None
         if kind == "extract" and self.profile.prompt_prefix == "regulation":
             metadata = check_source_evidence(metadata, source)
+        if kind == "extract" and self.profile.prompt_prefix == "research_document":
+            metadata = check_research_evidence(metadata, source)
         return metadata
 
     async def heartbeat(self, identifier, run_id):
@@ -90,7 +99,7 @@ class DocumentParser:
         with tempfile.NamedTemporaryFile(suffix=".pdf") as source:
             await file_io(self.repository.copy_file, identifier, source)
             source_kind = doc.get("source_kind", "pdf")
-            if source_kind == "pdf":
+            if source_kind == "pdf" and not doc.get("source_id"):
                 try:
                     image = await file_io(extract_region_image, source.name)
                     if not await file_io(self.repository.save_image, identifier, run_id, image):
@@ -106,6 +115,8 @@ class DocumentParser:
             batch = []
             verified_dates = set()
             verified_statuses = []
+            verified_types = set()
+            verified_evidence = {}
             while (chunk := await file_io(next_chunk, iterator)) is not None:
                 value = await self.extract_metadata(chunk)
                 if self.profile.prompt_prefix == "regulation":
@@ -113,6 +124,11 @@ class DocumentParser:
                         verified_dates.add(value["effective_at"])
                     if value.get("legal_status"):
                         verified_statuses.append(value["legal_status"])
+                if self.profile.prompt_prefix == "research_document":
+                    verified_types.update(value["knowledge_types"])
+                    for field in ("plan_evidence", "regulation_evidence"):
+                        if value[field]:
+                            verified_evidence.setdefault(field, value[field])
                 batch.append(value)
                 information["chunk_count"] += 1
                 if not await asyncio.to_thread(self.repository.progress, identifier, run_id, information["chunk_count"], 0):
@@ -126,7 +142,11 @@ class DocumentParser:
                 raise ValueError("资料没有可提取的正文；PDF 可能是扫描件，网页可能需要登录或由脚本加载。原始资料已保存，可手工填写元数据或对扫描件进行 OCR")
             inputs = ([merged] if merged else []) + batch
             metadata = inputs[0] if len(inputs) == 1 else await self.extract_metadata(json.dumps(inputs, ensure_ascii=False), "merge")
-            metadata["name"] = metadata["name"] or doc["name"]
+            if self.profile.prompt_prefix == "emergency_plan" and doc.get("source_id"):
+                # A derived plan retains its source title rather than inventing a formally issued plan name.
+                metadata["name"] = doc["name"]
+            else:
+                metadata["name"] = metadata["name"] or doc["name"]
             metadata["type"] = metadata["type"] or self.profile.label
             metadata["topic"] = metadata["topic"] or "其他"
             if self.profile.prompt_prefix == "regulation":
@@ -134,6 +154,11 @@ class DocumentParser:
                 if metadata.get("effective_at") not in verified_dates:
                     metadata["effective_at"] = ""
                 metadata.update(check_source_evidence({"legal_status": metadata.get("legal_status", "")}, "\n".join(verified_statuses)))
+            if self.profile.prompt_prefix == "research_document":
+                metadata["knowledge_types"] = [value for value in self.profile.list_fields["knowledge_types"] if value in verified_types]
+                for field in ("plan_evidence", "regulation_evidence"):
+                    metadata[field] = verified_evidence.get(field, "")
+                metadata = separate_regulations(metadata)
             substantive = ("summary", "scope", "responsible_departments", "core_actions", "key_provisions", "mandatory_requirements", "trigger_conditions")
             if not any(metadata.get(field) for field in substantive):
                 raise ModelError("未提取到有效的正文元数据，请确认资料包含正文后重新解析；原始资料已保存")
@@ -153,7 +178,9 @@ class DocumentParser:
                 identifier = doc["_id"]
                 heartbeat = asyncio.create_task(self.heartbeat(identifier, run_id))
                 try:
-                    await self.parse(doc, run_id)
+                    provider = doc.get('llm_provider')
+                    parser = DocumentParser(self.repository, self.model.for_provider(provider)) if provider and hasattr(self.model, 'for_provider') else self
+                    await parser.parse(doc, run_id)
                 except ParseAbandoned:
                     pass
                 except (ModelError, ValueError, PdfReadError) as exc:

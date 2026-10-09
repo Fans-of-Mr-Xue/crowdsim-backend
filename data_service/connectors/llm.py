@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import copy
 
 import aiohttp
 
@@ -34,6 +35,19 @@ class JsonModelClient:
         if self.session is not None:
             await self.session.close()
 
+    def for_provider(self, identifier):
+        # The task gets its own configuration while reusing the open HTTP session.
+        from .models import model_configs
+        provider = model_configs().get(identifier)
+        if provider is None:
+            raise ValueError("请选择已配置的模型")
+        client = copy.copy(self)
+        client.base_url = provider['base_url']
+        client.model = provider['model']
+        client.api_key = provider['api_key']
+        client.extra = self.extra if identifier == 'Qwen3.8-Flash-Next' else {}
+        return client
+
     async def extract(self, system, source):
         headers = {"Authorization": f"Bearer {self.api_key}"} if self.api_key else {}
         payload = {"temperature": 0, "max_tokens": self.max_output_tokens, **self.extra,
@@ -57,6 +71,6 @@ class JsonModelClient:
         except ModelError:
             raise
         except (aiohttp.ClientError, TimeoutError):
-            raise ModelError("无法连接模型服务或请求超时，请检查 8800 隧道和模型配置") from None
+            raise ModelError(f"无法连接 {self.model} 或请求超时，请检查所选模型的端口映射和配置") from None
         except (ValueError, KeyError, IndexError, TypeError, AttributeError):
             raise ModelError("模型未返回有效的 JSON 元数据，请重试") from None

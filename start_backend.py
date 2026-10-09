@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import errno
 from dataclasses import dataclass
 import json
 import os
@@ -47,29 +48,41 @@ class Service:
     port: int
     command: list[str]
     probe: Callable[[], bool]
+    critical: bool = True
 
 
 class Supervisor:
     def __init__(self):
         self.children = []
+        self.optional_children = set()
+        self.reported_exits = set()
 
-    def spawn(self, name, command, *, interactive=False):
+    def spawn(self, name, command, *, interactive=False, critical=True):
         report(f"启动 {name}")
         child = subprocess.Popen(command, cwd=ROOT, env={**os.environ, "PYTHONUNBUFFERED": "1"},
                                  stdin=None if interactive else subprocess.DEVNULL,
                                  start_new_session=os.name != "nt")
         self.children.append((name, child))
+        if not critical:
+            self.optional_children.add(child.pid)
         return child
 
     def check_children(self):
         for name, child in self.children:
             if child.poll() is not None:
+                if child.pid in self.optional_children:
+                    if child.pid not in self.reported_exits:
+                        report(f"{name} 已退出；其余服务继续运行" + ("，可重启后端恢复模型映射" if name.startswith("SSH ") else "，可通过 run_crawlers.sh 单独恢复采集"))
+                        self.reported_exits.add(child.pid)
+                    continue
                 raise StartupError(f"{name} 已退出（退出码 {child.returncode}），请检查上方日志")
 
-    def wait_ready(self, name, probe, timeout=60):
+    def wait_ready(self, name, probe, timeout=60, child=None):
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             self.check_children()
+            if child is not None and child.poll() is not None:
+                raise StartupError(f"{name} 已退出（退出码 {child.returncode}）")
             try:
                 if probe():
                     report(f"{name} 已就绪")
@@ -89,8 +102,8 @@ class Supervisor:
                 raise StartupError(f"{service.port} 已被占用，但不是可用的 {service.name}；请检查该端口")
             report(f"复用已有 {service.name}（{service.port}），退出时不会关闭它")
             return
-        self.spawn(service.name, service.command)
-        self.wait_ready(service.name, service.probe)
+        child = self.spawn(service.name, service.command, critical=service.critical)
+        self.wait_ready(service.name, service.probe, child=child)
 
     def close(self):
         # Only stop processes created by this launcher, including their descendants.
@@ -136,42 +149,73 @@ def tunnel_settings(kind):
     return values, remote_host, remote_port
 
 
+def port_bound(port):
+    # Inspect the local bind, without opening an SSH channel to the model server.
+    with socket.socket() as candidate:
+        candidate.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            candidate.bind(("127.0.0.1", port))
+            return False
+        except OSError as exc:
+            if exc.errno == errno.EADDRINUSE:
+                return True
+            raise
+
+
 def ensure_tunnels(supervisor, *, enabled=True):
     from data_service.repositories.datasets import DatasetRepository
+    from data_service.connectors.models import model_configs, MODEL_SPECS
+    from urllib.parse import urlsplit
     repository = DatasetRepository()
+    pending = []
     try:
         database_probe = lambda: repository.status()["connected"]
-        # URI or a directly reachable MongoDB deployment does not need a tunnel.
         try:
             database_ready = database_probe()
         except Exception:
             database_ready = False
-        model_key = os.environ.get("CROWDSIM_MODEL_API_KEY", "")
-        model_probe = lambda: isinstance(get_json(8800, "/v1/models", model_key).get("data"), list)
-        try:
-            model_ready = model_probe()
-        except Exception:
-            model_ready = False
-        pending = []
-        for kind, port, ready, probe in (("DB", 27018, database_ready, database_probe), ("MODEL", 8800, model_ready, model_probe)):
-            if ready:
-                report(f"{'数据库' if kind == 'DB' else '模型'}连接已可用，复用现有连接")
+        if database_ready:
+            report("数据库连接已可用，复用现有连接")
+        else:
+            if not enabled:
+                raise StartupError("数据库连接不可用，且已禁用自动 SSH 隧道")
+            if port_bound(27018):
+                raise StartupError("27018 已占用但数据库不可用，请检查隧道或认证配置")
+            if os.environ.get("CROWDSIM_MONGO_URI") or os.environ.get("CROWDSIM_MONGO_HOST", "127.0.0.1") != "127.0.0.1" or int(os.environ.get("CROWDSIM_MONGO_PORT", "27018")) != 27018:
+                raise StartupError("自定义 MongoDB 连接不可用，请检查配置")
+            settings, remote_host, remote_port = tunnel_settings("DB")
+            pending.append(("DB", 27018, database_probe, settings, remote_host, remote_port))
+
+        providers = model_configs()
+        for identifier, label, prefix, default_port, _ in MODEL_SPECS:
+            provider = providers[identifier]
+            target = urlsplit(provider["base_url"])
+            if target.hostname not in ("127.0.0.1", "localhost"):
+                continue
+            port = target.port or provider["port"]
+            if port_bound(port):
+                report(f"复用 {label} 本机端口（{port}），模型可达性在展开菜单时检查")
                 continue
             if not enabled:
-                raise StartupError(f"{kind} 连接不可用，且已禁用自动 SSH 隧道")
-            if listening(port):
-                raise StartupError(f"{port} 已占用但 {kind} 连接不可用，请检查已有隧道或认证配置")
-            if kind == "DB" and (os.environ.get("CROWDSIM_MONGO_URI") or os.environ.get("CROWDSIM_MONGO_HOST", "127.0.0.1") != "127.0.0.1" or int(os.environ.get("CROWDSIM_MONGO_PORT", "27018")) != port):
-                raise StartupError("自定义 MongoDB 连接不可用，请检查配置；不会为其自动建立默认隧道")
-            settings, remote_host, remote_port = tunnel_settings(kind)
-            pending.append((kind, port, probe, settings, remote_host, remote_port))
-        # Group forwards to the same SSH destination into one connection.
+                report(f"{label} 的 {port} 端口映射未建立，其他服务继续启动")
+                continue
+            try:
+                settings, common_host, common_port = tunnel_settings("MODEL")
+            except StartupError:
+                report(f"{label} 未配置模型 SSH，其他服务继续启动")
+                continue
+            remote_host = os.environ.get(f"CROWDSIM_{prefix}_REMOTE_HOST", common_host)
+            remote_port = os.environ.get(f"CROWDSIM_{prefix}_REMOTE_PORT", common_port if prefix == "QWEN" else str(default_port))
+            if not 1 <= port <= 65535 or not 1 <= int(remote_port) <= 65535 or remote_host.startswith("-") or any(c.isspace() for c in remote_host):
+                raise StartupError(f"{label} 端口映射配置无效")
+            pending.append((label, port, lambda port=port: port_bound(port), settings, remote_host, remote_port))
+
         groups = {}
         for item in pending:
             settings = item[3]
             groups.setdefault((settings["HOST"], settings["PORT"], settings["USER"]), []).append(item)
         for (host, port, user), items in groups.items():
-            # Explicit minimal SSH settings avoid unrelated forwards in ~/.ssh/config.
+            critical = any(item[0] == "DB" for item in items)
             command = ["ssh", "-F", os.devnull, "-N", "-o", "ExitOnForwardFailure=yes",
                        "-o", "ServerAliveInterval=15", "-o", "ServerAliveCountMax=3", "-o", "ConnectTimeout=10", "-p", port]
             identity = os.environ.get("CROWDSIM_SSH_IDENTITY_FILE")
@@ -180,9 +224,15 @@ def ensure_tunnels(supervisor, *, enabled=True):
             for _, local_port, _, _, remote_host, remote_port in items:
                 command.extend(["-L", f"127.0.0.1:{local_port}:{remote_host}:{remote_port}"])
             command.append(f"{user}@{host}")
-            supervisor.spawn("SSH " + "+".join(item[0] for item in items), command, interactive=True)
+            child = supervisor.spawn("SSH " + "+".join(item[0] for item in items), command, interactive=True, critical=critical)
             for kind, _, probe, *_ in items:
-                supervisor.wait_ready(f"{kind} 隧道", probe)
+                try:
+                    supervisor.wait_ready(f"{kind} 隧道", probe, timeout=60 if kind == "DB" else 15, child=child)
+                except StartupError as exc:
+                    if critical:
+                        raise
+                    report(f"{exc}；其他服务继续启动，可稍后恢复模型映射")
+                    break
     finally:
         repository.close()
 
@@ -237,10 +287,18 @@ def main(argv=None):
                     lambda: get_json(8767, "/health").get("service") == "crowdsim-dialogue-storage"),
             Service("SUMO 服务", 8765, [sys.executable, "crowdsim_overlay_server.py", *sumo_args],
                     lambda: get_json(8765, "/api/v1/post/capabilities").get("data", {}).get("contractVersion") == "post-api/1.0"),
+            Service("新闻采集服务", 8769, [sys.executable, "-m", "data_service.crawlers"],
+                    lambda: get_json(8769, "/api/crowdSim/news-collection/status").get("data", {}).get("service") == "crowdsim-news-crawler",
+                    critical=False),
         ]
         for service in services:
-            supervisor.start_service(service)
-        report("全部就绪：仿真 8765 / 对话 8767 / 数据 8768 / 模型 8800 / MongoDB 27018；Ctrl+C 退出")
+            try:
+                supervisor.start_service(service)
+            except StartupError as exc:
+                if service.critical:
+                    raise
+                report(f"{exc}；其他服务继续运行，采集服务可单独启动")
+        report("服务就绪：仿真 8765 / 对话 8767 / 数据 8768 / 采集 8769 / 模型映射 8800、8899、8500 / MongoDB 27018；Ctrl+C 退出")
         while True:
             supervisor.check_children()
             time.sleep(1)

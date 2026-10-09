@@ -14,6 +14,7 @@ dependencies = [
   "websockets>=10.0",
   "pymongo>=4.6,<5.0",
   "python-dotenv>=1.0,<2.0",
+  "beautifulsoup4>=4.12,<5.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -22,3 +23,4 @@ include = ["arde_emergency*", "crowdsim*", "postanalysis_api*", "data_service*"]
 
 [tool.setuptools.package-data]
 arde_emergency = ["README.md", "examples/*.json"]
+"data_service.crawlers" = ["*.json"]

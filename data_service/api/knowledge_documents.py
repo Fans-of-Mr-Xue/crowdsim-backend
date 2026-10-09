@@ -13,15 +13,18 @@ from gridfs import NoFile
 from pymongo.errors import PyMongoError
 
 from ..repositories.knowledge_documents import KnowledgeDocumentRepository
+from ..repositories.research_documents import ResearchDocumentRepository
 from ..connectors.llm import JsonModelClient
 from ..services.knowledge_documents import DocumentParser
+from ..services.knowledge_assets import AssetSynchronizer
 from ..services.document_sources import file_io, validate_pdf
 from ..connectors.web_sources import fetch_document
 from ..repositories.datasets import DatasetConflictError
+from .models import selected_request_model
 
 
 def register_document_routes(app, database, profile, *, model=None):
-    repository = KnowledgeDocumentRepository(database, profile)
+    repository = ResearchDocumentRepository(database) if profile.prompt_prefix == "research_document" else KnowledgeDocumentRepository(database, profile)
     model = model if model is not None else JsonModelClient()
 
     async def lifecycle(app):
@@ -41,7 +44,12 @@ def register_document_routes(app, database, profile, *, model=None):
             app[key] = 0
         app[key] += 1
         worker = asyncio.create_task(work())
+        synchronizer = asyncio.create_task(AssetSynchronizer(repository).run()) if profile.prompt_prefix == "research_document" else None
         yield
+        if synchronizer:
+            synchronizer.cancel()
+            with suppress(asyncio.CancelledError):
+                await synchronizer
         worker.cancel()
         with suppress(asyncio.CancelledError):
             await worker
@@ -52,6 +60,7 @@ def register_document_routes(app, database, profile, *, model=None):
     app.cleanup_ctx.append(lifecycle)
 
     async def upload(request):
+        provider = selected_request_model(request)
         if not request.content_type.startswith("multipart/"):
             raise ValueError("请用 multipart/form-data 上传 PDF，字段名为 file")
         # Read multipart chunks to disk: no request.read(), post() or whole-file bytes.
@@ -73,7 +82,7 @@ def register_document_routes(app, database, profile, *, model=None):
             if not filename or not size:
                 raise ValueError("请选择非空的 PDF 文件")
             await file_io(validate_pdf, source)
-            return await file_io(repository.create, source, filename, size, digest.hexdigest())
+            return await file_io(lambda: repository.create(source, filename, size, digest.hexdigest(), llm_provider=provider))
 
     async def download(request, identifier, *, image=False):
         if image:
@@ -103,13 +112,14 @@ def register_document_routes(app, database, profile, *, model=None):
         return response
 
     async def import_url(request):
+        provider = selected_request_model(request)
         payload = await request.json()
         if not isinstance(payload, dict) or set(payload) != {"url"}:
             raise ValueError("链接导入仅接受 url 字段")
         with tempfile.TemporaryFile() as source:
             document = await fetch_document(payload["url"], source)
             return await file_io(lambda: repository.create(source, document.filename, document.size, document.checksum,
-                                  source_kind=document.kind, source_url=document.url, title=document.title))
+                                  source_kind=document.kind, source_url=document.url, title=document.title, llm_provider=provider))
 
     async def handle(request):
         try:
@@ -143,7 +153,7 @@ def register_document_routes(app, database, profile, *, model=None):
                 elif action == "parse":
                     if payload:
                         raise ValueError("重新解析仅接受 revision")
-                    data = await asyncio.to_thread(repository.retry, identifier, revision)
+                    data = await asyncio.to_thread(repository.retry, identifier, revision, llm_provider=selected_request_model(request))
                 else:
                     if payload:
                         raise ValueError("删除仅接受 revision")

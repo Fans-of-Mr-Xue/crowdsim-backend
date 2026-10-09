@@ -1,1 +1,1 @@
-"""Reserved for independently executed collection and scheduled jobs."""
+"""Independent lease-backed news collection workers."""
