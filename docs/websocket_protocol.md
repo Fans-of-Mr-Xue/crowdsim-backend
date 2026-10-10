@@ -8,7 +8,8 @@
 |---|---|
 | `configure` | 首次连接创建运行；CLOSED/ERROR 后创建新运行；相同需求重复请求不重建；固定需求先记录并忽略 `count` |
 | `attach_run` | 以原 `run_id`、`requirement_id` 和场景/路网标识恢复运行，返回暂停快照 |
-| `reset` | 显式结束旧运行并初始化新运行，可同时切换 `requirement_id` |
+| `reset` | 显式结束旧运行并初始化新运行，可同时切换 `requirement_id` 并指定整数 `seed` |
+| `submit_experiment_requirement` | 保存独立的实验需求，保留原需求文件；仅实验需求允许 0 人基线 |
 | `close_run` | 显式结束运行并关闭 SUMO、记录器，返回 `run_closed` |
 | `set_speed` | 改变墙钟倍率，不改变固定的 SUMO `step_length` |
 | `start` | 从 READY 或 PAUSED 开始/恢复 |
@@ -17,6 +18,8 @@
 | `set_event` / `trigger_event` | 触发信息或危险事件 |
 | `event_decision` / `set_policy` / `apply_policy` | 提交引导或建议干预 |
 | `set_group` | 登记真实 `member_ids`、可选 `leader_id` 与已配置的 `rendezvous_id` |
+
+实验指定人数与当前绑定需求不同，实验服务先通过 `get_status` 获取当前需求，复制其空间、画像分布、事件和观测配置，调整人数后提交 `submit_experiment_requirement`，再用新 `requirement_id` 与 `seed` 重置。普通 `submit_requirement` 继续要求 1–10000 人，普通重置人数继续与绑定需求一致。实验需求标记为 `purpose=experiment`，支持 0–10000 人。切换需求时种子会传入新运行的构造过程，热点与网络需求生成器和画像采样器使用同一指定种子。
 
 ## 需求界定提交
 

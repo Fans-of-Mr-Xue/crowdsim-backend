@@ -55,7 +55,7 @@ class RequirementSpec:
         return tuple(self.payload["observation"]["metric_ids"])
 
     @classmethod
-    def parse(cls, raw: Any) -> "RequirementSpec":
+    def parse(cls, raw: Any, *, allow_empty_population: bool = False) -> "RequirementSpec":
         if not isinstance(raw, dict):
             raise RequirementValidationError("requirement must be an object")
         payload = deepcopy(raw)
@@ -79,9 +79,10 @@ class RequirementSpec:
 
         population = _object(payload, "population")
         total = population.get("total")
-        if type(total) is not int or not 1 <= total <= MAX_POPULATION:
+        minimum_population = 0 if allow_empty_population else 1
+        if type(total) is not int or not minimum_population <= total <= MAX_POPULATION:
             raise RequirementValidationError(
-                f"population.total must be an integer between 1 and {MAX_POPULATION}"
+                f"population.total must be an integer between {minimum_population} and {MAX_POPULATION}"
             )
         distributions = _object(population, "distributions")
         missing = REQUIRED_DISTRIBUTIONS - set(distributions)
@@ -170,7 +171,9 @@ def requirement_runtime_summary(record: dict[str, Any] | None) -> dict[str, Any]
         "population_total": requirement.get("population", {}).get("total"),
         "event_category_id": requirement.get("scenario", {}).get("event_category", {}).get("id"),
         "metric_ids": requirement.get("observation", {}).get("metric_ids", []),
-        "capabilities": RequirementSpec.parse(requirement).capabilities(),
+        "capabilities": RequirementSpec.parse(
+            requirement, allow_empty_population=record.get("purpose") == "experiment",
+        ).capabilities(),
     }
 
 

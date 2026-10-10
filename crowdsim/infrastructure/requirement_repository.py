@@ -23,7 +23,8 @@ class RequirementRepository:
     def __init__(self, root: str | Path | None = None) -> None:
         self.root = Path(root or PROJECT_ROOT / "runs" / "requirements")
 
-    def create(self, spec: RequirementSpec) -> dict:
+    def create(self, spec: RequirementSpec, *, purpose: str | None = None) -> dict:
+        spec = RequirementSpec.parse(spec.payload, allow_empty_population=purpose == "experiment")
         self.root.mkdir(parents=True, exist_ok=True)
         for _ in range(4):
             requirement_id = f"req-{uuid.uuid4().hex}"
@@ -40,6 +41,8 @@ class RequirementRepository:
                 "requirement": spec.payload,
                 "capabilities": spec.capabilities(),
             }
+            if purpose is not None:
+                record["purpose"] = purpose
             temporary = destination.with_suffix(".json.tmp")
             temporary.write_text(
                 json.dumps(record, ensure_ascii=False, indent=2) + "\n",
@@ -58,7 +61,9 @@ class RequirementRepository:
         record = json.loads(path.read_text(encoding="utf-8"))
         if record.get("requirement_id") != requirement_id:
             raise ValueError(f"requirement id mismatch: {requirement_id}")
-        spec = RequirementSpec.parse(record.get("requirement"))
+        spec = RequirementSpec.parse(
+            record.get("requirement"), allow_empty_population=record.get("purpose") == "experiment",
+        )
         if record.get("fingerprint") != f"sha256:{spec.fingerprint}":
             raise ValueError(f"requirement fingerprint mismatch: {requirement_id}")
         # Refresh current code capabilities in memory; preserve immutable files.

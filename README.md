@@ -10,7 +10,12 @@ crowdsim/
 ├─ core/            仿真生命周期、人口账本、状态更新、命令队列
 ├─ environment/     局部感知、事件、信息、危险、干预、POI
 ├─ decision/        规则/LLM接口、调度、路线候选、计划执行
+├─ experiments/     C0—C5控制器、配对实验、统计报告和独立HTTP/SSE服务
 └─ infrastructure/  SUMO/路网适配、WebSocket、帧、指标、实验记录
+
+arde_emergency/     ARDE 状态、双层决策、奖励、动作映射与兼容接口
+
+data_service/       独立 MongoDB 与知识库数据接口；connectors/、crawlers/ 预留气象连接器及采集任务
 
 config/             参数、属性注册表和POI
 scenarios/          正式外滩SUMO场景
@@ -29,24 +34,104 @@ runs/               不纳入版本控制的实验产物
 
 ```powershell
 D:\Anaconda\python.exe -m pip install -r requirements.txt
+D:\Anaconda\python.exe -m pip install -e .
 D:\sumo-1.24.0\bin\sumo.exe --version
 ```
+
+`pip install -e .` 会安装仓库内的 `crowdsim` 与 `arde_emergency`。C0—C5 对比实验、
+ARDE 算法和 SUMO 仿真全部由本仓库提供，运行时不依赖 MACE。
 
 `traci`、`sumolib` 和 SUMO 二进制必须使用相同版本。仅安装 Python 包不包含完整 SUMO 仿真程序。
 
 ## 启动
+
+日常使用只需在仓库根目录执行一个后端命令：
+
+```sh
+./run.sh
+```
+
+统一入口 `start_backend.py` 自动检查 SUMO 和依赖，复用或建立模型（本机 8800 → 服务器 8800）与数据库（本机 27018 → 服务器 27018）的 SSH 隧道，然后启动 SUMO（8765）、对话存储（8767）和数据服务（8768）。这些模块仍以独立进程运行，不会把爬虫或数据库操作加入仿真循环。前端仍用 `npm run dev` 单独启动，无需再手动启动对话服务或执行 SSH 映射命令。
+
+首次配置时，复制 `.env.example` 为 `.env` 并填写 MongoDB 密码和 SSH 参数；已有 `.env` 按模板补齐 `CROWDSIM_MODEL_SSH_*` 即可。默认模板使用已知数据库 SSH 账号 `hyq`；如果模型服务器账号不同，请修改 `CROWDSIM_MODEL_SSH_USER`。远程模型服务需要已经运行并提供本机 8800 对应的 OpenAI 兼容接口，启动器负责建立连接，不负责在远端部署模型。
+
+SSH 使用现有密钥或 ssh-agent，也可在终端按提示输入密码；密码不会写入配置。统一入口使用明确的 SSH 连接参数，不读取用户 SSH 配置中的其他转发规则。已有可用服务和连接会被复用；Ctrl+C 会停止本次创建的服务和隧道，复用的外部进程会保留。启动失败时会清理本次创建的进程，输出失败原因。
+
+统一入口要求 Python 3.10 或更新版本。`run.sh` 优先使用 `CROWDSIM_PYTHON`，其次使用明确设置的 `CROWDSIM_CONDA` 环境，再使用本仓库 `.venv-backend/bin/python`，最后使用 PATH 中的 `python`。如需在其他电脑初始化独立环境，可执行：
+
+```sh
+python -m venv .venv-backend
+.venv-backend/bin/python -m pip install -r requirements.txt
+```
+
+需要 SUMO 1.24.0 二进制程序；已经安装 SUMO 的电脑可设置 `SUMO_HOME` 或 `SUMO_BINARY`。也可按 [SUMO 官方安装说明](https://sumo.dlr.de/docs/Downloads.php#python_packages__virtual_environments) 在该环境中安装匹配版本的程序：
+
+```sh
+.venv-backend/bin/python -m pip install eclipse-sumo==1.24.0
+```
+
+也可以直接用自己的 Python 环境启动或只做环境检查：
+
+```sh
+python start_backend.py
+./run.sh --check
+```
+
+默认使用热点场景，可通过 `./run.sh --scenario research` 或 `./run.sh --scenario east-nanjing-road` 切换。`--no-tunnels` 表示只复用现有数据库和模型连接，不创建 SSH 隧道。原有模块入口仍可单独使用，下面是分别启动时的说明。
+
+共享 MongoDB 数据集接口、前端连接和独立数据库服务启动见[数据库接入说明](docs/database_api.md)。数据服务使用独立 8768 进程：
+
+```sh
+python -m pip install -r requirements.txt
+python -m data_service --port 8768
+```
+
+本机开发时，前后端交互与数据库连接使用不同端口：
+
+```text
+前端（通过开发代理调用 HTTP 接口）
+  → 本机 127.0.0.1:8768：Python 数据服务
+  → 本机 127.0.0.1:27018：SSH 隧道入口
+  → 服务器 127.0.0.1:27018：MongoDB
+```
+
+`8768` 是数据服务的 HTTP 监听端口；后端通过本机 `27018` 连接数据库，SSH 隧道再将连接转发到服务器的 `27018`。启动数据服务时须保持SSH端口映射隧道运行。
+SUMO 的 8765 进程不加载数据服务；爬虫也应单独执行。
 
 ```powershell
 $env:SUMO_HOME='D:\sumo-1.24.0'
 D:\Anaconda\python.exe crowdsim_overlay_server.py --host 127.0.0.1 --port 8765
 ```
 
-默认地址为 `ws://127.0.0.1:8765`。协议见 `docs/websocket_protocol.md`。
+默认 WebSocket 地址为 `ws://127.0.0.1:8765`，事后阶段任务 HTTP API 同时挂在 `http://127.0.0.1:8765/api/v1/post`；只需启动这一个 8765 进程。WebSocket 协议见 `docs/websocket_protocol.md`，事后请求与响应契约见 [事后任务 API 规范](postanalysis_api/README.md)。启动前须安装更新后的 `requirements.txt`（新增 `aiohttp`，用于同一端口处理 HTTP 与 WebSocket）。
 
-macOS / Linux 也可在后端根目录执行 `./run.sh`，默认启动热点场景；
-命令行参数原样传给后端。该脚本与 `./viewer.sh` 都使用当前终端 PATH 中的
-`python`（不存在时使用 `python3`），也支持 `CROWDSIM_PYTHON` 指定解释器，
-不执行 conda 操作或环境激活。运行前请自行准备好项目的 Python 和 SUMO 环境。
+如需运行原有、独立的 C0—C5 控制实验，可另开终端启动其 8766 服务；**事后反事实工作台和新任务 API 不依赖它**：
+
+```powershell
+D:\Anaconda\python.exe -m crowdsim.experiments --host 127.0.0.1 --port 8766 --gateway-url ws://127.0.0.1:8765
+```
+
+新事后 API 位于 8765 的 `/api/v1/post/*`，原有 8766 `/crowdSim/control/*` 行为不变。当前批量 SUMO 执行器和场景区域映射尚未接入，创建草稿可用，启动真实批次会明确返回 `503 CAPABILITY_UNAVAILABLE`。
+
+前端控制接口为 `http://127.0.0.1:8766/crowdSim/control`，运行事件使用同一服务的 SSE。
+实验配置、逐次运行、观测、决策、动作回执和报告默认保存到
+`runs/control_experiments/`，不需要 MongoDB。控制方法包括：
+
+- C0：无调控观测基线；
+- C1：固定阈值规则；
+- C2：大模型单次决策；
+- C3：大模型周期决策；
+- C4：大模型事件触发决策；
+- C5：ARDE 动态双层调控。
+
+C2—C4 使用 OpenAI 兼容接口。正式运行前设置 `CROWDSIM_LLM_BASE_URL`、
+`CROWDSIM_LLM_API_KEY` 和 `CROWDSIM_LLM_MODEL`。未提供密钥或模型调用失败时，
+控制器会明确记录 `fallback` 并使用 C1 规则结果，报告不会把回退结果描述成真实大模型基线。
+模型密钥只能由后端环境变量提供；实验接口拒绝接收或持久化 API Key、令牌与密码。
+
+macOS / Linux 的 `./run.sh` 使用上文的统一入口，默认启动热点场景及对话、数据服务。
+`./viewer.sh` 使用当前终端 PATH 中的 `python`（不存在时使用 `python3`），
+也支持 `CROWDSIM_PYTHON` 指定解释器。运行前请准备好项目的 Python 和 SUMO 环境。
 
 需求界定提交的预设地点会在决策推演连接时自动选择对应 SUMO 场景。普通启动、
 `--scenario hotspot` 和 `--scenario east-nanjing-road` 都支持这条需求绑定流程：

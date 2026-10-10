@@ -6,10 +6,16 @@ import asyncio
 from contextlib import nullcontext
 from dataclasses import asdict
 import json
+import os
+from pathlib import Path
 import time
 from typing import Any, Callable, Dict, Optional
 
+from aiohttp import WSMsgType, web
 import websockets
+
+from postanalysis_api.main import handle_http
+from postanalysis_api.services.application import PostAnalysisApp
 
 from crowdsim.core.simulation_runtime import RuntimeState
 from crowdsim.domain.requirement_spec import RequirementSpec, RequirementValidationError
@@ -40,27 +46,58 @@ class OverlayServer:
         self._loop_stop = asyncio.Event()
         self.requirements = requirement_repository or RequirementRepository()
         self.runtime_factory = runtime_factory
+        self.post_app: PostAnalysisApp | None = None
 
     async def start(self) -> None:
-        server = await websockets.serve(self._handler, self.host, self.port)
-        print(f"[CrowdSim] WebSocket listening at ws://{self.host}:{self.port}")
+        data_dir = os.environ.get("CROWDSIM_POST_DATA_DIR") or Path(__file__).resolve().parents[2] / "runs" / "postanalysis"
+        self.post_app = PostAnalysisApp(data_dir)
+        app = web.Application()
+        app.router.add_get("/", self._aio_websocket_handler)
+        app.router.add_route("*", "/api/v1/post", self._post_http_handler)
+        app.router.add_route("*", "/api/v1/post/{tail:.*}", self._post_http_handler)
+        runner = web.AppRunner(app)
+        await runner.setup()
         try:
-            await server.wait_closed()
+            site = web.TCPSite(runner, self.host, self.port)
+            await site.start()
+            print(f"[CrowdSim] WebSocket and post API listening at {self.host}:{self.port}")
+            await asyncio.Future()
         finally:
-            server.close()
-            await server.wait_closed()
-            await self._stop_runtime()
+            try:
+                await runner.cleanup()
+            finally:
+                try:
+                    await self._stop_runtime()
+                finally:
+                    if self.post_app is not None:
+                        self.post_app.close()
+
+    async def _post_http_handler(self, request: web.Request) -> web.Response:
+        if self.post_app is None:
+            raise web.HTTPServiceUnavailable(text="post analysis API is not initialized")
+        return await handle_http(request, self.post_app)
+
+    async def _aio_websocket_handler(self, request: web.Request) -> web.WebSocketResponse:
+        websocket = web.WebSocketResponse()
+        await websocket.prepare(request)
+        await self._handler(websocket)
+        return websocket
 
     async def _handler(self, websocket: Any) -> None:
         if self.client is not None:
-            await websocket.send(json.dumps(self._error("single_client_only", "Only one client is supported.")))
+            await self._send_text(websocket, json.dumps(self._error("single_client_only", "Only one client is supported.")))
             await websocket.close()
             return
         self.client = websocket
         try:
             async for message in websocket:
-                await self._handle_message(message)
-        except websockets.ConnectionClosed:
+                if isinstance(message, str):
+                    await self._handle_message(message)
+                elif message.type == WSMsgType.TEXT:
+                    await self._handle_message(message.data)
+                elif message.type == WSMsgType.ERROR:
+                    break
+        except (websockets.ConnectionClosed, ConnectionResetError):
             pass
         finally:
             try:
@@ -143,7 +180,7 @@ class OverlayServer:
             self.simulator.pause()
         await self._send_init(request_id, resumed=True)
 
-    async def _prepare(self, request_id, count, *, reset=False):
+    async def _prepare(self, request_id, count, *, reset=False, seed=None):
         if self.simulator.demand_mode in {"generated_hotspot", "generated_network"}:
             await self._send({"type": "preparing", "request_id": request_id,
                               "message": "正在生成本轮需求并初始化 SUMO，请稍候。"})
@@ -151,9 +188,13 @@ class OverlayServer:
         # A worker keeps WebSocket ping/pong responsive during larger generation.
         if reset:
             if self.simulator.demand_mode in {"generated_hotspot", "generated_network"} and count is None:
-                operation = asyncio.to_thread(self.simulator.reset, use_default_count=True)
+                operation = asyncio.to_thread(
+                    self.simulator.reset, use_default_count=True, **({"seed": seed} if seed is not None else {})
+                )
             else:
-                operation = asyncio.to_thread(self.simulator.reset, count)
+                operation = asyncio.to_thread(
+                    self.simulator.reset, count, **({"seed": seed} if seed is not None else {})
+                )
         else:
             operation = asyncio.to_thread(self.simulator.initialize)
         worker = asyncio.create_task(operation)
@@ -167,7 +208,7 @@ class OverlayServer:
             finally:
                 raise
 
-    async def _configure(self, data, request_id, *, replace_run=False) -> None:
+    async def _configure(self, data, request_id, *, replace_run=False, seed=None) -> None:
         requirement_record = None
         candidate = self.simulator
         count = data.get("count")
@@ -234,7 +275,10 @@ class OverlayServer:
         if requirement_record is not None:
             self.simulator.configure_requirement(requirement_record)
         state = self.simulator.state
-        if state in {RuntimeState.CLOSED, RuntimeState.ERROR}:
+        if replace_run and seed is not None:
+            await self._stop_loop()
+            await self._prepare(request_id, count, reset=True, seed=seed)
+        elif state in {RuntimeState.CLOSED, RuntimeState.ERROR}:
             await self._stop_loop()
             await self._prepare(request_id, count, reset=True)
         elif state == RuntimeState.CREATED:
@@ -254,10 +298,13 @@ class OverlayServer:
         await self._send_init(request_id, resumed=not replace_run and state in {
             RuntimeState.READY, RuntimeState.RUNNING, RuntimeState.PAUSED, RuntimeState.FINISHED})
 
-    async def _submit_requirement(self, data, request_id) -> None:
+    async def _submit_requirement(self, data, request_id, *, for_experiment=False) -> None:
         try:
-            spec = RequirementSpec.parse(data.get("requirement"))
-            record = self.requirements.create(spec)
+            spec = RequirementSpec.parse(
+                data.get("requirement"), allow_empty_population=for_experiment,
+            )
+            record = (self.requirements.create(spec, purpose="experiment") if for_experiment
+                      else self.requirements.create(spec))
         except RequirementValidationError as exc:
             raise CommandError("invalid_requirement", str(exc)) from exc
         except OSError as exc:
@@ -291,7 +338,7 @@ class OverlayServer:
         request_id = data.get("request_id")
         self._sync_request_scope()
         try:
-            if action not in {"submit_requirement", "configure"}:
+            if action not in {"submit_requirement", "submit_experiment_requirement", "configure"}:
                 self._check_run(data)
             if request_id is not None and (str(request_id) in self.processed_request_ids
                                            or str(request_id) in self.request_results):
@@ -300,6 +347,8 @@ class OverlayServer:
                 return
             if action == "submit_requirement":
                 await self._submit_requirement(data, request_id)
+            elif action == "submit_experiment_requirement":
+                await self._submit_requirement(data, request_id, for_experiment=True)
             elif action == "configure":
                 await self._configure(data, request_id)
             elif action == "attach_run":
@@ -308,6 +357,8 @@ class OverlayServer:
                 self.simulator.set_playback(speed_factor=data.get("speedFactor"))
                 await self._send({"type": "speed", "request_id": request_id, "speedFactor": self.simulator.sim_speed_factor, "step_length": self.simulator.step_length, "real_step_interval": self.simulator.real_step_interval})
             elif action == "start":
+                if data.get("mode") == "counterfactual_batch":
+                    raise CommandError("batch_adapter_unavailable", "事后批量实验需通过 /api/v1/post/experiments 提交；当前执行器尚未接入")
                 if self.simulator.state == RuntimeState.CREATED:
                     await self._prepare(request_id, None)
                 self.simulator.start()
@@ -335,7 +386,23 @@ class OverlayServer:
                 if state is None and motion is None:
                     raise CommandError("unknown_agent", f"Unknown person id: {person_id}")
                 await self._send({"type": "agent_state", "request_id": request_id, "snapshot_id": self.simulator.snapshot_id, "time": self.simulator.time_seconds, "id": person_id, "profile": asdict(self.simulator.profile_for(person_id)), "state": asdict(state) if state else None, "motion": asdict(motion) if motion else None})
-            elif action in {"update_flood_source", "set_event", "trigger_event", "event_decision", "set_policy", "apply_policy", "set_group"}:
+            elif action == "evaluate_routes":
+                from crowdsim.decision.routing_registry import run_routing_algorithm
+
+                routes = data.get("routes") or []
+                if self.simulator.route_provider is None:
+                    raise ValueError("routing topology is unavailable until the simulator is initialized")
+                for route in routes:
+                    if not isinstance(route, dict):
+                        raise ValueError("each route must be an object")
+                    self.simulator.route_provider.validate_edges(tuple(map(str, route.get("routeEdges") or route.get("edges") or ())))
+                algorithm = str(data.get("algorithm") or "")
+                if algorithm == "validate_only":
+                    result = {"algorithm": algorithm, "valid": True, "routeCount": len(routes)}
+                else:
+                    result = run_routing_algorithm(algorithm, routes, **dict(data.get("parameters") or {}))
+                await self._send({"type": "routing_result", "request_id": request_id, "result": result})
+            elif action in {"update_flood_source", "set_event", "trigger_event", "event_decision", "set_policy", "apply_policy", "apply_action", "set_group"}:
                 queued = self.simulator.queue_command(action, data, request_id)
                 if self.simulator.state != RuntimeState.RUNNING:
                     self.simulator.process_pending_commands()
@@ -344,9 +411,12 @@ class OverlayServer:
                 else:
                     await self._send(queued)
             elif action == "reset":
+                seed = data.get("seed")
+                if seed is not None and type(seed) is not int:
+                    raise CommandError("invalid_seed", "seed must be an integer")
                 self._check_run(data)
                 if data.get("requirement_id") is not None:
-                    await self._configure(data, request_id, replace_run=True)
+                    await self._configure(data, request_id, replace_run=True, seed=seed)
                     if request_id is not None:
                         self.processed_request_ids.add(str(request_id))
                     return
@@ -361,7 +431,7 @@ class OverlayServer:
                     count = required_count
                 self._validate_count(count)
                 await self._stop_loop()
-                await self._prepare(request_id, count, reset=True)
+                await self._prepare(request_id, count, reset=True, seed=seed)
                 await self._send_init(request_id)
             else:
                 raise CommandError("unknown_action", f"Unknown action: {action}")
@@ -449,6 +519,11 @@ class OverlayServer:
         if payload.get("request_id") is not None and payload.get("type") in {"command_result", "speed", "run_closed"}:
             self.request_results[str(payload["request_id"])] = dict(payload)
 
+    @staticmethod
+    async def _send_text(websocket: Any, value: str) -> None:
+        sender = getattr(websocket, "send_str", None) or websocket.send
+        await sender(value)
+
     async def _send(self, payload: Dict[str, Any]) -> None:
         self._remember_result(payload)
         if self.client is not None:
@@ -460,9 +535,9 @@ class OverlayServer:
                 # bytes here, BEFORE WebSocket compression/framing.
                 probe.sample('update_payload_bytes', len(encoded), 'bytes')
                 with probe.measure('websocket_send'):
-                    await self.client.send(encoded)
+                    await self._send_text(self.client, encoded)
             else:
-                await self.client.send(json.dumps(payload, default=str))
+                await self._send_text(self.client, json.dumps(payload, default=str))
 
 
 class CommandError(RuntimeError):
