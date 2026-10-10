@@ -1,0 +1,3 @@
+# Optional: static PNG export with scripts/build_experiment_viewer.py --png.
+# The self-contained HTML viewer needs only the Python standard library.
+matplotlib

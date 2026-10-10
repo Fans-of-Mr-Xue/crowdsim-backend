@@ -47,8 +47,17 @@ class WebsocketPacingTests(unittest.IsolatedAsyncioTestCase):
             if step[0] >= len(costs):
                 server.client = None
 
+        async def wait_for_stop(awaitable, timeout):
+            # Model a pacing deadline without real wall time; the production
+            # wait is now interruptible by detach/pause instead of sleep only.
+            awaitable.close()
+            await sleep(timeout)
+            raise asyncio.TimeoutError
+
         with patch('crowdsim.infrastructure.websocket_server.time.perf_counter', side_effect=lambda: clock[0]), patch(
             'crowdsim.infrastructure.websocket_server.asyncio.sleep', side_effect=sleep
+        ), patch(
+            'crowdsim.infrastructure.websocket_server.asyncio.wait_for', side_effect=wait_for_stop
         ):
             await server._run_loop()
         return sleeps, frames, runtime.performance

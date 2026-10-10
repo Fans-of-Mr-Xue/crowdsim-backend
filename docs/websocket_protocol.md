@@ -6,7 +6,10 @@
 
 | action | 语义 |
 |---|---|
-| `configure` | 唯一连接握手入口；首次初始化或 CLOSED/ERROR 后创建新运行；相同需求重复请求不重建；固定需求先记录并忽略 `count` |
+| `configure` | 首次连接创建运行；CLOSED/ERROR 后创建新运行；相同需求重复请求不重建；固定需求先记录并忽略 `count` |
+| `attach_run` | 以原 `run_id`、`requirement_id` 和场景/路网标识恢复运行，返回暂停快照 |
+| `reset` | 显式结束旧运行并初始化新运行，可同时切换 `requirement_id` |
+| `close_run` | 显式结束运行并关闭 SUMO、记录器，返回 `run_closed` |
 | `set_speed` | 改变墙钟倍率，不改变固定的 SUMO `step_length` |
 | `start` | 从 READY 或 PAUSED 开始/恢复 |
 | `pause` | 在当前一致边界暂停 |
@@ -34,35 +37,56 @@
 后端读取 `runs/requirements/<requirement_id>.json`，以其中的总人数和画像分布初始化运行，并把
 不可变快照复制到 `runs/<run_id>/requirement.json`。初始化成功后，`init.requirement` 返回需求的
 `project`、`spatial_scope`、`population`、`scenario` 和 `observation` 信息；前端应以该响应和
-`init.demand.planned` 作为运行界面的权威数据。当前只有 `memorial-tower` 对应的热点场景可
-初始化，服务必须用 `--scenario hotspot` 启动；其他地点可以保存，但 configure 会明确拒绝而不是
-静默回退到错误场景。
+`init.demand.planned` 作为运行界面的权威数据。内置服务按需求的 `spatial_scope.location_id`
+自动绑定场景：`memorial-tower` 使用纪念塔热点，`east-nanjing-road` 使用独立南京东路路网和
+陈毅广场生成式热点需求。默认启动或任一内置预设启动均可；自定义 `--config` 不自动换网。
+其他地点可以保存，configure 明确拒绝不支持的地点。READY/RUNNING/PAUSED/FINISHED
+中变更需求返回 `requirement_requires_reset`，前端点击“重置”，发送新 `requirement_id` 和当前 `run_id`；后端先校验新需求，再结束旧运行。单纯断开连接不会切换或清空仿真。
 
 ## 查询命令
 
 - `get_status`：返回状态机、需求账本、引擎版本和能力状态，不推进仿真。
 - `get_agent_state`：参数 `id`，返回同一个 `snapshot_id` 下的画像、内部状态和 SUMO 运动状态。
-- `reset`：后端显式重建接口，先取消并等待旧循环退出，再关闭旧运行并建立新 `run_id`；生成式热点模式省略 count 使用场景默认人数，其他模式保留此前有效人数设置。前端“重置”按钮不发送此命令，而是清空界面并断开，下一次 configure 才建立新运行。
+- `get_state`：返回当前完整 `update` 快照，不推进仿真。
+- `reset`：等待当前仿真步完成，再关闭旧运行并建立新 `run_id`；可提交新 `requirement_id`，显式 count 必须匹配需求人数。前端“重置”直接发送该命令，收到匹配的新 init 后才清空旧图表和事件。未绑定需求的生成式模式省略 count 使用场景默认人数，其他模式保留此前有效人数设置。
 
 ## 连接与重置生命周期
 
-前端每次连接只发送一次带唯一 `request_id` 的 configure，等待匹配的 init 后允许 start。不能连续发送 reset 和 configure。init 回传 request_id、run_id 和真实 runtime_state；重复的同一 request_id 返回 duplicate_request，记录只在当前连接有效。
+每次连接只发送一次带唯一 `request_id` 的 configure、attach_run 或 reset，等待匹配的 init 后允许 start。init 回传 request_id、run_id、真实 runtime_state、`session_protocol_version=1`、`resumed`、`snapshot_id`、`step_seconds`、`step_index`、events 和 event_state。命令携带已确认的 run_id；错误 run_id 返回 run_not_found，不能操作另一轮仿真。命令去重记录保留在当前 run 的全部连接之间，重复策略/控制请求回放已缓存的回执；未缓存回执的重复请求返回 duplicate_request。重置建立新 run 后重新划定去重范围。
 
 - CREATED：校验有效配置后初始化一次。
-- CLOSED/ERROR：等待旧循环退出后重建一次；生成式热点模式无人数参数时使用场景默认值，其他模式保留此前有效设置。
+- CLOSED/ERROR：等待旧循环退出后重建一次；绑定需求时使用需求人数，未绑定需求的生成式模式无人数参数时使用场景默认值，其他模式保留此前有效设置。
 - READY：相同需求只返回现有 init，不新建目录；改变可配置需求必须显式 reset。
 - RUNNING/PAUSED：不重建运行，人数变更拒绝；播放参数可以更新。
 - FINISHED：返回完成状态，不因重复握手自动重开实验。
 
 `demand.count_configurable` 同时反映场景模式和原需求文件的能力。内置热点预设使用 `generated_hotspot`，接受 0～10000 的整数 count，省略/null 使用配置中的 visitor_count（当前 700）。人数是整轮热点访客总数，背景人数固定为 0，不是同时在场人数。每轮重新分配刷新时间和空间位置，不复制固定的 700 人需求。空场实验之后仍可重置为非零人数。一般 `configurable` 模式和显式 `fixed` 模式保留原行为：仅 personFlow 不支持 count；fixed 记录并忽略合法 count。unsupported_demand_count 错误包含 demand 能力。
 
-生成式热点初始化先发送匹配 request_id 的 `preparing`，完成后才发送 `init`。生成/初始化在串行等待的工作线程内完成，期间 WebSocket 可以处理 ping/pong，但不接受并行修改运行。前端初始化期限为 120 秒；只有匹配的 init 才解锁运行按钮。其他模式保留 init 作为首个成功握手响应。
+南京东路使用 `demand.mode=generated_hotspot`，`count_scope=total_hotspot_visitors`，
+热点为 `chen_yi_square`，配置来自 `scenarios/east_nanjing_road/crowd_hotspots.json`。
+默认 700、范围 0～10000，绑定需求时采用需求人数和画像。全部 depart=0，按现有 31 条道路长度
+分配初始位置，READY 已包含完整初始人群；行人走到 R25b/R29/R26b/R30 的分配位置后停留。
+活动窗口 600～800 秒，各访客在 800～890 秒间按分配时刻释放，再走向 R01/R02/R03/R22/R31
+之一并离场，机制与纪念塔一致；不强制到达时间，不增加广场内部步行面。
 
-断开连接时先取消并等待异步循环，再关闭 runtime，最后释放客户端占用并清理请求记录；即使关闭出错，也释放客户端槽位。新连接不得使用旧运行帧。前端关闭中禁止重连，旧连接回调及不同 run_id 的帧被忽略；初始化错误或超时后关闭连接，允许用户重试。
+两种生成式模式初始化先发送匹配 request_id 的 `preparing`，完成后才发送 `init`，然后发送
+冻结的 READY `update` 显示初始人群。生成/初始化在串行等待的工作线程内完成，期间 WebSocket
+可以处理 ping/pong，但不接受并行修改运行。前端初始化期限为 120 秒；只有匹配的 init 才解锁运行按钮。
+其他模式保留 init 作为首个成功握手响应。
 
-暂停保留运行，重置结束运行。当前客户端不发送 clear_event，也不通过新增 clear_event 别名掩盖生命周期问题。界面启动/暂停状态以 command_result 确认为准；重置停止本地积水同步，清空旧帧、图表、热力与事中 3D 实体插值，保留可复用的输入设置。
+`scenario` 同时输出实际 `location_id`、`road_network_url`、`network_sha256`、`demand_mode`、
+`active_hotspot_id`、`active_hotspot_name` 和 `active_hotspot_anchor`。空场也保留配置热点 ID。
+前端校验聚集模式和热点 ID，拒绝旧道路通行后端；前端校验
+初始化需求/地点后，加载对应道路导出，并核对导出的 `source.sha256`。地点不符不能解锁开始，
+道路版本不符明确显示加载失败。SHA-256 在初始化计算，后续更新复用。
 
-协议验证：`python -m unittest tests.test_websocket_contract tests.test_simulation_loop -v`；前端目录执行 `node --test tests/crowdSimConnection.test.mjs`。测试覆盖真实 WebSocket 断开重连、固定人数重复 configure、任务取消等待、失败清理、迟到消息和超时重试。真实浏览器页面仍需人工联调。
+离开决策推演页面或断线时，后端等待当前异步仿真步完整执行，然后将 RUNNING 转为 PAUSED，保留 SUMO 进程、行人位置、停留/离场计时、决策状态与记录器，最后释放客户端占用。READY/FINISHED 保持原状态。后端只在显式 reset、close_run 或服务退出时关闭运行。返回页面自动发送 attach_run，核对需求、地点、路网 SHA-256，返回 init 和当前完整 update；用户点击继续后才推进。前连接尚在处理仿真步时，新连接可短暂收到 single_client_only，前端有界重试。后端重启或其他客户端已替换运行时，返回错误与 active_run，前端保留缓存并要求显式重置，不自动建立另一轮。
+
+前端使用 Pinia 和 sessionStorage 保存 run_id、需求/端点、最新原始快照、事件和图表历史；快照过大时仅持久化运行标识与历史，返回后从后端取权威快照。同一仿真时间的图表样本就地更新，避免恢复时重复追加。策略页面先 attach 原运行，再等待匹配的 applied 回执；回执丢失时使用相同请求 ID 重试。页面本地积水进度在已绑定运行暂停时冻结。
+
+当前后端只保留一轮运行，要求服务进程持续存活；磁盘中的实验记录不能恢复完整 SUMO 状态。此实现不包含后端重启、机器重启后的恢复。结束按钮发送 close_run，并清除前端会话；重置不再依赖断线。
+
+代码级验证：`python -m unittest tests.test_retained_simulation_session -v`；前端目录执行 `node --test tests/crowdSimConnection.test.mjs tests/crowdSimSession.test.mjs tests/crowdSimSessionPage.test.mjs`。使用运行时、地图和传输替身，覆盖等待当前步、断线保留、恢复校验、显式重置、回执丢失去重、页面生命周期、缓存和迟到帧。真实 SUMO/WebSocket 集成用例在 tests.test_websocket_contract 和 tests.test_requirement_scenario_runtime 中，需另行联调；本轮未执行。
 
 ## 响应
 

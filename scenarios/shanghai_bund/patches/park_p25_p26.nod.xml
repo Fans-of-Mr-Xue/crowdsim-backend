@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- J33 is the midpoint of J28-J15; J34 is one third of the complete
+     J18-J30 centerline length from J18, including the original P17 bend. -->
+<nodes>
+    <node id="huangpu_park_p25_p20" x="18542.657" y="5853.696" type="dead_end"/>
+    <node id="huangpu_park_p26_p17" x="18580.915" y="5772.235" type="dead_end"/>
+</nodes>

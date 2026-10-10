@@ -2,6 +2,7 @@ import asyncio
 import json
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 
 from crowdsim.domain.population_profiles import PopulationProfileSampler
@@ -10,7 +11,7 @@ from crowdsim.domain.requirement_spec import (
     RequirementValidationError,
     requirement_runtime_summary,
 )
-from crowdsim.infrastructure.requirement_repository import RequirementRepository
+from crowdsim.infrastructure.requirement_repository import RequirementNotFoundError, RequirementRepository
 
 try:
     from crowdsim.infrastructure.websocket_server import OverlayServer
@@ -79,6 +80,32 @@ class CapturingClient:
 
 
 class RequirementSubmissionTests(unittest.IsolatedAsyncioTestCase):
+    def test_reserved_default_id_loads_a_copy_and_keeps_normal_ids_valid(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = RequirementRepository(directory)
+            original = repository.create(RequirementSpec.parse(requirement_payload()))
+            copied = {**original, "requirement_id": "req-default"}
+            destination = Path(directory) / "req-default.json"
+            destination.write_text(json.dumps(copied, ensure_ascii=False), encoding="utf-8")
+            self.assertEqual(copied, repository.load("req-default"))
+            self.assertEqual(original, repository.load(original["requirement_id"]))
+            for invalid in ["req-other", "req-default-extra", "../req-default", "req-../default", "REQ-default", None]:
+                with self.subTest(invalid=invalid), self.assertRaises(RequirementNotFoundError):
+                    repository.load(invalid)
+
+    def test_default_copy_still_requires_matching_id_and_valid_fingerprint(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = RequirementRepository(directory)
+            original = repository.create(RequirementSpec.parse(requirement_payload()))
+            destination = Path(directory) / "req-default.json"
+            destination.write_text(json.dumps(original), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "id mismatch"):
+                repository.load("req-default")
+            copied = {**original, "requirement_id": "req-default", "fingerprint": "sha256:invalid"}
+            destination.write_text(json.dumps(copied), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "fingerprint mismatch"):
+                repository.load("req-default")
+
     def test_validation_and_immutable_file_round_trip(self):
         with tempfile.TemporaryDirectory() as directory:
             repository = RequirementRepository(directory)
@@ -98,7 +125,7 @@ class RequirementSubmissionTests(unittest.IsolatedAsyncioTestCase):
     async def test_websocket_submission_returns_requirement_id_without_initializing_runtime(self):
         with tempfile.TemporaryDirectory() as directory:
             server = OverlayServer(
-                object(), "127.0.0.1", 0,
+                SimpleNamespace(performance=None), "127.0.0.1", 0,
                 requirement_repository=RequirementRepository(directory),
             )
             server.client = CapturingClient()
@@ -111,6 +138,24 @@ class RequirementSubmissionTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual("requirement_accepted", response["type"])
             self.assertEqual("submit-1", response["request_id"])
             self.assertRegex(response["requirement_id"], r"^req-[0-9a-f]{32}$")
+
+    @unittest.skipIf(OverlayServer is None, "WebSocket/SUMO runtime dependencies are not installed")
+    async def test_nonuniform_population_is_saved_exactly_as_submitted(self):
+        payload = requirement_payload()
+        payload["population"]["distributions"]["gender"][0]["percent"] = 47
+        payload["population"]["distributions"]["gender"][1]["percent"] = 53
+        with tempfile.TemporaryDirectory() as directory:
+            repository = RequirementRepository(directory)
+            server = OverlayServer(SimpleNamespace(performance=None), "127.0.0.1", 0, requirement_repository=repository)
+            server.client = CapturingClient()
+            await server._handle_message(json.dumps({
+                "action": "submit_requirement", "request_id": "advised-1", "requirement": payload,
+            }))
+            response = server.client.messages[-1]
+            self.assertEqual("requirement_accepted", response["type"])
+            loaded = repository.load(response["requirement_id"])
+            self.assertEqual(payload, loaded["requirement"])
+            self.assertEqual({"total", "distributions"}, set(loaded["requirement"]["population"]))
 
     def test_profile_distribution_uses_exact_integer_allocation(self):
         payload = requirement_payload()

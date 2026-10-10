@@ -43,6 +43,19 @@ def discover_sumo_binary(explicit: str | None = None) -> str:
     raise FileNotFoundError("SUMO binary not found; set SUMO_HOME or SUMO_BINARY")
 
 
+def configure_sumo_projection(binary: str) -> None:
+    """Supply the native SUMO bundle's PROJ database when its launcher omits it."""
+    if os.environ.get("PROJ_DATA") or os.environ.get("PROJ_LIB"):
+        return
+    prefix = Path(binary).resolve().parent.parent
+    candidates = [prefix / "share/proj/proj.db"]
+    candidates.extend(prefix.glob("framework/*/Versions/*/*/share/proj/proj.db"))
+    for path in candidates:
+        if path.is_file():
+            os.environ["PROJ_DATA"] = str(path.parent)
+            return
+
+
 class SumoAdapter:
     """Own exactly one labelled TraCI connection.
 
@@ -82,6 +95,7 @@ class SumoAdapter:
             *self.extra_args,
         ]
         try:
+            configure_sumo_projection(self.sumo_binary)
             traci.start(command, label=self.label)
             self.connection = traci.getConnection(self.label)
             self._version = self.connection.getVersion()[1]

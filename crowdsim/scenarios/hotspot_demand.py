@@ -112,6 +112,7 @@ def build_hotspot_demand(
         template_count = sum(len(items) for items in zone_templates.values())
         incoming_directions = {
             item["entry_edge"] for items in zone_templates.values() for item in items
+            if item["entry_edge"] is not None
         }
     else:
         legacy_templates, incoming_directions = _legacy_templates(
@@ -420,6 +421,8 @@ def build_hotspot_demand(
         "entry_counts": entry_counts,
         "park_entry_counts": park_entry_counts,
         "spawn_edge_counts": dict(spawn_edge_counts),
+        "spawn_distribution": hotspot.get("spawn_distribution", "edge_start"),
+        "initial_population": direct_departure_window == [0, 0] and not background,
         "spawn_position_range_by_edge": {
             edge_id: [min(values), max(values)] if values else [None, None]
             for edge_id, values in spawn_positions.items()
@@ -652,26 +655,37 @@ def _spawn_schedule(network, hotspot: dict, count: int, *, rng_seed: int) -> lis
         raise ValueError("hotspot demand requires visitor_spawn_edges")
     margin = float(hotspot.get("spawn_position_margin_meters", 0.0))
     distribution = str(hotspot.get("spawn_distribution", "edge_start"))
+    # Uniform scene initialization includes short connector edges. Keep their
+    # endpoints clear without deleting them from the physical spawn domain.
+    margins = {
+        edge_id: min(margin, network.getEdge(edge_id).getLength() * 0.25)
+        if distribution == "edge_length_uniform" else margin
+        for edge_id in spawn_edges
+    }
     usable_lengths = {
-        edge_id: network.getEdge(edge_id).getLength() - 2.0 * margin
+        edge_id: network.getEdge(edge_id).getLength() - 2.0 * margins[edge_id]
         for edge_id in spawn_edges
     }
     if any(length <= 0.0 for length in usable_lengths.values()):
         raise ValueError("spawn_position_margin_meters leaves no usable spawn edge length")
-    edge_schedule = _weighted_schedule(usable_lengths, count, rng_seed=rng_seed ^ 0x31B7)
+    weights = (
+        {edge_id: network.getEdge(edge_id).getLength() for edge_id in spawn_edges}
+        if distribution == "edge_length_uniform" else usable_lengths
+    )
+    edge_schedule = _weighted_schedule(weights, count, rng_seed=rng_seed ^ 0x31B7)
     counts = Counter(edge_schedule)
     rng = random.Random(rng_seed ^ 0x7C45)
     positions = {}
     for edge_id, edge_count in counts.items():
         usable = usable_lengths[edge_id]
-        if distribution == "edge_length_weighted_random":
+        if distribution in {"edge_length_weighted_random", "edge_length_uniform"}:
             edge_positions = [
-                margin + (index + rng.random()) * usable / edge_count
+                margins[edge_id] + (index + rng.random()) * usable / edge_count
                 for index in range(edge_count)
             ]
             rng.shuffle(edge_positions)
         elif distribution == "edge_start":
-            edge_positions = [margin] * edge_count
+            edge_positions = [margins[edge_id]] * edge_count
         else:
             raise ValueError(f"unsupported spawn_distribution: {distribution}")
         positions[edge_id] = iter(edge_positions)
@@ -700,6 +714,15 @@ def _destination_schedule(
         raise ValueError("destination_position_margin_meters leaves no usable destination edge length")
     if distribution == "edge_uniform_random":
         weights = {edge_id: 1.0 for edge_id in destination_edges}
+        # Splitting one physical destination road must not double its quota.
+        # Explicit segment weights preserve its original aggregate weight.
+        configured = hotspot.get("destination_edge_weights")
+        if configured is not None:
+            if not isinstance(configured, dict) or set(configured) != set(destination_edges):
+                raise ValueError("destination_edge_weights must cover exactly visitor_destination_edges")
+            weights = {edge_id: float(configured[edge_id]) for edge_id in destination_edges}
+            if any(not math.isfinite(weight) or weight <= 0 for weight in weights.values()):
+                raise ValueError("destination_edge_weights must be positive and finite")
     elif distribution == "edge_length_weighted_random":
         weights = usable_lengths
     else:
@@ -758,17 +781,23 @@ def _select_zone_itinerary(
     destination_edge: str | None = None,
     destination_position: float | None = None,
 ) -> dict:
-    """Choose a monument approach, skipping the park gate for internal spawns."""
+    """Choose an approach from the park, a portal, the ring or outside."""
     park_access_edges = set(_approach_edges(hotspot))
     entry_edges = _access_portal_edges(hotspot)
     excluded_edges = set(map(str, hotspot.get("excluded_edges", ())))
-    if not entry_edges:
+    core_spawn = spawn_edge in set(hotspot.get("target_edges", ())) | set(entry_edges)
+    if not entry_edges or core_spawn:
         try:
-            direct = router.route(
-                EdgePosition(spawn_edge, depart_position),
-                EdgePosition(target_edge, target_position),
-                forbidden_edges=excluded_edges,
-            )
+            if core_spawn:
+                direct = _core_spawn_route(
+                    router, hotspot, spawn_edge, depart_position, target_edge, target_position,
+                )
+            else:
+                direct = router.route(
+                    EdgePosition(spawn_edge, depart_position),
+                    EdgePosition(target_edge, target_position),
+                    forbidden_edges=excluded_edges,
+                )
         except PositionRouteUnavailable as exc:
             raise ValueError(
                 f"no valid route from {spawn_edge}@{depart_position:.2f} "
@@ -777,7 +806,7 @@ def _select_zone_itinerary(
         selected = {
             "inbound_edges": direct.edges,
             "park_entry_edge": None,
-            "entry_edge": None,
+            "entry_edge": spawn_edge if spawn_edge in entry_edges else None,
             "park_approach_distance": 0.0,
             "approach_distance": direct.distance_m,
         }
@@ -913,6 +942,17 @@ def _edge_end_position(network, edge_id: str) -> float:
     return max(0.0, length - min(0.01, length * 0.5))
 
 
+def _core_spawn_route(router, hotspot, spawn_edge, depart_position, target_edge, target_position):
+    # A person already on the ring must stay on it. A person on a portal
+    # traverses only its remaining inward segment before following the ring.
+    allowed = set(map(str, hotspot["target_edges"])) | {spawn_edge}
+    return router.route(
+        EdgePosition(spawn_edge, depart_position),
+        EdgePosition(target_edge, target_position),
+        forbidden_edges={edge for edge in router.edge_lengths if not edge.startswith(":")} - allowed,
+    )
+
+
 def _build_zone_templates(
     network,
     router: PositionAwarePedestrianRouter,
@@ -929,7 +969,8 @@ def _build_zone_templates(
     if not spawn_edges or not exit_edges:
         raise ValueError("multi-edge hotspot demand requires spawn and destination edges")
     park_access_edges = set(_approach_edges(hotspot))
-    if any(edge_id not in park_access_edges for edge_id in spawn_edges) and not park_entry_edges:
+    internal_edges = park_access_edges | set(entry_edges) | set(target_edges)
+    if any(edge_id not in internal_edges for edge_id in spawn_edges) and not park_entry_edges:
         raise ValueError("external hotspot spawn edges require park entry edges")
     templates = {target_edge: [] for target_edge in target_edges}
     for target_edge in target_edges:
@@ -942,6 +983,26 @@ def _build_zone_templates(
             continue
         option_index = 0
         for spawn_edge in spawn_edges:
+            if spawn_edge in set(entry_edges) | set(target_edges):
+                try:
+                    direct = _core_spawn_route(
+                        router, hotspot, spawn_edge, network.getEdge(spawn_edge).getLength() * 0.5,
+                        target_edge, network.getEdge(target_edge).getLength() * 0.5,
+                    )
+                except PositionRouteUnavailable:
+                    continue
+                outbound = outbound_options[option_index % len(outbound_options)]
+                option_index += 1
+                templates[target_edge].append({
+                    "inbound_edges": direct.edges,
+                    "outbound_edges": outbound,
+                    "park_entry_edge": None,
+                    "entry_edge": spawn_edge if spawn_edge in entry_edges else None,
+                    "spawn_edge": spawn_edge,
+                    "exit_edge": outbound[-1],
+                    "approach_distance": direct.distance_m,
+                })
+                continue
             if not entry_edges:
                 inbound, inbound_cost = _pedestrian_path(router, spawn_edge, target_edge)
                 if not inbound or set(inbound) & excluded:

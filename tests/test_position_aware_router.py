@@ -25,12 +25,12 @@ class PositionAwarePedestrianRouterTests(unittest.TestCase):
         from_west = self.router.route_from_endpoint(
             ("178411801#0", 1),
             target,
-            forbidden_edges=("177931018#0",),
+            forbidden_edges=("177931018#0", "monument_m3"),
         )
         from_south = self.router.route_from_endpoint(
             ("177931018#0", 1),
             target,
-            forbidden_edges=("178411801#0",),
+            forbidden_edges=("178411801#0", "monument_m3"),
         )
 
         self.assertLess(from_south.distance_m, from_west.distance_m)
@@ -59,7 +59,7 @@ class PositionAwarePedestrianRouterTests(unittest.TestCase):
             EdgePosition("906417852#7", 5.0),
             EdgePosition("679361567#1", 80.0),
             ("177931018#0",),
-            forbidden_edges=("178411801#0",),
+            forbidden_edges=("178411801#0", "monument_m3"),
         )
 
         self.assertEqual("906417852#7", route.edges[0])
@@ -75,7 +75,7 @@ class PositionAwarePedestrianRouterTests(unittest.TestCase):
             target,
             ("177931018#0",),
             via_orientations=(0,),
-            forbidden_edges=("178411801#0",),
+            forbidden_edges=("178411801#0", "monument_m3"),
         )
         with self.assertRaises(PositionRouteUnavailable):
             self.router.route_via_edges(
@@ -83,7 +83,7 @@ class PositionAwarePedestrianRouterTests(unittest.TestCase):
                 target,
                 ("177931018#0",),
                 via_orientations=(1,),
-                forbidden_edges=("178411801#0",),
+                forbidden_edges=("178411801#0", "monument_m3"),
             )
 
 

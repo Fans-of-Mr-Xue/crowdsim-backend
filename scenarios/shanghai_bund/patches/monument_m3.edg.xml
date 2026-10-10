@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Manual engineering geometry, not a surveyed or downloaded OSM update.
+     Pedestrian footways are walkable in both directions in SUMO.
+     J13 connects directly to H2 (the shorter outer arc), not H1.
+     Preserve the old H2 ID on its southern segment. -->
+<edges>
+    <edge id="679361567#2" from="6361541058" to="monument_m3_ring_junction" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18604.01,5840.44 18600.74,5843.00 18597.44,5846.85 18596.41,5848.74"/>
+    <edge id="679361567#2_m3_north" from="monument_m3_ring_junction" to="6361541057" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18596.41,5848.74 18595.02,5851.29 18593.58,5856.14 18593.00,5862.32"/>
+    <edge id="monument_m3" from="8417005112" to="monument_m3_ring_junction" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00"/>
+</edges>

@@ -1,0 +1,232 @@
+{
+  "schema_version": 1,
+  "scenario": "east_nanjing_road",
+  "default_hotspot_id": "chen_yi_square",
+  "parameter_status": "engineering_assumptions_not_calibrated_to_observed_crowd_data",
+  "hotspots": [
+    {
+      "spawn_distribution": "edge_length_uniform",
+      "spawn_position_margin_meters": 2.0,
+      "destination_distribution": "edge_uniform_random",
+      "destination_position_margin_meters": 2.0,
+      "align_first_visitor_to_zero": true,
+      "visitor_departure_window_seconds": [
+        0,
+        0
+      ],
+      "activity_window_seconds": [
+        600,
+        800
+      ],
+      "visitor_release_delay_seconds": [
+        0,
+        90
+      ],
+      "visitor_count": 700,
+      "background_count": 0,
+      "background_departure_window_seconds": [
+        0,
+        1799.5
+      ],
+      "approach_max_distance_meters": 750,
+      "reference_walking_speed_mps": 1.2,
+      "route_choice": {
+        "enabled": true,
+        "decision_interval_seconds": 10,
+        "switch_cooldown_seconds": 15,
+        "minimum_savings_seconds": 20,
+        "free_flow_density_person_per_m2": 0.5,
+        "congested_density_person_per_m2": 1.5,
+        "speed_floor_mps": 0.2
+      },
+      "phase_thresholds": {
+        "building_person_count": 50,
+        "building_core_density_person_per_m2": 0.15,
+        "congested_core_density_person_per_m2": 0.65,
+        "rising_rate_person_per_second": 0.1,
+        "falling_rate_person_per_second": -0.1,
+        "cleared_person_count": 10,
+        "cleared_peak_fraction": 0.02,
+        "cleared_core_density_person_per_m2": 0.05,
+        "residual_backlog_person_count": 20,
+        "cleared_remaining_visitor_count": 10,
+        "cleared_blocked_person_count": 5,
+        "trend_window_seconds": 20,
+        "confirmation_seconds": 10
+      },
+      "id": "chen_yi_square",
+      "name": "陈毅广场",
+      "anchor": {
+        "longitude": 121.4859637,
+        "latitude": 31.2410283
+      },
+      "anchor_basis": "existing project anchor: OpenStreetMap node 476071294; geographic anchor only",
+      "target_edge": "R25b",
+      "target_edges": [
+        "R25b",
+        "R29",
+        "R26b",
+        "R30"
+      ],
+      "measurement_edges": [
+        "R25b",
+        "R29",
+        "R26b",
+        "R30"
+      ],
+      "entry_edges": [
+        "R13",
+        "R18",
+        "R25a",
+        "R26a",
+        "R25c",
+        "R26c"
+      ],
+      "access_portals": [
+        {
+          "id": "west_north",
+          "edge": "R13",
+          "outside_side": "from",
+          "inside_side": "to"
+        },
+        {
+          "id": "west_south",
+          "edge": "R18",
+          "outside_side": "from",
+          "inside_side": "to"
+        },
+        {
+          "id": "north_west",
+          "edge": "R25a",
+          "outside_side": "from",
+          "inside_side": "to"
+        },
+        {
+          "id": "north_east",
+          "edge": "R26a",
+          "outside_side": "from",
+          "inside_side": "to"
+        },
+        {
+          "id": "south_west",
+          "edge": "R25c",
+          "outside_side": "to",
+          "inside_side": "from"
+        },
+        {
+          "id": "south_east",
+          "edge": "R26c",
+          "outside_side": "to",
+          "inside_side": "from"
+        }
+      ],
+      "approach_edges": [
+        "R01",
+        "R02",
+        "R03",
+        "R04",
+        "R05",
+        "R06",
+        "R07",
+        "R08a",
+        "R08b",
+        "R09a",
+        "R09b",
+        "R10",
+        "R12",
+        "R14",
+        "R15",
+        "R16",
+        "R17",
+        "R22",
+        "R23",
+        "R24",
+        "R31"
+      ],
+      "excluded_edges": [],
+      "visitor_spawn_edges": [
+        "R01",
+        "R02",
+        "R03",
+        "R04",
+        "R05",
+        "R06",
+        "R07",
+        "R08a",
+        "R08b",
+        "R09a",
+        "R09b",
+        "R10",
+        "R12",
+        "R13",
+        "R14",
+        "R15",
+        "R16",
+        "R17",
+        "R18",
+        "R22",
+        "R23",
+        "R24",
+        "R25a",
+        "R25b",
+        "R25c",
+        "R26a",
+        "R26b",
+        "R26c",
+        "R29",
+        "R30",
+        "R31"
+      ],
+      "visitor_destination_edges": [
+        "R01",
+        "R02",
+        "R03",
+        "R22",
+        "R31"
+      ],
+      "park_entry_edges": [],
+      "external_approach_edges": [],
+      "target_distribution": "weighted_viewing_arcs",
+      "viewing_zones": [
+        {
+          "id": "square_R25b",
+          "edge": "R25b",
+          "position_range_meters": [
+            2,
+            30.260197
+          ],
+          "weight": 0.24349159554798766
+        },
+        {
+          "id": "square_R29",
+          "edge": "R29",
+          "position_range_meters": [
+            2,
+            33.949738
+          ],
+          "weight": 0.2752809126587147
+        },
+        {
+          "id": "square_R26b",
+          "edge": "R26b",
+          "position_range_meters": [
+            2,
+            27.669435
+          ],
+          "weight": 0.22116943035829834
+        },
+        {
+          "id": "square_R30",
+          "edge": "R30",
+          "position_range_meters": [
+            2,
+            32.182939
+          ],
+          "weight": 0.26005806143499927
+        }
+      ],
+      "spatial_model_status": "perimeter_footways; interior_plaza_surface_not_modeled",
+      "basis": "Use the current monument timing/spawn/dwell/dispersal mechanism; spatial target allocation proportional to usable footway area, without copying monument viewing-arc preference weights."
+    }
+  ]
+}

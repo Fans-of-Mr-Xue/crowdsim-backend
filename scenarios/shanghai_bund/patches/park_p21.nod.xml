@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- P21 junctions: J27 on P14; J28 at 40% of the full J05-J15 centerline. -->
+<nodes>
+    <node id="huangpu_park_p21_west" x="18506.268" y="5867.557" type="dead_end"/>
+    <node id="huangpu_park_p21_east" x="18530.684" y="5878.872" type="dead_end"/>
+</nodes>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Split P15 and P17 at real junctions; preserve P17's existing bend.
+     Two 2m bidirectional pedestrian footways end at J31 without extending beyond it. -->
+<edges>
+    <edge id="906417853#0" from="8417005111" to="huangpu_park_p22_start" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18521.420,5813.130 18538.025,5820.825"/>
+    <edge id="906417853#0_p22_east" from="huangpu_park_p22_start" to="8417005113" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18538.025,5820.825 18554.630,5828.520"/>
+    <edge id="906417854" from="8417005113" to="huangpu_park_p23_start" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18554.630,5828.520 18561.319,5812.939"/>
+    <edge id="906417854_p23_south" from="huangpu_park_p23_start" to="8417005115" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18561.319,5812.939 18570.170,5792.320 18591.580,5752.300"/>
+    <edge id="huangpu_park_p22" from="huangpu_park_p22_start" to="huangpu_park_p22_p23_join" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18538.025,5820.825 18544.714,5805.244"/>
+    <edge id="huangpu_park_p23" from="huangpu_park_p23_start" to="huangpu_park_p22_p23_join" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18561.319,5812.939 18544.714,5805.244"/>
+</edges>

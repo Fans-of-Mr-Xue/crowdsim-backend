@@ -76,7 +76,7 @@ class HotspotMetricsTests(unittest.TestCase):
         )["hotspots"]["people_heroes_monument"]
 
         self.assertEqual(1, measured["core"]["person_count"])
-        self.assertEqual(2, len(measured["core"]["target_edges"]))
+        self.assertEqual(3, len(measured["core"]["target_edges"]))
         self.assertEqual(1, measured["core"]["by_target_edge"]["679361567#2"]["person_count"])
         self.assertEqual(1, measured["entries"]["person_count"])
         self.assertEqual(2, measured["park"]["person_count"])
@@ -136,6 +136,23 @@ class HotspotMetricsTests(unittest.TestCase):
         park_entries = measured["hotspots"]["people_heroes_monument"]["park_entries"]
         self.assertEqual(1, park_entries["inbound_crossing_count"])
         self.assertEqual(0, park_entries["outbound_crossing_count"])
+
+    def test_m3_and_split_h2_participate_in_entry_flow_and_core_metrics(self):
+        collector = MetricsCollector(self.network, hotspots=self.catalog)
+        state = AgentState("p")
+        state.activity_state = "hotspot_dwelling"
+        sequence = (
+            "906417852#1", ":8417005112_w0", "monument_m3",
+            ":monument_m3_ring_junction_w0", "679361567#2_m3_north",
+        )
+        for index, edge in enumerate(sequence):
+            snapshot = motion("p", edge, speed=0)
+            measured = collector.measure(
+                SumoStepResult(index, {"p": snapshot}, {}, (), ()), {"p": state}, {},
+            )["hotspots"]["people_heroes_monument"]
+        self.assertEqual(1, measured["entries"]["inbound_crossing_count"])
+        self.assertEqual(1, measured["core"]["person_count"])
+        self.assertEqual(1, measured["core"]["by_target_edge"]["679361567#2_m3_north"]["person_count"])
 
 
 if __name__ == "__main__":

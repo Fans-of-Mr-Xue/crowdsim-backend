@@ -1,0 +1,3 @@
+# Geometry dependencies shared by road export and observation metrics.
+pyproj>=3.6,<4
+shapely>=2.0,<3

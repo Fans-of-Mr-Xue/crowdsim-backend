@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- P24 is a straight 2m bidirectional pedestrian footway.
+     Split P13 at J32, preserving both original bends and outer endpoints. -->
+<edges>
+    <edge id="906417852#9" from="8417005105" to="huangpu_park_p24_p13" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18547.610,5717.260 18540.680,5738.700 18532.475,5773.279"/>
+    <edge id="906417852#9_p24_north" from="huangpu_park_p24_p13" to="8417005111" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18532.475,5773.279 18528.970,5788.050 18521.420,5813.130"/>
+    <edge id="huangpu_park_p24" from="huangpu_park_p22_p23_join" to="huangpu_park_p24_p13" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18544.714,5805.244 18532.475,5773.279"/>
+</edges>

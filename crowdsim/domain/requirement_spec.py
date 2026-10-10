@@ -9,6 +9,8 @@ import json
 import math
 from typing import Any
 
+from crowdsim.domain.observation_config import IMPLEMENTED_METRIC_IDS
+
 
 SCHEMA_VERSION = 1
 MAX_POPULATION = 10_000
@@ -23,7 +25,7 @@ SUPPORTED_METRIC_IDS = {
     "pedestrian-psychology-change", "concise-decision-advice",
     "detailed-decision-plan",
 }
-SUPPORTED_LOCATION_IDS = {"memorial-tower"}
+SUPPORTED_LOCATION_IDS = {"memorial-tower", "east-nanjing-road"}
 REQUIRED_DISTRIBUTIONS = {"crowd_role", "age_band", "origin", "gender"}
 
 
@@ -119,15 +121,12 @@ class RequirementSpec:
 
     def capabilities(self) -> dict[str, Any]:
         location_supported = self.location_id in SUPPORTED_LOCATION_IDS
-        implemented_metrics = {"global-speed", "local-density", "local-speed"}
-        partial_metrics = {
-            "global-density", "evacuation-time", "absolute-evacuation-density",
-            "pedestrian-state-change", "pedestrian-psychology-change",
-        }
+        implemented_metrics = set(IMPLEMENTED_METRIC_IDS)
+        if self.payload["observation"]["local_partition_mode"] != "uniform":
+            implemented_metrics -= {"local-density", "local-speed", "boundary-density-difference", "absolute-evacuation-density"}
         metric_status = {
             metric_id: (
                 "supported" if metric_id in implemented_metrics
-                else "partial" if metric_id in partial_metrics
                 else "not_implemented"
             )
             for metric_id in self.metric_ids
@@ -171,7 +170,7 @@ def requirement_runtime_summary(record: dict[str, Any] | None) -> dict[str, Any]
         "population_total": requirement.get("population", {}).get("total"),
         "event_category_id": requirement.get("scenario", {}).get("event_category", {}).get("id"),
         "metric_ids": requirement.get("observation", {}).get("metric_ids", []),
-        "capabilities": record.get("capabilities", {}),
+        "capabilities": RequirementSpec.parse(requirement).capabilities(),
     }
 
 

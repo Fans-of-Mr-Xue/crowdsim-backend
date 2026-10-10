@@ -1,0 +1,27 @@
+<?xml version='1.0' encoding='utf-8'?>
+<nodes>
+    <node id="J01" x="18252.64000000" y="5453.15000000" type="priority" />
+    <node id="J02" x="18257.20000000" y="5441.76000000" type="priority" />
+    <node id="J03" x="18264.18000000" y="5423.91000000" type="priority" />
+    <node id="J04" x="18297.42000000" y="5441.54000000" type="priority" />
+    <node id="J06" x="18461.91000000" y="5509.54000000" type="priority" />
+    <node id="J07" x="18456.21000000" y="5488.30000000" type="priority" />
+    <node id="J08" x="18455.21000000" y="5488.15000000" type="priority" />
+    <node id="J09" x="18476.02000000" y="5508.40000000" type="priority" />
+    <node id="J10" x="18483.91000000" y="5507.89000000" type="priority" />
+    <node id="J11" x="18504.03340300" y="5508.03272570" type="priority" />
+    <node id="J12" x="18459.61000000" y="5466.49000000" type="priority" />
+    <node id="J13" x="18475.72000000" y="5468.49000000" type="priority" />
+    <node id="J14" x="18483.38000000" y="5469.05000000" type="priority" />
+    <node id="J15" x="18503.80572788" y="5470.66251458" type="priority" />
+    <node id="J17" x="18546.16000000" y="5681.41000000" type="priority" />
+    <node id="J18" x="18562.20000000" y="5677.13000000" type="priority" />
+    <node id="J19" x="18538.56000000" y="5670.80000000" type="priority" />
+    <node id="J20" x="18543.75000000" y="5669.71000000" type="priority" />
+    <node id="J26" x="18456.39507845" y="5500.56456218" type="priority" />
+    <node id="J27" x="18456.12113280" y="5476.94215201" type="priority" />
+    <node id="J28" x="18545.14032008" y="5508.31047514" type="priority" />
+    <node id="J29" x="18543.05604482" y="5473.76477330" type="priority" />
+    <node id="J30" x="18530.14068439" y="5287.90610299" type="priority" />
+    <node id="J31" x="18548.81573731" y="5281.95120120" type="priority" />
+</nodes>

@@ -12,7 +12,7 @@ from crowdsim.domain.requirement_spec import RequirementSpec
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-REQUIREMENT_ID_PATTERN = re.compile(r"^req-[0-9a-f]{32}$")
+REQUIREMENT_ID_PATTERN = re.compile(r"^req-(?:[0-9a-f]{32}|default)$")
 
 
 class RequirementNotFoundError(FileNotFoundError):
@@ -56,7 +56,11 @@ class RequirementRepository:
         if not path.is_file():
             raise RequirementNotFoundError(f"unknown requirement: {requirement_id}")
         record = json.loads(path.read_text(encoding="utf-8"))
+        if record.get("requirement_id") != requirement_id:
+            raise ValueError(f"requirement id mismatch: {requirement_id}")
         spec = RequirementSpec.parse(record.get("requirement"))
         if record.get("fingerprint") != f"sha256:{spec.fingerprint}":
             raise ValueError(f"requirement fingerprint mismatch: {requirement_id}")
+        # Refresh current code capabilities in memory; preserve immutable files.
+        record["capabilities"] = spec.capabilities()
         return record

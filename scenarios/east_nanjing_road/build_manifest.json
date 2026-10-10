@@ -1,0 +1,606 @@
+{
+  "schema_version": 1,
+  "scenario_id": "east-nanjing-road",
+  "source_network": "../shanghai_bund/bund.net.xml",
+  "source_sha256": "6c94edf6c8d2146b81f7dd804d384f49162698b43ee6203e302c7a48b4bc75be",
+  "spec_sha256": "e753172d0d76e5ed7d07fb5804798d194c49b4359cfb001c3ffb1d7732015ea7",
+  "network_sha256": "79ac540cb49f06b4d53579f5c5e548937cbbc1a13c8c97cba367341cf2d5201d",
+  "pedestrian_only": true,
+  "roads": [
+    {
+      "id": "R01",
+      "from": "J01",
+      "to": "J26",
+      "lane_width_m": 2.0,
+      "width_source": "900252576#7_0",
+      "source_edge_ids": [
+        "900252576#7"
+      ],
+      "sumo_lane_length_m": 210.79486032
+    },
+    {
+      "id": "R02",
+      "from": "J08",
+      "to": "J02",
+      "lane_width_m": 2.0,
+      "width_source": "177993351#1_0",
+      "source_edge_ids": [
+        "177993351#1"
+      ],
+      "sumo_lane_length_m": 199.70995739
+    },
+    {
+      "id": "R03",
+      "from": "J27",
+      "to": "J04",
+      "lane_width_m": 2.0,
+      "width_source": "900252576#8_0",
+      "source_edge_ids": [
+        "900252576#8"
+      ],
+      "sumo_lane_length_m": 164.09888928
+    },
+    {
+      "id": "R04",
+      "from": "J04",
+      "to": "J03",
+      "lane_width_m": 2.0,
+      "width_source": "900252576#9_0",
+      "source_edge_ids": [
+        "900252576#9"
+      ],
+      "sumo_lane_length_m": 37.02014311
+    },
+    {
+      "id": "R05",
+      "from": "J02",
+      "to": "J01",
+      "lane_width_m": 3.2,
+      "width_source": "226657321#0_0",
+      "source_edge_ids": [
+        "226657321#0",
+        "-226657321#0"
+      ],
+      "sumo_lane_length_m": 6.40128792
+    },
+    {
+      "id": "R06",
+      "from": "J03",
+      "to": "J02",
+      "lane_width_m": 3.2,
+      "width_source": "238346293#3_0",
+      "source_edge_ids": [
+        "238346293#3",
+        "-238346293#3"
+      ],
+      "sumo_lane_length_m": 12.85853587
+    },
+    {
+      "id": "R07",
+      "from": "J07",
+      "to": "J08",
+      "lane_width_m": 2.0,
+      "width_source": "177993351#0_0",
+      "source_edge_ids": [
+        "177993351#0"
+      ],
+      "sumo_lane_length_m": 0.2
+    },
+    {
+      "id": "R08a",
+      "from": "J06",
+      "to": "J26",
+      "lane_width_m": 2.0,
+      "width_source": "178412507#6_0",
+      "source_edge_ids": [
+        "178412507#6"
+      ],
+      "sumo_lane_length_m": 6.46548147
+    },
+    {
+      "id": "R08b",
+      "from": "J26",
+      "to": "J07",
+      "lane_width_m": 2.0,
+      "width_source": "178412507#6_0",
+      "source_edge_ids": [
+        "178412507#6"
+      ],
+      "sumo_lane_length_m": 7.21872026
+    },
+    {
+      "id": "R09a",
+      "from": "J07",
+      "to": "J27",
+      "lane_width_m": 2.0,
+      "width_source": "178412507#7_0",
+      "source_edge_ids": [
+        "178412507#7"
+      ],
+      "sumo_lane_length_m": 12.73157101
+    },
+    {
+      "id": "R09b",
+      "from": "J27",
+      "to": "J12",
+      "lane_width_m": 2.0,
+      "width_source": "178412507#7_0",
+      "source_edge_ids": [
+        "178412507#7"
+      ],
+      "sumo_lane_length_m": 10.21278004
+    },
+    {
+      "id": "R10",
+      "from": "J06",
+      "to": "J09",
+      "lane_width_m": 2.0,
+      "width_source": "178412509#0_0",
+      "source_edge_ids": [
+        "178412509#0"
+      ],
+      "sumo_lane_length_m": 8.97564668
+    },
+    {
+      "id": "R12",
+      "from": "J09",
+      "to": "J10",
+      "lane_width_m": 2.0,
+      "width_source": "178412509#1_0",
+      "source_edge_ids": [
+        "178412509#1"
+      ],
+      "sumo_lane_length_m": 1.70038744
+    },
+    {
+      "id": "R13",
+      "from": "J10",
+      "to": "J11",
+      "lane_width_m": 2.0,
+      "width_source": "178412509#2_0",
+      "source_edge_ids": [
+        "178412509#2"
+      ],
+      "sumo_lane_length_m": 14.49329362
+    },
+    {
+      "id": "R14",
+      "from": "J09",
+      "to": "J13",
+      "lane_width_m": 3.2,
+      "width_source": "1068447135#1_0",
+      "source_edge_ids": [
+        "1068447135#1"
+      ],
+      "sumo_lane_length_m": 34.83047024
+    },
+    {
+      "id": "R15",
+      "from": "J14",
+      "to": "J10",
+      "lane_width_m": 3.2,
+      "width_source": "40301368#10_0",
+      "source_edge_ids": [
+        "40301368#10"
+      ],
+      "sumo_lane_length_m": 33.78840584
+    },
+    {
+      "id": "R16",
+      "from": "J12",
+      "to": "J13",
+      "lane_width_m": 2.0,
+      "width_source": "226657312#0_0",
+      "source_edge_ids": [
+        "226657312#0"
+      ],
+      "sumo_lane_length_m": 12.40861254
+    },
+    {
+      "id": "R17",
+      "from": "J13",
+      "to": "J14",
+      "lane_width_m": 2.0,
+      "width_source": "226657312#1_0",
+      "source_edge_ids": [
+        "226657312#1"
+      ],
+      "sumo_lane_length_m": 1.48229615
+    },
+    {
+      "id": "R18",
+      "from": "J14",
+      "to": "J15",
+      "lane_width_m": 2.0,
+      "width_source": "226657312#2_0",
+      "source_edge_ids": [
+        "226657312#2"
+      ],
+      "sumo_lane_length_m": 14.78554007
+    },
+    {
+      "id": "R22",
+      "from": "J18",
+      "to": "J17",
+      "lane_width_m": 2.0,
+      "width_source": "906417852#7_0",
+      "source_edge_ids": [
+        "906417852#7"
+      ],
+      "sumo_lane_length_m": 13.61156042
+    },
+    {
+      "id": "R23",
+      "from": "J17",
+      "to": "J19",
+      "lane_width_m": 2.0,
+      "width_source": "909084827#0_0",
+      "source_edge_ids": [
+        "909084827#0"
+      ],
+      "sumo_lane_length_m": 7.56427497
+    },
+    {
+      "id": "R24",
+      "from": "J20",
+      "to": "J19",
+      "lane_width_m": 3.2,
+      "width_source": "178412238#0_0",
+      "source_edge_ids": [
+        "178412238#0",
+        "-178412238#0"
+      ],
+      "sumo_lane_length_m": 3.0035999
+    },
+    {
+      "id": "R25a",
+      "from": "J19",
+      "to": "J11",
+      "lane_width_m": 2.0,
+      "width_source": "909084827#1_0",
+      "source_edge_ids": [
+        "909084827#1"
+      ],
+      "sumo_lane_length_m": 165.49323628
+    },
+    {
+      "id": "R25b",
+      "from": "J11",
+      "to": "J15",
+      "lane_width_m": 2.0,
+      "width_source": "909084827#1_0",
+      "source_edge_ids": [
+        "909084827#1"
+      ],
+      "sumo_lane_length_m": 32.26019676
+    },
+    {
+      "id": "R25c",
+      "from": "J15",
+      "to": "J30",
+      "lane_width_m": 2.0,
+      "width_source": "909084827#1_0",
+      "source_edge_ids": [
+        "909084827#1"
+      ],
+      "sumo_lane_length_m": 194.07178758
+    },
+    {
+      "id": "R26a",
+      "from": "J18",
+      "to": "J28",
+      "lane_width_m": 2.0,
+      "width_source": "909213000#1_0",
+      "source_edge_ids": [
+        "909213000#1"
+      ],
+      "sumo_lane_length_m": 165.27705567
+    },
+    {
+      "id": "R26b",
+      "from": "J28",
+      "to": "J29",
+      "lane_width_m": 2.0,
+      "width_source": "909213000#1_0",
+      "source_edge_ids": [
+        "909213000#1"
+      ],
+      "sumo_lane_length_m": 29.66943473
+    },
+    {
+      "id": "R26c",
+      "from": "J29",
+      "to": "J31",
+      "lane_width_m": 2.0,
+      "width_source": "909213000#1_0",
+      "source_edge_ids": [
+        "909213000#1"
+      ],
+      "sumo_lane_length_m": 186.66458047
+    },
+    {
+      "id": "R29",
+      "from": "J11",
+      "to": "J28",
+      "lane_width_m": 2.0,
+      "width_source": "new pedestrian road; same 2m width as connected footways",
+      "source_edge_ids": [],
+      "sumo_lane_length_m": 35.9497383
+    },
+    {
+      "id": "R30",
+      "from": "J15",
+      "to": "J29",
+      "lane_width_m": 2.0,
+      "width_source": "new pedestrian road; same 2m width as connected footways",
+      "source_edge_ids": [],
+      "sumo_lane_length_m": 34.18293904
+    },
+    {
+      "id": "R31",
+      "from": "J30",
+      "to": "J31",
+      "lane_width_m": 2.0,
+      "width_source": "new pedestrian road; same 2m width as connected footways",
+      "source_edge_ids": [],
+      "sumo_lane_length_m": 15.9250341
+    }
+  ],
+  "walking_areas": [
+    {
+      "junction": "J01",
+      "walking_area": ":J01_w0",
+      "width_m": 6.4,
+      "minimum_m": 4.0,
+      "incident_roads": [
+        "R01",
+        "R05"
+      ]
+    },
+    {
+      "junction": "J02",
+      "walking_area": ":J02_w0",
+      "width_m": 4.0,
+      "minimum_m": 4.0,
+      "incident_roads": [
+        "R02",
+        "R05",
+        "R06"
+      ]
+    },
+    {
+      "junction": "J03",
+      "walking_area": ":J03_w0",
+      "width_m": 6.4,
+      "minimum_m": 4.0,
+      "incident_roads": [
+        "R04",
+        "R06"
+      ]
+    },
+    {
+      "junction": "J04",
+      "walking_area": ":J04_w0",
+      "width_m": 4.0,
+      "minimum_m": 4.0,
+      "incident_roads": [
+        "R03",
+        "R04"
+      ]
+    },
+    {
+      "junction": "J06",
+      "walking_area": ":J06_w0",
+      "width_m": 4.0,
+      "minimum_m": 4.0,
+      "incident_roads": [
+        "R08a",
+        "R10"
+      ]
+    },
+    {
+      "junction": "J07",
+      "walking_area": ":J07_w0",
+      "width_m": 4.0,
+      "minimum_m": 4.0,
+      "incident_roads": [
+        "R07",
+        "R08b",
+        "R09a"
+      ]
+    },
+    {
+      "junction": "J08",
+      "walking_area": ":J08_w0",
+      "width_m": 4.0,
+      "minimum_m": 4.0,
+      "incident_roads": [
+        "R02",
+        "R07"
+      ]
+    },
+    {
+      "junction": "J09",
+      "walking_area": ":J09_w0",
+      "width_m": 4.0,
+      "minimum_m": 4.0,
+      "incident_roads": [
+        "R10",
+        "R12",
+        "R14"
+      ]
+    },
+    {
+      "junction": "J10",
+      "walking_area": ":J10_w0",
+      "width_m": 4.0,
+      "minimum_m": 4.0,
+      "incident_roads": [
+        "R12",
+        "R13",
+        "R15"
+      ]
+    },
+    {
+      "junction": "J11",
+      "walking_area": ":J11_w0",
+      "width_m": 5.0,
+      "minimum_m": 5.0,
+      "incident_roads": [
+        "R13",
+        "R25a",
+        "R25b",
+        "R29"
+      ]
+    },
+    {
+      "junction": "J12",
+      "walking_area": ":J12_w0",
+      "width_m": 4.0,
+      "minimum_m": 4.0,
+      "incident_roads": [
+        "R09b",
+        "R16"
+      ]
+    },
+    {
+      "junction": "J13",
+      "walking_area": ":J13_w0",
+      "width_m": 4.0,
+      "minimum_m": 4.0,
+      "incident_roads": [
+        "R14",
+        "R16",
+        "R17"
+      ]
+    },
+    {
+      "junction": "J14",
+      "walking_area": ":J14_w0",
+      "width_m": 4.0,
+      "minimum_m": 4.0,
+      "incident_roads": [
+        "R15",
+        "R17",
+        "R18"
+      ]
+    },
+    {
+      "junction": "J15",
+      "walking_area": ":J15_w0",
+      "width_m": 5.0,
+      "minimum_m": 5.0,
+      "incident_roads": [
+        "R18",
+        "R25b",
+        "R25c",
+        "R30"
+      ]
+    },
+    {
+      "junction": "J17",
+      "walking_area": ":J17_w0",
+      "width_m": 4.0,
+      "minimum_m": 4.0,
+      "incident_roads": [
+        "R22",
+        "R23"
+      ]
+    },
+    {
+      "junction": "J18",
+      "walking_area": ":J18_w0",
+      "width_m": 4.0,
+      "minimum_m": 4.0,
+      "incident_roads": [
+        "R22",
+        "R26a"
+      ]
+    },
+    {
+      "junction": "J19",
+      "walking_area": ":J19_w0",
+      "width_m": 6.4,
+      "minimum_m": 4.0,
+      "incident_roads": [
+        "R23",
+        "R24",
+        "R25a"
+      ]
+    },
+    {
+      "junction": "J26",
+      "walking_area": ":J26_w0",
+      "width_m": 4.0,
+      "minimum_m": 4.0,
+      "incident_roads": [
+        "R01",
+        "R08a",
+        "R08b"
+      ]
+    },
+    {
+      "junction": "J27",
+      "walking_area": ":J27_w0",
+      "width_m": 4.0,
+      "minimum_m": 4.0,
+      "incident_roads": [
+        "R03",
+        "R09a",
+        "R09b"
+      ]
+    },
+    {
+      "junction": "J28",
+      "walking_area": ":J28_w0",
+      "width_m": 4.0,
+      "minimum_m": 4.0,
+      "incident_roads": [
+        "R26a",
+        "R26b",
+        "R29"
+      ]
+    },
+    {
+      "junction": "J29",
+      "walking_area": ":J29_w0",
+      "width_m": 4.0,
+      "minimum_m": 4.0,
+      "incident_roads": [
+        "R26b",
+        "R26c",
+        "R30"
+      ]
+    },
+    {
+      "junction": "J30",
+      "walking_area": ":J30_w0",
+      "width_m": 4.0,
+      "minimum_m": 4.0,
+      "incident_roads": [
+        "R25c",
+        "R31"
+      ]
+    },
+    {
+      "junction": "J31",
+      "walking_area": ":J31_w0",
+      "width_m": 4.0,
+      "minimum_m": 4.0,
+      "incident_roads": [
+        "R26c",
+        "R31"
+      ]
+    }
+  ],
+  "terminal_nodes": [
+    "J20"
+  ],
+  "counts": {
+    "roads": 31,
+    "junctions": 24,
+    "walking_areas": 23
+  },
+  "netconvert_warnings": "",
+  "generation_rule": "SUMO junction width attrs are enforced after netconvert, never by reducing jamtime"
+}

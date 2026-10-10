@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- J37: northeast endpoint of the J33 perpendicular branch.
+     Complete centerline length is half of the J15-J13/P16 road. -->
+<nodes>
+    <node id="huangpu_park_p28_end" x="18558.239" y="5861.106" type="dead_end"/>
+</nodes>

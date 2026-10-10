@@ -169,11 +169,12 @@ def test_junction(
     persons_per_movement: int,
     timeout_seconds: float,
     max_stopped_seconds: float,
+    demand_builder=build_demand,
 ) -> dict:
     safe_name = walking_area_id.replace(":", "").replace("#", "_")
     demand_path = temporary_directory / f"{safe_name}.rou.xml"
     log_path = temporary_directory / f"{safe_name}.sumo.log"
-    planned = build_demand(
+    planned = demand_builder(
         demand_path,
         network_root,
         walking_area_id,

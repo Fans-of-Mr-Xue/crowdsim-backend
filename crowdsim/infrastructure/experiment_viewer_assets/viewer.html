@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CrowdSim · 实验指标查看器</title>
+  <style>/* VIEWER_CSS */</style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-icon">C</span><div>CrowdSim<small>实验指标查看器</small></div></div>
+    <div class="side-caption">OBSERVATION METRICS</div>
+    <nav id="metric-nav" aria-label="观测指标"></nav>
+    <div class="side-foot"><span class="dot"></span> 离线记录模式<p>数据来自后端保存的快照。<br>所有时间均为仿真时间。</p><p>D1 / D2 暂未实现</p></div>
+  </aside>
+  <main>
+    <header>
+      <div class="eyebrow">EXPERIMENT REVIEW <span>/</span> 后端实验记录</div>
+      <div class="heading-row"><div><h1>实验指标查看器</h1><p>沿时间查看人群变化，定位片区与边界。</p></div><span class="pill" id="run-status"></span></div>
+      <div class="selectors"><label>预设场景<select id="scene-select"></select></label><label class="run-label">实验记录<select id="run-select"></select></label><button id="export-json" class="secondary">导出查看器数据</button></div>
+      <div class="run-info" id="run-info"></div>
+    </header>
+    <section id="scope-panel" class="scope-panel" hidden aria-label="统计范围版本"></section>
+    <div class="stats" id="stats"></div>
+    <section class="time-panel" aria-label="时间控制">
+      <button id="play" aria-label="播放记录">播放</button>
+      <label for="time-slider">仿真时间 <strong id="current-time"></strong></label>
+      <input id="time-slider" type="range" min="0" value="0" step="1" aria-label="仿真快照">
+      <span id="time-end"></span><span class="time-note" id="map-time"></span>
+    </section>
+    <section class="metric-panel">
+      <div class="metric-heading"><div><div class="eyebrow" id="metric-code"></div><h2 id="metric-title"></h2></div><div class="actions"><span class="pill" id="metric-status"></span><button class="secondary" id="export-csv">指标 CSV</button><button class="secondary" id="export-png">图表 PNG</button></div></div>
+      <p id="metric-description" class="description"></p>
+      <div id="metric-content"></div>
+    </section>
+    <details class="quality-panel" open><summary>数据说明与完整性检查 <span id="quality-count"></span></summary><div id="quality-content"></div></details>
+    <footer><span id="build-info"></span><span>原始记录保持不变 · 刷新实验列表需重新导出</span></footer>
+  </main>
+  <script id="viewer-data" type="application/json">__VIEWER_DATA__</script>
+  <script>/* VIEWER_JS */</script>
+</body>
+</html>

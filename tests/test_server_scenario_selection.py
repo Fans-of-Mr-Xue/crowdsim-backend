@@ -38,6 +38,22 @@ class ServerScenarioSelectionTests(unittest.TestCase):
         self.assertEqual(((SCENARIO_DIR / "bund_hotspot.rou.xml").resolve(),), selection.pedestrian_route_files)
         self.assertEqual("generated_hotspot", selection.demand_mode)
 
+    def test_east_nanjing_preset_uses_its_own_network_and_generated_demand(self):
+        selection = resolve_service_scenario(arguments(scenario="east-nanjing-road"))
+        self.assertEqual("east-nanjing-road", selection.location_id)
+        self.assertEqual("east_nanjing.sumocfg", selection.config_path.name)
+        self.assertEqual("generated_hotspot", selection.demand_mode)
+        self.assertEqual("chen_yi_square", selection.hotspot_demand_spec.hotspot_id)
+        self.assertEqual(selection.config_path.parent / "crowd_hotspots.json", selection.hotspot_demand_spec.config_path)
+        self.assertEqual("/static/crowd_sim/east_nanjing_road_network.json", selection.road_network_url)
+        self.assertEqual(1800.0, selection.timeline_end_seconds)
+
+    def test_known_east_config_keeps_its_independent_hotspot_specification(self):
+        preset = resolve_service_scenario(arguments(scenario="east-nanjing-road"))
+        selection = resolve_service_scenario(arguments(config=preset.config_path))
+        self.assertEqual(preset.hotspot_demand_spec, selection.hotspot_demand_spec)
+        self.assertEqual("generated_hotspot", selection.demand_mode)
+
     def test_custom_config_requires_explicit_pedestrian_routes(self):
         with tempfile.TemporaryDirectory() as directory:
             config = Path(directory) / "custom.sumocfg"

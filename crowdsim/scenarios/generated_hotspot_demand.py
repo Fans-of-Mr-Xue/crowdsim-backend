@@ -53,7 +53,7 @@ class HotspotDemandSpec:
         if report["visitor_count"] != count or report["total_count"] != count:
             raise ValueError("generated demand count does not match requested count")
         report.update({
-            "generation_version": 2, "seed": self.seed,
+            "generation_version": 3, "seed": self.seed,
             "requested_count": requested_count, "effective_count": count,
             "default_count": hotspot["visitor_count"],
             "source_path": str(self.source_path.resolve()),

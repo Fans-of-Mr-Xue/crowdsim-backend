@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- J32: southwest P22/P23 angle-bisector intersection with the existing P13 centerline. -->
+<nodes>
+    <node id="huangpu_park_p24_p13" x="18532.475" y="5773.279" type="dead_end"/>
+</nodes>

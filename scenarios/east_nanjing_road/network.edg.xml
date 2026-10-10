@@ -1,0 +1,127 @@
+<?xml version='1.0' encoding='utf-8'?>
+<edges>
+    <edge id="R01" from="J01" to="J26" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18252.64000000,5453.15000000 18256.91000000,5455.08000000 18262.26000000,5453.44000000 18285.36000000,5461.74000000 18283.50000000,5467.68000000 18314.71000000,5475.24000000 18323.45000000,5477.08000000 18358.76000000,5484.16000000 18454.88000000,5500.31000000 18456.39507845,5500.56456218">
+        <param key="diagram.road" value="R01" />
+        <param key="source.edges" value="900252576#7" />
+    </edge>
+    <edge id="R02" from="J08" to="J02" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18455.21000000,5488.15000000 18452.62000000,5487.79000000 18417.06000000,5482.74000000 18365.90000000,5472.46000000 18319.06000000,5461.39000000 18292.53000000,5453.41000000 18272.48000000,5446.76000000 18261.76000000,5443.25000000 18257.20000000,5441.76000000">
+        <param key="diagram.road" value="R02" />
+        <param key="source.edges" value="177993351#1" />
+    </edge>
+    <edge id="R03" from="J27" to="J04" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18456.12113280,5476.94215201 18448.28000000,5475.30000000 18379.76000000,5460.95000000 18378.82000000,5461.91000000 18377.68000000,5462.54000000 18376.30000000,5462.85000000 18374.76000000,5462.39000000 18373.58000000,5461.59000000 18372.89000000,5460.58000000 18372.79000000,5459.65000000 18365.91000000,5458.20000000 18366.29000000,5456.29000000 18363.68000000,5455.77000000 18302.45000000,5442.90000000 18299.87000000,5442.20000000 18297.42000000,5441.54000000">
+        <param key="diagram.road" value="R03" />
+        <param key="source.edges" value="900252576#8" />
+    </edge>
+    <edge id="R04" from="J04" to="J03" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18297.42000000,5441.54000000 18295.04000000,5440.89000000 18290.19000000,5439.59000000 18273.03000000,5435.48000000 18269.94000000,5426.24000000 18268.54000000,5425.67000000 18264.18000000,5423.91000000">
+        <param key="diagram.road" value="R04" />
+        <param key="source.edges" value="900252576#9" />
+    </edge>
+    <edge id="R05" from="J02" to="J01" numLanes="1" allow="pedestrian" speed="1.4" width="3.20000000" spreadType="center" shape="18257.20000000,5441.76000000 18257.70000000,5444.83000000 18255.45000000,5450.43000000 18252.64000000,5453.15000000">
+        <param key="diagram.road" value="R05" />
+        <param key="source.edges" value="226657321#0 -226657321#0" />
+    </edge>
+    <edge id="R06" from="J03" to="J02" numLanes="1" allow="pedestrian" speed="1.4" width="3.20000000" spreadType="center" shape="18264.18000000,5423.91000000 18264.63000000,5427.15000000 18259.89000000,5439.28000000 18257.20000000,5441.76000000">
+        <param key="diagram.road" value="R06" />
+        <param key="source.edges" value="238346293#3 -238346293#3" />
+    </edge>
+    <edge id="R07" from="J07" to="J08" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18456.21000000,5488.30000000 18456.79000000,5488.38000000 18456.59000000,5488.35000000 18455.21000000,5488.15000000">
+        <param key="diagram.road" value="R07" />
+        <param key="source.edges" value="177993351#0" />
+    </edge>
+    <edge id="R08a" from="J06" to="J26" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18461.91000000,5509.54000000 18460.80000000,5507.74000000 18456.39507845,5500.56456218">
+        <param key="diagram.road" value="R08a" />
+        <param key="source.edges" value="178412507#6" />
+    </edge>
+    <edge id="R08b" from="J26" to="J07" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18456.39507845,5500.56456218 18456.38000000,5500.54000000 18456.23000000,5489.79000000 18456.21000000,5488.30000000">
+        <param key="diagram.road" value="R08b" />
+        <param key="source.edges" value="178412507#6" />
+    </edge>
+    <edge id="R09a" from="J07" to="J27" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18456.21000000,5488.30000000 18456.19000000,5486.80000000 18456.12113280,5476.94215201">
+        <param key="diagram.road" value="R09a" />
+        <param key="source.edges" value="178412507#7" />
+    </edge>
+    <edge id="R09b" from="J27" to="J12" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18456.12113280,5476.94215201 18456.12000000,5476.78000000 18458.87000000,5468.68000000 18459.61000000,5466.49000000">
+        <param key="diagram.road" value="R09b" />
+        <param key="source.edges" value="178412507#7" />
+    </edge>
+    <edge id="R10" from="J06" to="J09" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18461.91000000,5509.54000000 18464.43000000,5509.33000000 18469.76000000,5508.91000000 18476.02000000,5508.40000000">
+        <param key="diagram.road" value="R10" />
+        <param key="source.edges" value="178412509#0" />
+    </edge>
+    <edge id="R12" from="J09" to="J10" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18476.02000000,5508.40000000 18479.89000000,5508.15000000 18480.09000000,5508.14000000 18483.91000000,5507.89000000">
+        <param key="diagram.road" value="R12" />
+        <param key="source.edges" value="178412509#1" />
+    </edge>
+    <edge id="R13" from="J10" to="J11" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18483.91000000,5507.89000000 18490.31000000,5507.94000000 18491.79000000,5507.95000000 18504.03340300,5508.03272570">
+        <param key="diagram.road" value="R13" />
+        <param key="source.edges" value="178412509#2" />
+    </edge>
+    <edge id="R14" from="J09" to="J13" numLanes="1" allow="pedestrian" speed="1.4" width="3.20000000" spreadType="center" shape="18476.02000000,5508.40000000 18475.90000000,5505.83000000 18475.15000000,5490.31000000 18475.65000000,5471.22000000 18475.72000000,5468.49000000">
+        <param key="diagram.road" value="R14" />
+        <param key="source.edges" value="1068447135#1" />
+    </edge>
+    <edge id="R15" from="J14" to="J10" numLanes="1" allow="pedestrian" speed="1.4" width="3.20000000" spreadType="center" shape="18483.38000000,5469.05000000 18483.33000000,5471.85000000 18482.99000000,5490.77000000 18483.78000000,5505.45000000 18483.91000000,5507.89000000">
+        <param key="diagram.road" value="R15" />
+        <param key="source.edges" value="40301368#10" />
+    </edge>
+    <edge id="R16" from="J12" to="J13" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18459.61000000,5466.49000000 18462.04000000,5466.79000000 18469.41000000,5467.71000000 18475.72000000,5468.49000000">
+        <param key="diagram.road" value="R16" />
+        <param key="source.edges" value="226657312#0" />
+    </edge>
+    <edge id="R17" from="J13" to="J14" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18475.72000000,5468.49000000 18479.48000000,5468.77000000 18479.67000000,5468.78000000 18483.38000000,5469.05000000">
+        <param key="diagram.road" value="R17" />
+        <param key="source.edges" value="226657312#1" />
+    </edge>
+    <edge id="R18" from="J14" to="J15" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18483.38000000,5469.05000000 18489.73000000,5469.55000000 18492.64000000,5469.78000000 18503.80572788,5470.66251458">
+        <param key="diagram.road" value="R18" />
+        <param key="source.edges" value="226657312#2" />
+    </edge>
+    <edge id="R22" from="J18" to="J17" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18562.20000000,5677.13000000 18559.72000000,5677.79000000 18548.38000000,5680.82000000 18546.16000000,5681.41000000">
+        <param key="diagram.road" value="R22" />
+        <param key="source.edges" value="906417852#7" />
+    </edge>
+    <edge id="R23" from="J17" to="J19" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18546.16000000,5681.41000000 18544.88000000,5679.63000000 18541.72000000,5675.22000000 18538.56000000,5670.80000000">
+        <param key="diagram.road" value="R23" />
+        <param key="source.edges" value="909084827#0" />
+    </edge>
+    <edge id="R24" from="J20" to="J19" numLanes="1" allow="pedestrian" speed="1.4" width="3.20000000" spreadType="center" shape="18543.75000000,5669.71000000 18544.08000000,5671.27000000 18542.80000000,5671.54000000 18538.56000000,5670.80000000">
+        <param key="diagram.road" value="R24" />
+        <param key="source.edges" value="178412238#0 -178412238#0" />
+    </edge>
+    <edge id="R25a" from="J19" to="J11" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18538.56000000,5670.80000000 18537.61000000,5666.19000000 18514.90000000,5555.91000000 18509.32000000,5555.75000000 18505.44000000,5525.99000000 18504.03340300,5508.03272570">
+        <param key="diagram.road" value="R25a" />
+        <param key="source.edges" value="909084827#1" />
+    </edge>
+    <edge id="R25b" from="J11" to="J15" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18504.03340300,5508.03272570 18503.77000000,5504.67000000 18503.47000000,5479.12000000 18503.80572788,5470.66251458">
+        <param key="diagram.road" value="R25b" />
+        <param key="source.edges" value="909084827#1" />
+    </edge>
+    <edge id="R25c" from="J15" to="J30" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18503.80572788,5470.66251458 18504.41000000,5455.44000000 18509.23000000,5354.29000000 18524.25000000,5353.37000000 18530.14000000,5287.91000000 18530.14068439,5287.90610299">
+        <param key="diagram.road" value="R25c" />
+        <param key="source.edges" value="909084827#1" />
+    </edge>
+    <edge id="R26a" from="J18" to="J28" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18562.20000000,5677.13000000 18562.11000000,5674.83000000 18560.20000000,5622.52000000 18547.69000000,5550.57000000 18545.14032008,5508.31047514">
+        <param key="diagram.road" value="R26a" />
+        <param key="source.edges" value="909213000#1" />
+    </edge>
+    <edge id="R26b" from="J28" to="J29" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18545.14032008,5508.31047514 18543.05604482,5473.76477330">
+        <param key="diagram.road" value="R26b" />
+        <param key="source.edges" value="909213000#1" />
+    </edge>
+    <edge id="R26c" from="J29" to="J31" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18543.05604482,5473.76477330 18539.16000000,5409.19000000 18541.74000000,5357.24000000 18548.81573731,5281.95120120">
+        <param key="diagram.road" value="R26c" />
+        <param key="source.edges" value="909213000#1" />
+    </edge>
+    <edge id="R29" from="J11" to="J28" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18504.03340300,5508.03272570 18545.14032008,5508.31047514">
+        <param key="diagram.road" value="R29" />
+        <param key="source.edges" value="" />
+    </edge>
+    <edge id="R30" from="J15" to="J29" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18503.80572788,5470.66251458 18543.05604482,5473.76477330">
+        <param key="diagram.road" value="R30" />
+        <param key="source.edges" value="" />
+    </edge>
+    <edge id="R31" from="J30" to="J31" numLanes="1" allow="pedestrian" speed="1.4" width="2.00000000" spreadType="center" shape="18530.14068439,5287.90610299 18548.81573731,5281.95120120">
+        <param key="diagram.road" value="R31" />
+        <param key="source.edges" value="" />
+    </edge>
+</edges>

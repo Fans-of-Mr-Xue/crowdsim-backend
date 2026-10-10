@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from enum import Enum
+import hashlib
 import json
 from pathlib import Path
 from typing import Any, Iterable, Optional
@@ -31,6 +32,7 @@ from crowdsim.environment.poi_catalog import PoiCatalog
 from crowdsim.infrastructure.experiment_recorder import ExperimentRecorder
 from crowdsim.infrastructure.frame_serializer import FrameSerializer
 from crowdsim.infrastructure.metrics import MetricsCollector
+from crowdsim.infrastructure.observation_metrics import ObservationCollector
 from crowdsim.infrastructure.network_adapter import ResearchNetwork
 from crowdsim.infrastructure.sumo_adapter import SumoAdapter, SumoStepResult
 from crowdsim.core.population_manager import PopulationManager
@@ -38,6 +40,7 @@ from crowdsim.core.runtime_commands import RuntimeCommand, RuntimeCommandQueue
 from crowdsim.core.state_updater import StateUpdater
 from crowdsim.infrastructure.performance_probe import PerformanceProbe, timed
 from crowdsim.scenarios.generated_hotspot_demand import HotspotDemandSpec
+from crowdsim.scenarios.generated_network_demand import NetworkDemandSpec
 from traci import constants as tc
 
 
@@ -70,22 +73,27 @@ class SimulationRuntime:
         demand_mode: str = "configurable",
         timeline_end_seconds: float | None = None,
         hotspot_demand_spec: HotspotDemandSpec | None = None,
+        network_demand_spec: NetworkDemandSpec | None = None,
+        location_id: str | None = None,
+        road_network_url: str | None = None,
         requirement_record: dict | None = None,
     ) -> None:
-        if demand_mode not in {"configurable", "fixed", "generated_hotspot"}:
+        if demand_mode not in {"configurable", "fixed", "generated_hotspot", "generated_network"}:
             raise ValueError("unknown demand_mode")
         if demand_mode == "generated_hotspot" and hotspot_demand_spec is None:
             raise ValueError("generated_hotspot requires hotspot_demand_spec")
+        if demand_mode == "generated_network" and network_demand_spec is None:
+            raise ValueError("generated_network requires network_demand_spec")
         if timeline_end_seconds is not None and float(timeline_end_seconds) <= 0:
             raise ValueError("timeline_end_seconds must be positive")
         self.config_path = Path(config_path).resolve()
         self._pedestrian_route_files = tuple(Path(path).resolve() for path in pedestrian_route_files)
         self._sumo_binary = sumo_binary
         self._extra_sumo_args = tuple(extra_sumo_args or ())
-        if demand_mode == "generated_hotspot" and any(
+        if demand_mode in {"generated_hotspot", "generated_network"} and any(
             arg == "--route-files" or arg.startswith("--route-files=") for arg in self._extra_sumo_args
         ):
-            raise ValueError("generated_hotspot cannot be combined with an explicit route-file override")
+            raise ValueError("generated demand cannot be combined with an explicit route-file override")
         self.run_id = f"run-{uuid.uuid4().hex}"
         self.performance = PerformanceProbe(self.run_id)
         self.network: ResearchNetwork | None = None
@@ -116,8 +124,14 @@ class SimulationRuntime:
         self.scenario_name = str(scenario_name)
         self.demand_mode = demand_mode
         self.hotspot_demand_spec = hotspot_demand_spec
+        self.network_demand_spec = network_demand_spec
+        self.generated_demand_spec = (hotspot_demand_spec if demand_mode == "generated_hotspot"
+                                      else network_demand_spec if demand_mode == "generated_network" else None)
+        self.location_id = location_id
+        self.road_network_url = road_network_url
+        self.network_sha256 = None
         self.demand_generation_report = None
-        self.demand_capabilities = hotspot_demand_spec.capabilities() if hotspot_demand_spec else {}
+        self.demand_capabilities = self.generated_demand_spec.capabilities() if self.generated_demand_spec else {}
         self.timeline_end_seconds = float(timeline_end_seconds) if timeline_end_seconds is not None else None
         self.ignored_demand_count: int | None = None
         self.environment: CrowdEnvironment | None = None
@@ -135,6 +149,8 @@ class SimulationRuntime:
         self.demand_count: int | None = None
         self.prepared_demand_path: Path | None = None
         self.metrics_collector: MetricsCollector | None = None
+        self.observation_collector: ObservationCollector | None = None
+        self.observation_end_reason: str | None = None
         self.latest_metrics: dict = {}
         self.recorder: ExperimentRecorder | None = None
         self.poi_catalog: PoiCatalog | None = None
@@ -186,6 +202,8 @@ class SimulationRuntime:
             if "--log" not in self.adapter.extra_args:
                 self.adapter.extra_args.extend(["--log", str(run_directory / "sumo.log")])
             self.network = ResearchNetwork(str(self._net_path_from_config()))
+            self.network_sha256 = hashlib.sha256(self._net_path_from_config().read_bytes()).hexdigest()
+            self.observation_collector = ObservationCollector.from_requirement(self.requirement_record, self.network)
             self.environment = CrowdEnvironment(self.network)
             self.event_manager = EventManager(self.network)
             poi_path = PROJECT_ROOT / "config" / "pois.json"
@@ -193,10 +211,14 @@ class SimulationRuntime:
                 self.poi_catalog = PoiCatalog(self.network, poi_path)
                 self.activity_planner = ActivityPlanner(self.poi_catalog)
                 hotspot_path = PROJECT_ROOT / "config" / "crowd_hotspots.json"
-                if hotspot_path.is_file():
+                if self.hotspot_demand_spec is None and hotspot_path.is_file():
                     self.hotspot_catalog = HotspotCatalog(self.network, hotspot_path)
             if self.demand_mode == "generated_hotspot":
-                source, self.demand_generation_report = self.hotspot_demand_spec.generate(
+                # Generated scenes own their hotspot topology. It must load even
+                # when the scene has no legacy Bund POI/activity-plan catalog.
+                self.hotspot_catalog = HotspotCatalog(self.network, self.hotspot_demand_spec.config_path)
+            if self.generated_demand_spec is not None:
+                source, self.demand_generation_report = self.generated_demand_spec.generate(
                     run_directory, self._net_path_from_config(), self.demand_count
                 )
                 if self.hotspot_catalog is not None:
@@ -208,7 +230,7 @@ class SimulationRuntime:
                 self.prepared_demand_path = PROJECT_ROOT / "runs" / self.run_id / "demand.rou.xml"
                 self.population.prepare_demand(
                     self.prepared_demand_path,
-                    None if self.demand_mode == "generated_hotspot" else self.demand_count,
+                    None if self.generated_demand_spec is not None else self.demand_count,
                 )
             if self.prepared_demand_path is not None:
                 # Replay and specialised experiments may already provide a complete
@@ -219,7 +241,7 @@ class SimulationRuntime:
                     route_files = [path for path in self._route_files_from_config() if path not in replaced]
                     route_files.append(self.prepared_demand_path)
                     self.adapter.extra_args.extend(["--route-files", ",".join(str(path) for path in route_files)])
-            self.current = self.adapter.start()
+            self.current = self._materialize_initial_population(self.adapter.start())
             self.population.reconcile(self.current)
             self.route_provider = RouteProvider(self.network, self.adapter)
             if self.hotspot_catalog is not None:
@@ -235,7 +257,9 @@ class SimulationRuntime:
             )
             self.latest_metrics = self.metrics_collector.measure(self.current, self.population.states, self.population.diagnostics())
             self._refresh_visual_states()
+            self._measure_observations()
             self.recorder = ExperimentRecorder(self.run_id, self.config_path, self.adapter.diagnostics)
+            self.recorder.attach_observations(self.observation_collector)
             demand_source = self.prepared_demand_path or (self.population.route_files[0] if len(self.population.route_files) == 1 else None)
             if demand_source is not None:
                 self.recorder.archive_demand(demand_source)
@@ -247,11 +271,14 @@ class SimulationRuntime:
                 crowd_visual_state=self.visual_policy.metadata(),
                 demand=self.demand_diagnostics(),
                 demand_generation=self.demand_generation_report,
+                scenario=self.scenario_diagnostics(),
                 requirement=self.requirement_diagnostics(),
                 performance_measurement={'enabled': self.performance.enabled, 'interval_wall_seconds': self.performance.interval, 'version': 1},
                 pedestrian_route_files=[str(path) for path in self.population.route_files],
             )
             self.state = RuntimeState.READY
+            if self.observation_collector is not None:
+                self.recorder.record_step(self, self.current, self.latest_metrics)
             self.performance.start_system(self)
             self.recorder.update_manifest(system_performance_measurement=self.performance.system_metadata())
             return self.current
@@ -261,10 +288,36 @@ class SimulationRuntime:
             self._abort_resources()
             raise
 
+    def _materialize_initial_population(self, snapshot: SumoStepResult) -> SumoStepResult:
+        if not (self.demand_generation_report or {}).get("initial_population"):
+            return snapshot
+        planned_ids = set(self.population.ledger.planned_ids)
+        if planned_ids.issubset(snapshot.persons):
+            return snapshot
+        # SUMO inserts depart=0 persons on its first step. Materialize that
+        # boundary while still initializing so READY already contains the
+        # whole crowd and observation baselines use the populated scene.
+        # Keep the real engine time (normally 0.5s), never relabel it as zero.
+        snapshot = self.adapter.step()
+        missing = planned_ids - set(snapshot.persons)
+        if missing:
+            raise RuntimeError(f"initial population insertion is incomplete: {len(missing)} persons missing")
+        return snapshot
+
     def start(self) -> None:
         if self.state not in {RuntimeState.READY, RuntimeState.PAUSED}:
             raise RuntimeError(f"start is invalid in state {self.state.value}")
-        self.state = RuntimeState.RUNNING
+        try:
+            collector = self.observation_collector
+            if collector is not None and collector.evacuation is not None:
+                if collector.evacuation.start_event(self.time_seconds, self.population.ledger):
+                    self._record_observation_lifecycle()
+            self.state = RuntimeState.RUNNING
+        except Exception as exc:
+            self.last_error = f"{type(exc).__name__}: {exc}"
+            self.state = RuntimeState.ERROR
+            self._abort_resources()
+            raise
 
     def pause(self) -> None:
         if self.state != RuntimeState.RUNNING:
@@ -421,16 +474,40 @@ class SimulationRuntime:
             with self.performance.measure('metrics'):
                 self.latest_metrics = self.metrics_collector.measure(result, self.population.states, self.population.diagnostics())
         self._refresh_visual_states()
-        if self.recorder is not None:
-            with self.performance.measure('record_step'):
-                self.recorder.record_step(self, result, self.latest_metrics)
+        self._measure_observations()
         reached_timeline_end = (
             self.timeline_end_seconds is not None
             and result.time_seconds + 1e-9 >= self.timeline_end_seconds
         )
-        if reached_timeline_end or self.adapter.min_expected_number <= 0:
+        finished = reached_timeline_end or self.adapter.min_expected_number <= 0
+        if finished:
+            reason = "timeline_end" if reached_timeline_end else "no_expected_entities"
+            if self.observation_collector is not None and self.observation_collector.evacuation is not None:
+                self.latest_metrics["observation"]["evacuation"] = self.observation_collector.evacuation.summary(
+                    "complete", reason,
+                )
+        if self.recorder is not None:
+            with self.performance.measure('record_step'):
+                self.recorder.record_step(self, result, self.latest_metrics)
+        if finished:
             self.state = RuntimeState.FINISHED
+            self.observation_end_reason = reason
+            if self.recorder is not None:
+                self.recorder.finalize_observations("complete", self.observation_end_reason)
         return result
+
+    def _measure_observations(self) -> None:
+        if self.observation_collector is not None:
+            with self.performance.measure('observation_metrics'):
+                self.latest_metrics["observation"] = self.observation_collector.measure(
+                    self.current, self.population.states, self.visual_states, self.snapshot_id,
+                    ledger=self.population.ledger,
+                )
+
+    def _record_observation_lifecycle(self) -> None:
+        self.latest_metrics["observation"]["evacuation"] = self.observation_collector.evacuation.summary()
+        if self.recorder is not None:
+            self.recorder.record_observation_lifecycle()
 
     @timed('visual_classification')
     def _refresh_visual_states(self) -> None:
@@ -648,6 +725,11 @@ class SimulationRuntime:
             ("system_performance", self.performance.close_system),
             ("engine", self.adapter.close),
             ("decision_log", lambda: self.recorder.close_logs(self) if self.recorder is not None else None),
+            ("observations", lambda: self.recorder.finalize_observations(
+                "error" if self.last_error else "interrupted",
+                "runtime_error" if self.last_error else "runtime_closed",
+                self.last_error,
+            ) if self.recorder is not None else None),
         ):
             try:
                 cleanup()
@@ -683,7 +765,7 @@ class SimulationRuntime:
 
     @property
     def demand_count_configurable(self) -> bool:
-        return self.demand_mode == "generated_hotspot" or (
+        return self.generated_demand_spec is not None or (
             self.demand_mode == "configurable" and self.population.count_configurable
         )
 
@@ -691,6 +773,12 @@ class SimulationRuntime:
         requirement = record.get("requirement") if isinstance(record, dict) else None
         if not isinstance(requirement, dict):
             raise ValueError("invalid requirement record")
+        if self.state in {RuntimeState.READY, RuntimeState.RUNNING, RuntimeState.PAUSED, RuntimeState.FINISHED} and (
+            self.requirement_record is None
+            or requirement != self.requirement_record.get("requirement")
+            or record.get("requirement_id") != self.requirement_id
+        ):
+            raise ValueError("changing observation scope or requirement requires a runtime reset")
         distributions = requirement.get("population", {}).get("distributions")
         if not isinstance(distributions, dict):
             raise ValueError("requirement population distributions are missing")
@@ -700,15 +788,19 @@ class SimulationRuntime:
 
     def supports_requirement(self, record: dict) -> bool:
         location_id = record.get("requirement", {}).get("spatial_scope", {}).get("location_id")
+        if self.location_id is not None and location_id != self.location_id:
+            return False
         if location_id == "memorial-tower":
             return self.demand_mode == "generated_hotspot"
+        if location_id == "east-nanjing-road":
+            return self.location_id == location_id and self.demand_mode in {"generated_hotspot", "generated_network"}
         return False
 
     def configure_demand(self, count) -> bool:
         if not isinstance(count, int) or isinstance(count, bool) or count < 0:
             raise ValueError("count must be a non-negative integer")
-        if self.demand_mode == "generated_hotspot":
-            self.hotspot_demand_spec.validate_count(count)
+        if self.generated_demand_spec is not None:
+            self.generated_demand_spec.validate_count(count)
         if self.demand_mode == "fixed":
             self.ignored_demand_count = count
             return False
@@ -731,6 +823,9 @@ class SimulationRuntime:
         demand_mode = self.demand_mode
         timeline_end_seconds = self.timeline_end_seconds
         hotspot_demand_spec = self.hotspot_demand_spec
+        network_demand_spec = self.network_demand_spec
+        location_id = self.location_id
+        road_network_url = self.road_network_url
         requirement_record = self.requirement_record
         self.close()
         self.__init__(
@@ -744,6 +839,9 @@ class SimulationRuntime:
             demand_mode=demand_mode,
             timeline_end_seconds=timeline_end_seconds,
             hotspot_demand_spec=hotspot_demand_spec,
+            network_demand_spec=network_demand_spec,
+            location_id=location_id,
+            road_network_url=road_network_url,
             requirement_record=requirement_record,
         )
         if count is not None:
@@ -786,6 +884,9 @@ class SimulationRuntime:
                 state.planned_wait_until = None
             hold_until = plan.wait_until or (self.time_seconds + self.decision_scheduler.period_seconds)
             state.next_decision_time = max(state.next_decision_time, hold_until)
+        if self.observation_collector is not None:
+            self.observation_collector.record_execution(plan, result,
+                self.population.states[plan.person_id], self.observations.get(plan.person_id))
         if self.recorder is not None:
             with self.performance.measure('decision_log'):
                 self.recorder.record_decision(
@@ -878,6 +979,10 @@ class SimulationRuntime:
         record = self.interventions.apply_command(name, data, self.time_seconds)
         self.active_policy = name
         self.event_state = {"crowd_gathering": {"active": bool(name), "decision": name, "step": self.snapshot_index}}
+        collector = self.observation_collector
+        if collector is not None and collector.evacuation is not None:
+            collector.evacuation.policy_applied(record, data)
+            self._record_observation_lifecycle()
         return record
 
     def _config_root(self):
@@ -918,6 +1023,13 @@ class SimulationRuntime:
             "scenario": self.scenario_diagnostics(),
             "demand": self.demand_diagnostics(),
             "requirement": self.requirement_diagnostics(),
+            "observation": {
+                "enabled": self.observation_collector is not None,
+                "metric_ids": list(self.observation_collector.metric_ids) if self.observation_collector else [],
+                "end_reason": self.observation_end_reason,
+                "recorded_samples": self.recorder.observation_writer.recorded_samples
+                if self.recorder and self.recorder.observation_writer else 0,
+            },
             "routing": self.routing_diagnostics,
         }
 
@@ -933,10 +1045,19 @@ class SimulationRuntime:
         if self.timeline_end_seconds is not None:
             steps = int(round(self.timeline_end_seconds / self.step_length))
         configured_hotspots = set(getattr(self.population, "hotspot_ids", {}).values())
-        active_hotspot_id = next(iter(configured_hotspots)) if len(configured_hotspots) == 1 else None
+        active_hotspot_id = (next(iter(configured_hotspots)) if len(configured_hotspots) == 1
+                             else self.demand_capabilities.get("hotspot_id"))
+        hotspot = (self.hotspot_catalog.hotspots.get(active_hotspot_id, {})
+                   if self.hotspot_catalog is not None else {})
         return {
             "name": self.scenario_name,
+            "location_id": self.location_id,
+            "road_network_url": self.road_network_url,
+            "network_sha256": self.network_sha256,
+            "demand_mode": self.demand_mode,
             "active_hotspot_id": active_hotspot_id,
+            "active_hotspot_name": hotspot.get("name"),
+            "active_hotspot_anchor": dict(hotspot.get("anchor", {})),
             "timeline_start_seconds": 0.0,
             "timeline_end_seconds": self.timeline_end_seconds,
             "timeline_step_count": steps,

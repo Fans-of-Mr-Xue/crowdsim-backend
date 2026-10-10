@@ -103,7 +103,7 @@ class HotspotCatalog:
                 item.get("external_approach_edges", ()), hotspot_id, "external_approach_edges"
             )
             spawn_distribution = str(item.get("spawn_distribution", "edge_start")).strip()
-            if spawn_distribution not in {"edge_start", "edge_length_weighted_random"}:
+            if spawn_distribution not in {"edge_start", "edge_length_weighted_random", "edge_length_uniform"}:
                 raise ValueError(f"hotspot {hotspot_id} has unsupported spawn_distribution")
             spawn_margin = float(item.get("spawn_position_margin_meters", 0.0))
             if not math.isfinite(spawn_margin) or spawn_margin < 0.0:
@@ -118,6 +118,16 @@ class HotspotCatalog:
                 raise ValueError(
                     f"hotspot {hotspot_id} has unsupported destination_distribution"
                 )
+            destination_weights = item.get("destination_edge_weights")
+            if destination_weights is not None:
+                if (destination_distribution != "edge_uniform_random"
+                        or not isinstance(destination_weights, dict)
+                        or set(destination_weights) != set(visitor_destination_edges)):
+                    raise ValueError(f"hotspot {hotspot_id} destination_edge_weights must cover exactly the uniform destination edges")
+                destination_weights = {edge: float(weight) for edge, weight in destination_weights.items()}
+                if any(not math.isfinite(weight) or weight <= 0 for weight in destination_weights.values()):
+                    raise ValueError(f"hotspot {hotspot_id} destination_edge_weights must be positive and finite")
+                item["destination_edge_weights"] = destination_weights
             destination_margin = float(item.get("destination_position_margin_meters", 0.0))
             if not math.isfinite(destination_margin) or destination_margin < 0.0:
                 raise ValueError(
@@ -235,10 +245,13 @@ class HotspotCatalog:
                 )
             if park_entry_edges and not set(park_entry_edges).issubset(park_access_edges):
                 raise ValueError(f"hotspot {hotspot_id} park_entry_edges must be park access edges")
-            allowed_spawn_edges = set(external_approach_edges) | set(park_access_edges)
+            allowed_spawn_edges = (
+                set(external_approach_edges) | set(park_access_edges)
+                | set(entry_edges) | set(target_edges)
+            )
             if visitor_spawn_edges and not set(visitor_spawn_edges).issubset(allowed_spawn_edges):
                 raise ValueError(
-                    f"hotspot {hotspot_id} visitor_spawn_edges must be external approach or park access edges"
+                    f"hotspot {hotspot_id} visitor_spawn_edges must be approach, portal or target edges"
                 )
             external_spawn_edges = set(visitor_spawn_edges) & set(external_approach_edges)
             if external_spawn_edges and not park_entry_edges:
@@ -511,6 +524,10 @@ class HotspotCatalog:
                 "spawn_distribution": item["spawn_distribution"],
                 "spawn_position_margin_meters": item["spawn_position_margin_meters"],
                 "destination_distribution": item["destination_distribution"],
+                "destination_edge_weights": (
+                    dict(item["destination_edge_weights"])
+                    if item.get("destination_edge_weights") is not None else None
+                ),
                 "destination_position_margin_meters": item["destination_position_margin_meters"],
                 "visitor_departure_window_seconds": (
                     list(item["visitor_departure_window_seconds"])

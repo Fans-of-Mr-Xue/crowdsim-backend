@@ -1,0 +1,14 @@
+{
+  "grid_size_m": 20.0,
+  "boundary_band_width_m": 5.0,
+  "low_speed_threshold_mps": 0.2,
+  "blocked_confirmation_seconds": 5.0,
+  "crowded_density_person_per_m2": 1.5,
+  "avoidance_risk_threshold": 0.35,
+  "avoidance_duration_seconds": 5.0,
+  "stress_tense_threshold": 0.4,
+  "stress_panic_threshold": 0.7,
+  "stress_hysteresis": 0.05,
+  "psychology_confirmation_seconds": 5.0,
+  "max_grid_cells": 10000
+}
