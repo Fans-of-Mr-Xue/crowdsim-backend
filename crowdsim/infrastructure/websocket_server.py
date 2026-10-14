@@ -18,7 +18,15 @@ from postanalysis_api.main import handle_http
 from postanalysis_api.services.application import PostAnalysisApp
 
 from crowdsim.core.simulation_runtime import RuntimeState
+from crowdsim.domain.artificial_society_spec import (
+    ArtificialSocietySpec,
+    ArtificialSocietyValidationError,
+)
 from crowdsim.domain.requirement_spec import RequirementSpec, RequirementValidationError
+from crowdsim.infrastructure.artificial_society_repository import (
+    ArtificialSocietyNotFoundError,
+    ArtificialSocietyRepository,
+)
 from crowdsim.infrastructure.requirement_repository import (
     RequirementNotFoundError,
     RequirementRepository,
@@ -34,6 +42,7 @@ class OverlayServer:
         *,
         requirement_repository: RequirementRepository | None = None,
         runtime_factory: Callable[[dict], Any] | None = None,
+        artificial_society_repository: ArtificialSocietyRepository | None = None,
     ) -> None:
         self.simulator = simulator
         self.host = host
@@ -46,6 +55,9 @@ class OverlayServer:
         self._loop_stop = asyncio.Event()
         self.requirements = requirement_repository or RequirementRepository()
         self.runtime_factory = runtime_factory
+        self.artificial_societies = artificial_society_repository or ArtificialSocietyRepository(
+            requirements=self.requirements
+        )
         self.post_app: PostAnalysisApp | None = None
 
     async def start(self) -> None:
@@ -166,6 +178,26 @@ class OverlayServer:
         if (required and not run_id) or (run_id is not None and run_id != self.simulator.run_id):
             raise CommandError("run_not_found", "the requested simulation run is no longer available")
 
+    @staticmethod
+    def _artificial_society_binding(simulator) -> tuple[str, str]:
+        record = getattr(simulator, "artificial_society_record", None)
+        if not isinstance(record, dict):
+            return "", ""
+        return str(record.get("model_id") or ""), str(record.get("fingerprint") or "")
+
+    @classmethod
+    def _check_artificial_society_binding(cls, simulator, data, *, required=False) -> None:
+        expected_id = data.get("artificial_society_id")
+        expected_fingerprint = data.get("artificial_society_fingerprint")
+        if expected_id is None and expected_fingerprint is None and not required:
+            return
+        active_id, active_fingerprint = cls._artificial_society_binding(simulator)
+        if str(expected_id or "") != active_id or str(expected_fingerprint or "") != active_fingerprint:
+            raise CommandError(
+                "run_artificial_society_mismatch",
+                "the retained run belongs to a different artificial society version",
+            )
+
     async def _attach_run(self, data, request_id) -> None:
         self._check_run(data, required=True)
         if self.simulator.state not in {RuntimeState.READY, RuntimeState.RUNNING, RuntimeState.PAUSED, RuntimeState.FINISHED}:
@@ -175,6 +207,7 @@ class OverlayServer:
         for field in ("location_id", "network_sha256"):
             if data.get(field) is not None and data[field] != getattr(self.simulator, field, None):
                 raise CommandError("run_scenario_mismatch", "the retained run belongs to a different scenario or network")
+        self._check_artificial_society_binding(self.simulator, data)
         await self._stop_loop()
         if self.simulator.state == RuntimeState.RUNNING:
             self.simulator.pause()
@@ -214,7 +247,43 @@ class OverlayServer:
         count = data.get("count")
         if count is not None and (type(count) is not int or count < 0):
             raise CommandError("invalid_count", "count must be a non-negative integer")
+        artificial_society_record = None
+        artificial_society_id = data.get("artificial_society_id")
+        if artificial_society_id == "":
+            artificial_society_id = None
+        current_model_id, current_model_fingerprint = self._artificial_society_binding(self.simulator)
+        if (not replace_run and artificial_society_id is not None
+                and self.simulator.state in {RuntimeState.READY, RuntimeState.RUNNING, RuntimeState.PAUSED, RuntimeState.FINISHED}
+                and (str(artificial_society_id) != current_model_id
+                     or (data.get("artificial_society_fingerprint") is not None
+                         and str(data.get("artificial_society_fingerprint") or "") != current_model_fingerprint))):
+            raise CommandError(
+                "artificial_society_requires_reset",
+                "changing artificial society version requires an explicit reset",
+            )
+        if artificial_society_id is not None:
+            try:
+                artificial_society_record = self.artificial_societies.load(artificial_society_id)
+            except ArtificialSocietyNotFoundError as exc:
+                raise CommandError("unknown_artificial_society", str(exc)) from exc
+            except (OSError, ValueError) as exc:
+                raise CommandError("invalid_artificial_society_record", str(exc)) from exc
+            expected_fingerprint = data.get("artificial_society_fingerprint")
+            if expected_fingerprint is not None and str(expected_fingerprint or "") != str(artificial_society_record.get("fingerprint") or ""):
+                raise CommandError(
+                    "artificial_society_version_mismatch",
+                    "artificial society model fingerprint does not match the requested version",
+                )
+
         requirement_id = data.get("requirement_id")
+        if artificial_society_record is not None:
+            model_requirement_id = artificial_society_record["requirement_id"]
+            if requirement_id is not None and requirement_id != model_requirement_id:
+                raise CommandError(
+                    "artificial_society_requirement_mismatch",
+                    "artificial society model and requirement must reference the same version",
+                )
+            requirement_id = model_requirement_id
         if requirement_id is not None:
             try:
                 requirement_record = self.requirements.load(requirement_id)
@@ -272,8 +341,19 @@ class OverlayServer:
         if candidate is not self.simulator:
             await self._stop_runtime()
             self.simulator = candidate
+        # Bind only after validation and after the old tick/engine have stopped.
         if requirement_record is not None:
+            previous_model = getattr(self.simulator, "artificial_society_record", None)
+            if (replace_run and artificial_society_record is None
+                    and isinstance(previous_model, dict)
+                    and previous_model.get("requirement_id") != requirement_record["requirement_id"]):
+                # reset() re-applies its saved model: never carry a model from a
+                # different requirement into the newly requested run.
+                self.simulator.artificial_society_record = None
+                self.simulator.artificial_society_id = None
             self.simulator.configure_requirement(requirement_record)
+        if artificial_society_record is not None:
+            self.simulator.configure_artificial_society(artificial_society_record)
         state = self.simulator.state
         if replace_run and seed is not None:
             await self._stop_loop()
@@ -320,6 +400,24 @@ class OverlayServer:
             "warnings": record["capabilities"].get("warnings", []),
         })
 
+    async def _submit_artificial_society(self, data, request_id) -> None:
+        try:
+            spec = ArtificialSocietySpec.parse(data.get("artificial_society"))
+            record = self.artificial_societies.create(spec)
+        except ArtificialSocietyValidationError as exc:
+            raise CommandError("invalid_artificial_society", str(exc)) from exc
+        except (OSError, ValueError) as exc:
+            raise CommandError("artificial_society_storage_failed", str(exc)) from exc
+        await self._send({
+            "type": "artificial_society_accepted",
+            "request_id": request_id,
+            "model_id": record["model_id"],
+            "schema_version": record["schema_version"],
+            "fingerprint": record["fingerprint"],
+            "status": record["status"],
+            "capabilities": record["capabilities"],
+        })
+
     async def _handle_message(self, raw: str) -> None:
         try:
             data = json.loads(raw)
@@ -349,6 +447,8 @@ class OverlayServer:
                 await self._submit_requirement(data, request_id)
             elif action == "submit_experiment_requirement":
                 await self._submit_requirement(data, request_id, for_experiment=True)
+            elif action == "submit_artificial_society":
+                await self._submit_artificial_society(data, request_id)
             elif action == "configure":
                 await self._configure(data, request_id)
             elif action == "attach_run":

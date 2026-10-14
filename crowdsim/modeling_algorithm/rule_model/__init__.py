@@ -1,0 +1,1 @@
+"""Rule model algorithm namespace."""

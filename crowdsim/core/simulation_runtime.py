@@ -41,6 +41,7 @@ from crowdsim.core.population_manager import PopulationManager
 from crowdsim.core.runtime_commands import RuntimeCommand, RuntimeCommandQueue
 from crowdsim.core.state_updater import StateUpdater
 from crowdsim.infrastructure.performance_probe import PerformanceProbe, timed
+from crowdsim.modeling_algorithm.individual_model.pipeline import IndividualModelingEngine
 from crowdsim.scenarios.generated_hotspot_demand import HotspotDemandSpec
 from crowdsim.scenarios.generated_network_demand import NetworkDemandSpec
 from traci import constants as tc
@@ -127,7 +128,13 @@ class SimulationRuntime:
         self.serialized_events: list[dict] = []
         self.event_state: dict = {"crowd_gathering": {"active": False, "decision": "", "step": -1}}
         self.active_policy = ""
-        self.decision_engine = decision_engine if decision_engine is not None else AgentDecisionEngine()
+        base_decision_engine = (
+            decision_engine.fallback_engine
+            if isinstance(decision_engine, IndividualModelingEngine)
+            else decision_engine
+        )
+        base_decision_engine = base_decision_engine if base_decision_engine is not None else AgentDecisionEngine()
+        self.decision_engine = IndividualModelingEngine(base_decision_engine)
         self.decision_scheduler = DecisionScheduler(self.decision_engine)
         self.use_llm = bool(use_llm)
         self.scenario_name = str(scenario_name)
@@ -174,6 +181,8 @@ class SimulationRuntime:
         self.commands = RuntimeCommandQueue()
         self.requirement_record: dict | None = None
         self.requirement_id: str | None = None
+        self.artificial_society_record: dict | None = None
+        self.artificial_society_id: str | None = None
         if requirement_record is not None:
             self.configure_requirement(requirement_record)
 
@@ -209,6 +218,11 @@ class SimulationRuntime:
             if self.requirement_record is not None:
                 (run_directory / "requirement.json").write_text(
                     json.dumps(self.requirement_record, ensure_ascii=False, indent=2) + "\n",
+                    encoding="utf-8",
+                )
+            if self.artificial_society_record is not None:
+                (run_directory / "artificial_society.json").write_text(
+                    json.dumps(self.artificial_society_record, ensure_ascii=False, indent=2) + "\n",
                     encoding="utf-8",
                 )
             self.performance.attach(run_directory)
@@ -816,6 +830,34 @@ class SimulationRuntime:
         self.requirement_id = str(record.get("requirement_id") or "") or None
         self.population.profile_sampler.configure_distributions(distributions)
 
+    def configure_artificial_society(self, record: dict) -> None:
+        model = record.get("artificial_society") if isinstance(record, dict) else None
+        if not isinstance(model, dict):
+            raise ValueError("invalid artificial society record")
+        model_requirement_id = str(record.get("requirement_id") or "")
+        if not self.requirement_id or model_requirement_id != self.requirement_id:
+            raise ValueError("artificial society model does not match configured requirement")
+        individual = model.get("individual_model", {})
+        agent_types = list(individual.get("agent_types") or [])
+        self.population.profile_sampler.configure_active_attributes(
+            dict(individual.get("profile_parameters") or {})
+        )
+        self.population.profile_sampler.configure_agent_types(agent_types)
+        self.decision_engine.configure(agent_types)
+        if self.decision_engine.enabled:
+            self.use_llm = True
+        runtime_parameters = model.get("rule_model", {}).get("runtime_parameters", {})
+        decision_period = float(runtime_parameters.get("decision_period_seconds", self.decision_scheduler.period_seconds))
+        if decision_period <= 0:
+            raise ValueError("decision period must be positive")
+        self.decision_scheduler.period_seconds = decision_period
+        visual_state = runtime_parameters.get("visual_state")
+        if isinstance(visual_state, dict):
+            self.visual_policy = CrowdVisualPolicy(**visual_state)
+            self.state_updater.visual_policy = self.visual_policy
+        self.artificial_society_record = json.loads(json.dumps(record, ensure_ascii=False))
+        self.artificial_society_id = str(record.get("model_id") or "") or None
+
     def supports_requirement(self, record: dict) -> bool:
         location_id = record.get("requirement", {}).get("spatial_scope", {}).get("location_id")
         if self.location_id is not None and location_id != self.location_id:
@@ -857,6 +899,7 @@ class SimulationRuntime:
         location_id = self.location_id
         road_network_url = self.road_network_url
         requirement_record = self.requirement_record
+        artificial_society_record = self.artificial_society_record
         random_seed = self.random_seed if seed is None else int(seed)
         self.close()
         self.__init__(
@@ -876,6 +919,8 @@ class SimulationRuntime:
             requirement_record=requirement_record,
             random_seed=random_seed,
         )
+        if artificial_society_record is not None:
+            self.configure_artificial_society(artificial_society_record)
         if count is not None:
             self.configure_demand(count)
         return self.initialize()
@@ -885,9 +930,15 @@ class SimulationRuntime:
         return self.serializer.build_frame(self)
 
     def init_frame(self) -> dict:
-        return {**self.serializer.build_init(self), 'performance_measurement': {
-            'enabled': self.performance.enabled, 'interval_wall_seconds': self.performance.interval, 'version': 1,
-        }}
+        return {
+            **self.serializer.build_init(self),
+            'artificial_society': self.artificial_society_diagnostics(),
+            'performance_measurement': {
+                'enabled': self.performance.enabled,
+                'interval_wall_seconds': self.performance.interval,
+                'version': 1,
+            },
+        }
 
     @timed('plan_apply_including_log')
     def apply_plan(self, plan):
@@ -1294,6 +1345,7 @@ class SimulationRuntime:
                 "recorded_samples": self.recorder.observation_writer.recorded_samples
                 if self.recorder and self.recorder.observation_writer else 0,
             },
+            "artificial_society": self.artificial_society_diagnostics(),
             "routing": self.routing_diagnostics,
         }
 
@@ -1340,6 +1392,19 @@ class SimulationRuntime:
 
     def requirement_diagnostics(self) -> dict | None:
         return requirement_runtime_summary(self.requirement_record)
+
+    def artificial_society_diagnostics(self) -> dict | None:
+        if not isinstance(self.artificial_society_record, dict):
+            return None
+        return {
+            "model_id": self.artificial_society_record.get("model_id"),
+            "schema_version": self.artificial_society_record.get("schema_version"),
+            "fingerprint": self.artificial_society_record.get("fingerprint"),
+            "requirement_id": self.artificial_society_record.get("requirement_id"),
+            "source": self.artificial_society_record.get("source"),
+            "capabilities": self.artificial_society_record.get("capabilities", {}),
+            "modeling_algorithms": self.decision_engine.diagnostics(),
+        }
 
     def __enter__(self) -> "SimulationRuntime":
         self.initialize()
