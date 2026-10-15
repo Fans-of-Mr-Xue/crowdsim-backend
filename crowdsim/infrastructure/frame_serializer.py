@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict
+from copy import deepcopy
 
 from crowdsim.domain.crowdsim_models import AgentState, MotionSnapshot
 from crowdsim.domain.runtime_capabilities import control_capabilities
@@ -61,6 +62,7 @@ class FrameSerializer:
                 if isinstance(values, dict) and values.get("entryId")
             }
         metrics = {
+            "during": deepcopy(measured.get("during")),
             "visual_state_counts": measured.get("visual_state_counts", {}),
             "visual_density_unknown_count": measured.get("visual_density_unknown_count", 0),
             "avg_speed": round(average(combined), 3),

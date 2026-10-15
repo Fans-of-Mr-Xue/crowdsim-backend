@@ -11,6 +11,7 @@ def control_capabilities() -> dict:
             "publish_guidance": {"durationSeconds": {"min": 1, "max": 1800}},
             "set_inflow_rate": {
                 "rate": {"min": 0.0, "max": 1.0},
+                "endTimeSeconds": {"min": 1, "max": 1800},
                 "durationSeconds": {"min": 1, "max": 1800},
                 "implementation": "token-bucket admission meter queues pedestrians before the configured entry edge",
             },

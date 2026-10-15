@@ -19,6 +19,8 @@ from .gateway_events import EventBus
 from .metrics import summarize_observations
 from .observation_builder import ObservationBuilder
 from .provenance import runtime_provenance
+from crowdsim.domain.during_preset import verify_bound_preset
+from crowdsim.domain.requirement_spec import RequirementSpec
 
 
 class ExperimentOrchestrator:
@@ -33,6 +35,7 @@ class ExperimentOrchestrator:
         self._queue: queue.Queue[dict[str, Any] | None] = queue.Queue()
         self._worker: threading.Thread | None = None
         self._lock = threading.RLock()
+        self._start_lock = threading.Lock()
         self._active: dict[str, Any] | None = None
         self._request_actions: dict[str, dict[str, Any]] = {}
         self.owner_id = f"crowdsim_{uuid.uuid4().hex}"
@@ -48,6 +51,12 @@ class ExperimentOrchestrator:
         return self.repository.create_experiment(user_id, workspace_id, config)
 
     def start_experiment(self, user_id: str, workspace_id: str, experiment_id: str) -> list[dict[str, Any]]:
+        # HTTP handlers run concurrently. Keep the existence check and entire
+        # matrix creation atomic so simultaneous starts cannot enqueue duplicates.
+        with self._start_lock:
+            return self._start_experiment(user_id, workspace_id, experiment_id)
+
+    def _start_experiment(self, user_id: str, workspace_id: str, experiment_id: str) -> list[dict[str, Any]]:
         experiment = self.repository.get_experiment(user_id, workspace_id, experiment_id)
         if not experiment:
             raise LookupError("EXPERIMENT_NOT_FOUND")
@@ -58,6 +67,11 @@ class ExperimentOrchestrator:
             # Idempotent start: a completed/failed matrix is immutable. A rerun
             # is represented by a new experiment so provenance stays unambiguous.
             return existing
+        if experiment["scenario"].get("presetId"):
+            verify_bound_preset(experiment["scenario"])
+        if experiment.get("duringReplay"):
+            from .during_strategy import validate_replay_binding
+            validate_replay_binding(experiment)
         runs = []
         matrix = [(seed, method_id) for seed in experiment["scenario"]["seedSet"] for method_id in experiment["methods"]]
         random.Random(experiment_id).shuffle(matrix)
@@ -127,6 +141,8 @@ class ExperimentOrchestrator:
             raise LookupError("RUN_NOT_FOUND")
         if active["experiment"].get("mode", "formal") != "debug":
             raise RuntimeError("MANUAL_ACTION_FORBIDDEN")
+        if active["experiment"].get("scenario", {}).get("presetId"):
+            raise RuntimeError("MANUAL_ACTION_FORBIDDEN")
         reason = str(reason or "").strip()
         if not reason:
             raise ContractError("manual action reason is required")
@@ -170,6 +186,15 @@ class ExperimentOrchestrator:
                 self._execute_run(item)
             except Exception as exc:
                 run = item["run"]
+                if item["experiment"]["scenario"].get("presetId"):
+                    with self._lock:
+                        active = self._active
+                    if active and active.get("runtime_run_id"):
+                        try:
+                            request_id = self.gateway.submit({"action": "pause", "run_id": active["runtime_run_id"]})
+                            self.gateway.wait_for_ack(request_id, timeout=10)
+                        except Exception:
+                            self.logger.warning("Could not pause failed during run", exc_info=True)
                 self.repository.update_run(item["user_id"], item["workspace_id"], run["run_id"], {
                     "status": "failed", "error": f"{type(exc).__name__}: {exc}", "completed_at": datetime.now(timezone.utc),
                 })
@@ -209,6 +234,18 @@ class ExperimentOrchestrator:
         reset_result = self.gateway.wait_for_ack(reset_id, timeout=120)
         if not reset_result or reset_result.get("type") == "error":
             raise RuntimeError(f"CrowdSim reset failed: {reset_result}")
+        active["runtime_run_id"] = reset_result.get("run_id")
+        if experiment["scenario"].get("presetId"):
+            during = (reset_result.get("metrics") or {}).get("during") or {}
+            if (not active["runtime_run_id"]
+                    or during.get("preset_fingerprint") != experiment["scenario"]["presetFingerprint"]
+                    or not during.get("population_valid")):
+                raise RuntimeError("CrowdSim did not initialize the requested during preset")
+            self.repository.update_run(user_id, workspace_id, run["run_id"], {
+                "runtime_run_id": active["runtime_run_id"],
+                "preset_id": during["preset_id"], "preset_version": during["preset_version"],
+                "preset_fingerprint": during["preset_fingerprint"],
+            })
         requirement = reset_result.get("requirement") or {}
         if requirement.get("requirement_id"):
             self.repository.update_run(user_id, workspace_id, run["run_id"], {
@@ -216,6 +253,8 @@ class ExperimentOrchestrator:
                 "population": requirement.get("population_total"),
             })
         self.validator.update_capabilities(self.gateway.capabilities)
+        if run["method_id"] == "D2" and "endTimeSeconds" not in self.gateway.capabilities.get("supportedActions", {}).get("set_inflow_rate", {}):
+            raise RuntimeError("当前仿真服务不支持限流绝对结束时间，请更新并重启仿真服务后重试。")
         emergency_event = dict(experiment["scenario"].get("emergencyEvent") or {})
         if emergency_event.get("enabled", False):
             event_payload = {
@@ -269,6 +308,20 @@ class ExperimentOrchestrator:
     def _prepare_reset_payload(self, scenario: dict[str, Any], seed: int) -> dict[str, Any]:
         """Derive an immutable experiment requirement before changing its population."""
         payload = {"action": "reset", "seed": int(seed)}
+        if scenario.get("presetId"):
+            preset = verify_bound_preset(scenario)
+            submission_id = self.gateway.submit({
+                "action": "submit_experiment_requirement", "requirement": deepcopy(preset["requirement"]),
+            })
+            accepted = self.gateway.wait_for_ack(submission_id, timeout=20)
+            expected = "sha256:" + RequirementSpec.parse(preset["requirement"]).fingerprint
+            if (not accepted or accepted.get("type") != "requirement_accepted"
+                    or not accepted.get("requirement_id") or accepted.get("fingerprint") != expected):
+                raise RuntimeError(f"CrowdSim preset requirement submission failed: {accepted}")
+            return {**payload, "count": preset["requirement"]["population"]["total"],
+                    "requirement_id": accepted["requirement_id"], "during_preset_id": preset["preset_id"],
+                    "during_preset_version": preset["version"],
+                    "during_preset_fingerprint": scenario["presetFingerprint"]}
         count = scenario.get("population")
         if count is None:
             return payload
@@ -307,7 +360,14 @@ class ExperimentOrchestrator:
             return
         if not active:
             return
-        if payload.get("type") == "update":
+        if payload.get("type") == "runtime_error":
+            # A fatal first tick may arrive before the worker arms normal frame
+            # sampling. The reset's runtime ID already identifies the new run.
+            if (active.get("runtime_run_id") and not active["terminal"].is_set()
+                    and active.get("runtime_run_id") == payload.get("run_id")):
+                active["failure"] = payload.get("message") or "CrowdSim runtime failed"
+                active["terminal"].set()
+        elif payload.get("type") == "update":
             self._handle_frame(active, payload)
         elif payload.get("type") == "command_result":
             self._handle_ack(active, payload)
@@ -321,6 +381,8 @@ class ExperimentOrchestrator:
         # recorded exactly once and no action is issued after completion.
         if not active.get("accept_frames", True) or active["terminal"].is_set():
             return
+        if active.get("runtime_run_id") and frame.get("run_id") != active["runtime_run_id"]:
+            return
         if not self.repository.acquire_gateway_lease(self.owner_id, ttl_seconds=90):
             active["failure"] = "CrowdSim gateway lease was lost"
             active["terminal"].set()
@@ -330,31 +392,46 @@ class ExperimentOrchestrator:
         duration = float(experiment["scenario"]["durationSeconds"])
         interval = float(experiment["observationIntervalSeconds"])
         last_time = active["last_observation_time"]
-        if last_time is None or sim_time - last_time >= interval or sim_time >= duration:
+        runtime_state = str(frame.get("runtime_state") or "").lower()
+        terminal = runtime_state in {"finished", "error", "closed"} or sim_time >= duration
+        if experiment["scenario"].get("presetId"):
+            during = (frame.get("metrics") or {}).get("during") or {}
+            if (during.get("preset_fingerprint") != experiment["scenario"]["presetFingerprint"]
+                    or during.get("time_seconds") != sim_time or not during.get("population_valid")
+                    or (terminal and not during.get("run_complete"))):
+                active["failure"] = "during preset evidence missing, invalid, or prematurely terminated"
+                active["terminal"].set()
+                return
+        # Fixed replay schedules are checked on every received simulation frame,
+        # independent of the regular report sampling interval.
+        scheduled = run["method_id"] == "D2" and active["controller"].due(sim_time)
+        if last_time is None or sim_time - last_time >= interval or terminal or scheduled:
             observation = active["builder"].build(
                 frame, run_id=run["run_id"], last_decision=active["last_decision"], last_effect=active["last_effect"],
             )
             active["last_observation_time"] = sim_time
             active["last_observation"] = observation
             self.repository.record("observations", active["user_id"], active["workspace_id"], run["run_id"], observation)
-            self.repository.record("metrics", active["user_id"], active["workspace_id"], run["run_id"], {"simTimeSeconds": sim_time, "global": observation["global"]})
+            self.repository.record("metrics", active["user_id"], active["workspace_id"], run["run_id"], {
+                "simTimeSeconds": sim_time, "global": observation["global"], "during": observation.get("during"),
+            })
             self.events.publish("observation_created", {"observation": observation}, run_id=run["run_id"])
             self._complete_effect_windows(active, observation)
             context = {"trigger": "critical_risk" if observation["global"]["riskIndex"] >= 0.8 else "observation_cycle", "capabilities": self.gateway.capabilities}
             # The observation at the horizon belongs in the final metrics, but
             # a new decision there cannot affect this run and would leak an
             # action into the following reset.
-            if sim_time < duration and active["controller"].should_decide(observation, context):
+            if not terminal and active["controller"].should_decide(observation, context):
                 self._make_decision(active, observation, context)
-        if frame.get("runtime_state") in {"finished", "error", "closed"} or sim_time >= duration:
+        if terminal:
             if active.get("last_observation") is not None:
                 self._complete_effect_windows(active, active["last_observation"], force=True)
-            if sim_time >= duration and frame.get("runtime_state") not in {"finished", "error", "closed"}:
+            if sim_time >= duration and runtime_state not in {"finished", "error", "closed"}:
                 try:
                     self.gateway.submit({"action": "pause"})
                 except Exception:
                     pass
-            if frame.get("runtime_state") == "error":
+            if runtime_state == "error":
                 active["failure"] = "CrowdSim entered error state"
             active["terminal"].set()
 

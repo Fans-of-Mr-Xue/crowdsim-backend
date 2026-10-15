@@ -1,6 +1,6 @@
 # CrowdSim SUMO Backend
 
-该后端以 SUMO 1.24.0 striping 为唯一运动引擎。SUMO 管理行人实际位置、速度、道路交互、出发和到达；Python 管理画像、局部观察、心理状态、信息、策略、危险输入、实验记录和 WebSocket 协议。事件不会直接乘人数或密度。
+该后端以 SUMO striping 为唯一运动引擎。统一入口支持远端原有的 SUMO 1.24.0 和本机使用的 1.27.0。SUMO 管理行人实际位置、速度、道路交互、出发和到达；Python 管理画像、局部观察、心理状态、信息、策略、危险输入、实验记录和 WebSocket 协议。事件不会直接乘人数或密度。
 
 ## 工程结构
 
@@ -41,7 +41,7 @@ D:\sumo-1.24.0\bin\sumo.exe --version
 `pip install -e .` 会安装仓库内的 `crowdsim` 与 `arde_emergency`。C0—C5 对比实验、
 ARDE 算法和 SUMO 仿真全部由本仓库提供，运行时不依赖 MACE。
 
-`traci`、`sumolib` 和 SUMO 二进制必须使用相同版本。仅安装 Python 包不包含完整 SUMO 仿真程序。
+`requirements.txt` 保留现有的 `traci==1.24.0`、`sumolib==1.24.0`。本机 Conda `sumo` 环境通过这两个客户端包连接系统安装的 SUMO 1.27.0；已有可用安装无需重新安装或降级。统一入口接受这两种 SUMO 程序版本，版本放行不等于全部场景已完成仿真验证。仅安装 `traci`、`sumolib` 不包含完整 SUMO 仿真程序。
 
 ## 启动
 
@@ -51,11 +51,23 @@ ARDE 算法和 SUMO 仿真全部由本仓库提供，运行时不依赖 MACE。
 ./run.sh
 ```
 
-统一入口 `start_backend.py` 自动检查 SUMO 和依赖，复用或建立模型（本机 8800 → 服务器 8800）与数据库（本机 27018 → 服务器 27018）的 SSH 隧道，然后启动 SUMO（8765）、对话存储（8767）和数据服务（8768）。这些模块仍以独立进程运行，不会把爬虫或数据库操作加入仿真循环。前端仍用 `npm run dev` 单独启动，无需再手动启动对话服务或执行 SSH 映射命令。
+统一入口 `start_backend.py` 自动检查 SUMO 和依赖，复用或建立模型（本机 8800 → 服务器 8800）与数据库（本机 27018 → 服务器 27018）的 SSH 隧道，然后启动 SUMO（8765）、实验控制（8766）、对话存储（8767）和数据服务（8768）。事中聊天和实验方案页依赖 8766；该服务也纳入就绪检查和退出清理。已运行且健康的服务会复用，退出启动器不会关闭复用的进程。这些模块仍以独立进程运行，不会把爬虫或数据库操作加入仿真循环。前端仍用 `npm run dev` 单独启动，无需再手动启动对话、实验控制服务或执行 SSH 映射命令。
 
-首次配置时，复制 `.env.example` 为 `.env` 并填写 MongoDB 密码和 SSH 参数；已有 `.env` 按模板补齐 `CROWDSIM_MODEL_SSH_*` 即可。默认模板使用已知数据库 SSH 账号 `hyq`；如果模型服务器账号不同，请修改 `CROWDSIM_MODEL_SSH_USER`。远程模型服务需要已经运行并提供本机 8800 对应的 OpenAI 兼容接口，启动器负责建立连接，不负责在远端部署模型。
+修改后端代码后，可显式重启本机四个服务以加载新代码：
 
-SSH 使用现有密钥或 ssh-agent，也可在终端按提示输入密码；密码不会写入配置。统一入口使用明确的 SSH 连接参数，不读取用户 SSH 配置中的其他转发规则。已有可用服务和连接会被复用；Ctrl+C 会停止本次创建的服务和隧道，复用的外部进程会保留。启动失败时会清理本次创建的进程，输出失败原因。
+```sh
+bash run.sh --restart-services
+```
+
+不加该参数时仍按原方式复用服务，其他同学的启动习惯不变。重启模式只处理当前用户、当前仓库的 8765～8768 进程，核对进程命令、工作目录和启动时间；不会按端口无差别结束进程，也不重启远程大模型／数据库或已有 SSH 隧道。它会中断使用这四个本机服务的页面连接，因此共用同一台电脑的同学应先结束相关操作。
+
+如果旧 `run.sh` 启动器仍在运行，需先在那个终端按 Ctrl+C，再运行上述命令；这可以避免旧启动器发现子服务退出后连带清理其余服务与隧道。运行中／排队的实验、仍有子进程的仿真（包括暂停的 SUMO）会阻止自动重启；无法确认归属或状态时也会退出并提示手动处理。重启模式目前需要 macOS/Linux 的 `ps` 和 `lsof`，不影响其他平台的普通启动。
+
+重启后新服务由本次启动器管理；Ctrl+C、SIGTERM 或终端 SIGHUP 会清理本次创建的服务。默认模式复用的外部进程仍会保留。`--check --restart-services` 仍然只做环境检查，不重启任何服务。
+
+首次配置时，复制 `.env.example` 为 `.env` 并填写 MongoDB 密码和 SSH 参数；已有 `.env` 按模板补齐 `CROWDSIM_MODEL_SSH_*` 即可。默认模板使用 SSH 账号 `wym`；如果模型服务器账号不同，请修改 `CROWDSIM_MODEL_SSH_USER`。远程模型服务需要已经运行并提供本机 8800 对应的 OpenAI 兼容接口，启动器负责建立连接，不负责在远端部署模型。
+
+SSH 使用现有密钥或 ssh-agent，也可在终端按提示输入 SSH 账户密码；输入时终端不显示字符，SSH 密码不会写入配置。SSH 进程保留启动终端以支持密码输入，后台服务使用独立进程组；请从交互终端运行需要密码认证的启动命令。统一入口使用明确的 SSH 连接参数，不读取用户 SSH 配置中的其他转发规则。已有可用服务和连接会被复用；Ctrl+C 会停止本次创建的服务和隧道，复用的外部进程会保留。启动失败时会清理本次创建的进程，输出失败原因。
 
 统一入口要求 Python 3.10 或更新版本。`run.sh` 优先使用 `CROWDSIM_PYTHON`，其次使用明确设置的 `CROWDSIM_CONDA` 环境，再使用本仓库 `.venv-backend/bin/python`，最后使用 PATH 中的 `python`。如需在其他电脑初始化独立环境，可执行：
 
@@ -64,7 +76,7 @@ python -m venv .venv-backend
 .venv-backend/bin/python -m pip install -r requirements.txt
 ```
 
-需要 SUMO 1.24.0 二进制程序；已经安装 SUMO 的电脑可设置 `SUMO_HOME` 或 `SUMO_BINARY`。也可按 [SUMO 官方安装说明](https://sumo.dlr.de/docs/Downloads.php#python_packages__virtual_environments) 在该环境中安装匹配版本的程序：
+需要 SUMO 1.24.0 或 1.27.0 二进制程序；已经安装 SUMO 的电脑可设置 `SUMO_HOME` 或 `SUMO_BINARY`，也可以使用 PATH 中的 `sumo`。如果尚未安装 SUMO，可按 [SUMO 官方安装说明](https://sumo.dlr.de/docs/Downloads.php#python_packages__virtual_environments) 在独立环境中安装程序，例如：
 
 ```sh
 .venv-backend/bin/python -m pip install eclipse-sumo==1.24.0
@@ -77,7 +89,22 @@ python start_backend.py
 ./run.sh --check
 ```
 
+本机 macOS 已有 Conda `sumo` 环境和系统 SUMO 1.27.0，可直接复用：
+
+```sh
+conda activate sumo
+./run.sh --check
+./run.sh
+```
+
+`--check` 会加载 `requirements.txt` 对应的服务依赖、识别实际 SUMO 程序版本并解析场景配置，不启动服务或 SSH 隧道，也不验证远端连接。缺少 `pypdf` 或 `beautifulsoup4` 等依赖时先补齐 Python 包；如果镜像源没有返回可用版本，可在当前环境执行 `python -m pip install --index-url https://pypi.org/simple -r requirements.txt`。无需因此安装另一份 SUMO。
+
 默认使用热点场景，可通过 `./run.sh --scenario research` 或 `./run.sh --scenario east-nanjing-road` 切换。`--no-tunnels` 表示只复用现有数据库和模型连接，不创建 SSH 隧道。原有模块入口仍可单独使用，下面是分别启动时的说明。
+
+正常启动默认关闭开销监测。单独测试时添加 `./run.sh --monitor-performance`；可配合
+`--performance-interval 10` 调整汇总/系统采样间隔，或 `--performance-no-system` 关闭系统采样。
+诊断记录位于本次 `runs/<run_id>/performance.*`，正常仿真的业务记录照常保存。
+旧 `CROWDSIM_PERF`、`CROWDSIM_SYSTEM_PERF` 环境变量不再开启监测。详见[按需开销监测说明](docs/performance_monitoring.md)。
 
 共享 MongoDB 数据集接口、前端连接和独立数据库服务启动见[数据库接入说明](docs/database_api.md)。数据服务使用独立 8768 进程：
 
@@ -105,7 +132,11 @@ D:\Anaconda\python.exe crowdsim_overlay_server.py --host 127.0.0.1 --port 8765
 
 默认 WebSocket 地址为 `ws://127.0.0.1:8765`，事后阶段任务 HTTP API 同时挂在 `http://127.0.0.1:8765/api/v1/post`；只需启动这一个 8765 进程。WebSocket 协议见 `docs/websocket_protocol.md`，事后请求与响应契约见 [事后任务 API 规范](postanalysis_api/README.md)。启动前须安装更新后的 `requirements.txt`（新增 `aiohttp`，用于同一端口处理 HTTP 与 WebSocket）。
 
-如需运行原有、独立的 C0—C5 控制实验，可另开终端启动其 8766 服务；**事后反事实工作台和新任务 API 不依赖它**：
+方案页保存需求时，8766 通过 `POST http://127.0.0.1:8765/api/v1/requirements` 调用同一套需求校验与存储逻辑，保存到 `runs/requirements` 并返回原格式的需求回执，不建立或保留仿真 WebSocket。推演页随后通过原 WebSocket 按该需求编号初始化。已有实验使用的网关连接不受需求保存影响；原 WebSocket 的 `submit_requirement` 协议仍保留。升级此流程后需同时重启 8765、8766。
+
+新版第一类推演实验需求的 `experiment.duration_seconds` 在初始化和重置时作为单次推演时间上限，同时设置运行时结束条件和 SUMO 的 `--end`；达到上限的仿真步结束后停止，全部行程完成仍可提前结束。推演页时间线采用同一上限，并核对后端回执以防复用旧服务。该值使用仿真秒，不改变原活动安排或自动执行平行实验次数。旧版固定实验及没有此字段的历史需求继续使用原场景时长。
+
+事中预设实验及 C0—C5 控制实验共用 8766 服务，`./run.sh` 已自动启动它。若使用原仿真入口而非统一入口，可另开终端手动启动：
 
 ```powershell
 D:\Anaconda\python.exe -m crowdsim.experiments --host 127.0.0.1 --port 8766 --gateway-url ws://127.0.0.1:8765

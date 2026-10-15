@@ -1,0 +1,418 @@
+{
+  "schema_version": 1,
+  "preset_id": "memorial-tower-during-v1",
+  "version": 1,
+  "status": "stage0_verified",
+  "name": "人民英雄纪念塔聚集与散场",
+  "location_id": "memorial-tower",
+  "hotspot_id": "people_heroes_monument",
+  "scenario": "hotspot",
+  "sumo_config": "scenarios/shanghai_bund/bund.hotspot.sumocfg",
+  "source_demand": "scenarios/shanghai_bund/bund_ped.rou.xml",
+  "hotspot_config": "config/crowd_hotspots.json",
+  "requirement": {
+    "schema_version": 1,
+    "project": {
+      "title": "纪念塔人群聚集预设实验",
+      "description": "在固定公园路网、观景热点及活动时间下，记录持续拥挤和行程完成情况，为固定限流策略对照实验提供基线。"
+    },
+    "spatial_scope": {
+      "source": "preset",
+      "location_id": "memorial-tower",
+      "location_code": "BUND-01",
+      "name": "人民英雄纪念塔",
+      "address": "上海市黄浦区中山东一路 500 号黄浦公园",
+      "description": "覆盖人民英雄纪念塔圆形滨水平台与黄浦公园整体范围。",
+      "area_type": "滨水开放空间",
+      "attention_radius": "约 190 m",
+      "risk": "局部高密度聚集",
+      "map_zoom": 18,
+      "crs": "EPSG:4326",
+      "center": [
+        121.48682,
+        31.24428
+      ],
+      "boundary": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.486,
+              31.2429385
+            ],
+            [
+              121.4859814,
+              31.2426652
+            ],
+            [
+              121.4860198,
+              31.2426112
+            ],
+            [
+              121.4865657,
+              31.2425654
+            ],
+            [
+              121.4866022,
+              31.2426934
+            ],
+            [
+              121.4866482,
+              31.2428831
+            ],
+            [
+              121.4867319,
+              31.243134
+            ],
+            [
+              121.4869566,
+              31.2437441
+            ],
+            [
+              121.4869076,
+              31.2437648
+            ],
+            [
+              121.4869478,
+              31.2438393
+            ],
+            [
+              121.4869767,
+              31.2438869
+            ],
+            [
+              121.4868345,
+              31.2439379
+            ],
+            [
+              121.4867634,
+              31.2439838
+            ],
+            [
+              121.4868004,
+              31.2440399
+            ],
+            [
+              121.4868919,
+              31.2440236
+            ],
+            [
+              121.4869784,
+              31.2440175
+            ],
+            [
+              121.4870501,
+              31.2440316
+            ],
+            [
+              121.4871555,
+              31.2440983
+            ],
+            [
+              121.4871921,
+              31.2441404
+            ],
+            [
+              121.487218,
+              31.2441968
+            ],
+            [
+              121.4872326,
+              31.2442689
+            ],
+            [
+              121.4872245,
+              31.2443388
+            ],
+            [
+              121.4871891,
+              31.2444063
+            ],
+            [
+              121.4871396,
+              31.2444605
+            ],
+            [
+              121.4870753,
+              31.2445019
+            ],
+            [
+              121.4870105,
+              31.2445229
+            ],
+            [
+              121.4869334,
+              31.2445315
+            ],
+            [
+              121.4868563,
+              31.2445271
+            ],
+            [
+              121.4867855,
+              31.2444949
+            ],
+            [
+              121.4867186,
+              31.2444581
+            ],
+            [
+              121.48668,
+              31.2444101
+            ],
+            [
+              121.4866494,
+              31.2443601
+            ],
+            [
+              121.486638,
+              31.2443146
+            ],
+            [
+              121.4865696,
+              31.2443232
+            ],
+            [
+              121.4865985,
+              31.244459
+            ],
+            [
+              121.486628,
+              31.2445587
+            ],
+            [
+              121.4864533,
+              31.2446294
+            ],
+            [
+              121.4858584,
+              31.2448599
+            ],
+            [
+              121.4858453,
+              31.2448067
+            ],
+            [
+              121.4856587,
+              31.2448787
+            ],
+            [
+              121.4856335,
+              31.2445123
+            ],
+            [
+              121.4856604,
+              31.2443747
+            ],
+            [
+              121.4859071,
+              31.2436271
+            ],
+            [
+              121.4859769,
+              31.2433634
+            ],
+            [
+              121.4859942,
+              31.243129
+            ],
+            [
+              121.486,
+              31.2429385
+            ]
+          ]
+        ]
+      }
+    },
+    "population": {
+      "total": 700,
+      "distributions": {
+        "crowd_role": [
+          {
+            "code": "commuter",
+            "label": "通勤者",
+            "percent": 5
+          },
+          {
+            "code": "service_worker",
+            "label": "工作服务者",
+            "percent": 5
+          },
+          {
+            "code": "resident_daily",
+            "label": "居民日常",
+            "percent": 10
+          },
+          {
+            "code": "consumer",
+            "label": "消费者",
+            "percent": 10
+          },
+          {
+            "code": "social_visitor",
+            "label": "社交游客",
+            "percent": 20
+          },
+          {
+            "code": "leisure_visitor",
+            "label": "休闲游客",
+            "percent": 30
+          },
+          {
+            "code": "public_affairs_participant",
+            "label": "公共事务参与者",
+            "percent": 10
+          },
+          {
+            "code": "passerby",
+            "label": "过境行人",
+            "percent": 10
+          }
+        ],
+        "age_band": [
+          {
+            "code": "age_0_17",
+            "label": "0-17",
+            "percent": 10
+          },
+          {
+            "code": "age_18_34",
+            "label": "18-34",
+            "percent": 30
+          },
+          {
+            "code": "age_35_54",
+            "label": "35-54",
+            "percent": 25
+          },
+          {
+            "code": "age_55_64",
+            "label": "55-64",
+            "percent": 20
+          },
+          {
+            "code": "age_65_plus",
+            "label": "65+",
+            "percent": 15
+          }
+        ],
+        "origin": [
+          {
+            "id": "origin-2",
+            "label": "上海本地",
+            "percent": 60
+          },
+          {
+            "id": "origin-3",
+            "label": "国内其他省市",
+            "percent": 30
+          },
+          {
+            "id": "origin-4",
+            "label": "国际游客",
+            "percent": 10
+          }
+        ],
+        "gender": [
+          {
+            "code": "female",
+            "label": "女性",
+            "percent": 50
+          },
+          {
+            "code": "male",
+            "label": "男性",
+            "percent": 50
+          }
+        ]
+      }
+    },
+    "scenario": {
+      "event_category": {
+        "id": "culture",
+        "code": "E1",
+        "label": "文化娱乐活动",
+        "description": "适用于演出、展览、节庆和庙会等场景，重点模拟观众集中入场、现场驻留与散场时的人群变化。"
+      }
+    },
+    "observation": {
+      "metric_ids": [
+        "global-density",
+        "local-density",
+        "global-speed",
+        "local-speed",
+        "pedestrian-state-change"
+      ],
+      "local_partition_mode": "uniform"
+    }
+  },
+  "experiment": {
+    "duration_seconds": 1800,
+    "step_seconds": 0.5,
+    "default_repetitions": 5,
+    "seed_set": [
+      20260908,
+      20260909,
+      20260910,
+      20260911,
+      20260912
+    ],
+    "pedestrian_decision_mode": "rule",
+    "baseline_control": "none"
+  },
+  "phenomenon": {
+    "id": "sustained_core_crowding",
+    "version": 1,
+    "scope_edges": [
+      "679361567#1",
+      "679361567#2",
+      "679361567#2_m3_north"
+    ],
+    "states": [
+      "crowded",
+      "high_risk"
+    ],
+    "minimum_count": 10,
+    "minimum_fraction": 0.2,
+    "confirmation_seconds": 10.0,
+    "observation_start_seconds": 1.0,
+    "maximum_sample_gap_seconds": 0.5,
+    "denominator": "all_active_pedestrians_on_scope_edges",
+    "unknown_density": "interrupt_continuity_and_mark_unavailable"
+  },
+  "control_scope": {
+    "earliest_apply_seconds": 1.0,
+    "latest_end_seconds": 800.0,
+    "allowed_action_types": [
+      "set_inflow_rate"
+    ],
+    "entry_ids": [
+      "178411801#0",
+      "177931018#0",
+      "monument_m3"
+    ],
+    "smoke_check": {
+      "apply_at_seconds": 120,
+      "entry_id": "178411801#0",
+      "rate": 0.45,
+      "duration_seconds": 120
+    }
+  },
+  "resource_sha256": {
+    "scenarios/shanghai_bund/bund.hotspot.sumocfg": "f80cf732f69e7550d501cf39da40710ee1c26c7a6b50ac2142121606a35771d2",
+    "scenarios/shanghai_bund/bund.net.xml": "7f1e900aa870f1c55d90ad18d18f41690f774083996d68fe1a06d8f114c9c67c",
+    "scenarios/shanghai_bund/bund_ped.rou.xml": "f3c88ba4243216434b22aa8ea62bcac45b950892011c8479a7c237c95c5bec2a",
+    "config/crowd_hotspots.json": "3d1c112a6bba75338e60573076cbc792ddaa2dcb629e5088a239a592d399bad2",
+    "config/crowd_visual_state.json": "00335c97cd3903f118f8c6ec27aefe667067eaaac12831afbaba3176651a42b8",
+    "config/population_profiles.json": "f45aab4fac089ef3f86a300f7e4fe8197e141c1a33cbd56bd690ee4f85e2054d",
+    "config/experiment.json": "e88adc249ae8d351bd76913caa425fc4b6466e3997a62e65034d09659b7c6d91",
+    "config/pois.json": "d7d152c5675ff49701d5804ec31537999b653579223e67b93609aa4ab365a0bd",
+    "config/observation_metrics.json": "c7898752b74fab6321f4fad20d0e247fa9f806704fa85ed40898f6968e527bd9"
+  },
+  "validation": {
+    "evidence": "docs/validation/during_stage0.json",
+    "validated_on": "2026-10-14",
+    "sumo_version": "SUMO 1.27.0",
+    "formal_repetitions_completed": 0
+  }
+}

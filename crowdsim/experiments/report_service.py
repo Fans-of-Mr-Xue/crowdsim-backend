@@ -6,7 +6,7 @@ from collections import defaultdict
 from typing import Any
 
 from .contracts import public_time
-from .metrics import aggregate_method_runs, summarize_control_records, summarize_observations
+from .metrics import aggregate_method_runs, summarize_control_records, summarize_observations, summarize_during_runs
 from .statistics import paired_comparison
 
 
@@ -19,6 +19,7 @@ class ReportService:
         if not experiment:
             raise LookupError("EXPERIMENT_NOT_FOUND")
         runs = self.repository.list_runs(user_id, workspace_id, experiment_id)
+        is_during = bool(experiment.get("scenario", {}).get("presetId"))
         grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
         run_rows = []
         arde_evolution: dict[str, list[dict[str, Any]]] = {}
@@ -41,12 +42,18 @@ class ReportService:
                     llm_records,
                 ),
             }
+            if is_during and "during" not in summary:
+                summary.update(finalCompletionRate=None, t95Seconds=None, duringRunComplete=False)
             row = {"runId": run["run_id"], "methodId": run["method_id"], "seed": run["seed"], "status": run["status"], "formal": run.get("formal", True), **summary}
             run_rows.append(row)
             # Completed debug runs are still valid descriptive evidence. Keep
             # them in summaries so exploratory experiments do not render as
             # empty cards; limitations below prevent statistical overclaiming.
-            if run["status"] == "completed" and summary:
+            if (run["status"] == "completed" and summary
+                    and (not is_during or (summary.get("duringRunComplete")
+                         and summary.get("crowdingCoverage") == "complete"
+                         and summary["during"].get("population_valid")
+                         and summary["during"].get("preset_fingerprint") == experiment["scenario"]["presetFingerprint"]))):
                 grouped[run["method_id"]].append(summary)
             if run["method_id"] == "C5":
                 series = []
@@ -68,7 +75,7 @@ class ReportService:
                 arde_evolution[run["run_id"]] = series
         comparisons = []
         completed_rows = [row for row in run_rows if row.get("status") == "completed"]
-        for baseline in sorted({row["methodId"] for row in completed_rows} - {"C5"}):
+        for baseline in ([] if is_during else sorted({row["methodId"] for row in completed_rows} - {"C5"})):
             for metric, lower_is_better in (
                 ("cumulativeRiskExposurePersonSeconds", True),
                 ("highRiskPersonMinutes", True),
@@ -112,5 +119,16 @@ class ReportService:
                 "descriptiveOnly": bool(debug_run_count or paired_seed_count < 2),
             },
         }
+        if is_during:
+            report["during"] = summarize_during_runs(run_rows, experiment["scenario"])
+            report["dataScope"].update(descriptiveOnly=True, validDuringRunCount=report["during"]["validRunCount"])
+            report["limitations"].append(
+                "持续拥挤使用后端每步累计结果；频率仅统计完整结束且观测覆盖完整的轮次。"
+                "它是预设仿真样本频率；完成率和 95% 时间指行程完成，不表示到达安全区。"
+            )
+        if experiment.get("duringReplay"):
+            from .during_strategy import replay_comparison
+            report["strategyComparison"] = replay_comparison(experiment, run_rows, self.repository, user_id, workspace_id)
+            report["limitations"].append(report["strategyComparison"]["limitations"])
         self.repository.save_report(user_id, workspace_id, experiment_id, report)
         return report

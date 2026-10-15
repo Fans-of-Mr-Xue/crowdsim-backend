@@ -54,6 +54,8 @@ class ActionValidator:
             if not str(target.get("entryId") or ""):
                 raise ContractError("set_inflow_rate requires entryId")
             params["rate"] = self._number(params.get("rate"), "rate", 0, 1)
+            if "endTimeSeconds" in params:
+                params["endTimeSeconds"] = self._number(params["endTimeSeconds"], "endTimeSeconds", 1, 1800)
         if action_type == "set_edge_capacity":
             if not str(target.get("edgeId") or ""):
                 raise ContractError("set_edge_capacity requires edgeId")

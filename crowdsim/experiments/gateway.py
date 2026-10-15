@@ -6,12 +6,14 @@ import asyncio
 from concurrent.futures import Future
 from copy import deepcopy
 import json
+import inspect
 import logging
 import queue
 import threading
 import time
 import uuid
 from typing import Any, Callable
+from urllib.parse import urlsplit
 
 
 class CrowdSimGateway:
@@ -184,7 +186,7 @@ class CrowdSimGateway:
         while not self._stopping.is_set():
             self._set_state("connecting")
             try:
-                async with websockets.connect(self.url, ping_interval=20, ping_timeout=20, max_size=32 * 1024 * 1024) as websocket:
+                async with websockets.connect(self.url, **self._connection_options(websockets.connect)) as websocket:
                     self._websocket = websocket
                     self._send_lock = asyncio.Lock()
                     self._connected.set()
@@ -201,6 +203,15 @@ class CrowdSimGateway:
                 self._reject_pending("gateway_disconnected")
             if not self._stopping.is_set():
                 await asyncio.sleep(self.reconnect_seconds)
+
+    def _connection_options(self, connect) -> dict[str, Any]:
+        options = {"ping_interval": 20, "ping_timeout": 20, "max_size": 32 * 1024 * 1024}
+        # New websockets versions discover system proxies (including macOS VPN
+        # proxies). A loopback simulator connection must stay on this machine.
+        # Older supported versions have no proxy option and already connect directly.
+        if urlsplit(self.url).hostname in {"localhost", "127.0.0.1", "::1"} and "proxy" in inspect.signature(connect).parameters:
+            options["proxy"] = None
+        return options
 
     async def _send(self, payload: dict[str, Any]) -> None:
         websocket = self._websocket

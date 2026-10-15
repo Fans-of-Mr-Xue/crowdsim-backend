@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from crowdsim.infrastructure.performance_probe import PerformanceProbe
+from crowdsim.infrastructure.performance_probe import PerformanceOptions, PerformanceProbe
 from crowdsim.core.simulation_runtime import SimulationRuntime, RuntimeState
 from crowdsim.infrastructure.experiment_recorder import ExperimentRecorder
 from crowdsim.infrastructure.websocket_server import OverlayServer
@@ -79,8 +79,8 @@ class PerformanceIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 side_effect=lambda *args: ExperimentRecorder(*args, root=root / 'runs'),
             ):
                 for enabled in (False, True):
-                    runtime = SimulationRuntime(scenario / 'scenario.sumocfg', pedestrian_route_files=[scenario / 'demand.rou.xml'])
-                    runtime.performance.enabled = enabled
+                    runtime = SimulationRuntime(scenario / 'scenario.sumocfg', pedestrian_route_files=[scenario / 'demand.rou.xml'],
+                                                performance_options=PerformanceOptions(enabled=enabled, system_enabled=False))
                     trace = []
                     try:
                         runtime.initialize(); runtime.start()
@@ -102,7 +102,8 @@ class PerformanceIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 'crowdsim.core.simulation_runtime.ExperimentRecorder',
                 side_effect=lambda *args: ExperimentRecorder(*args, root=root / 'runs'),
             ):
-                runtime = SimulationRuntime(scenario / 'scenario.sumocfg', pedestrian_route_files=[scenario / 'demand.rou.xml'])
+                runtime = SimulationRuntime(scenario / 'scenario.sumocfg', pedestrian_route_files=[scenario / 'demand.rou.xml'],
+                                            performance_options=PerformanceOptions(enabled=True, system_enabled=False))
                 server = OverlayServer(runtime, '127.0.0.1', 0)
                 client = CapturingClient(); server.client = client
                 try:

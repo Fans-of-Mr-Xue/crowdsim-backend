@@ -1,0 +1,1860 @@
+{
+  "status": "passed",
+  "reason": "用户恢复验收后，另建同种子实验补齐复现，并完成正常报告实际重启核验",
+  "services_stopped": true,
+  "single_experiment_id": "exp_689280e7cfac43109604ff166cb25265",
+  "batch_experiment_id": "exp_dcc7fe8f0c7c441880be97d2619dd69e",
+  "complete_runs": 6,
+  "batch_completed_runs": 4,
+  "batch_cancelled_runs": 1,
+  "preset_fingerprint": "sha256:87a14590b4d6ac2c8a7edbb178dc89b081caec5562b953114df773c4adf964d6",
+  "runs": [
+    {
+      "run_id": "run_61b9e5b7441a4176985a702650edb3b8",
+      "runtime_run_id": "run-edb42cbe268e45b48d8c5df85fd68e90",
+      "requirement_id": "req-dd142752d5144e6ebee1c4471b339a38",
+      "seed": 20260908,
+      "trajectory_rows": 2330254,
+      "checked_steps": 3600,
+      "during_sha256": "a3e7308775a13853ff5aa3c797d82dae7f0a14567ee1e7446514b9e686906f21",
+      "demand_sha256": "4f848b4aafa6895ebc1e16ae94a4f47c045f466057f1348f74bd81a0db39844a",
+      "time_seconds": 1800.0,
+      "end_reason": "observation_horizon",
+      "first_confirmed_seconds": 130.5,
+      "crowding_duration_seconds": 1679.5,
+      "occurred": true,
+      "completion_rate": 0.2,
+      "t95_seconds": null,
+      "peak_orange_and_red": 477,
+      "peak_red": 0,
+      "coverage": "complete",
+      "population_valid": true,
+      "run_complete": true,
+      "checks": [
+        "trajectory_core_counts",
+        "active_ledger",
+        "continuous_half_second_coverage",
+        "independent_10_second_events",
+        "initialization_exclusion",
+        "completion_and_t95",
+        "arrival_lifecycle",
+        "seed_and_requirement_binding",
+        "report_final_equals_archive",
+        "no_control_holds",
+        "rule_mode_no_llm"
+      ]
+    },
+    {
+      "run_id": "run_51f483e0c64d4e4ab973d048cec3985b",
+      "runtime_run_id": "run-38278eac482742f894c319bf8238485a",
+      "requirement_id": "req-9756d8c39027467599d693d3f458d4b3",
+      "seed": 20260909,
+      "trajectory_rows": 1616330,
+      "checked_steps": 2829,
+      "during_sha256": "6e01906a6113401044633d536c36b8b2d0d1358c585e5c942173e9fbbcd4910d",
+      "demand_sha256": "6b1e03f25955c62785ca713f11c3351969b527d037c311a0b882196e4fab7dd4",
+      "time_seconds": 1414.5,
+      "end_reason": "all_arrived",
+      "first_confirmed_seconds": 136.5,
+      "crowding_duration_seconds": 876.5,
+      "occurred": true,
+      "completion_rate": 1.0,
+      "t95_seconds": 1299.0,
+      "peak_orange_and_red": 625,
+      "peak_red": 167,
+      "coverage": "complete",
+      "population_valid": true,
+      "run_complete": true,
+      "checks": [
+        "trajectory_core_counts",
+        "active_ledger",
+        "continuous_half_second_coverage",
+        "independent_10_second_events",
+        "initialization_exclusion",
+        "completion_and_t95",
+        "arrival_lifecycle",
+        "seed_and_requirement_binding",
+        "report_final_equals_archive",
+        "no_control_holds",
+        "rule_mode_no_llm"
+      ]
+    },
+    {
+      "run_id": "run_b73bf97b41604e37b2cdabdd9b44da08",
+      "runtime_run_id": "run-76dc21ddd9d94b5da77c7205bf5db115",
+      "requirement_id": "req-2d4ca30dfac04c34ad781281bc64a37b",
+      "seed": 20260910,
+      "trajectory_rows": 1631892,
+      "checked_steps": 3600,
+      "during_sha256": "8fe81408e594ab5916459c4d6e2e402477d05efe3a796f1c8fe47ba89061ce19",
+      "demand_sha256": "5c688f70f7dd9b871f2fbe4483060ac35ee14412c19e11fa59922bda05e97ce8",
+      "time_seconds": 1800.0,
+      "end_reason": "observation_horizon",
+      "first_confirmed_seconds": 145.5,
+      "crowding_duration_seconds": 859.0,
+      "occurred": true,
+      "completion_rate": 0.9857142857142858,
+      "t95_seconds": 1327.5,
+      "peak_orange_and_red": 627,
+      "peak_red": 184,
+      "coverage": "complete",
+      "population_valid": true,
+      "run_complete": true,
+      "checks": [
+        "trajectory_core_counts",
+        "active_ledger",
+        "continuous_half_second_coverage",
+        "independent_10_second_events",
+        "initialization_exclusion",
+        "completion_and_t95",
+        "arrival_lifecycle",
+        "seed_and_requirement_binding",
+        "report_final_equals_archive",
+        "no_control_holds",
+        "rule_mode_no_llm"
+      ]
+    },
+    {
+      "run_id": "run_96d20b537dda4b8b8ca2f936dab3504e",
+      "runtime_run_id": "run-228a0071d98640f6b1bebec24b1b7d52",
+      "requirement_id": "req-0e3c075924844bed86471971bb08b2be",
+      "seed": 20260911,
+      "trajectory_rows": 1787416,
+      "checked_steps": 3600,
+      "during_sha256": "994aefe57158307e6e60ef3aa744a811c0f232b6fd45043ac175f2f124431d11",
+      "demand_sha256": "6530d89dc400e15b299eb948b7de1c63a8b1d1f907221e68e9ee4eee658bc7e6",
+      "time_seconds": 1800.0,
+      "end_reason": "observation_horizon",
+      "first_confirmed_seconds": 152.0,
+      "crowding_duration_seconds": 853.5,
+      "occurred": true,
+      "completion_rate": 0.7885714285714286,
+      "t95_seconds": null,
+      "peak_orange_and_red": 618,
+      "peak_red": 126,
+      "coverage": "complete",
+      "population_valid": true,
+      "run_complete": true,
+      "checks": [
+        "trajectory_core_counts",
+        "active_ledger",
+        "continuous_half_second_coverage",
+        "independent_10_second_events",
+        "initialization_exclusion",
+        "completion_and_t95",
+        "arrival_lifecycle",
+        "seed_and_requirement_binding",
+        "report_final_equals_archive",
+        "no_control_holds",
+        "rule_mode_no_llm"
+      ]
+    },
+    {
+      "run_id": "run_74306be0bc73489cad6798f38a20bbcf",
+      "runtime_run_id": "run-bcaa088f40cd45899863077fdfa88646",
+      "requirement_id": "req-13025ad746c34e2e9afe9cbc28ed4bc4",
+      "seed": 20260912,
+      "trajectory_rows": 1840770,
+      "checked_steps": 3600,
+      "during_sha256": "7010a9c5ccbcf903b7fd83a2027e6840069c013758219e02ea63bb98b9dbd808",
+      "demand_sha256": "5057b81d1d2cb45edad639401b8b23dd75c81d7093beac0bc77d58e28baf1198",
+      "time_seconds": 1800.0,
+      "end_reason": "observation_horizon",
+      "first_confirmed_seconds": 138.0,
+      "crowding_duration_seconds": 1610.5,
+      "occurred": true,
+      "completion_rate": 0.73,
+      "t95_seconds": null,
+      "peak_orange_and_red": 628,
+      "peak_red": 100,
+      "coverage": "complete",
+      "population_valid": true,
+      "run_complete": true,
+      "checks": [
+        "trajectory_core_counts",
+        "active_ledger",
+        "continuous_half_second_coverage",
+        "independent_10_second_events",
+        "initialization_exclusion",
+        "completion_and_t95",
+        "arrival_lifecycle",
+        "seed_and_requirement_binding",
+        "report_final_equals_archive",
+        "no_control_holds",
+        "rule_mode_no_llm"
+      ]
+    },
+    {
+      "run_id": "run_159163ef1810483db453422c3a6f6ed5",
+      "runtime_run_id": "run-4b214dd230994055b27b6fb0a0250159",
+      "requirement_id": "req-69323aa2458f4e6db50bc43ead3ce273",
+      "seed": 20260908,
+      "trajectory_rows": 2330254,
+      "checked_steps": 3600,
+      "during_sha256": "a3e7308775a13853ff5aa3c797d82dae7f0a14567ee1e7446514b9e686906f21",
+      "demand_sha256": "4f848b4aafa6895ebc1e16ae94a4f47c045f466057f1348f74bd81a0db39844a",
+      "time_seconds": 1800.0,
+      "end_reason": "observation_horizon",
+      "first_confirmed_seconds": 130.5,
+      "crowding_duration_seconds": 1679.5,
+      "occurred": true,
+      "completion_rate": 0.2,
+      "t95_seconds": null,
+      "peak_orange_and_red": 477,
+      "peak_red": 0,
+      "coverage": "complete",
+      "population_valid": true,
+      "run_complete": true,
+      "checks": [
+        "trajectory_core_counts",
+        "active_ledger",
+        "continuous_half_second_coverage",
+        "independent_10_second_events",
+        "initialization_exclusion",
+        "completion_and_t95",
+        "arrival_lifecycle",
+        "seed_and_requirement_binding",
+        "report_final_equals_archive",
+        "no_control_holds",
+        "rule_mode_no_llm"
+      ]
+    }
+  ],
+  "batch_report": {
+    "schemaVersion": "1.0",
+    "experimentId": "exp_dcc7fe8f0c7c441880be97d2619dd69e",
+    "name": "阶段1验收：默认五轮",
+    "generatedAt": "2026-10-14T09:42:36.762174Z",
+    "methods": {
+      "C0": {
+        "count": 4,
+        "ackCount": {
+          "mean": 0.0,
+          "median": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "actionCount": {
+          "mean": 0.0,
+          "median": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "appliedCount": {
+          "mean": 0.0,
+          "median": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "crowdingDurationSeconds": {
+          "mean": 1049.875,
+          "median": 867.75,
+          "std": 323.7883905809472,
+          "min": 853.5,
+          "max": 1610.5
+        },
+        "cumulativeExcessDensitySeconds": {
+          "mean": 1396.7846225009641,
+          "median": 1346.9092175643875,
+          "std": 849.9183441862617,
+          "min": 546.1731537745661,
+          "max": 2347.1469011005156
+        },
+        "cumulativeRiskExposurePersonSeconds": {
+          "mean": 422821.3146660713,
+          "median": 422687.22805000003,
+          "std": 6790.259126942883,
+          "min": 415351.60867857136,
+          "max": 430559.193885714
+        },
+        "decisionCount": {
+          "mean": 0.0,
+          "median": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "durationSeconds": {
+          "mean": 1703.625,
+          "median": 1800.0,
+          "std": 166.92639657945054,
+          "min": 1414.5,
+          "max": 1800.0
+        },
+        "estimatedMeanEvacuationSeconds": {
+          "mean": 1453.637728984089,
+          "median": 1415.016304347826,
+          "std": 278.1436593741117,
+          "min": 1169.4478571428572,
+          "max": 1815.0704500978475
+        },
+        "evaluationCount": {
+          "mean": 0.0,
+          "median": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "finalCompletionRate": {
+          "mean": 0.8760714285714286,
+          "median": 0.8871428571428572,
+          "std": 0.11871495186335364,
+          "min": 0.73,
+          "max": 1.0
+        },
+        "finalRiskIndex": {
+          "mean": 0.22035,
+          "median": 0.27790000000000004,
+          "std": 0.13020417620030472,
+          "min": 0.0,
+          "max": 0.3256
+        },
+        "firstCrowdingConfirmedAtSeconds": {
+          "mean": 143.0,
+          "median": 141.75,
+          "std": 6.214901447328026,
+          "min": 136.5,
+          "max": 152.0
+        },
+        "highRiskHotspotDurationSeconds": {
+          "mean": 420.0,
+          "median": 420.0,
+          "std": 21.213203435596427,
+          "min": 390.0,
+          "max": 450.0
+        },
+        "highRiskPersonMinutes": {
+          "mean": 4900.0,
+          "median": 4900.0,
+          "std": 247.48737341529164,
+          "min": 4550.0,
+          "max": 5250.0
+        },
+        "llmCallCount": {
+          "mean": 0.0,
+          "median": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "llmEstimatedCost": {
+          "mean": 0.0,
+          "median": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "llmTokenCount": {
+          "mean": 0.0,
+          "median": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "maxRegionDensity": {
+          "mean": 2.5620379181611885,
+          "median": 2.5620379181611885,
+          "std": 0.0,
+          "min": 2.5620379181611885,
+          "max": 2.5620379181611885
+        },
+        "maxRegionRisk": {
+          "mean": 0.8202547397701485,
+          "median": 0.8202547397701485,
+          "std": 0.0,
+          "min": 0.8202547397701485,
+          "max": 0.8202547397701485
+        },
+        "meanRiskIndex": {
+          "mean": 0.4162989801892654,
+          "median": 0.41933272833723656,
+          "std": 0.00924668228768772,
+          "min": 0.4009208430913349,
+          "max": 0.42560962099125366
+        },
+        "observedWindowSeconds": {
+          "mean": 1702.625,
+          "median": 1799.0,
+          "std": 166.92639657945054,
+          "min": 1413.5,
+          "max": 1799.0
+        },
+        "peakBlockedLowSpeedCount": {
+          "mean": 307.5,
+          "median": 308.5,
+          "std": 14.534441853748634,
+          "min": 286.0,
+          "max": 327.0
+        },
+        "peakControlHeldCount": {
+          "mean": 0.0,
+          "median": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "peakCoreDensity": {
+          "mean": 2.5620379181611885,
+          "median": 2.5620379181611885,
+          "std": 0.0,
+          "min": 2.5620379181611885,
+          "max": 2.5620379181611885
+        },
+        "peakCrowdedCount": {
+          "mean": 624.5,
+          "median": 626.0,
+          "std": 3.905124837953327,
+          "min": 618.0,
+          "max": 628.0
+        },
+        "peakDensity": {
+          "mean": 3.727366255144033,
+          "median": 3.6831275720164616,
+          "std": 0.5212578288404112,
+          "min": 3.209876543209877,
+          "max": 4.333333333333333
+        },
+        "peakHighRiskCount": {
+          "mean": 144.25,
+          "median": 146.5,
+          "std": 33.12382073372575,
+          "min": 100.0,
+          "max": 184.0
+        },
+        "peakRiskIndex": {
+          "mean": 0.8634089285714286,
+          "median": 0.8754249999999999,
+          "std": 0.03608557868675743,
+          "min": 0.8067357142857143,
+          "max": 0.89605
+        },
+        "regionRiskGini": {
+          "mean": 0.5,
+          "median": 0.5,
+          "std": 0.0,
+          "min": 0.5,
+          "max": 0.5
+        },
+        "rejectedCount": {
+          "mean": 0.0,
+          "median": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "riskReboundRate": {
+          "mean": 0.4125,
+          "median": 0.42500000000000004,
+          "std": 0.02732266051792502,
+          "min": 0.36666666666666664,
+          "max": 0.43333333333333335
+        },
+        "safeOutflowPerSimMinute": {
+          "mean": 22.04482288139876,
+          "median": 20.711506392440246,
+          "std": 4.949133945232969,
+          "min": 17.042801556420233,
+          "max": 29.713477184294305
+        },
+        "sampleCount": {
+          "mean": 58.0,
+          "median": 61.0,
+          "std": 5.196152422706632,
+          "min": 49.0,
+          "max": 61.0
+        },
+        "t95Seconds": {
+          "mean": 1313.25,
+          "median": 1313.25,
+          "std": 14.25,
+          "min": 1299.0,
+          "max": 1327.5
+        },
+        "unevacuatedFinal": {
+          "mean": 86.75,
+          "median": 79.0,
+          "std": 83.10046630434753,
+          "min": 0.0,
+          "max": 189.0
+        }
+      }
+    },
+    "runs": [
+      {
+        "runId": "run_51f483e0c64d4e4ab973d048cec3985b",
+        "methodId": "C0",
+        "seed": 20260909,
+        "status": "completed",
+        "formal": true,
+        "sampleCount": 49,
+        "durationSeconds": 1414.5,
+        "observedWindowSeconds": 1413.5,
+        "finalCompletionRate": 1.0,
+        "finalRiskIndex": 0.0,
+        "meanRiskIndex": 0.42560962099125366,
+        "peakRiskIndex": 0.89335,
+        "peakDensity": 3.209876543209877,
+        "cumulativeRiskExposurePersonSeconds": 415351.60867857136,
+        "highRiskPersonMinutes": 5250.0,
+        "cumulativeExcessDensitySeconds": 546.1731537745661,
+        "t95Seconds": 1299.0,
+        "estimatedMeanEvacuationSeconds": 1169.4478571428572,
+        "safeOutflowPerSimMinute": 29.713477184294305,
+        "unevacuatedFinal": 0.0,
+        "maxRegionRisk": 0.8202547397701485,
+        "maxRegionDensity": 2.5620379181611885,
+        "highRiskHotspotDurationSeconds": 450.0,
+        "regionRiskGini": 0.5,
+        "exitLoadCoefficientVariation": null,
+        "riskReboundRate": 0.4166666666666667,
+        "during": {
+          "preset_id": "memorial-tower-during-v1",
+          "preset_version": 1,
+          "preset_fingerprint": "sha256:87a14590b4d6ac2c8a7edbb178dc89b081caec5562b953114df773c4adf964d6",
+          "time_seconds": 1414.5,
+          "sample": {
+            "time_seconds": 1414.5,
+            "core_count": 0,
+            "crowded_count": 0,
+            "high_risk_count": 0,
+            "unknown_count": 0,
+            "core_density_person_per_m2": 0.0,
+            "blocked_low_speed_count": 0,
+            "control_held_count": 0
+          },
+          "phenomenon": {
+            "definition_id": "sustained_core_crowding",
+            "definition_version": 1,
+            "occurred": true,
+            "coverage": "complete",
+            "sample_count": 2828,
+            "unknown_sample_count": 0,
+            "gap_count": 0,
+            "observation_start_seconds": 1.0,
+            "excluded_initialization_samples": 1,
+            "first_confirmed_at_seconds": 136.5,
+            "confirmed_duration_seconds": 876.5,
+            "peak_crowded_count": 625,
+            "peak_high_risk_count": 167,
+            "peak_crowded_fraction": 0.9030390738060782,
+            "episodes": [
+              {
+                "onset_seconds": 126.5,
+                "confirmed_at_seconds": 136.5,
+                "end_seconds": 1003.0,
+                "duration_seconds": 876.5,
+                "end_reason": "condition_cleared",
+                "right_censored": false
+              }
+            ]
+          },
+          "population": {
+            "planned": 700,
+            "departed": 700,
+            "active": 0,
+            "arrived": 700,
+            "explicitly_removed": 0,
+            "unknown_disappearances": [],
+            "conservation_error": 0
+          },
+          "population_valid": true,
+          "completion_rate": 1.0,
+          "t95_from_start_seconds": 1299.0,
+          "peaks": {
+            "core_count": 700,
+            "core_density_person_per_m2": 2.5620379181611885,
+            "blocked_low_speed_count": 309,
+            "control_held_count": 0
+          },
+          "finished": true,
+          "end_reason": "all_arrived",
+          "run_complete": true
+        },
+        "crowdingOccurred": true,
+        "crowdingCoverage": "complete",
+        "firstCrowdingConfirmedAtSeconds": 136.5,
+        "crowdingDurationSeconds": 876.5,
+        "peakCrowdedCount": 625,
+        "peakHighRiskCount": 167,
+        "peakCoreDensity": 2.5620379181611885,
+        "peakBlockedLowSpeedCount": 309,
+        "peakControlHeldCount": 0,
+        "duringRunComplete": true,
+        "decisionCount": 0,
+        "actionCount": 0,
+        "ackCount": 0,
+        "appliedCount": 0,
+        "rejectedCount": 0,
+        "appliedSuccessRate": null,
+        "evaluationCount": 0,
+        "meanObjectiveScore": null,
+        "meanDecisionLatencyMs": null,
+        "llmCallCount": 0,
+        "llmTokenCount": 0,
+        "llmEstimatedCost": 0
+      },
+      {
+        "runId": "run_b73bf97b41604e37b2cdabdd9b44da08",
+        "methodId": "C0",
+        "seed": 20260910,
+        "status": "completed",
+        "formal": true,
+        "sampleCount": 61,
+        "durationSeconds": 1800.0,
+        "observedWindowSeconds": 1799.0,
+        "finalCompletionRate": 0.9857142857142858,
+        "finalRiskIndex": 0.25,
+        "meanRiskIndex": 0.4009208430913349,
+        "peakRiskIndex": 0.89605,
+        "peakDensity": 3.209876543209877,
+        "cumulativeRiskExposurePersonSeconds": 416825.34971428564,
+        "highRiskPersonMinutes": 4900.0,
+        "cumulativeExcessDensitySeconds": 553.8955594889794,
+        "t95Seconds": 1327.5,
+        "estimatedMeanEvacuationSeconds": 1196.9855072463768,
+        "safeOutflowPerSimMinute": 23.01278488048916,
+        "unevacuatedFinal": 10.0,
+        "maxRegionRisk": 0.8202547397701485,
+        "maxRegionDensity": 2.5620379181611885,
+        "highRiskHotspotDurationSeconds": 420.0,
+        "regionRiskGini": 0.5,
+        "exitLoadCoefficientVariation": null,
+        "riskReboundRate": 0.36666666666666664,
+        "during": {
+          "preset_id": "memorial-tower-during-v1",
+          "preset_version": 1,
+          "preset_fingerprint": "sha256:87a14590b4d6ac2c8a7edbb178dc89b081caec5562b953114df773c4adf964d6",
+          "time_seconds": 1800.0,
+          "sample": {
+            "time_seconds": 1800.0,
+            "core_count": 0,
+            "crowded_count": 0,
+            "high_risk_count": 0,
+            "unknown_count": 0,
+            "core_density_person_per_m2": 0.0,
+            "blocked_low_speed_count": 10,
+            "control_held_count": 0
+          },
+          "phenomenon": {
+            "definition_id": "sustained_core_crowding",
+            "definition_version": 1,
+            "occurred": true,
+            "coverage": "complete",
+            "sample_count": 3599,
+            "unknown_sample_count": 0,
+            "gap_count": 0,
+            "observation_start_seconds": 1.0,
+            "excluded_initialization_samples": 1,
+            "first_confirmed_at_seconds": 145.5,
+            "confirmed_duration_seconds": 859.0,
+            "peak_crowded_count": 627,
+            "peak_high_risk_count": 184,
+            "peak_crowded_fraction": 0.9049128367670365,
+            "episodes": [
+              {
+                "onset_seconds": 135.5,
+                "confirmed_at_seconds": 145.5,
+                "end_seconds": 994.5,
+                "duration_seconds": 859.0,
+                "end_reason": "condition_cleared",
+                "right_censored": false
+              }
+            ]
+          },
+          "population": {
+            "planned": 700,
+            "departed": 700,
+            "active": 10,
+            "arrived": 690,
+            "explicitly_removed": 0,
+            "unknown_disappearances": [],
+            "conservation_error": 0
+          },
+          "population_valid": true,
+          "completion_rate": 0.9857142857142858,
+          "t95_from_start_seconds": 1327.5,
+          "peaks": {
+            "core_count": 700,
+            "core_density_person_per_m2": 2.5620379181611885,
+            "blocked_low_speed_count": 308,
+            "control_held_count": 0
+          },
+          "finished": true,
+          "end_reason": "observation_horizon",
+          "run_complete": true
+        },
+        "crowdingOccurred": true,
+        "crowdingCoverage": "complete",
+        "firstCrowdingConfirmedAtSeconds": 145.5,
+        "crowdingDurationSeconds": 859.0,
+        "peakCrowdedCount": 627,
+        "peakHighRiskCount": 184,
+        "peakCoreDensity": 2.5620379181611885,
+        "peakBlockedLowSpeedCount": 308,
+        "peakControlHeldCount": 0,
+        "duringRunComplete": true,
+        "decisionCount": 0,
+        "actionCount": 0,
+        "ackCount": 0,
+        "appliedCount": 0,
+        "rejectedCount": 0,
+        "appliedSuccessRate": null,
+        "evaluationCount": 0,
+        "meanObjectiveScore": null,
+        "meanDecisionLatencyMs": null,
+        "llmCallCount": 0,
+        "llmTokenCount": 0,
+        "llmEstimatedCost": 0
+      },
+      {
+        "runId": "run_96d20b537dda4b8b8ca2f936dab3504e",
+        "methodId": "C0",
+        "seed": 20260911,
+        "status": "completed",
+        "formal": true,
+        "sampleCount": 61,
+        "durationSeconds": 1800.0,
+        "observedWindowSeconds": 1799.0,
+        "finalCompletionRate": 0.7885714285714286,
+        "finalRiskIndex": 0.3058,
+        "meanRiskIndex": 0.41979215456674474,
+        "peakRiskIndex": 0.8574999999999999,
+        "peakDensity": 4.333333333333333,
+        "cumulativeRiskExposurePersonSeconds": 430559.193885714,
+        "highRiskPersonMinutes": 4900.0,
+        "cumulativeExcessDensitySeconds": 2347.1469011005156,
+        "t95Seconds": null,
+        "estimatedMeanEvacuationSeconds": 1633.0471014492753,
+        "safeOutflowPerSimMinute": 18.41022790439133,
+        "unevacuatedFinal": 148.0,
+        "maxRegionRisk": 0.8202547397701485,
+        "maxRegionDensity": 2.5620379181611885,
+        "highRiskHotspotDurationSeconds": 420.0,
+        "regionRiskGini": 0.5,
+        "exitLoadCoefficientVariation": null,
+        "riskReboundRate": 0.43333333333333335,
+        "during": {
+          "preset_id": "memorial-tower-during-v1",
+          "preset_version": 1,
+          "preset_fingerprint": "sha256:87a14590b4d6ac2c8a7edbb178dc89b081caec5562b953114df773c4adf964d6",
+          "time_seconds": 1800.0,
+          "sample": {
+            "time_seconds": 1800.0,
+            "core_count": 57,
+            "crowded_count": 4,
+            "high_risk_count": 0,
+            "unknown_count": 0,
+            "core_density_person_per_m2": 0.2086230876216968,
+            "blocked_low_speed_count": 121,
+            "control_held_count": 0
+          },
+          "phenomenon": {
+            "definition_id": "sustained_core_crowding",
+            "definition_version": 1,
+            "occurred": true,
+            "coverage": "complete",
+            "sample_count": 3599,
+            "unknown_sample_count": 0,
+            "gap_count": 0,
+            "observation_start_seconds": 1.0,
+            "excluded_initialization_samples": 1,
+            "first_confirmed_at_seconds": 152.0,
+            "confirmed_duration_seconds": 853.5,
+            "peak_crowded_count": 618,
+            "peak_high_risk_count": 126,
+            "peak_crowded_fraction": 0.9269949066213922,
+            "episodes": [
+              {
+                "onset_seconds": 142.0,
+                "confirmed_at_seconds": 152.0,
+                "end_seconds": 995.5,
+                "duration_seconds": 853.5,
+                "end_reason": "condition_cleared",
+                "right_censored": false
+              }
+            ]
+          },
+          "population": {
+            "planned": 700,
+            "departed": 700,
+            "active": 148,
+            "arrived": 552,
+            "explicitly_removed": 0,
+            "unknown_disappearances": [],
+            "conservation_error": 0
+          },
+          "population_valid": true,
+          "completion_rate": 0.7885714285714286,
+          "t95_from_start_seconds": null,
+          "peaks": {
+            "core_count": 700,
+            "core_density_person_per_m2": 2.5620379181611885,
+            "blocked_low_speed_count": 286,
+            "control_held_count": 0
+          },
+          "finished": true,
+          "end_reason": "observation_horizon",
+          "run_complete": true
+        },
+        "crowdingOccurred": true,
+        "crowdingCoverage": "complete",
+        "firstCrowdingConfirmedAtSeconds": 152.0,
+        "crowdingDurationSeconds": 853.5,
+        "peakCrowdedCount": 618,
+        "peakHighRiskCount": 126,
+        "peakCoreDensity": 2.5620379181611885,
+        "peakBlockedLowSpeedCount": 286,
+        "peakControlHeldCount": 0,
+        "duringRunComplete": true,
+        "decisionCount": 0,
+        "actionCount": 0,
+        "ackCount": 0,
+        "appliedCount": 0,
+        "rejectedCount": 0,
+        "appliedSuccessRate": null,
+        "evaluationCount": 0,
+        "meanObjectiveScore": null,
+        "meanDecisionLatencyMs": null,
+        "llmCallCount": 0,
+        "llmTokenCount": 0,
+        "llmEstimatedCost": 0
+      },
+      {
+        "runId": "run_74306be0bc73489cad6798f38a20bbcf",
+        "methodId": "C0",
+        "seed": 20260912,
+        "status": "completed",
+        "formal": true,
+        "sampleCount": 61,
+        "durationSeconds": 1800.0,
+        "observedWindowSeconds": 1799.0,
+        "finalCompletionRate": 0.73,
+        "finalRiskIndex": 0.3256,
+        "meanRiskIndex": 0.41887330210772833,
+        "peakRiskIndex": 0.8067357142857143,
+        "peakDensity": 4.156378600823046,
+        "cumulativeRiskExposurePersonSeconds": 428549.1063857144,
+        "highRiskPersonMinutes": 4550.0,
+        "cumulativeExcessDensitySeconds": 2139.9228756397956,
+        "t95Seconds": null,
+        "estimatedMeanEvacuationSeconds": 1815.0704500978475,
+        "safeOutflowPerSimMinute": 17.042801556420233,
+        "unevacuatedFinal": 189.0,
+        "maxRegionRisk": 0.8202547397701485,
+        "maxRegionDensity": 2.5620379181611885,
+        "highRiskHotspotDurationSeconds": 390.0,
+        "regionRiskGini": 0.5,
+        "exitLoadCoefficientVariation": null,
+        "riskReboundRate": 0.43333333333333335,
+        "during": {
+          "preset_id": "memorial-tower-during-v1",
+          "preset_version": 1,
+          "preset_fingerprint": "sha256:87a14590b4d6ac2c8a7edbb178dc89b081caec5562b953114df773c4adf964d6",
+          "time_seconds": 1800.0,
+          "sample": {
+            "time_seconds": 1800.0,
+            "core_count": 104,
+            "crowded_count": 23,
+            "high_risk_count": 0,
+            "unknown_count": 0,
+            "core_density_person_per_m2": 0.38064563355537656,
+            "blocked_low_speed_count": 164,
+            "control_held_count": 0
+          },
+          "phenomenon": {
+            "definition_id": "sustained_core_crowding",
+            "definition_version": 1,
+            "occurred": true,
+            "coverage": "complete",
+            "sample_count": 3599,
+            "unknown_sample_count": 0,
+            "gap_count": 0,
+            "observation_start_seconds": 1.0,
+            "excluded_initialization_samples": 1,
+            "first_confirmed_at_seconds": 138.0,
+            "confirmed_duration_seconds": 1610.5,
+            "peak_crowded_count": 628,
+            "peak_high_risk_count": 100,
+            "peak_crowded_fraction": 0.8997134670487106,
+            "episodes": [
+              {
+                "onset_seconds": 128.0,
+                "confirmed_at_seconds": 138.0,
+                "end_seconds": 1005.0,
+                "duration_seconds": 877.0,
+                "end_reason": "condition_cleared",
+                "right_censored": false
+              },
+              {
+                "onset_seconds": 1066.5,
+                "confirmed_at_seconds": 1076.5,
+                "end_seconds": 1800.0,
+                "duration_seconds": 733.5,
+                "end_reason": "observation_end",
+                "right_censored": true
+              }
+            ]
+          },
+          "population": {
+            "planned": 700,
+            "departed": 700,
+            "active": 189,
+            "arrived": 511,
+            "explicitly_removed": 0,
+            "unknown_disappearances": [],
+            "conservation_error": 0
+          },
+          "population_valid": true,
+          "completion_rate": 0.73,
+          "t95_from_start_seconds": null,
+          "peaks": {
+            "core_count": 700,
+            "core_density_person_per_m2": 2.5620379181611885,
+            "blocked_low_speed_count": 327,
+            "control_held_count": 0
+          },
+          "finished": true,
+          "end_reason": "observation_horizon",
+          "run_complete": true
+        },
+        "crowdingOccurred": true,
+        "crowdingCoverage": "complete",
+        "firstCrowdingConfirmedAtSeconds": 138.0,
+        "crowdingDurationSeconds": 1610.5,
+        "peakCrowdedCount": 628,
+        "peakHighRiskCount": 100,
+        "peakCoreDensity": 2.5620379181611885,
+        "peakBlockedLowSpeedCount": 327,
+        "peakControlHeldCount": 0,
+        "duringRunComplete": true,
+        "decisionCount": 0,
+        "actionCount": 0,
+        "ackCount": 0,
+        "appliedCount": 0,
+        "rejectedCount": 0,
+        "appliedSuccessRate": null,
+        "evaluationCount": 0,
+        "meanObjectiveScore": null,
+        "meanDecisionLatencyMs": null,
+        "llmCallCount": 0,
+        "llmTokenCount": 0,
+        "llmEstimatedCost": 0
+      },
+      {
+        "runId": "run_62f247a468114597bf6c2755a0bfcd76",
+        "methodId": "C0",
+        "seed": 20260908,
+        "status": "cancelled",
+        "formal": true,
+        "sampleCount": 5,
+        "durationSeconds": 121.0,
+        "observedWindowSeconds": 120.0,
+        "finalCompletionRate": 0.0,
+        "finalRiskIndex": 0.21391428571428572,
+        "meanRiskIndex": 0.14744142857142858,
+        "peakRiskIndex": 0.21391428571428572,
+        "peakDensity": 3.08641975308642,
+        "cumulativeRiskExposurePersonSeconds": 10989.15,
+        "highRiskPersonMinutes": 0.0,
+        "cumulativeExcessDensitySeconds": 32.5925925925926,
+        "t95Seconds": null,
+        "estimatedMeanEvacuationSeconds": null,
+        "safeOutflowPerSimMinute": 0.0,
+        "unevacuatedFinal": 700.0,
+        "maxRegionRisk": 0.5140707801450786,
+        "maxRegionDensity": 1.1309567381597248,
+        "highRiskHotspotDurationSeconds": 0.0,
+        "regionRiskGini": 0.5,
+        "exitLoadCoefficientVariation": null,
+        "riskReboundRate": 1.0,
+        "during": {
+          "preset_id": "memorial-tower-during-v1",
+          "preset_version": 1,
+          "preset_fingerprint": "sha256:87a14590b4d6ac2c8a7edbb178dc89b081caec5562b953114df773c4adf964d6",
+          "time_seconds": 121.0,
+          "sample": {
+            "time_seconds": 121.0,
+            "core_count": 309,
+            "crowded_count": 67,
+            "high_risk_count": 0,
+            "unknown_count": 0,
+            "core_density_person_per_m2": 1.1309567381597248,
+            "blocked_low_speed_count": 55,
+            "control_held_count": 0
+          },
+          "phenomenon": {
+            "definition_id": "sustained_core_crowding",
+            "definition_version": 1,
+            "occurred": false,
+            "coverage": "complete",
+            "sample_count": 241,
+            "unknown_sample_count": 0,
+            "gap_count": 0,
+            "observation_start_seconds": 1.0,
+            "excluded_initialization_samples": 1,
+            "first_confirmed_at_seconds": null,
+            "confirmed_duration_seconds": 0,
+            "peak_crowded_count": 67,
+            "peak_high_risk_count": 0,
+            "peak_crowded_fraction": 0.2168284789644013,
+            "episodes": []
+          },
+          "population": {
+            "planned": 700,
+            "departed": 700,
+            "active": 700,
+            "arrived": 0,
+            "explicitly_removed": 0,
+            "unknown_disappearances": [],
+            "conservation_error": 0
+          },
+          "population_valid": true,
+          "completion_rate": 0.0,
+          "t95_from_start_seconds": null,
+          "peaks": {
+            "core_count": 309,
+            "core_density_person_per_m2": 1.1309567381597248,
+            "blocked_low_speed_count": 64,
+            "control_held_count": 0
+          },
+          "finished": false,
+          "end_reason": null,
+          "run_complete": false
+        },
+        "crowdingOccurred": false,
+        "crowdingCoverage": "complete",
+        "firstCrowdingConfirmedAtSeconds": null,
+        "crowdingDurationSeconds": 0,
+        "peakCrowdedCount": 67,
+        "peakHighRiskCount": 0,
+        "peakCoreDensity": 1.1309567381597248,
+        "peakBlockedLowSpeedCount": 64,
+        "peakControlHeldCount": 0,
+        "duringRunComplete": false,
+        "decisionCount": 0,
+        "actionCount": 0,
+        "ackCount": 0,
+        "appliedCount": 0,
+        "rejectedCount": 0,
+        "appliedSuccessRate": null,
+        "evaluationCount": 0,
+        "meanObjectiveScore": null,
+        "meanDecisionLatencyMs": null,
+        "llmCallCount": 0,
+        "llmTokenCount": 0,
+        "llmEstimatedCost": 0
+      }
+    ],
+    "pairedComparisons": [],
+    "ardeEvolution": {},
+    "limitations": [
+      "持续拥挤使用后端每步累计结果；频率仅统计完整结束且观测覆盖完整的轮次。它是预设仿真样本频率；完成率和 95% 时间指行程完成，不表示到达安全区。"
+    ],
+    "dataScope": {
+      "completedRunCount": 4,
+      "formalRunCount": 4,
+      "debugRunCount": 0,
+      "descriptiveOnly": true,
+      "validDuringRunCount": 4
+    },
+    "during": {
+      "presetId": "memorial-tower-during-v1",
+      "presetVersion": 1,
+      "presetFingerprint": "sha256:87a14590b4d6ac2c8a7edbb178dc89b081caec5562b953114df773c4adf964d6",
+      "phenomenonDefinition": {
+        "id": "sustained_core_crowding",
+        "version": 1,
+        "scope_edges": [
+          "679361567#1",
+          "679361567#2",
+          "679361567#2_m3_north"
+        ],
+        "states": [
+          "crowded",
+          "high_risk"
+        ],
+        "minimum_count": 10,
+        "minimum_fraction": 0.2,
+        "confirmation_seconds": 10.0,
+        "observation_start_seconds": 1.0,
+        "maximum_sample_gap_seconds": 0.5,
+        "denominator": "all_active_pedestrians_on_scope_edges",
+        "unknown_density": "interrupt_continuity_and_mark_unavailable"
+      },
+      "plannedRunCount": 5,
+      "createdRunCount": 5,
+      "validRunCount": 4,
+      "occurredRunCount": 4,
+      "noEventRunCount": 0,
+      "incompleteRunCount": 0,
+      "failedRunCount": 0,
+      "cancelledRunCount": 1,
+      "pendingRunCount": 0,
+      "occurrenceFrequency": 1.0,
+      "scope": "preset_simulation_sample_frequency"
+    }
+  },
+  "negative_cases": [
+    {
+      "scenario": {
+        "presetId": "missing"
+      },
+      "response": {
+        "success": false,
+        "errorCode": "ContractError",
+        "message": "unknown during preset: missing"
+      }
+    },
+    {
+      "scenario": {
+        "population": 100
+      },
+      "response": {
+        "success": false,
+        "errorCode": "ContractError",
+        "message": "scenario.population must match the during preset (700)"
+      }
+    },
+    {
+      "scenario": {
+        "durationSeconds": 300
+      },
+      "response": {
+        "success": false,
+        "errorCode": "ContractError",
+        "message": "scenario.durationSeconds must match the during preset (1800)"
+      }
+    },
+    {
+      "scenario": {
+        "locationId": "other"
+      },
+      "response": {
+        "success": false,
+        "errorCode": "ContractError",
+        "message": "scenario.locationId must match the during preset (memorial-tower)"
+      }
+    },
+    {
+      "scenario": {
+        "seedSet": [
+          1,
+          1
+        ]
+      },
+      "response": {
+        "success": false,
+        "errorCode": "ContractError",
+        "message": "during seedSet requires 1-30 unique integers in [0, 2147483647]"
+      }
+    },
+    {
+      "scenario": {
+        "seedSet": []
+      },
+      "response": {
+        "success": false,
+        "errorCode": "ContractError",
+        "message": "during seedSet requires 1-30 unique integers in [0, 2147483647]"
+      }
+    },
+    {
+      "scenario": {
+        "formula": "x"
+      },
+      "response": {
+        "success": false,
+        "errorCode": "ContractError",
+        "message": "unsupported during scenario fields: formula"
+      }
+    },
+    {
+      "scenario": {
+        "presetVersion": 999
+      },
+      "response": {
+        "success": false,
+        "errorCode": "ContractError",
+        "message": "during preset version mismatch"
+      }
+    },
+    {
+      "scenario": {
+        "presetFingerprint": "stale"
+      },
+      "response": {
+        "success": false,
+        "errorCode": "ContractError",
+        "message": "during preset changed since experiment creation"
+      }
+    },
+    {
+      "scenario": {
+        "duringPreset": {}
+      },
+      "response": {
+        "success": false,
+        "errorCode": "ContractError",
+        "message": "experiment during preset snapshot mismatch"
+      }
+    },
+    {
+      "scenario": {
+        "emergencyEvent": {
+          "enabled": true
+        }
+      },
+      "response": {
+        "success": false,
+        "errorCode": "ContractError",
+        "message": "during preset does not support an additional emergencyEvent"
+      }
+    },
+    {
+      "methods": [
+        "C2"
+      ],
+      "response": {
+        "success": false,
+        "errorCode": "ContractError",
+        "message": "during stage 1 supports only the C0 baseline"
+      }
+    }
+  ],
+  "pause_resume": {
+    "paused_at": 163.5,
+    "stable_wall_seconds": 7,
+    "confirmed_before_pause": {
+      "definition_id": "sustained_core_crowding",
+      "definition_version": 1,
+      "occurred": true,
+      "coverage": "complete",
+      "sample_count": 326,
+      "unknown_sample_count": 0,
+      "gap_count": 0,
+      "observation_start_seconds": 1.0,
+      "excluded_initialization_samples": 1,
+      "first_confirmed_at_seconds": 130.5,
+      "confirmed_duration_seconds": 43.0,
+      "peak_crowded_count": 223,
+      "peak_high_risk_count": 0,
+      "peak_crowded_fraction": 0.530952380952381,
+      "episodes": [
+        {
+          "onset_seconds": 120.5,
+          "confirmed_at_seconds": 130.5,
+          "end_seconds": 163.5,
+          "duration_seconds": 43.0,
+          "end_reason": "ongoing",
+          "right_censored": true
+        }
+      ]
+    },
+    "resume_status": "running"
+  },
+  "concurrent_start": {
+    "requests": 8,
+    "before_created_runs": 8,
+    "after_created_runs": 1,
+    "fix": "serialize matrix check and creation"
+  },
+  "fault_results": {
+    "cancel": {
+      "experiment_id": "exp_aedf0c15953d4273af32ed8db11c0dca",
+      "run_id": "run_6cf91c31346b4ddfb967cc9df06c693b",
+      "status": "cancelled",
+      "validRunCount": 0,
+      "occurrenceFrequency": null
+    },
+    "disconnect": {
+      "experiment_id": "exp_c2f9b23d142746d1bd50274fe378de1a",
+      "run_id": "run_c6080e2e5ad8404eb386e8e37d16297d",
+      "status": "failed",
+      "validRunCount": 0,
+      "occurrenceFrequency": null
+    }
+  },
+  "fault_restart": {
+    "cancel": {
+      "experiment": "exp_aedf0c15953d4273af32ed8db11c0dca",
+      "same_report": true,
+      "during": {
+        "presetId": "memorial-tower-during-v1",
+        "presetVersion": 1,
+        "presetFingerprint": "sha256:87a14590b4d6ac2c8a7edbb178dc89b081caec5562b953114df773c4adf964d6",
+        "phenomenonDefinition": {
+          "id": "sustained_core_crowding",
+          "version": 1,
+          "scope_edges": [
+            "679361567#1",
+            "679361567#2",
+            "679361567#2_m3_north"
+          ],
+          "states": [
+            "crowded",
+            "high_risk"
+          ],
+          "minimum_count": 10,
+          "minimum_fraction": 0.2,
+          "confirmation_seconds": 10.0,
+          "observation_start_seconds": 1.0,
+          "maximum_sample_gap_seconds": 0.5,
+          "denominator": "all_active_pedestrians_on_scope_edges",
+          "unknown_density": "interrupt_continuity_and_mark_unavailable"
+        },
+        "plannedRunCount": 1,
+        "createdRunCount": 1,
+        "validRunCount": 0,
+        "occurredRunCount": 0,
+        "noEventRunCount": 0,
+        "incompleteRunCount": 0,
+        "failedRunCount": 0,
+        "cancelledRunCount": 1,
+        "pendingRunCount": 0,
+        "occurrenceFrequency": null,
+        "scope": "preset_simulation_sample_frequency"
+      }
+    },
+    "disconnect": {
+      "experiment": "exp_c2f9b23d142746d1bd50274fe378de1a",
+      "same_report": true,
+      "during": {
+        "presetId": "memorial-tower-during-v1",
+        "presetVersion": 1,
+        "presetFingerprint": "sha256:87a14590b4d6ac2c8a7edbb178dc89b081caec5562b953114df773c4adf964d6",
+        "phenomenonDefinition": {
+          "id": "sustained_core_crowding",
+          "version": 1,
+          "scope_edges": [
+            "679361567#1",
+            "679361567#2",
+            "679361567#2_m3_north"
+          ],
+          "states": [
+            "crowded",
+            "high_risk"
+          ],
+          "minimum_count": 10,
+          "minimum_fraction": 0.2,
+          "confirmation_seconds": 10.0,
+          "observation_start_seconds": 1.0,
+          "maximum_sample_gap_seconds": 0.5,
+          "denominator": "all_active_pedestrians_on_scope_edges",
+          "unknown_density": "interrupt_continuity_and_mark_unavailable"
+        },
+        "plannedRunCount": 1,
+        "createdRunCount": 1,
+        "validRunCount": 0,
+        "occurredRunCount": 0,
+        "noEventRunCount": 0,
+        "incompleteRunCount": 0,
+        "failedRunCount": 1,
+        "cancelledRunCount": 0,
+        "pendingRunCount": 0,
+        "occurrenceFrequency": null,
+        "scope": "preset_simulation_sample_frequency"
+      }
+    }
+  },
+  "t95_precision": {
+    "run_id": "run_51f483e0c64d4e4ab973d048cec3985b",
+    "backend_t95_seconds": 1299.0,
+    "nearest_service_sample_before": 1291.0,
+    "nearest_service_sample_at_or_after": 1321.0,
+    "not_a_service_sample": true,
+    "raw_step_seconds": 0.5
+  },
+  "code_checks": {
+    "tests_passed": 90,
+    "pytest_seconds": 1.02,
+    "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/tmp:. /opt/miniconda3/envs/sumo/bin/python -m pytest -q -p crowdsim_stage1_no_io tests/test_during_crowding.py tests/test_during_experiments.py tests/test_control_experiments.py",
+    "network_and_sumo_blocked_in_unit_tests": true,
+    "git_diff_check": true,
+    "source_sha256": {
+      "crowdsim/experiments/orchestrator.py": "2560617ab81924352e8cba1b63a29e867e61332b2457d8ca128b289a10b21bf7",
+      "tests/test_during_experiments.py": "d354813136e26774d516e1345e696949a46459e920c590394d197e9c85335691",
+      "crowdsim/core/simulation_runtime.py": "c753c8743fdf2342f054a2844cab1b5de72ce84892756f9154110f30fc6979cb",
+      "crowdsim/core/during_observation.py": "55a53104674f5521a52b142766dd4375e7d18f4376c9a96fdd39649052eefa32",
+      "crowdsim/domain/during_crowding.py": "2b6487003ab3c48027b4ad167d589d73f99c55c5da556d6c7c2805678edf1729",
+      "crowdsim/domain/during_preset.py": "9ad6fa7a1c937c3ba73701522f24884b6bab5c1408a9eb256bd75721e69de832",
+      "crowdsim/infrastructure/websocket_server.py": "a2552657a70b3c43bea5229911b13c4a92b3b174e17e4abbf5fa0240303faee6",
+      "crowdsim/infrastructure/experiment_recorder.py": "03e04f2ed507e0f356c6d9fdd61f2f0cbfa7e01fa2b1baf2ebe21ea88eff4fe6",
+      "crowdsim/infrastructure/frame_serializer.py": "9413cca2dca50e7c603b7601bbedbae3adaedd96a8d8c0458a3da5ec209f2b52",
+      "crowdsim/experiments/metrics.py": "82a9f43e388e8476f8af42f5b4259d7b7efee92ab654d3e8e328aee361e9af05",
+      "crowdsim/experiments/report_service.py": "7e016c8af1d1965c0bd2aba573153c79bbf049172dc2bec15c2f3e09a465326e",
+      "crowdsim/experiments/contracts.py": "008b2334abad3851dd7d1588e4d469af24312421fcff7abe4b537020f3ce45dc",
+      "crowdsim/experiments/observation_builder.py": "080ef2c70fc5fe62f638bb810a44f468d79fc449527508c17002b4e1f1ee8dd1",
+      "crowdsim/experiments/serve.py": "168ac8e0bae98ee75c341749ad8a740254c8ce5c4f3eef75c4b007a38c4d06ca"
+    }
+  },
+  "raw_evidence_root": "/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/runs/during_stage1_acceptance/20261014",
+  "remaining": [],
+  "notes": [
+    "原批次仍保留 4 轮 completed、1 轮 cancelled；取消历史未改写。补跑位于新实验，五种子合并值为验收汇总，不冒充单个 API 实验报告。",
+    "六次完整运行包含五个不同种子及种子 20260908 的额外完整复现。",
+    "单元测试 90 项通过；续验时相关代码和预设资源指纹均未变化。",
+    "较大辅助日志已校验后无损 gzip 压缩；各轮 acceptance_compression.json 保存映射。阶段 1 观测与结果 JSON 保持原格式。",
+    "已验证完成结果的持久化；中断队列自动续跑、聊天页接入及策略生成不属于阶段 1。"
+  ],
+  "completed_at_utc": "2026-10-14T09:42:45Z",
+  "replica_experiment_id": "exp_b18ddd7037d043ef9ba6bd0f5e8dc3fd",
+  "complete_runtime_runs": 6,
+  "distinct_seeds": 5,
+  "original_batch_completed": 4,
+  "original_batch_cancelled": 1,
+  "replacement_run_complete": true,
+  "independently_audited_steps": 20829,
+  "independently_audited_trajectory_rows": 11536916,
+  "same_seed_during_bytes_identical": true,
+  "same_seed_demand_bytes_identical": true,
+  "unique_requirement_and_runtime_ids": true,
+  "reports_identical_after_restart": true,
+  "note": "The cancelled run remains cancelled in the original batch. A new single-seed experiment supplies the missing replica; records were not rewritten.",
+  "replacement_experiment_id": "exp_b18ddd7037d043ef9ba6bd0f5e8dc3fd",
+  "acceptance_summary": {
+    "kind": "cross_experiment_acceptance_summary",
+    "selection": "four completed original batch runs plus the new 20260908 replica; exclude cancelled run and extra original single-run repeat",
+    "run_ids": [
+      "run_159163ef1810483db453422c3a6f6ed5",
+      "run_51f483e0c64d4e4ab973d048cec3985b",
+      "run_b73bf97b41604e37b2cdabdd9b44da08",
+      "run_96d20b537dda4b8b8ca2f936dab3504e",
+      "run_74306be0bc73489cad6798f38a20bbcf"
+    ],
+    "valid_run_count": 5,
+    "occurred_run_count": 5,
+    "occurrence_frequency": 1.0
+  },
+  "replica_report": {
+    "schemaVersion": "1.0",
+    "experimentId": "exp_b18ddd7037d043ef9ba6bd0f5e8dc3fd",
+    "name": "阶段1验收续跑：20260908 完整复现",
+    "generatedAt": "2026-10-14T09:42:36.788343Z",
+    "methods": {
+      "C0": {
+        "count": 1,
+        "ackCount": {
+          "mean": 0.0,
+          "median": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "actionCount": {
+          "mean": 0.0,
+          "median": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "appliedCount": {
+          "mean": 0.0,
+          "median": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "crowdingDurationSeconds": {
+          "mean": 1679.5,
+          "median": 1679.5,
+          "std": 0.0,
+          "min": 1679.5,
+          "max": 1679.5
+        },
+        "cumulativeExcessDensitySeconds": {
+          "mean": 2417.691714321909,
+          "median": 2417.691714321909,
+          "std": 0.0,
+          "min": 2417.691714321909,
+          "max": 2417.691714321909
+        },
+        "cumulativeRiskExposurePersonSeconds": {
+          "mean": 417310.5329285714,
+          "median": 417310.5329285714,
+          "std": 0.0,
+          "min": 417310.5329285714,
+          "max": 417310.5329285714
+        },
+        "decisionCount": {
+          "mean": 0.0,
+          "median": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "durationSeconds": {
+          "mean": 1800.0,
+          "median": 1800.0,
+          "std": 0.0,
+          "min": 1800.0,
+          "max": 1800.0
+        },
+        "estimatedMeanEvacuationSeconds": {
+          "mean": 8331.07142857143,
+          "median": 8331.07142857143,
+          "std": 0.0,
+          "min": 8331.07142857143,
+          "max": 8331.07142857143
+        },
+        "evaluationCount": {
+          "mean": 0.0,
+          "median": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "finalCompletionRate": {
+          "mean": 0.2,
+          "median": 0.2,
+          "std": 0.0,
+          "min": 0.2,
+          "max": 0.2
+        },
+        "finalRiskIndex": {
+          "mean": 0.3517,
+          "median": 0.3517,
+          "std": 0.0,
+          "min": 0.3517,
+          "max": 0.3517
+        },
+        "firstCrowdingConfirmedAtSeconds": {
+          "mean": 130.5,
+          "median": 130.5,
+          "std": 0.0,
+          "min": 130.5,
+          "max": 130.5
+        },
+        "highRiskHotspotDurationSeconds": {
+          "mean": 0.0,
+          "median": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "highRiskPersonMinutes": {
+          "mean": 0.0,
+          "median": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "llmCallCount": {
+          "mean": 0.0,
+          "median": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "llmEstimatedCost": {
+          "mean": 0.0,
+          "median": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "llmTokenCount": {
+          "mean": 0.0,
+          "median": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "maxRegionDensity": {
+          "mean": 2.108191201229778,
+          "median": 2.108191201229778,
+          "std": 0.0,
+          "min": 2.108191201229778,
+          "max": 2.108191201229778
+        },
+        "maxRegionRisk": {
+          "mean": 0.7598638459849205,
+          "median": 0.7598638459849205,
+          "std": 0.0,
+          "min": 0.7598638459849205,
+          "max": 0.7598638459849205
+        },
+        "meanRiskIndex": {
+          "mean": 0.35691042154566743,
+          "median": 0.35691042154566743,
+          "std": 0.0,
+          "min": 0.35691042154566743,
+          "max": 0.35691042154566743
+        },
+        "observedWindowSeconds": {
+          "mean": 1799.0,
+          "median": 1799.0,
+          "std": 0.0,
+          "min": 1799.0,
+          "max": 1799.0
+        },
+        "peakBlockedLowSpeedCount": {
+          "mean": 494.0,
+          "median": 494.0,
+          "std": 0.0,
+          "min": 494.0,
+          "max": 494.0
+        },
+        "peakControlHeldCount": {
+          "mean": 0.0,
+          "median": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "peakCoreDensity": {
+          "mean": 2.119171363736183,
+          "median": 2.119171363736183,
+          "std": 0.0,
+          "min": 2.119171363736183,
+          "max": 2.119171363736183
+        },
+        "peakCrowdedCount": {
+          "mean": 477.0,
+          "median": 477.0,
+          "std": 0.0,
+          "min": 477.0,
+          "max": 477.0
+        },
+        "peakDensity": {
+          "mean": 3.977272727272727,
+          "median": 3.977272727272727,
+          "std": 0.0,
+          "min": 3.977272727272727,
+          "max": 3.977272727272727
+        },
+        "peakHighRiskCount": {
+          "mean": 0.0,
+          "median": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "peakRiskIndex": {
+          "mean": 0.457,
+          "median": 0.457,
+          "std": 0.0,
+          "min": 0.457,
+          "max": 0.457
+        },
+        "regionRiskGini": {
+          "mean": 0.5,
+          "median": 0.5,
+          "std": 0.0,
+          "min": 0.5,
+          "max": 0.5
+        },
+        "rejectedCount": {
+          "mean": 0.0,
+          "median": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "riskReboundRate": {
+          "mean": 0.4666666666666667,
+          "median": 0.4666666666666667,
+          "std": 0.0,
+          "min": 0.4666666666666667,
+          "max": 0.4666666666666667
+        },
+        "safeOutflowPerSimMinute": {
+          "mean": 4.669260700389105,
+          "median": 4.669260700389105,
+          "std": 0.0,
+          "min": 4.669260700389105,
+          "max": 4.669260700389105
+        },
+        "sampleCount": {
+          "mean": 61.0,
+          "median": 61.0,
+          "std": 0.0,
+          "min": 61.0,
+          "max": 61.0
+        },
+        "unevacuatedFinal": {
+          "mean": 560.0,
+          "median": 560.0,
+          "std": 0.0,
+          "min": 560.0,
+          "max": 560.0
+        }
+      }
+    },
+    "runs": [
+      {
+        "runId": "run_159163ef1810483db453422c3a6f6ed5",
+        "methodId": "C0",
+        "seed": 20260908,
+        "status": "completed",
+        "formal": true,
+        "sampleCount": 61,
+        "durationSeconds": 1800.0,
+        "observedWindowSeconds": 1799.0,
+        "finalCompletionRate": 0.2,
+        "finalRiskIndex": 0.3517,
+        "meanRiskIndex": 0.35691042154566743,
+        "peakRiskIndex": 0.457,
+        "peakDensity": 3.977272727272727,
+        "cumulativeRiskExposurePersonSeconds": 417310.5329285714,
+        "highRiskPersonMinutes": 0.0,
+        "cumulativeExcessDensitySeconds": 2417.691714321909,
+        "t95Seconds": null,
+        "estimatedMeanEvacuationSeconds": 8331.07142857143,
+        "safeOutflowPerSimMinute": 4.669260700389105,
+        "unevacuatedFinal": 560.0,
+        "maxRegionRisk": 0.7598638459849205,
+        "maxRegionDensity": 2.108191201229778,
+        "highRiskHotspotDurationSeconds": 0.0,
+        "regionRiskGini": 0.5,
+        "exitLoadCoefficientVariation": null,
+        "riskReboundRate": 0.4666666666666667,
+        "during": {
+          "preset_id": "memorial-tower-during-v1",
+          "preset_version": 1,
+          "preset_fingerprint": "sha256:87a14590b4d6ac2c8a7edbb178dc89b081caec5562b953114df773c4adf964d6",
+          "time_seconds": 1800.0,
+          "sample": {
+            "time_seconds": 1800.0,
+            "core_count": 338,
+            "crowded_count": 163,
+            "high_risk_count": 0,
+            "unknown_count": 0,
+            "core_density_person_per_m2": 1.2370983090549739,
+            "blocked_low_speed_count": 483,
+            "control_held_count": 0
+          },
+          "phenomenon": {
+            "definition_id": "sustained_core_crowding",
+            "definition_version": 1,
+            "occurred": true,
+            "coverage": "complete",
+            "sample_count": 3599,
+            "unknown_sample_count": 0,
+            "gap_count": 0,
+            "observation_start_seconds": 1.0,
+            "excluded_initialization_samples": 1,
+            "first_confirmed_at_seconds": 130.5,
+            "confirmed_duration_seconds": 1679.5,
+            "peak_crowded_count": 477,
+            "peak_high_risk_count": 0,
+            "peak_crowded_fraction": 0.833916083916084,
+            "episodes": [
+              {
+                "onset_seconds": 120.5,
+                "confirmed_at_seconds": 130.5,
+                "end_seconds": 1800.0,
+                "duration_seconds": 1679.5,
+                "end_reason": "observation_end",
+                "right_censored": true
+              }
+            ]
+          },
+          "population": {
+            "planned": 700,
+            "departed": 700,
+            "active": 560,
+            "arrived": 140,
+            "explicitly_removed": 0,
+            "unknown_disappearances": [],
+            "conservation_error": 0
+          },
+          "population_valid": true,
+          "completion_rate": 0.2,
+          "t95_from_start_seconds": null,
+          "peaks": {
+            "core_count": 579,
+            "core_density_person_per_m2": 2.119171363736183,
+            "blocked_low_speed_count": 494,
+            "control_held_count": 0
+          },
+          "finished": true,
+          "end_reason": "observation_horizon",
+          "run_complete": true
+        },
+        "crowdingOccurred": true,
+        "crowdingCoverage": "complete",
+        "firstCrowdingConfirmedAtSeconds": 130.5,
+        "crowdingDurationSeconds": 1679.5,
+        "peakCrowdedCount": 477,
+        "peakHighRiskCount": 0,
+        "peakCoreDensity": 2.119171363736183,
+        "peakBlockedLowSpeedCount": 494,
+        "peakControlHeldCount": 0,
+        "duringRunComplete": true,
+        "decisionCount": 0,
+        "actionCount": 0,
+        "ackCount": 0,
+        "appliedCount": 0,
+        "rejectedCount": 0,
+        "appliedSuccessRate": null,
+        "evaluationCount": 0,
+        "meanObjectiveScore": null,
+        "meanDecisionLatencyMs": null,
+        "llmCallCount": 0,
+        "llmTokenCount": 0,
+        "llmEstimatedCost": 0
+      }
+    ],
+    "pairedComparisons": [],
+    "ardeEvolution": {},
+    "limitations": [
+      "当前仅有 1 个配对随机种子，比较结果仅为描述性结果，不能进行统计推断。",
+      "持续拥挤使用后端每步累计结果；频率仅统计完整结束且观测覆盖完整的轮次。它是预设仿真样本频率；完成率和 95% 时间指行程完成，不表示到达安全区。"
+    ],
+    "dataScope": {
+      "completedRunCount": 1,
+      "formalRunCount": 1,
+      "debugRunCount": 0,
+      "descriptiveOnly": true,
+      "validDuringRunCount": 1
+    },
+    "during": {
+      "presetId": "memorial-tower-during-v1",
+      "presetVersion": 1,
+      "presetFingerprint": "sha256:87a14590b4d6ac2c8a7edbb178dc89b081caec5562b953114df773c4adf964d6",
+      "phenomenonDefinition": {
+        "id": "sustained_core_crowding",
+        "version": 1,
+        "scope_edges": [
+          "679361567#1",
+          "679361567#2",
+          "679361567#2_m3_north"
+        ],
+        "states": [
+          "crowded",
+          "high_risk"
+        ],
+        "minimum_count": 10,
+        "minimum_fraction": 0.2,
+        "confirmation_seconds": 10.0,
+        "observation_start_seconds": 1.0,
+        "maximum_sample_gap_seconds": 0.5,
+        "denominator": "all_active_pedestrians_on_scope_edges",
+        "unknown_density": "interrupt_continuity_and_mark_unavailable"
+      },
+      "plannedRunCount": 1,
+      "createdRunCount": 1,
+      "validRunCount": 1,
+      "occurredRunCount": 1,
+      "noEventRunCount": 0,
+      "incompleteRunCount": 0,
+      "failedRunCount": 0,
+      "cancelledRunCount": 0,
+      "pendingRunCount": 0,
+      "occurrenceFrequency": 1.0,
+      "scope": "preset_simulation_sample_frequency"
+    }
+  },
+  "normal_report_restart_checks": {
+    "previous_completed_reports_equal_on_resume": true,
+    "all_three_reports_equal_after_final_restart": true,
+    "evidence": [
+      "resume_prior_reports_restart.json",
+      "resumed_reports_before_restart.json",
+      "resumed_reports_after_restart.json"
+    ]
+  }
+}

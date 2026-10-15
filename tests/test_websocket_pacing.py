@@ -10,6 +10,24 @@ from crowdsim.infrastructure.websocket_server import OverlayServer
 
 
 class WebsocketPacingTests(unittest.IsolatedAsyncioTestCase):
+    async def test_tick_write_failure_notifies_owner_without_building_final_frame(self):
+        frames = []
+        runtime = SimpleNamespace(state=RuntimeState.RUNNING, time_seconds=3.0,
+                                  run_id='disk-error-run', performance=PerformanceProbe('failure', enabled=False))
+        async def tick():
+            runtime.state = RuntimeState.ERROR
+            raise OSError(28, 'No space left on device')
+        async def send(payload):
+            frames.append(json.loads(payload))
+        runtime.tick_async = tick
+        server = OverlayServer(runtime, '127.0.0.1', 0)
+        server.client = SimpleNamespace(send=send)
+        await server._run_loop()
+        self.assertEqual(len(frames), 1)
+        self.assertEqual(frames[0]['type'], 'runtime_error')
+        self.assertEqual(frames[0]['run_id'], 'disk-error-run')
+        self.assertIn('No space left on device', frames[0]['message'])
+
     async def run_case(self, costs, *, speed=3, paused=False, change_speed=None, finish=False):
         clock = [0.0]
         sleeps, frames = [], []

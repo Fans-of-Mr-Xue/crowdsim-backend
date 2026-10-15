@@ -60,6 +60,8 @@ def validate_control_action(payload: Mapping[str, Any]) -> dict[str, Any]:
             raise ValueError("set_inflow_rate requires target.entryId")
         parameters["rate"] = _number(parameters.get("rate"), "rate", 0, 1)
         parameters["durationSeconds"] = _duration(parameters)
+        if "endTimeSeconds" in parameters:
+            parameters["endTimeSeconds"] = _number(parameters["endTimeSeconds"], "endTimeSeconds", 1, 1800)
     elif action_type == "set_edge_capacity":
         if not str(target.get("edgeId") or "").strip():
             raise ValueError("set_edge_capacity requires target.edgeId")

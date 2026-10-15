@@ -228,31 +228,64 @@ def test_gateway_correlates_decoded_websocket_ack():
     assert result["request_id"] == "req-test"
 
 
-def test_control_service_relays_requirement_through_owned_gateway(tmp_path):
-    bundle = ControlServiceBundle(data_dir=str(tmp_path))
-
-    class Gateway:
-        def submit(self, payload):
-            self.payload = payload
-            return "req-requirement"
-
-        def wait_for_ack(self, request_id, timeout):
-            assert request_id == "req-requirement"
-            assert timeout == 20.0
-            return {
-                "type": "requirement_accepted",
-                "request_id": request_id,
-                "requirement_id": "req-accepted",
-            }
-
-    gateway = Gateway()
-    bundle.gateway = gateway
+def test_control_service_saves_requirement_without_claiming_websocket(tmp_path, monkeypatch):
+    bundle = ControlServiceBundle(data_dir=str(tmp_path), gateway_url="ws://127.0.0.1:8765")
+    calls = []
+    def post(url, **kwargs):
+        calls.append((url, kwargs))
+        return httpx.Response(201, json={"type": "requirement_accepted", "requirement_id": "req-accepted"})
+    monkeypatch.setattr("crowdsim.experiments.service.httpx.post", post)
+    monkeypatch.setattr(bundle.gateway, "start", lambda **_: pytest.fail("must not claim simulation connection"))
     result = bundle.submit_requirement({"schema_version": 1})
     assert result["requirement_id"] == "req-accepted"
-    assert gateway.payload == {
-        "action": "submit_requirement",
-        "requirement": {"schema_version": 1},
-    }
+    assert calls == [("http://127.0.0.1:8765/api/v1/requirements", {
+        "json": {"requirement": {"schema_version": 1}}, "timeout": 20.0, "trust_env": False,
+    })]
+    assert bundle.gateway.health()["connected"] is False
+
+
+@pytest.mark.parametrize("url,expected,trust_env", [
+    ("ws://localhost:8765", "http://localhost:8765/api/v1/requirements", False),
+    ("ws://[::1]:8765", "http://[::1]:8765/api/v1/requirements", False),
+    ("wss://simulator.example.test", "https://simulator.example.test/api/v1/requirements", True),
+])
+def test_requirement_http_endpoint_tracks_configured_simulator(tmp_path, monkeypatch, url, expected, trust_env):
+    bundle = ControlServiceBundle(data_dir=str(tmp_path), gateway_url=url)
+    def post(target, **kwargs):
+        assert target == expected
+        assert kwargs["trust_env"] is trust_env
+        return httpx.Response(201, json={"type": "requirement_accepted"})
+    monkeypatch.setattr("crowdsim.experiments.service.httpx.post", post)
+    assert bundle.submit_requirement({})["type"] == "requirement_accepted"
+
+
+@pytest.mark.parametrize("response,error", [
+    (httpx.Response(404), "CROWDSIM_REQUIREMENT_ENDPOINT_UNAVAILABLE"),
+    (httpx.Response(500, text="invalid"), "CROWDSIM_REQUIREMENT_INVALID_RESPONSE"),
+    (httpx.Response(200, json=[]), "CROWDSIM_REQUIREMENT_INVALID_RESPONSE"),
+    (httpx.Response(500, json={"type": "requirement_accepted"}), "CROWDSIM_REQUIREMENT_INVALID_RESPONSE"),
+    (httpx.Response(400, json={"type": "error", "code": "invalid_requirement", "message": "bad location"}), "invalid_requirement: bad location"),
+])
+def test_requirement_http_errors_are_reported_without_websocket_fallback(tmp_path, monkeypatch, response, error):
+    bundle = ControlServiceBundle(data_dir=str(tmp_path))
+    monkeypatch.setattr("crowdsim.experiments.service.httpx.post", lambda *a, **kw: response)
+    with pytest.raises((RuntimeError, ValueError), match=error):
+        bundle.submit_requirement({})
+    assert bundle.gateway._thread is None
+
+
+@pytest.mark.parametrize("exception,error", [
+    (httpx.ConnectError("offline"), "CROWDSIM_UNAVAILABLE"),
+    (httpx.ReadTimeout("slow"), "CROWDSIM_REQUIREMENT_TIMEOUT"),
+])
+def test_requirement_http_connection_errors_do_not_start_gateway(tmp_path, monkeypatch, exception, error):
+    bundle = ControlServiceBundle(data_dir=str(tmp_path))
+    def post(*args, **kwargs):
+        raise exception
+    monkeypatch.setattr("crowdsim.experiments.service.httpx.post", post)
+    with pytest.raises((RuntimeError, TimeoutError), match=error):
+        bundle.submit_requirement({})
+    assert bundle.gateway._thread is None
 
 
 def test_gateway_submit_from_listener_thread_queues_send_without_blocking():
@@ -597,3 +630,20 @@ def test_control_service_bundle_exposes_catalog_and_persistent_experiment(tmp_pa
     assert [item["methodId"] for item in catalog] == ["C0", "C1", "C2", "C3", "C4", "C5"]
     assert fetched["name"] == "service smoke"
     assert (tmp_path / "experiments.json").is_file()
+
+
+def test_gateway_loopback_bypasses_system_proxy_and_preserves_older_websockets_support():
+    from crowdsim.experiments.gateway import CrowdSimGateway
+
+    def modern_connect(uri, *, proxy=True, **kwargs):
+        pass
+
+    def older_connect(uri, **kwargs):
+        pass
+
+    for url in ("ws://127.0.0.1:8765", "ws://localhost:8765", "ws://[::1]:8765"):
+        gateway = CrowdSimGateway(url)
+        assert gateway._connection_options(modern_connect)["proxy"] is None
+        assert "proxy" not in gateway._connection_options(older_connect)
+    remote = CrowdSimGateway("wss://simulation.example.test")
+    assert "proxy" not in remote._connection_options(modern_connect)

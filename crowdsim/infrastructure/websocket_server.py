@@ -17,7 +17,8 @@ import websockets
 from postanalysis_api.main import handle_http
 from postanalysis_api.services.application import PostAnalysisApp
 
-from crowdsim.core.simulation_runtime import RuntimeState
+from crowdsim.core.simulation_runtime import RuntimeState, SimulationRuntime
+from crowdsim.domain.during_preset import load_during_preset
 from crowdsim.domain.requirement_spec import RequirementSpec, RequirementValidationError
 from crowdsim.infrastructure.requirement_repository import (
     RequirementNotFoundError,
@@ -48,14 +49,19 @@ class OverlayServer:
         self.runtime_factory = runtime_factory
         self.post_app: PostAnalysisApp | None = None
 
+    def create_app(self) -> web.Application:
+        app = web.Application()
+        app.router.add_get("/", self._aio_websocket_handler)
+        app.router.add_get("/api/v1/performance/config", self._performance_config)
+        app.router.add_post("/api/v1/requirements", self._requirement_http_handler)
+        app.router.add_route("*", "/api/v1/post", self._post_http_handler)
+        app.router.add_route("*", "/api/v1/post/{tail:.*}", self._post_http_handler)
+        return app
+
     async def start(self) -> None:
         data_dir = os.environ.get("CROWDSIM_POST_DATA_DIR") or Path(__file__).resolve().parents[2] / "runs" / "postanalysis"
         self.post_app = PostAnalysisApp(data_dir)
-        app = web.Application()
-        app.router.add_get("/", self._aio_websocket_handler)
-        app.router.add_route("*", "/api/v1/post", self._post_http_handler)
-        app.router.add_route("*", "/api/v1/post/{tail:.*}", self._post_http_handler)
-        runner = web.AppRunner(app)
+        runner = web.AppRunner(self.create_app())
         await runner.setup()
         try:
             site = web.TCPSite(runner, self.host, self.port)
@@ -72,10 +78,33 @@ class OverlayServer:
                     if self.post_app is not None:
                         self.post_app.close()
 
+    async def _performance_config(self, request: web.Request) -> web.Response:
+        options = self.simulator.performance_options
+        return web.json_response({'enabled': options.enabled,
+                                  'system_enabled': options.enabled and options.system_enabled,
+                                  'interval_wall_seconds': options.interval})
+
     async def _post_http_handler(self, request: web.Request) -> web.Response:
         if self.post_app is None:
             raise web.HTTPServiceUnavailable(text="post analysis API is not initialized")
         return await handle_http(request, self.post_app)
+
+    async def _requirement_http_handler(self, request: web.Request) -> web.Response:
+        # Saving a snapshot must not claim the sole simulation WebSocket or
+        # detach/pause a run already owned by a browser or experiment service.
+        try:
+            data = await request.json()
+            if not isinstance(data, dict):
+                return web.json_response(self._error("invalid_requirement", "request body must be an object"), status=400)
+            result = await asyncio.to_thread(
+                self._accept_requirement, data.get("requirement"), data.get("request_id"),
+            )
+            return web.json_response(result, status=201)
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return web.json_response(self._error("invalid_json", "Message must be valid JSON."), status=400)
+        except CommandError as exc:
+            status = 500 if exc.code == "requirement_storage_failed" else 400
+            return web.json_response(self._error(exc.code, str(exc)), status=status)
 
     async def _aio_websocket_handler(self, request: web.Request) -> web.WebSocketResponse:
         websocket = web.WebSocketResponse()
@@ -208,7 +237,30 @@ class OverlayServer:
             finally:
                 raise
 
+    async def _reset_during_preset(self, data, request_id, seed) -> None:
+        if data.get("during_preset_version") is None or not data.get("during_preset_fingerprint"):
+            raise CommandError("invalid_preset", "preset version and fingerprint are required")
+        preset = load_during_preset(data["during_preset_id"], version=data["during_preset_version"],
+                                   fingerprint=data["during_preset_fingerprint"])
+        record = self.requirements.load(data.get("requirement_id"))
+        count = preset["requirement"]["population"]["total"]
+        if type(data.get("count")) is not int or data["count"] != count:
+            raise CommandError("requirement_count_mismatch", "count must match the during preset")
+        candidate = SimulationRuntime.for_during_preset(
+            preset, record, seed, sumo_binary=getattr(self.simulator, "_sumo_binary", None),
+            performance_options=getattr(self.simulator, "performance_options", None),
+        )
+        await self._stop_runtime()
+        self.simulator = candidate
+        await self._prepare(request_id, count)
+        await self._send_init(request_id)
+
     async def _configure(self, data, request_id, *, replace_run=False, seed=None) -> None:
+        if data.get("during_preset_id") is not None:
+            if not replace_run:
+                raise CommandError("preset_requires_reset", "a during preset must be selected by reset")
+            await self._reset_during_preset(data, request_id, seed)
+            return
         requirement_record = None
         candidate = self.simulator
         count = data.get("count")
@@ -252,7 +304,11 @@ class OverlayServer:
                     "count must match requirement.population.total",
                 )
             count = requirement_count
-        if requirement_record is not None and not self.simulator.supports_requirement(requirement_record):
+        leaves_during_preset = bool(getattr(self.simulator, "during_preset", None)) and (
+            requirement_record is not None
+            and requirement_record["requirement"] != self.simulator.requirement_record["requirement"]
+        )
+        if requirement_record is not None and (leaves_during_preset or not self.simulator.supports_requirement(requirement_record)):
             if self.runtime_factory is None:
                 raise CommandError("unsupported_runtime_scenario", "the current backend configuration does not support this location")
             candidate = self.runtime_factory(requirement_record)
@@ -298,10 +354,10 @@ class OverlayServer:
         await self._send_init(request_id, resumed=not replace_run and state in {
             RuntimeState.READY, RuntimeState.RUNNING, RuntimeState.PAUSED, RuntimeState.FINISHED})
 
-    async def _submit_requirement(self, data, request_id, *, for_experiment=False) -> None:
+    def _accept_requirement(self, requirement, request_id=None, *, for_experiment=False) -> dict:
         try:
             spec = RequirementSpec.parse(
-                data.get("requirement"), allow_empty_population=for_experiment,
+                requirement, allow_empty_population=for_experiment,
             )
             record = (self.requirements.create(spec, purpose="experiment") if for_experiment
                       else self.requirements.create(spec))
@@ -309,7 +365,7 @@ class OverlayServer:
             raise CommandError("invalid_requirement", str(exc)) from exc
         except OSError as exc:
             raise CommandError("requirement_storage_failed", str(exc)) from exc
-        await self._send({
+        return {
             "type": "requirement_accepted",
             "request_id": request_id,
             "requirement_id": record["requirement_id"],
@@ -318,7 +374,12 @@ class OverlayServer:
             "status": record["status"],
             "capabilities": record["capabilities"],
             "warnings": record["capabilities"].get("warnings", []),
-        })
+        }
+
+    async def _submit_requirement(self, data, request_id, *, for_experiment=False) -> None:
+        await self._send(self._accept_requirement(
+            data.get("requirement"), request_id, for_experiment=for_experiment,
+        ))
 
     async def _handle_message(self, raw: str) -> None:
         try:
@@ -415,7 +476,7 @@ class OverlayServer:
                 if seed is not None and type(seed) is not int:
                     raise CommandError("invalid_seed", "seed must be an integer")
                 self._check_run(data)
-                if data.get("requirement_id") is not None:
+                if data.get("requirement_id") is not None or data.get("during_preset_id") is not None:
                     await self._configure(data, request_id, replace_run=True, seed=seed)
                     if request_id is not None:
                         self.processed_request_ids.add(str(request_id))
@@ -455,7 +516,9 @@ class OverlayServer:
         while self.client is not None and not self._loop_stop.is_set():
             running = self.simulator.state == RuntimeState.RUNNING
             probe = self.simulator.performance
-            started, cpu_started, simulated = time.perf_counter(), time.process_time(), self.simulator.time_seconds
+            started = time.perf_counter()  # Required for simulation pacing, even without diagnostics.
+            cpu_started = time.process_time() if probe.enabled else None
+            simulated = self.simulator.time_seconds
             terminal = False
             try:
                 if running:
@@ -485,8 +548,19 @@ class OverlayServer:
                                 await asyncio.wait_for(self._loop_stop.wait(), sleep_seconds)
                             except asyncio.TimeoutError:
                                 pass
+            except Exception as exc:
+                # A failed tick (including a recorder I/O error) must reach the
+                # experiment owner even when no final update frame can be built.
+                # Otherwise the background task ends while the run stays active.
+                try:
+                    await self._send({"type": "runtime_error", "run_id": self.simulator.run_id,
+                                      "message": f"{type(exc).__name__}: {exc}"})
+                except Exception:
+                    # A lost transport is reported separately by the gateway.
+                    pass
+                return
             finally:
-                if running:
+                if running and probe.enabled and cpu_started is not None:
                     elapsed = time.perf_counter() - started
                     probe.sample('cycle_total', elapsed * 1000)
                     probe.cycle(self.simulator.time_seconds - simulated, elapsed, time.process_time() - cpu_started)

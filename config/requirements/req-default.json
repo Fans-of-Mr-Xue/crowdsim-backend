@@ -1,0 +1,447 @@
+{
+  "requirement_id": "req-default",
+  "schema_version": 1,
+  "created_at": "2026-10-12T06:36:51.057719+00:00",
+  "status": "accepted",
+  "fingerprint": "sha256:81aa8dd48a4f1672c920ff7b799353e4dab7fe8358cd56f6ed77acc782f83ab7",
+  "requirement": {
+    "schema_version": 1,
+    "project": {
+      "title": "城市重点区域人群聚集事中推演",
+      "description": "用于界定事中推演的空间范围、人群构成与推演目标，为后续人工社会构建和临机决策分析提供统一输入。"
+    },
+    "spatial_scope": {
+      "source": "preset",
+      "location_id": "memorial-tower",
+      "location_code": "BUND-01",
+      "name": "人民英雄纪念塔",
+      "address": "上海市黄浦区中山东一路 500 号黄浦公园",
+      "description": "覆盖人民英雄纪念塔圆形滨水平台与黄浦公园整体范围。",
+      "area_type": "滨水开放空间",
+      "attention_radius": "约 190 m",
+      "risk": "局部高密度聚集",
+      "map_zoom": 18,
+      "crs": "EPSG:4326",
+      "center": [
+        121.48682,
+        31.24428
+      ],
+      "boundary": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.486,
+              31.2429385
+            ],
+            [
+              121.4859814,
+              31.2426652
+            ],
+            [
+              121.4860198,
+              31.2426112
+            ],
+            [
+              121.4865657,
+              31.2425654
+            ],
+            [
+              121.4866022,
+              31.2426934
+            ],
+            [
+              121.4866482,
+              31.2428831
+            ],
+            [
+              121.4867319,
+              31.243134
+            ],
+            [
+              121.4869566,
+              31.2437441
+            ],
+            [
+              121.4869076,
+              31.2437648
+            ],
+            [
+              121.4869478,
+              31.2438393
+            ],
+            [
+              121.4869767,
+              31.2438869
+            ],
+            [
+              121.4868345,
+              31.2439379
+            ],
+            [
+              121.4867634,
+              31.2439838
+            ],
+            [
+              121.4868004,
+              31.2440399
+            ],
+            [
+              121.4868919,
+              31.2440236
+            ],
+            [
+              121.4869784,
+              31.2440175
+            ],
+            [
+              121.4870501,
+              31.2440316
+            ],
+            [
+              121.4871555,
+              31.2440983
+            ],
+            [
+              121.4871921,
+              31.2441404
+            ],
+            [
+              121.487218,
+              31.2441968
+            ],
+            [
+              121.4872326,
+              31.2442689
+            ],
+            [
+              121.4872245,
+              31.2443388
+            ],
+            [
+              121.4871891,
+              31.2444063
+            ],
+            [
+              121.4871396,
+              31.2444605
+            ],
+            [
+              121.4870753,
+              31.2445019
+            ],
+            [
+              121.4870105,
+              31.2445229
+            ],
+            [
+              121.4869334,
+              31.2445315
+            ],
+            [
+              121.4868563,
+              31.2445271
+            ],
+            [
+              121.4867855,
+              31.2444949
+            ],
+            [
+              121.4867186,
+              31.2444581
+            ],
+            [
+              121.48668,
+              31.2444101
+            ],
+            [
+              121.4866494,
+              31.2443601
+            ],
+            [
+              121.486638,
+              31.2443146
+            ],
+            [
+              121.4865696,
+              31.2443232
+            ],
+            [
+              121.4865985,
+              31.244459
+            ],
+            [
+              121.486628,
+              31.2445587
+            ],
+            [
+              121.4864533,
+              31.2446294
+            ],
+            [
+              121.4858584,
+              31.2448599
+            ],
+            [
+              121.4858453,
+              31.2448067
+            ],
+            [
+              121.4856587,
+              31.2448787
+            ],
+            [
+              121.4856335,
+              31.2445123
+            ],
+            [
+              121.4856604,
+              31.2443747
+            ],
+            [
+              121.4859071,
+              31.2436271
+            ],
+            [
+              121.4859769,
+              31.2433634
+            ],
+            [
+              121.4859942,
+              31.243129
+            ],
+            [
+              121.486,
+              31.2429385
+            ]
+          ]
+        ]
+      }
+    },
+    "population": {
+      "total": 800,
+      "distributions": {
+        "crowd_role": [
+          {
+            "code": "commuter",
+            "label": "通勤者",
+            "percent": 5
+          },
+          {
+            "code": "service_worker",
+            "label": "工作服务者",
+            "percent": 5
+          },
+          {
+            "code": "resident_daily",
+            "label": "居民日常",
+            "percent": 10
+          },
+          {
+            "code": "consumer",
+            "label": "消费者",
+            "percent": 10
+          },
+          {
+            "code": "social_visitor",
+            "label": "社交游客",
+            "percent": 20
+          },
+          {
+            "code": "leisure_visitor",
+            "label": "休闲游客",
+            "percent": 30
+          },
+          {
+            "code": "public_affairs_participant",
+            "label": "公共事务参与者",
+            "percent": 10
+          },
+          {
+            "code": "passerby",
+            "label": "过境行人",
+            "percent": 10
+          }
+        ],
+        "age_band": [
+          {
+            "code": "age_0_17",
+            "label": "0-17",
+            "percent": 10
+          },
+          {
+            "code": "age_18_34",
+            "label": "18-34",
+            "percent": 30
+          },
+          {
+            "code": "age_35_54",
+            "label": "35-54",
+            "percent": 25
+          },
+          {
+            "code": "age_55_64",
+            "label": "55-64",
+            "percent": 20
+          },
+          {
+            "code": "age_65_plus",
+            "label": "65+",
+            "percent": 15
+          }
+        ],
+        "origin": [
+          {
+            "id": "origin-2",
+            "label": "上海本地",
+            "percent": 60
+          },
+          {
+            "id": "origin-3",
+            "label": "国内其他省市",
+            "percent": 30
+          },
+          {
+            "id": "origin-4",
+            "label": "国际游客",
+            "percent": 10
+          }
+        ],
+        "gender": [
+          {
+            "code": "female",
+            "label": "女性",
+            "percent": 50
+          },
+          {
+            "code": "male",
+            "label": "男性",
+            "percent": 50
+          }
+        ]
+      }
+    },
+    "scenario": {
+      "event_category": {
+        "id": "culture",
+        "code": "E1",
+        "label": "文化娱乐活动",
+        "description": "适用于演出、展览、节庆和庙会等场景，重点模拟观众集中入场、现场驻留与散场时的人群变化。"
+      }
+    },
+    "observation": {
+      "metric_ids": [
+        "global-density",
+        "local-density",
+        "global-speed",
+        "local-speed",
+        "boundary-density-difference",
+        "evacuation-time",
+        "evacuation-efficiency",
+        "absolute-evacuation-density",
+        "pedestrian-state-change",
+        "pedestrian-psychology-change",
+        "concise-decision-advice",
+        "detailed-decision-plan"
+      ],
+      "metrics": [
+        {
+          "id": "global-density",
+          "code": "A1",
+          "label": "全局人群密度",
+          "description": "统计整个推演区域单位面积内的行人数量，用于判断整体拥挤程度及其峰值变化。"
+        },
+        {
+          "id": "local-density",
+          "code": "A2",
+          "label": "局部人群密度",
+          "description": "按均匀或随机方式划分片区并分别统计密度，用于定位局部聚集和高风险热点。"
+        },
+        {
+          "id": "global-speed",
+          "code": "A3",
+          "label": "全局人群流速",
+          "description": "汇总推演区域内行人的平均移动速度，反映整体通行能力和流动顺畅程度。"
+        },
+        {
+          "id": "local-speed",
+          "code": "A4",
+          "label": "局部人群流速",
+          "description": "持续观测各片区内行人的平均移动速度，用于发现缓行、停滞和流动瓶颈。"
+        },
+        {
+          "id": "boundary-density-difference",
+          "code": "A5",
+          "label": "区域边界密度差",
+          "description": "计算每个片区四条边两侧的密度差，并将数值标注在对应边界上，用于识别跨区流动压力。"
+        },
+        {
+          "id": "evacuation-time",
+          "code": "B1",
+          "label": "疏散时间",
+          "description": "记录从疏散启动到目标区域内人员达到安全状态所需的总时间。"
+        },
+        {
+          "id": "evacuation-efficiency",
+          "code": "B2",
+          "label": "疏散效率",
+          "description": "按照“（初始密度－结束密度）÷疏散时间”计算，用于衡量单位时间内的人群消减能力。"
+        },
+        {
+          "id": "absolute-evacuation-density",
+          "code": "B3",
+          "label": "绝对疏散密度",
+          "description": "记录疏散结束时目标区域内仍然留存的人群密度，反映疏散后的实际残余风险。"
+        },
+        {
+          "id": "pedestrian-state-change",
+          "code": "C1",
+          "label": "状态变化",
+          "description": "跟踪行人在正常行走、等待、拥挤、避让和疏散等行为状态之间的转换。"
+        },
+        {
+          "id": "pedestrian-psychology-change",
+          "code": "C2",
+          "label": "心理变化",
+          "description": "展示行人的平静、紧张和恐慌等心理状态随事件发展及周围环境产生的变化。"
+        },
+        {
+          "id": "concise-decision-advice",
+          "code": "D1",
+          "label": "一句话的决策建议",
+          "description": "基于关键观测结果生成高度概括的行动建议，便于值守人员快速判断和处置。"
+        },
+        {
+          "id": "detailed-decision-plan",
+          "code": "D2",
+          "label": "详细决策方案",
+          "description": "汇总风险判断、处置步骤、资源配置和注意事项，形成可执行的完整决策参考。"
+        }
+      ],
+      "local_partition_mode": "uniform"
+    }
+  },
+  "capabilities": {
+    "location": "supported",
+    "population_total": "supported",
+    "population_distributions": "supported",
+    "event_category": "metadata_only",
+    "metrics": {
+      "global-density": "supported",
+      "local-density": "supported",
+      "global-speed": "supported",
+      "local-speed": "supported",
+      "boundary-density-difference": "supported",
+      "evacuation-time": "supported",
+      "evacuation-efficiency": "supported",
+      "absolute-evacuation-density": "supported",
+      "pedestrian-state-change": "supported",
+      "pedestrian-psychology-change": "supported",
+      "concise-decision-advice": "not_implemented",
+      "detailed-decision-plan": "not_implemented"
+    },
+    "warnings": [
+      "部分指标尚未实现：concise-decision-advice, detailed-decision-plan"
+    ]
+  }
+}

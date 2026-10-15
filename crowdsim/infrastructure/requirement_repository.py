@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import re
 import uuid
@@ -27,9 +28,11 @@ class RequirementRepository:
         spec = RequirementSpec.parse(spec.payload, allow_empty_population=purpose == "experiment")
         self.root.mkdir(parents=True, exist_ok=True)
         for _ in range(4):
-            requirement_id = f"req-{uuid.uuid4().hex}"
+            requirement_id = f"req-{spec.fingerprint[:32]}" if spec.payload["schema_version"] == 2 else f"req-{uuid.uuid4().hex}"
             destination = self.root / f"{requirement_id}.json"
             if destination.exists():
+                if spec.payload["schema_version"] == 2:
+                    return self.load(requirement_id)
                 continue
             now = datetime.now(timezone.utc).isoformat()
             record = {
@@ -43,12 +46,20 @@ class RequirementRepository:
             }
             if purpose is not None:
                 record["purpose"] = purpose
-            temporary = destination.with_suffix(".json.tmp")
+            temporary = destination.with_suffix(f".{uuid.uuid4().hex}.json.tmp")
             temporary.write_text(
                 json.dumps(record, ensure_ascii=False, indent=2) + "\n",
                 encoding="utf-8",
             )
-            temporary.replace(destination)
+            if spec.payload["schema_version"] == 2:
+                try:
+                    os.link(temporary, destination)
+                except FileExistsError:
+                    return self.load(requirement_id)
+                finally:
+                    temporary.unlink(missing_ok=True)
+            else:
+                temporary.replace(destination)
             return record
         raise FileExistsError("could not allocate a unique requirement id")
 

@@ -1,0 +1,385 @@
+{
+  "schema_version": 1,
+  "validated_on": "2026-10-14",
+  "preset_id": "memorial-tower-during-v1",
+  "preset_version": 1,
+  "decision": "stage0_verified",
+  "sumo_version": "SUMO 1.27.0",
+  "phenomenon_policy": {
+    "id": "sustained_core_crowding",
+    "version": 1,
+    "scope_edges": [
+      "679361567#1",
+      "679361567#2",
+      "679361567#2_m3_north"
+    ],
+    "states": [
+      "crowded",
+      "high_risk"
+    ],
+    "minimum_count": 10,
+    "minimum_fraction": 0.2,
+    "confirmation_seconds": 10.0,
+    "observation_start_seconds": 1.0,
+    "maximum_sample_gap_seconds": 0.5,
+    "denominator": "all_active_pedestrians_on_scope_edges",
+    "unknown_density": "interrupt_continuity_and_mark_unavailable"
+  },
+  "resource_sha256": {
+    "scenarios/shanghai_bund/bund.hotspot.sumocfg": "f80cf732f69e7550d501cf39da40710ee1c26c7a6b50ac2142121606a35771d2",
+    "scenarios/shanghai_bund/bund.net.xml": "7f1e900aa870f1c55d90ad18d18f41690f774083996d68fe1a06d8f114c9c67c",
+    "scenarios/shanghai_bund/bund_ped.rou.xml": "f3c88ba4243216434b22aa8ea62bcac45b950892011c8479a7c237c95c5bec2a",
+    "config/crowd_hotspots.json": "3d1c112a6bba75338e60573076cbc792ddaa2dcb629e5088a239a592d399bad2",
+    "config/crowd_visual_state.json": "00335c97cd3903f118f8c6ec27aefe667067eaaac12831afbaba3176651a42b8",
+    "config/population_profiles.json": "f45aab4fac089ef3f86a300f7e4fe8197e141c1a33cbd56bd690ee4f85e2054d",
+    "config/experiment.json": "e88adc249ae8d351bd76913caa425fc4b6466e3997a62e65034d09659b7c6d91",
+    "config/pois.json": "d7d152c5675ff49701d5804ec31537999b653579223e67b93609aa4ab365a0bd",
+    "config/observation_metrics.json": "c7898752b74fab6321f4fad20d0e247fa9f806704fa85ed40898f6968e527bd9"
+  },
+  "calibration_notes": [
+    "All cases are scored from the recorded 0.5-second CSV samples using the final rule shown above. Earlier archived reports may predate the explicit 1.0-second observation start.",
+    "The initial 0.5-second density-unavailable sample is preserved in raw data and excluded from formal observation. All samples from 1.0 second through the actual endpoint have valid coverage.",
+    "The full 700-person run used the already configured SUMO seed 20260908. The final runner explicitly passes the same seed to SUMO and verifies population size for every run.",
+    "The 360-second second-seed case verifies early crowding only. The 300-second controlled case verifies physical application and release only; neither is a full completion or policy efficacy experiment.",
+    "The configured five formal repetitions have not been run. These four calibration cases do not estimate a real-world occurrence probability.",
+    "The 700-person baseline retains 560 active pedestrians at the horizon; t95 is unavailable. The severe residual blockage is retained as an observed limitation, not treated as a runtime failure or proof that a generated policy will improve it.",
+    "Raw trajectories and samples remain in the local ignored runs directory. This tracked evidence preserves compact results, run identifiers, and sample checksums."
+  ],
+  "paired_precontrol_samples_identical": true,
+  "tests": {
+    "command": "python -m pytest -q tests/test_during_crowding.py tests/test_crowd_visual_state.py",
+    "passed": 32,
+    "subtests_passed": 5
+  },
+  "cases": [
+    {
+      "run_id": "run-e51d3631fe5b4e0fbd1f02732921b939",
+      "requirement_fingerprint": "sha256:4731cabdc90166a0c1ca63483f21bf41ce0f39ab893a5dd6b64dc19fbfb2ee05",
+      "count": 700,
+      "seed": 20260908,
+      "variant": "baseline",
+      "duration_seconds": 1800,
+      "sumo_version": "SUMO 1.27.0",
+      "wall_seconds": 1122.463,
+      "population": {
+        "planned": 700,
+        "departed": 700,
+        "active": 560,
+        "arrived": 140,
+        "explicitly_removed": 0,
+        "unknown_disappearances": [],
+        "conservation_error": 0
+      },
+      "peak_core_count": 579,
+      "peak_core_density": 2.119171363736183,
+      "peak_planned_stop_count": 160,
+      "peak_control_held_count": 0,
+      "completion_rate": 0.2,
+      "t95_from_start_seconds": null,
+      "final_sample": {
+        "time_seconds": 1800.0,
+        "core_count": 338,
+        "crowded_count": 163,
+        "high_risk_count": 0,
+        "planned_stop_count": 3,
+        "unknown_count": 0,
+        "core_density_person_per_m2": 1.2370983090549739,
+        "active_count": 560,
+        "arrived_count": 140,
+        "completion_rate": 0.2,
+        "global_mean_speed_mps": 0.0,
+        "blocked_low_speed_count": 483,
+        "control_held_count": 0
+      },
+      "purpose": "baseline_full",
+      "observed_until_seconds": 1800.0,
+      "end_reason": "observation_horizon",
+      "phenomenon": {
+        "definition_id": "sustained_core_crowding",
+        "definition_version": 1,
+        "occurred": true,
+        "coverage": "complete",
+        "sample_count": 3599,
+        "unknown_sample_count": 0,
+        "gap_count": 0,
+        "observation_start_seconds": 1.0,
+        "excluded_initialization_samples": 1,
+        "first_confirmed_at_seconds": 130.5,
+        "confirmed_duration_seconds": 1679.5,
+        "peak_crowded_count": 477,
+        "peak_high_risk_count": 0,
+        "peak_crowded_fraction": 0.833916083916084,
+        "episodes": [
+          {
+            "onset_seconds": 120.5,
+            "confirmed_at_seconds": 130.5,
+            "end_seconds": 1800.0,
+            "duration_seconds": 1679.5,
+            "end_reason": "observation_end",
+            "right_censored": true
+          }
+        ]
+      },
+      "report_path": "runs/during_stage0/baseline-700/700-20260908-baseline.json",
+      "samples_csv": "runs/during_stage0/baseline-700/700-20260908-baseline.csv",
+      "samples_sha256": "fac430d8b0e36105373b2e14333d51e7ea52e32ceb577a2818760b789e491db9",
+      "raw_run_directory": "runs/run-e51d3631fe5b4e0fbd1f02732921b939"
+    },
+    {
+      "run_id": "run-caccbda7acc04caab1fd5b8ef97db291",
+      "requirement_fingerprint": "sha256:e6429f0c06eb7f524dd60d85cfd97aad03c05bb111e156946a0a3c5ce7619629",
+      "count": 100,
+      "seed": 20260908,
+      "variant": "baseline",
+      "duration_seconds": 1800,
+      "sumo_version": "SUMO 1.27.0",
+      "wall_seconds": 108.079,
+      "population": {
+        "planned": 100,
+        "departed": 100,
+        "active": 0,
+        "arrived": 100,
+        "explicitly_removed": 0,
+        "unknown_disappearances": [],
+        "conservation_error": 0
+      },
+      "peak_core_count": 100,
+      "peak_core_density": 0.3660054168801698,
+      "peak_planned_stop_count": 100,
+      "peak_control_held_count": 0,
+      "completion_rate": 1.0,
+      "t95_from_start_seconds": 1168.0,
+      "final_sample": {
+        "time_seconds": 1194.5,
+        "core_count": 0,
+        "crowded_count": 0,
+        "high_risk_count": 0,
+        "planned_stop_count": 0,
+        "unknown_count": 0,
+        "core_density_person_per_m2": 0.0,
+        "active_count": 0,
+        "arrived_count": 100,
+        "completion_rate": 1.0,
+        "global_mean_speed_mps": 0.0,
+        "blocked_low_speed_count": 0,
+        "control_held_count": 0
+      },
+      "purpose": "sparse_negative_control",
+      "observed_until_seconds": 1194.5,
+      "end_reason": "all_arrived",
+      "phenomenon": {
+        "definition_id": "sustained_core_crowding",
+        "definition_version": 1,
+        "occurred": false,
+        "coverage": "complete",
+        "sample_count": 2388,
+        "unknown_sample_count": 0,
+        "gap_count": 0,
+        "observation_start_seconds": 1.0,
+        "excluded_initialization_samples": 1,
+        "first_confirmed_at_seconds": null,
+        "confirmed_duration_seconds": 0,
+        "peak_crowded_count": 0,
+        "peak_high_risk_count": 0,
+        "peak_crowded_fraction": 0.0,
+        "episodes": []
+      },
+      "report_path": "runs/during_stage0/sparse-100-corrected/100-20260908-baseline.json",
+      "samples_csv": "runs/during_stage0/sparse-100-corrected/100-20260908-baseline.csv",
+      "samples_sha256": "e7a7b06795c3340a3bd1286d7bf6d41127cb92a31939cb86f2ae067aec31b870",
+      "raw_run_directory": "runs/run-caccbda7acc04caab1fd5b8ef97db291"
+    },
+    {
+      "run_id": "run-3d384fa8bfe94515a4b27a721ad0a94a",
+      "requirement_fingerprint": "sha256:4731cabdc90166a0c1ca63483f21bf41ce0f39ab893a5dd6b64dc19fbfb2ee05",
+      "count": 700,
+      "seed": 20260909,
+      "variant": "baseline",
+      "duration_seconds": 360.0,
+      "sumo_version": "SUMO 1.27.0",
+      "wall_seconds": 262.198,
+      "population": {
+        "planned": 700,
+        "departed": 700,
+        "active": 700,
+        "arrived": 0,
+        "explicitly_removed": 0,
+        "unknown_disappearances": [],
+        "conservation_error": 0
+      },
+      "peak_core_count": 700,
+      "peak_core_density": 2.5620379181611885,
+      "peak_planned_stop_count": 182,
+      "peak_control_held_count": 0,
+      "completion_rate": 0.0,
+      "t95_from_start_seconds": null,
+      "final_sample": {
+        "time_seconds": 360.0,
+        "core_count": 700,
+        "crowded_count": 544,
+        "high_risk_count": 71,
+        "planned_stop_count": 79,
+        "unknown_count": 0,
+        "core_density_person_per_m2": 2.5620379181611885,
+        "active_count": 700,
+        "arrived_count": 0,
+        "completion_rate": 0.0,
+        "global_mean_speed_mps": 0.027344796990262422,
+        "blocked_low_speed_count": 6,
+        "control_held_count": 0
+      },
+      "purpose": "second_seed_early_crowding",
+      "observed_until_seconds": 360.0,
+      "end_reason": "observation_horizon",
+      "phenomenon": {
+        "definition_id": "sustained_core_crowding",
+        "definition_version": 1,
+        "occurred": true,
+        "coverage": "complete",
+        "sample_count": 719,
+        "unknown_sample_count": 0,
+        "gap_count": 0,
+        "observation_start_seconds": 1.0,
+        "excluded_initialization_samples": 1,
+        "first_confirmed_at_seconds": 136.5,
+        "confirmed_duration_seconds": 233.5,
+        "peak_crowded_count": 625,
+        "peak_high_risk_count": 71,
+        "peak_crowded_fraction": 0.9030390738060782,
+        "episodes": [
+          {
+            "onset_seconds": 126.5,
+            "confirmed_at_seconds": 136.5,
+            "end_seconds": 360.0,
+            "duration_seconds": 233.5,
+            "end_reason": "observation_end",
+            "right_censored": true
+          }
+        ]
+      },
+      "report_path": "runs/during_stage0/replicate-700/700-20260909-baseline.json",
+      "samples_csv": "runs/during_stage0/replicate-700/700-20260909-baseline.csv",
+      "samples_sha256": "e3b64018e9860bcec5e06b3fe71810cf984c9d66e52b3c8bb67d2ccb0b8bb86e",
+      "raw_run_directory": "runs/run-3d384fa8bfe94515a4b27a721ad0a94a"
+    },
+    {
+      "run_id": "run-946d0ddc8d11406dab4acd7167791188",
+      "requirement_fingerprint": "sha256:4731cabdc90166a0c1ca63483f21bf41ce0f39ab893a5dd6b64dc19fbfb2ee05",
+      "count": 700,
+      "seed": 20260908,
+      "variant": "metered",
+      "duration_seconds": 300.0,
+      "sumo_version": "SUMO 1.27.0",
+      "wall_seconds": 265.269,
+      "population": {
+        "planned": 700,
+        "departed": 700,
+        "active": 700,
+        "arrived": 0,
+        "explicitly_removed": 0,
+        "unknown_disappearances": [],
+        "conservation_error": 0
+      },
+      "peak_core_count": 652,
+      "peak_core_density": 2.386355318058707,
+      "peak_planned_stop_count": 159,
+      "peak_control_held_count": 57,
+      "completion_rate": 0.0,
+      "t95_from_start_seconds": null,
+      "final_sample": {
+        "time_seconds": 300.0,
+        "core_count": 652,
+        "crowded_count": 578,
+        "high_risk_count": 0,
+        "planned_stop_count": 52,
+        "unknown_count": 0,
+        "core_density_person_per_m2": 2.386355318058707,
+        "active_count": 700,
+        "arrived_count": 0,
+        "completion_rate": 0.0,
+        "global_mean_speed_mps": 0.14692561565034953,
+        "blocked_low_speed_count": 6,
+        "control_held_count": 0
+      },
+      "purpose": "entry_meter_execution_only",
+      "observed_until_seconds": 300.0,
+      "end_reason": "observation_horizon",
+      "phenomenon": {
+        "definition_id": "sustained_core_crowding",
+        "definition_version": 1,
+        "occurred": true,
+        "coverage": "complete",
+        "sample_count": 599,
+        "unknown_sample_count": 0,
+        "gap_count": 0,
+        "observation_start_seconds": 1.0,
+        "excluded_initialization_samples": 1,
+        "first_confirmed_at_seconds": 130.5,
+        "confirmed_duration_seconds": 179.5,
+        "peak_crowded_count": 578,
+        "peak_high_risk_count": 0,
+        "peak_crowded_fraction": 0.8911353032659409,
+        "episodes": [
+          {
+            "onset_seconds": 120.5,
+            "confirmed_at_seconds": 130.5,
+            "end_seconds": 300.0,
+            "duration_seconds": 179.5,
+            "end_reason": "observation_end",
+            "right_censored": true
+          }
+        ]
+      },
+      "report_path": "runs/during_stage0/metered-700/700-20260908-metered.json",
+      "samples_csv": "runs/during_stage0/metered-700/700-20260908-metered.csv",
+      "samples_sha256": "cd50eb34321b30400398e8c7b934e27acb5d0e1816e9b6b5061b588b6ba5e1a2",
+      "raw_run_directory": "runs/run-946d0ddc8d11406dab4acd7167791188",
+      "control_check": {
+        "action_result": {
+          "actionId": "stage0-meter-20260908",
+          "actionType": "set_inflow_rate",
+          "target": {
+            "entryId": "178411801#0"
+          },
+          "parameters": {
+            "rate": 0.45,
+            "durationSeconds": 120.0
+          },
+          "appliedAt": 120.0,
+          "expiresAt": 240.0,
+          "detail": {
+            "validated": true,
+            "actionId": "stage0-meter-20260908",
+            "affectedAgents": 57,
+            "targetEdge": "178411801#0",
+            "effectiveRate": 0.45,
+            "nominalCapacityPerSecond": 2.6,
+            "controlMode": "token_bucket_entry_meter",
+            "currentlyHeldAgents": 0,
+            "admittedAgents": 86
+          },
+          "name": "set_inflow_rate",
+          "applied_at": 120.0,
+          "physical_change": true,
+          "action": {
+            "schemaVersion": "1.0",
+            "actionId": "stage0-meter-20260908",
+            "actionType": "set_inflow_rate",
+            "target": {
+              "entryId": "178411801#0"
+            },
+            "parameters": {
+              "rate": 0.45,
+              "durationSeconds": 120.0
+            }
+          },
+          "decisionId": null
+        },
+        "first_held_seconds": 120.5,
+        "last_held_seconds": 238.0,
+        "max_held_at_or_after_expiry": 0,
+        "efficacy_evaluated": false
+      }
+    }
+  ]
+}

@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Mapping
 
 from .controllers import ArdeAdapter, LlmController, NoControl, RuleBasedController
+from .controllers.during_replay import DuringReplayController
 
 
 class ControllerRegistry:
@@ -25,6 +26,8 @@ class ControllerRegistry:
 
     def create(self, method_id: str, config: Mapping[str, Any] | None = None):
         config = dict(config or {})
+        if method_id == "D2":
+            return DuringReplayController(config)
         if method_id == "C0":
             return NoControl(config)
         if method_id == "C1":

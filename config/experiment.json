@@ -18,7 +18,8 @@
       "jamtime_crossing_seconds": 3601.0,
       "jamtime_narrow_seconds": 3601.0,
       "stripe_width_meters": 0.55,
-      "reserve_oncoming_fraction": 0.5
+      "reserve_oncoming_fraction": 0.5,
+      "reserve_oncoming_junctions_fraction": 0.0
     }
   },
   "decision": {

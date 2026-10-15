@@ -18,16 +18,23 @@ from crowdsim.environment.hotspot_catalog import HotspotCatalog
 from crowdsim.core.simulation_runtime import RuntimeState, SimulationRuntime
 from crowdsim.infrastructure.hotspot_phase import HotspotPhaseTracker
 from crowdsim.infrastructure.network_adapter import ResearchNetwork
+from crowdsim.infrastructure.performance_probe import add_performance_arguments, performance_options
 
 
-def parse_args():
+def parse_args(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--sumo-config", type=Path, default=ROOT / "scenarios" / "shanghai_bund" / "bund.hotspot.sumocfg")
     parser.add_argument("--hotspot-config", type=Path, default=ROOT / "config" / "crowd_hotspots.json")
     parser.add_argument("--hotspot-id", default="people_heroes_monument")
     parser.add_argument("--until", type=float, default=1800.0)
     parser.add_argument("--sample-seconds", type=float, default=10.0)
-    return parser.parse_args()
+    add_performance_arguments(parser)
+    args = parser.parse_args(argv)
+    try:
+        performance_options(args)
+    except ValueError as exc:
+        parser.error(str(exc))
+    return args
 
 
 def main() -> int:
@@ -59,6 +66,7 @@ def main() -> int:
         scenario_name="hotspot",
         demand_mode="fixed",
         timeline_end_seconds=args.until,
+        performance_options=performance_options(args),
     )
     samples = []
     peak = None
@@ -68,7 +76,8 @@ def main() -> int:
         while runtime.state == RuntimeState.RUNNING and runtime.time_seconds < args.until:
             sample_at = min(args.until, runtime.time_seconds + args.sample_seconds)
             while runtime.state == RuntimeState.RUNNING and runtime.time_seconds < sample_at:
-                step = runtime.tick()
+                with runtime.performance.offline_cycle(runtime):
+                    step = runtime.tick()
             core = [motion for motion in step.persons.values() if motion.edge_id in target_edges]
             core_dwelling = [
                 motion for motion in core

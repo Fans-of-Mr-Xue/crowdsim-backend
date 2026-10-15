@@ -3,6 +3,7 @@
 from collections import Counter
 import csv
 import json
+from crowdsim.infrastructure.performance_probe import timed
 
 
 class ObservationRecorder:
@@ -20,6 +21,7 @@ class ObservationRecorder:
         self._write_evacuation_state("running", None)
         self._write_result("running", None)
 
+    @timed('observation_log_write')
     def record(self, sample):
         if sample["snapshot_id"] == self.last_snapshot_id:
             return
@@ -62,6 +64,7 @@ class ObservationRecorder:
         self._write_evacuation_state("running", None)
         self._write_result("running", None)
 
+    @timed('observation_log_finalize')
     def finalize(self, status, reason, error=None):
         if self.finalized:
             return

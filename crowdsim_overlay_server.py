@@ -11,6 +11,7 @@ import xml.etree.ElementTree as ET
 
 from crowdsim.core.simulation_runtime import SimulationRuntime
 from crowdsim.infrastructure.websocket_server import OverlayServer
+from crowdsim.infrastructure.performance_probe import add_performance_arguments, performance_options
 from crowdsim.scenarios.generated_hotspot_demand import HotspotDemandSpec
 from crowdsim.scenarios.generated_network_demand import NetworkDemandSpec
 from pedestrian_decision_skill import PedestrianDecisionSkill
@@ -96,7 +97,13 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--mode", choices=("rule", "llm"), default="rule")
     parser.add_argument("--deepseek-config", type=Path)
-    return parser.parse_args(argv)
+    add_performance_arguments(parser)
+    args = parser.parse_args(argv)
+    try:
+        performance_options(args)
+    except ValueError as exc:
+        parser.error(str(exc))
+    return args
 
 
 def resolve_service_scenario(args: argparse.Namespace) -> ServiceScenario:
@@ -185,6 +192,7 @@ def build_runtime(args: argparse.Namespace, selection: ServiceScenario | None = 
         road_network_url=selection.road_network_url,
         network_demand_spec=NetworkDemandSpec() if selection.demand_mode == "generated_network" else None,
         hotspot_demand_spec=selection.hotspot_demand_spec,
+        performance_options=performance_options(args),
     )
 
 

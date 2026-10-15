@@ -13,6 +13,7 @@ from typing import Any
 from urllib.parse import parse_qs, urlsplit
 
 from .service import ControlServiceBundle
+from crowdsim.domain.during_preset import PRESET_FILES, load_during_preset, preset_fingerprint
 
 
 CONTROL_PREFIX = "/crowdSim/control"
@@ -108,10 +109,16 @@ class ControlRequestHandler(BaseHTTPRequestHandler):
                 return self._send_json(200, self.bundle.registry.catalog())
             if path == f"{CONTROL_PREFIX}/capabilities":
                 return self._send_json(200, self.bundle.gateway.health().get("capabilities") or {})
+            if path == f"{CONTROL_PREFIX}/during-presets":
+                presets = [load_during_preset(preset_id) for preset_id in PRESET_FILES]
+                return self._send_json(200, [{**preset, "fingerprint": preset_fingerprint(preset)} for preset in presets])
             if path == f"{CONTROL_PREFIX}/experiments":
                 limit = max(1, min(200, int((query.get("limit") or [50])[0])))
                 return self._send_json(200, self.bundle.repository.list_experiments(user_id, workspace_id, limit))
 
+            match = re.fullmatch(rf"{CONTROL_PREFIX}/experiments/([^/]+)/strategy-context", path)
+            if match:
+                return self._send_json(200, self.bundle.during_strategies.context(user_id, workspace_id, match.group(1)))
             match = re.fullmatch(rf"{CONTROL_PREFIX}/experiments/([^/]+)/report", path)
             if match:
                 return self._send_json(200, self.bundle.reports.generate(user_id, workspace_id, match.group(1)))
@@ -153,6 +160,10 @@ class ControlRequestHandler(BaseHTTPRequestHandler):
                 return self._send_json(201, self.bundle.submit_requirement(requirement))
             if path == f"{CONTROL_PREFIX}/experiments":
                 return self._send_json(201, self.bundle.orchestrator.create_experiment(user_id, workspace_id, data))
+            match = re.fullmatch(rf"{CONTROL_PREFIX}/experiments/([^/]+)/(strategy-preview|strategy-replays)", path)
+            if match:
+                method = self.bundle.during_strategies.preview if match.group(2) == "strategy-preview" else self.bundle.during_strategies.create_replay
+                return self._send_json(200 if match.group(2) == "strategy-preview" else 201, method(user_id, workspace_id, match.group(1), data))
             match = re.fullmatch(rf"{CONTROL_PREFIX}/experiments/([^/]+)/start", path)
             if match:
                 runs = self.bundle.orchestrator.start_experiment(user_id, workspace_id, match.group(1))

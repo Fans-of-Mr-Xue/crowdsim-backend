@@ -13,8 +13,9 @@ DENSITY_LEVELS = ("free", "busy", "crowded", "critical", "unknown")
 
 
 class CrowdEnvironment:
-    def __init__(self, network: ResearchNetwork) -> None:
+    def __init__(self, network: ResearchNetwork, *, performance=None) -> None:
         self.network = network
+        self.performance = performance
 
     def observe(
         self,
@@ -28,11 +29,18 @@ class CrowdEnvironment:
         by_edge: Dict[str, list[MotionSnapshot]] = {}
         for motion in motions.values():
             by_edge.setdefault(motion.edge_id, []).append(motion)
+        monitor = self.performance is not None and self.performance.enabled
+        if monitor:
+            self.performance.sample('neighbour_candidate_comparisons', sum(len(items) * (len(items) - 1) for items in by_edge.values()), 'comparisons')
+            self.performance.sample('occupied_edges', len(by_edge), 'edges')
+            self.performance.sample('max_people_on_edge', max(map(len, by_edge.values()), default=0), 'people')
         result: Dict[str, Observation] = {}
         for person_id, motion in motions.items():
             profile = profiles[person_id]
             radius = profile.perception_radius
             neighbours = tuple(sorted(other.person_id for other in by_edge.get(motion.edge_id, ()) if other.person_id != person_id and math.hypot(other.x - motion.x, other.y - motion.y) <= radius))
+            if monitor:
+                self.performance.sample('neighbours_per_person', len(neighbours), 'people')
             area = self._observation_area(motion.edge_id, radius)
             density = None if area is None else (len(neighbours) + 1) / area
             perceived = 0.0 if density is None else min(1.0, density / (0.75 + 2.25 * profile.crowding_tolerance))

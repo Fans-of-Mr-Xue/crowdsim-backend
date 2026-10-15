@@ -168,7 +168,7 @@ class SystemSamplerTests(unittest.TestCase):
 
     def test_independent_sensor_failures(self):
         sampler = MacSampler()
-        for name in ('cpu', 'processes', 'gpu', 'thermal', 'battery'):
+        for name in ('cpu', 'processes', 'memory', 'process_io', 'gpu', 'thermal', 'battery'):
             setattr(sampler, name, Mock(side_effect=PermissionError('not allowed')))
         sampler.gpu = Mock(return_value={'status': 'ok'})
         result = sampler.sample()
@@ -225,8 +225,8 @@ class SystemMonitorTests(unittest.TestCase):
             self.assertEqual('unavailable', json.loads((Path(directory) / 'performance.system.jsonl').read_text())['host']['status'])
 
     def test_probe_switch_and_start_once(self):
-        with tempfile.TemporaryDirectory() as directory, patch.dict('os.environ', {'CROWDSIM_SYSTEM_PERF': '0'}):
-            probe = PerformanceProbe('test', enabled=True)
+        with tempfile.TemporaryDirectory() as directory:
+            probe = PerformanceProbe('test', enabled=True, system_enabled=False)
             probe.attach(directory)
             runtime = SimpleNamespace(current=None, time_seconds=0, state=SimpleNamespace(value='READY'), sim_speed_factor=3)
             probe.start_system(runtime)
@@ -234,6 +234,7 @@ class SystemMonitorTests(unittest.TestCase):
             probe.start_system(runtime)
             probe.close_system()
             self.assertIs(first, probe.system_monitor)
+            self.assertIsNone(first)
             self.assertFalse(probe.system_metadata()['enabled'])
             self.assertFalse(list(Path(directory).iterdir()))
 

@@ -9,10 +9,11 @@ import uuid
 from typing import Any, Mapping
 
 from crowdsim.domain.requirement_spec import MAX_POPULATION
+from crowdsim.domain.during_preset import bind_preset_scenario
 
 
 SCHEMA_VERSION = "1.0"
-METHOD_IDS = {"C0", "C1", "C2", "C3", "C4", "C5"}
+METHOD_IDS = {"C0", "C1", "C2", "C3", "C4", "C5", "D2"}
 ACTION_TYPES = {
     "observe_only", "publish_guidance", "set_inflow_rate", "set_edge_capacity",
     "set_route_distribution", "reroute_group", "set_edge_risk_weight",
@@ -56,10 +57,18 @@ def _reject_secret_fields(value: Any, path: str) -> None:
             _reject_secret_fields(item, f"{path}[{index}]")
 
 
-def validate_experiment_config(payload: Mapping[str, Any]) -> dict[str, Any]:
+def validate_experiment_config(payload: Mapping[str, Any], *, allow_during_replay=False) -> dict[str, Any]:
     if not isinstance(payload, Mapping):
         raise ContractError("experiment config must be an object")
     data = deepcopy(dict(payload))
+    if (data.get("duringReplay") is not None or "D2" in (data.get("methods") or [])) and not allow_during_replay:
+        raise ContractError("策略重跑必须通过来源实验的确认接口创建。")
+    request_id = data.get("clientRequestId")
+    if request_id is not None and (
+        not isinstance(request_id, str) or not request_id.strip() or len(request_id) > 128
+        or any(not (c.isascii() and (c.isalnum() or c in "_-")) for c in request_id)
+    ):
+        raise ContractError("clientRequestId must contain 1-128 ASCII letters, digits, underscores or hyphens")
     name = str(data.get("name") or "").strip()
     if not name:
         raise ContractError("name is required")
@@ -67,6 +76,16 @@ def validate_experiment_config(payload: Mapping[str, Any]) -> dict[str, Any]:
     if not isinstance(scenario, Mapping):
         raise ContractError("scenario must be an object")
     scenario = dict(scenario)
+    if scenario.get("presetId") is not None:
+        try:
+            scenario = bind_preset_scenario(scenario)
+        except (ValueError, OSError) as exc:
+            raise ContractError(str(exc)) from exc
+        data.setdefault("methods", ["C0"])
+        if data["methods"] != ["C0"] and not (allow_during_replay and data["methods"] == ["D2"]):
+            raise ContractError("during stage 1 supports only the C0 baseline")
+    elif any(key in scenario for key in ("duringPreset", "presetVersion", "presetFingerprint")):
+        raise ContractError("during preset metadata requires scenario.presetId")
     population = scenario.get("population")
     if population is not None and (type(population) is not int or not 0 <= population <= MAX_POPULATION):
         raise ContractError(f"scenario.population must be an integer between 0 and {MAX_POPULATION}")
@@ -128,6 +147,16 @@ def validate_experiment_config(payload: Mapping[str, Any]) -> dict[str, Any]:
         "llmConfig": dict(llm_config),
         "metricSet": list(data.get("metricSet") or []),
     })
+    if "clarificationSnapshot" in data:
+        from .clarification import validate_clarification_snapshot
+        try:
+            _reject_secret_fields(data["clarificationSnapshot"], "clarificationSnapshot")
+            validate_clarification_snapshot(data)
+        except (ValueError, TypeError, KeyError) as exc:
+            raise ContractError(str(exc)) from exc
+    if allow_during_replay:
+        from .during_strategy import validate_replay_binding
+        validate_replay_binding(data)
     return data
 
 

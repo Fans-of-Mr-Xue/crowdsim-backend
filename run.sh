@@ -2,6 +2,9 @@
 
 set -euo pipefail
 
+# Default: reuse healthy services. After editing backend code, explicitly use
+# bash run.sh --restart-services to reload this checkout's local services only.
+# Arguments are forwarded unchanged; remote model/database services aren't restarted.
 BACKEND_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 cd "${BACKEND_ROOT}"
 export PYTHONPATH="${BACKEND_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"

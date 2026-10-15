@@ -19,6 +19,7 @@ from crowdsim.infrastructure.network_adapter import ResearchNetwork
 from crowdsim.infrastructure.experiment_recorder import ExperimentRecorder
 from crowdsim.infrastructure.requirement_repository import RequirementRepository
 from crowdsim.infrastructure.sumo_adapter import SumoStepResult
+from crowdsim.infrastructure.performance_probe import PerformanceOptions
 from crowdsim.infrastructure.websocket_server import OverlayServer
 
 
@@ -84,6 +85,11 @@ class ObservationRecordingTests(unittest.TestCase):
         self.spec = RequirementSpec.parse(self.payload)
         self.record = {"requirement_id": "req-default", "schema_version": 1, "fingerprint": f"sha256:{self.spec.fingerprint}",
                        "requirement": self.payload, "capabilities": self.spec.capabilities()}
+        # Git metadata is irrelevant to recording assertions; keep this suite
+        # compatible with the code-only guard that prohibits all subprocesses.
+        self.git_patch = patch("crowdsim.infrastructure.experiment_recorder.subprocess.run", side_effect=OSError("offline test"))
+        self.git_patch.start()
+        self.addCleanup(self.git_patch.stop)
         self.root_patch = patch("crowdsim.core.simulation_runtime.PROJECT_ROOT", self.directory)
         self.root_patch.start()
         self.recorder_patch = patch("crowdsim.core.simulation_runtime.ExperimentRecorder",
@@ -98,13 +104,102 @@ class ObservationRecordingTests(unittest.TestCase):
         self.recorder_patch.stop()
         self.temporary.cleanup()
 
-    def initialize(self, record=True, end=0.5):
+    def initialize(self, record=True, end=0.5, performance=False, extra_args=()):
         with patch("crowdsim.infrastructure.sumo_adapter.discover_sumo_binary", return_value="never-executed-sumo"), patch.dict("os.environ", {"CROWDSIM_PERF": "0", "CROWDSIM_SYSTEM_PERF": "0"}):
-            self.runtime = SimulationRuntime(self.config, requirement_record=self.record if record else None, timeline_end_seconds=end)
+            self.runtime = SimulationRuntime(self.config, requirement_record=self.record if record else None, timeline_end_seconds=end,
+                performance_options=PerformanceOptions(enabled=performance, system_enabled=False))
             self.runtime.adapter = FakeAdapter(MotionSnapshot("a", 0, self.x, self.y, *self.network.xy_to_lonlat(self.x, self.y),
                 1, "monument_m3", "monument_m3_0", 0, 0, 0, tc.STAGE_WALKING))
+            self.runtime.adapter.extra_args = list(extra_args)
             self.runtime.initialize()
         return self.runtime
+
+    def use_confirmed_class_one(self, duration):
+        from tests.test_requirement_location_v2 import located_requirement
+        self.payload = located_requirement(True)
+        self.payload["population"]["total"] = 1
+        self.payload.update(research={"problem_type": 1}, experiment={"duration_seconds": duration, "repetitions": 5})
+        self.spec = RequirementSpec.parse(self.payload)
+        self.record = {"requirement_id": "req-default", "schema_version": 2,
+                       "fingerprint": f"sha256:{self.spec.fingerprint}",
+                       "requirement": self.payload, "capabilities": self.spec.capabilities()}
+
+    def test_confirmed_limit_finishes_on_the_first_reaching_tick_and_persists_the_reason(self):
+        self.use_confirmed_class_one(1.25)
+        runtime = self.initialize(end=1800)
+        self.assertEqual(1.25, runtime.init_frame()["scenario"]["timeline_end_seconds"])
+        self.assertEqual(3, runtime.scenario_diagnostics()["timeline_step_count"])
+        runtime.start()
+        with patch.object(runtime.decision_scheduler, "collect_due", return_value=[]):
+            runtime.tick()
+            runtime.tick()
+            self.assertEqual(RuntimeState.RUNNING, runtime.state)
+            runtime.tick()
+        self.assertEqual(1.5, runtime.time_seconds)
+        self.assertEqual(RuntimeState.FINISHED, runtime.state)
+        self.assertEqual("timeline_end", self.read("observation_result.json")["end_reason"])
+        self.assertEqual(1.25, self.read("manifest.json")["scenario"]["timeline_end_seconds"])
+
+    def test_longer_confirmed_limit_overrides_the_old_1800_second_engine_end(self):
+        self.use_confirmed_class_one(3600)
+        runtime = self.initialize(end=1800, extra_args=("--end", "1800", "--no-step-log", "true", "-e=900"))
+        self.assertEqual(3600, runtime.timeline_end_seconds)
+        self.assertEqual("3600.0", runtime.adapter.extra_args[runtime.adapter.extra_args.index("--end") + 1])
+        self.assertEqual(1, runtime.adapter.extra_args.count("--end"))
+        self.assertNotIn("-e=900", runtime.adapter.extra_args)
+        self.assertIn("--no-step-log", runtime.adapter.extra_args)
+        runtime.adapter.now = 1799.5
+        runtime.start()
+        with patch.object(runtime.decision_scheduler, "collect_due", return_value=[]):
+            runtime.tick()
+            self.assertEqual(RuntimeState.RUNNING, runtime.state)
+            runtime.adapter.now = 3599.5
+            runtime.tick()
+        self.assertEqual(RuntimeState.FINISHED, runtime.state)
+        self.assertEqual(3600, runtime.time_seconds)
+
+    def test_last_arrival_can_still_finish_before_the_confirmed_limit(self):
+        self.use_confirmed_class_one(600)
+        runtime = self.initialize(end=1800)
+        runtime.adapter.min_expected_number = 0
+        with patch.object(runtime.adapter, "step", return_value=SumoStepResult(0.5, {}, {}, (), ("a",))):
+            self.tick(runtime)
+        self.assertEqual(RuntimeState.FINISHED, runtime.state)
+        self.assertEqual("no_expected_entities", self.read("observation_result.json")["end_reason"])
+        self.assertEqual(600, runtime.scenario_diagnostics()["timeline_end_seconds"])
+
+    def test_initial_insertion_reaching_a_short_limit_does_not_allow_an_extra_step(self):
+        self.use_confirmed_class_one(0.1)
+        original = FakeAdapter.start
+        def start(adapter):
+            initial = original(adapter)
+            adapter.now = 0.5
+            return SumoStepResult(0.5, initial.persons, {}, initial.departed_person_ids, ())
+        with patch.object(FakeAdapter, "start", start):
+            runtime = self.initialize(end=1800)
+        self.assertEqual(RuntimeState.FINISHED, runtime.state)
+        self.assertEqual(0.5, runtime.time_seconds)
+        self.assertEqual("FINISHED", runtime.init_frame()["runtime_state"])
+        self.assertEqual("timeline_end", self.read("observation_result.json")["end_reason"])
+        with self.assertRaisesRegex(RuntimeError, "start is invalid"):
+            runtime.start()
+
+    def test_reset_reapplies_the_confirmed_limit_and_preserves_the_original_scenario_default(self):
+        self.use_confirmed_class_one(600)
+        runtime = self.initialize(end=1800)
+        person = runtime.adapter.person
+        def adapter(_config, *, sumo_binary=None, extra_args=()):
+            result = FakeAdapter(person)
+            result.extra_args = list(extra_args)
+            return result
+        with patch("crowdsim.core.simulation_runtime.SumoAdapter", side_effect=adapter):
+            old_run_id = runtime.run_id
+            runtime.reset()
+        self.assertNotEqual(old_run_id, runtime.run_id)
+        self.assertEqual(600, runtime.timeline_end_seconds)
+        self.assertEqual(1800, runtime._scenario_timeline_end_seconds)
+        self.assertEqual("600.0", runtime.adapter.extra_args[runtime.adapter.extra_args.index("--end") + 1])
+        self.assertEqual(RuntimeState.READY, runtime.state)
 
     def tick(self, runtime):
         runtime.start()
@@ -113,6 +208,24 @@ class ObservationRecordingTests(unittest.TestCase):
 
     def read(self, name):
         return json.loads((self.runtime.recorder.directory / name).read_text())
+
+    def test_monitor_on_off_preserves_business_samples_and_normal_run_has_no_diagnostics(self):
+        samples = []
+        for enabled in (False, True):
+            runtime = self.initialize(performance=enabled)
+            self.tick(runtime)
+            runtime.close()
+            directory = runtime.recorder.directory
+            samples.append({name: (directory / name).read_text().replace(runtime.run_id, 'RUN') for name in
+                ('trajectory.csv', 'metrics.csv', 'observation_global.csv', 'observation_cells.csv', 'observation_boundaries.csv')})
+            files = list(directory.glob('performance.*'))
+            self.assertEqual(enabled, bool(files))
+            self.assertIsNone(runtime.performance.system_monitor)
+            if enabled:
+                rows = [json.loads(line) for line in (directory / 'performance.backend.jsonl').read_text().splitlines()]
+                stages = {key for row in rows for key in row['stages']}
+                self.assertTrue({'trajectory_log_write', 'metrics_log_write', 'observation_log_write'} <= stages)
+        self.assertEqual(samples[0], samples[1])
 
     def test_initial_sample_and_all_seven_metrics_are_persisted(self):
         runtime = self.initialize()

@@ -14,6 +14,7 @@ from traci import constants as tc
 from traci._simulation import Stage
 
 from crowdsim.domain.crowdsim_models import MotionSnapshot
+from crowdsim.infrastructure.performance_probe import timed
 
 
 @dataclass(frozen=True)
@@ -75,6 +76,10 @@ class SumoAdapter:
         self.extra_args = list(extra_args or ())
         self.label = label or f"crowdsim-{uuid.uuid4().hex}"
         self.connection = None
+        self.performance = None
+        self._command_original = None
+        self._command_wrapper = None
+        self.command_monitor_status = 'disabled'
         self.started = False
         self.closed = False
         self.close_error: str | None = None
@@ -98,6 +103,7 @@ class SumoAdapter:
             configure_sumo_projection(self.sumo_binary)
             traci.start(command, label=self.label)
             self.connection = traci.getConnection(self.label)
+            self._install_command_monitor()
             self._version = self.connection.getVersion()[1]
             self.started = True
             self.closed = False
@@ -128,6 +134,7 @@ class SumoAdapter:
             "started": self.started,
             "closed": self.closed,
             "close_error": self.close_error,
+            "command_monitor_status": self.command_monitor_status,
         }
 
     @property
@@ -138,7 +145,7 @@ class SumoAdapter:
     def step(self) -> SumoStepResult:
         self._require_connection()
         try:
-            self.connection.simulationStep()
+            self._advance()
             return self.snapshot(
                 departed=self.connection.simulation.getDepartedPersonIDList(),
                 arrived=self.connection.simulation.getArrivedPersonIDList(),
@@ -158,7 +165,7 @@ class SumoAdapter:
         if target <= self.time_seconds:
             raise ValueError("advance target must be later than current SUMO time")
         try:
-            self.connection.simulationStep(target)
+            self._advance(target)
             return self.snapshot(
                 departed=self.connection.simulation.getDepartedPersonIDList(),
                 arrived=self.connection.simulation.getArrivedPersonIDList(),
@@ -167,6 +174,41 @@ class SumoAdapter:
             self._close_after_failure()
             raise
 
+    @timed('sumo_advance')
+    def _advance(self, *args):
+        return self.connection.simulationStep(*args)
+
+    def _install_command_monitor(self):
+        # Instance-local instrumentation: never patch the global TraCI module or
+        # issue extra requests. New TraCI versions may omit this private hook.
+        if self.performance is None or not self.performance.enabled:
+            return
+        original = getattr(self.connection, '_sendCmd', None)
+        if not callable(original):
+            self.command_monitor_status = 'unavailable_sendCmd'
+            return
+        probe = self.performance
+        def measured_command(*args, **kwargs):
+            if not probe.enabled:
+                return original(*args, **kwargs)
+            with probe.measure('traci_roundtrip', cpu=False):
+                return original(*args, **kwargs)
+        try:
+            self.connection._sendCmd = measured_command
+        except (AttributeError, TypeError):
+            self.command_monitor_status = 'unavailable_readonly_hook'
+            return
+        self._command_original = original
+        self._command_wrapper = measured_command
+        self.command_monitor_status = 'enabled'
+
+    def _remove_command_monitor(self):
+        if self.connection is not None and self._command_wrapper is not None:
+            if getattr(self.connection, '_sendCmd', None) is self._command_wrapper:
+                self.connection._sendCmd = self._command_original
+        self._command_original = self._command_wrapper = None
+
+    @timed('sumo_snapshot')
     def snapshot(
         self,
         *,
@@ -305,6 +347,7 @@ class SumoAdapter:
         if self.closed:
             return
         connection = self.connection
+        self._remove_command_monitor()
         if connection is not None:
             try:
                 connection.close(wait=True)

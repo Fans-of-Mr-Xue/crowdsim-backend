@@ -3,11 +3,14 @@ import json
 from pathlib import Path
 import subprocess
 import tempfile
+import threading
 import unittest
 from unittest.mock import patch
 import xml.etree.ElementTree as ET
 
 import websockets
+import httpx
+from aiohttp.test_utils import TestServer
 
 from crowdsim.core.simulation_runtime import RuntimeState
 from crowdsim.core.population_manager import PopulationManager
@@ -22,6 +25,8 @@ from crowdsim.infrastructure.sumo_adapter import SumoStepResult
 from crowdsim.infrastructure.websocket_server import OverlayServer
 from crowdsim.scenarios.generated_network_demand import NetworkDemandSpec
 from crowdsim_overlay_server import build_requirement_runtime, build_runtime, parse_args
+from crowdsim.experiments.service import ControlServiceBundle
+from crowdsim.experiments.serve import ControlHttpServer
 from tests.test_requirement_submission import requirement_payload
 from tests.test_websocket_contract import CapturingClient, has_sumo
 
@@ -234,6 +239,67 @@ class RequirementScenarioBindingTests(unittest.IsolatedAsyncioTestCase):
 
 @unittest.skipUnless(has_sumo(), "real SUMO binary is required")
 class RequirementScenarioWebSocketTests(unittest.IsolatedAsyncioTestCase):
+    async def test_control_http_save_then_browser_initialization_and_run(self):
+        args = parse_args([])
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            server = OverlayServer(build_runtime(args), "127.0.0.1", 0,
+                requirement_repository=RequirementRepository(root / "requirements"),
+                runtime_factory=lambda record: build_requirement_runtime(args, record))
+
+            async def receive(socket, kind, request_id=None):
+                while True:
+                    message = json.loads(await asyncio.wait_for(socket.recv(), 30))
+                    self.assertNotEqual("error", message["type"], message)
+                    if message["type"] == kind and (request_id is None or message.get("request_id") == request_id):
+                        return message
+
+            try:
+                async with TestServer(server.create_app()) as simulator_http:
+                    url = f"ws://127.0.0.1:{simulator_http.port}"
+                    bundle = ControlServiceBundle(data_dir=str(root / "control"), gateway_url=url)
+                    control = ControlHttpServer(("127.0.0.1", 0), bundle)
+                    worker = threading.Thread(target=control.serve_forever, daemon=True)
+                    worker.start()
+                    try:
+                        endpoint = f"http://127.0.0.1:{control.server_port}/crowdSim/control/requirements"
+                        async with httpx.AsyncClient(trust_env=False, timeout=30) as client:
+                            saved = await client.post(endpoint, json={"requirement": requirement_payload()})
+                            self.assertEqual(201, saved.status_code, saved.text)
+                            requirement_id = saved.json()["data"]["requirement_id"]
+                            self.assertIsNone(bundle.gateway._thread)
+                            self.assertIsNone(server.client)
+                            async with websockets.connect(url, **bundle.gateway._connection_options(websockets.connect)) as socket:
+                                await socket.send(json.dumps({"action": "configure", "request_id": "browser-init",
+                                    "requirement_id": requirement_id, "speedFactor": 3}))
+                                initial = await receive(socket, "init", "browser-init")
+                                self.assertEqual("READY", initial["runtime_state"])
+                                self.assertEqual(requirement_id, initial["requirement"]["requirement_id"])
+                                self.assertEqual("memorial-tower", initial["scenario"]["location_id"])
+                                self.assertEqual(10, initial["demand"]["planned"])
+                                await socket.send(json.dumps({"action": "start", "request_id": "browser-start",
+                                                              "run_id": initial["run_id"]}))
+                                self.assertEqual("applied", (await receive(socket, "command_result", "browser-start"))["status"])
+                                moving = await receive(socket, "update")
+                                self.assertEqual("RUNNING", moving["runtime_state"])
+                                owner = server.client
+                                # Saving another snapshot while the browser runs
+                                # must not compete for or pause its connection.
+                                again = await client.post(endpoint, json={"requirement": requirement_payload()})
+                                self.assertEqual(201, again.status_code, again.text)
+                                self.assertIs(owner, server.client)
+                                self.assertEqual(RuntimeState.RUNNING, server.simulator.state)
+                                self.assertIsNone(bundle.gateway._thread)
+                                await socket.send(json.dumps({"action": "pause", "request_id": "browser-pause",
+                                                              "run_id": initial["run_id"]}))
+                                await receive(socket, "command_result", "browser-pause")
+                    finally:
+                        await asyncio.to_thread(control.shutdown)
+                        control.server_close()
+                        worker.join(timeout=2)
+            finally:
+                await server._stop_runtime()
+
     async def test_submit_connect_start_pause_reset_and_reconnect_other_location(self):
         args = parse_args([])  # Standard research launch must accept both presets.
         with tempfile.TemporaryDirectory() as directory:

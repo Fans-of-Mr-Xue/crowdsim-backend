@@ -6,6 +6,7 @@ from dataclasses import replace
 from enum import Enum
 import hashlib
 import json
+import math
 from pathlib import Path
 from typing import Any, Iterable, Optional
 import uuid
@@ -21,7 +22,7 @@ from crowdsim.domain.crowdsim_models import AgentProfile, GroupRecord
 from crowdsim.domain.crowd_visual_state import CrowdVisualPolicy, STATE_COLORS
 from crowdsim.domain.group_manager import GroupManager
 from crowdsim.domain.population_profiles import PopulationProfileSampler
-from crowdsim.domain.requirement_spec import requirement_runtime_summary
+from crowdsim.domain.requirement_spec import requirement_observation_duration, requirement_runtime_summary
 from crowdsim.environment.activity_planner import ActivityPlanner
 from crowdsim.environment.crowd_environment import CrowdEnvironment
 from crowdsim.environment.event_catalog import event_defaults
@@ -40,7 +41,10 @@ from crowdsim.infrastructure.sumo_adapter import SumoAdapter, SumoStepResult
 from crowdsim.core.population_manager import PopulationManager
 from crowdsim.core.runtime_commands import RuntimeCommand, RuntimeCommandQueue
 from crowdsim.core.state_updater import StateUpdater
-from crowdsim.infrastructure.performance_probe import PerformanceProbe, timed
+from crowdsim.core.during_observation import DuringObservation
+from crowdsim.domain.during_preset import load_during_preset, preset_fingerprint
+from crowdsim.domain.requirement_spec import RequirementSpec
+from crowdsim.infrastructure.performance_probe import PerformanceOptions, PerformanceProbe, timed
 from crowdsim.scenarios.generated_hotspot_demand import HotspotDemandSpec
 from crowdsim.scenarios.generated_network_demand import NetworkDemandSpec
 from traci import constants as tc
@@ -80,6 +84,8 @@ class SimulationRuntime:
         road_network_url: str | None = None,
         requirement_record: dict | None = None,
         random_seed: int | None = None,
+        performance_options: PerformanceOptions | None = None,
+        during_preset: dict | None = None,
     ) -> None:
         if demand_mode not in {"configurable", "fixed", "generated_hotspot", "generated_network"}:
             raise ValueError("unknown demand_mode")
@@ -93,18 +99,40 @@ class SimulationRuntime:
         self._pedestrian_route_files = tuple(Path(path).resolve() for path in pedestrian_route_files)
         self._sumo_binary = sumo_binary
         self._extra_sumo_args = tuple(extra_sumo_args or ())
+        if random_seed is not None:
+            # Explicit per-round seed must also reach SUMO, not just Python demand/profile sampling.
+            seeded_args = []
+            index = 0
+            while index < len(self._extra_sumo_args):
+                arg = self._extra_sumo_args[index]
+                if arg in {"--seed", "-s"}:
+                    index += 1
+                elif arg == "--random":
+                    if (index + 1 < len(self._extra_sumo_args)
+                            and self._extra_sumo_args[index + 1].lower() in {"true", "false", "yes", "no", "1", "0"}):
+                        index += 1
+                elif not arg.startswith(("--seed=", "--random=")):
+                    seeded_args.append(arg)
+                index += 1
+            self._extra_sumo_args = tuple(seeded_args + ["--seed", str(int(random_seed)), "--random=false"])
         if demand_mode in {"generated_hotspot", "generated_network"} and any(
             arg == "--route-files" or arg.startswith("--route-files=") for arg in self._extra_sumo_args
         ):
             raise ValueError("generated demand cannot be combined with an explicit route-file override")
         self.run_id = f"run-{uuid.uuid4().hex}"
-        self.performance = PerformanceProbe(self.run_id)
+        self.performance_options = performance_options or PerformanceOptions()
+        self.performance = PerformanceProbe(
+            self.run_id, enabled=self.performance_options.enabled,
+            system_enabled=self.performance_options.system_enabled,
+            interval=self.performance_options.interval,
+        )
         self.network: ResearchNetwork | None = None
         self.adapter = SumoAdapter(
             self.config_path,
             sumo_binary=sumo_binary,
             extra_args=self._extra_sumo_args,
         )
+        self.adapter.performance = self.performance
         if random_seed is not None and hotspot_demand_spec is not None:
             hotspot_demand_spec = replace(hotspot_demand_spec, seed=int(random_seed))
         if random_seed is not None and network_demand_spec is not None:
@@ -142,6 +170,8 @@ class SimulationRuntime:
         self.demand_generation_report = None
         self.demand_capabilities = self.generated_demand_spec.capabilities() if self.generated_demand_spec else {}
         self.timeline_end_seconds = float(timeline_end_seconds) if timeline_end_seconds is not None else None
+        self._scenario_timeline_end_seconds = self.timeline_end_seconds
+        self._observation_duration_seconds: float | None = None
         self.ignored_demand_count: int | None = None
         self.environment: CrowdEnvironment | None = None
         self.visual_policy = CrowdVisualPolicy.load()
@@ -174,8 +204,31 @@ class SimulationRuntime:
         self.commands = RuntimeCommandQueue()
         self.requirement_record: dict | None = None
         self.requirement_id: str | None = None
+        self.during_preset = json.loads(json.dumps(during_preset)) if during_preset else None
+        self.during_observer = DuringObservation(self.during_preset) if self.during_preset else None
         if requirement_record is not None:
             self.configure_requirement(requirement_record)
+
+    @classmethod
+    def for_during_preset(cls, preset, requirement_record, seed, *, sumo_binary=None, performance_options=None):
+        if type(seed) is not int or not 0 <= seed <= 2147483647:
+            raise ValueError("during seed must be an integer in [0, 2147483647]")
+        if requirement_record["requirement"] != RequirementSpec.parse(preset["requirement"]).payload:
+            raise ValueError("requirement does not match the during preset")
+        runtime = cls(
+            PROJECT_ROOT / preset["sumo_config"],
+            pedestrian_route_files=[PROJECT_ROOT / "scenarios/shanghai_bund/bund_hotspot.rou.xml"],
+            sumo_binary=sumo_binary, use_llm=False, scenario_name=preset["scenario"],
+            demand_mode="generated_hotspot", location_id=preset["location_id"],
+            road_network_url="/static/crowd_sim/road_network.json",
+            timeline_end_seconds=preset["experiment"]["duration_seconds"],
+            hotspot_demand_spec=HotspotDemandSpec(PROJECT_ROOT / preset["source_demand"],
+                PROJECT_ROOT / preset["hotspot_config"], hotspot_id=preset["hotspot_id"], seed=seed),
+            requirement_record=requirement_record, random_seed=seed,
+            performance_options=performance_options, during_preset=preset,
+        )
+        runtime.configure_demand(preset["requirement"]["population"]["total"])
+        return runtime
 
     @property
     def time_seconds(self) -> float:
@@ -204,6 +257,28 @@ class SimulationRuntime:
             raise RuntimeError(f"initialize is invalid in state {self.state.value}")
         try:
             self.step_length = self._config_float("time", "step-length", 0.5)
+            if self._observation_duration_seconds is not None:
+                # The confirmed limit overrides either spelling of SUMO's end
+                # option. Keep unrelated options such as route files intact.
+                original = iter(self.adapter.extra_args)
+                remaining = []
+                for argument in original:
+                    if argument in {"--end", "-e"}:
+                        next(original, None)
+                    elif not argument.startswith(("--end=", "-e=")):
+                        remaining.append(argument)
+                self.adapter.extra_args[:] = [*remaining, "--end", str(self._observation_duration_seconds)]
+            if self.during_preset:
+                preset = self.during_preset
+                load_during_preset(preset["preset_id"], version=preset["version"], fingerprint=preset_fingerprint(preset))
+                if self.step_length != preset["experiment"]["step_seconds"]:
+                    raise ValueError("during preset step length mismatch")
+                if (self.demand_count != preset["requirement"]["population"]["total"]
+                        or self.use_llm or self.timeline_end_seconds != preset["experiment"]["duration_seconds"]
+                        or self.config_path != (PROJECT_ROOT / preset["sumo_config"]).resolve()
+                        or not self.requirement_record
+                        or self.requirement_record["requirement"] != RequirementSpec.parse(preset["requirement"]).payload):
+                    raise ValueError("runtime configuration no longer matches the during preset")
             run_directory = PROJECT_ROOT / "runs" / self.run_id
             run_directory.mkdir(parents=True, exist_ok=True)
             if self.requirement_record is not None:
@@ -217,7 +292,7 @@ class SimulationRuntime:
             self.network = ResearchNetwork(str(self._net_path_from_config()))
             self.network_sha256 = hashlib.sha256(self._net_path_from_config().read_bytes()).hexdigest()
             self.observation_collector = ObservationCollector.from_requirement(self.requirement_record, self.network)
-            self.environment = CrowdEnvironment(self.network)
+            self.environment = CrowdEnvironment(self.network, performance=self.performance)
             self.event_manager = EventManager(self.network)
             poi_path = PROJECT_ROOT / "config" / "pois.json"
             if self.config_path.name.startswith("bund.") and poi_path.is_file():
@@ -256,6 +331,8 @@ class SimulationRuntime:
                     self.adapter.extra_args.extend(["--route-files", ",".join(str(path) for path in route_files)])
             self.current = self._materialize_initial_population(self.adapter.start())
             self.population.reconcile(self.current)
+            if self.during_preset and self.population.diagnostics()["planned"] != self.during_preset["requirement"]["population"]["total"]:
+                raise ValueError("during preset generated population mismatch")
             self.route_provider = RouteProvider(self.network, self.adapter)
             if self.hotspot_catalog is not None:
                 self.hotspot_route_choice = HotspotRouteChoice(self.network, self.route_provider)
@@ -271,8 +348,13 @@ class SimulationRuntime:
             self.latest_metrics = self.metrics_collector.measure(self.current, self.population.states, self.population.diagnostics())
             self._refresh_visual_states()
             self._measure_observations()
+            self._measure_during()
             self.recorder = ExperimentRecorder(self.run_id, self.config_path, self.adapter.diagnostics)
+            self.recorder.performance = self.performance
+            self.recorder.decision_writer.performance = self.performance
             self.recorder.attach_observations(self.observation_collector)
+            if self.during_preset:
+                self.recorder.attach_during_preset(self.during_preset)
             demand_source = self.prepared_demand_path or (self.population.route_files[0] if len(self.population.route_files) == 1 else None)
             if demand_source is not None:
                 self.recorder.archive_demand(demand_source)
@@ -286,12 +368,19 @@ class SimulationRuntime:
                 demand_generation=self.demand_generation_report,
                 scenario=self.scenario_diagnostics(),
                 requirement=self.requirement_diagnostics(),
-                performance_measurement={'enabled': self.performance.enabled, 'interval_wall_seconds': self.performance.interval, 'version': 1},
+                performance_measurement=self.performance.metadata(),
                 pedestrian_route_files=[str(path) for path in self.population.route_files],
             )
             self.state = RuntimeState.READY
             if self.observation_collector is not None:
                 self.recorder.record_step(self, self.current, self.latest_metrics)
+            if (self._observation_duration_seconds is not None
+                    and self.time_seconds + 1e-9 >= self._observation_duration_seconds):
+                # Inserting depart=0 people may already advance SUMO by one
+                # step. A shorter observation must not advance it again.
+                self.state = RuntimeState.FINISHED
+                self.observation_end_reason = "timeline_end"
+                self.recorder.finalize_observations("complete", self.observation_end_reason)
             self.performance.start_system(self)
             self.recorder.update_manifest(system_performance_measurement=self.performance.system_metadata())
             return self.current
@@ -504,6 +593,7 @@ class SimulationRuntime:
             and result.time_seconds + 1e-9 >= self.timeline_end_seconds
         )
         finished = reached_timeline_end or self.adapter.min_expected_number <= 0
+        self._measure_during(finished=finished)
         if finished:
             reason = "timeline_end" if reached_timeline_end else "no_expected_entities"
             if self.observation_collector is not None and self.observation_collector.evacuation is not None:
@@ -519,6 +609,10 @@ class SimulationRuntime:
             if self.recorder is not None:
                 self.recorder.finalize_observations("complete", self.observation_end_reason)
         return result
+
+    def _measure_during(self, *, finished=False) -> None:
+        if self.during_observer is not None:
+            self.latest_metrics["during"] = self.during_observer.measure(self, finished=finished)
 
     def _measure_observations(self) -> None:
         if self.observation_collector is not None:
@@ -812,9 +906,12 @@ class SimulationRuntime:
         distributions = requirement.get("population", {}).get("distributions")
         if not isinstance(distributions, dict):
             raise ValueError("requirement population distributions are missing")
+        duration = requirement_observation_duration(requirement)
         self.requirement_record = json.loads(json.dumps(record, ensure_ascii=False))
         self.requirement_id = str(record.get("requirement_id") or "") or None
         self.population.profile_sampler.configure_distributions(distributions)
+        self._observation_duration_seconds = duration
+        self.timeline_end_seconds = duration if duration is not None else self._scenario_timeline_end_seconds
 
     def supports_requirement(self, record: dict) -> bool:
         location_id = record.get("requirement", {}).get("spatial_scope", {}).get("location_id")
@@ -851,13 +948,15 @@ class SimulationRuntime:
         use_llm = self.use_llm
         scenario_name = self.scenario_name
         demand_mode = self.demand_mode
-        timeline_end_seconds = self.timeline_end_seconds
+        timeline_end_seconds = self._scenario_timeline_end_seconds
         hotspot_demand_spec = self.hotspot_demand_spec
         network_demand_spec = self.network_demand_spec
         location_id = self.location_id
         road_network_url = self.road_network_url
         requirement_record = self.requirement_record
         random_seed = self.random_seed if seed is None else int(seed)
+        performance_options = self.performance_options
+        during_preset = self.during_preset
         self.close()
         self.__init__(
             config_path,
@@ -875,6 +974,8 @@ class SimulationRuntime:
             road_network_url=road_network_url,
             requirement_record=requirement_record,
             random_seed=random_seed,
+            performance_options=performance_options,
+            during_preset=during_preset,
         )
         if count is not None:
             self.configure_demand(count)
@@ -885,9 +986,7 @@ class SimulationRuntime:
         return self.serializer.build_frame(self)
 
     def init_frame(self) -> dict:
-        return {**self.serializer.build_init(self), 'performance_measurement': {
-            'enabled': self.performance.enabled, 'interval_wall_seconds': self.performance.interval, 'version': 1,
-        }}
+        return {**self.serializer.build_init(self), 'performance_measurement': self.performance.metadata()}
 
     @timed('plan_apply_including_log')
     def apply_plan(self, plan):
@@ -1025,6 +1124,13 @@ class SimulationRuntime:
         target = action.get("target") or {}
         parameters = action.get("parameters") or {}
         detail: dict = {"actionId": action["actionId"], "affectedAgents": 0}
+        if action_type == "set_inflow_rate" and "endTimeSeconds" in parameters:
+            # Transport/queue delay must never extend a reviewed control window
+            # into the dispersal phase. Reject expired actions before effects.
+            remaining = float(parameters["endTimeSeconds"]) - self.time_seconds
+            if remaining <= 0:
+                raise ValueError("限流时段已结束，拒绝迟到动作")
+            detail["scheduledEndSeconds"] = parameters["endTimeSeconds"]
         if action_type == "set_inflow_rate":
             if self.current is None or self.plan_executor is None:
                 raise RuntimeError("runtime is not initialized")
@@ -1287,6 +1393,7 @@ class SimulationRuntime:
             "scenario": self.scenario_diagnostics(),
             "demand": self.demand_diagnostics(),
             "requirement": self.requirement_diagnostics(),
+            "during": self.latest_metrics.get("during"),
             "observation": {
                 "enabled": self.observation_collector is not None,
                 "metric_ids": list(self.observation_collector.metric_ids) if self.observation_collector else [],
@@ -1307,7 +1414,7 @@ class SimulationRuntime:
     def scenario_diagnostics(self) -> dict:
         steps = None
         if self.timeline_end_seconds is not None:
-            steps = int(round(self.timeline_end_seconds / self.step_length))
+            steps = math.ceil(self.timeline_end_seconds / self.step_length)
         configured_hotspots = set(getattr(self.population, "hotspot_ids", {}).values())
         active_hotspot_id = (next(iter(configured_hotspots)) if len(configured_hotspots) == 1
                              else self.demand_capabilities.get("hotspot_id"))

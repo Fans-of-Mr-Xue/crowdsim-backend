@@ -125,11 +125,23 @@ class CrowdSimRepository:
         return self._find_one(key, query)
 
     def create_experiment(self, user_id: str, workspace_id: str, config: dict[str, Any]) -> dict[str, Any]:
-        now = _now()
-        return self._insert("experiments", {
-            **deepcopy(config), "experiment_id": f"exp_{uuid.uuid4().hex}", "user_id": str(user_id),
-            "workspace_id": str(workspace_id), "status": "draft", "created_at": now, "updated_at": now,
-        })
+        # A browser may lose the create response. Retrying the same confirmed
+        # draft must recover its experiment, including after a service restart.
+        with self._lock:
+            request_id = config.get("clientRequestId")
+            if request_id:
+                existing = self._find_one("experiments", {
+                    "user_id": str(user_id), "workspace_id": str(workspace_id), "clientRequestId": request_id,
+                })
+                if existing:
+                    if any(existing.get(key) != value for key, value in config.items()):
+                        raise ValueError("CLIENT_REQUEST_CONFLICT")
+                    return existing
+            now = _now()
+            return self._insert("experiments", {
+                **deepcopy(config), "experiment_id": f"exp_{uuid.uuid4().hex}", "user_id": str(user_id),
+                "workspace_id": str(workspace_id), "status": "draft", "created_at": now, "updated_at": now,
+            })
 
     def get_experiment(self, user_id: str, workspace_id: str, experiment_id: str):
         return self._find_one("experiments", {"user_id": str(user_id), "workspace_id": str(workspace_id), "experiment_id": str(experiment_id)})

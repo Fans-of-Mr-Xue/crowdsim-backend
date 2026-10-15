@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from crowdsim.infrastructure.performance_probe import timed
+
 from collections import OrderedDict
 from dataclasses import asdict, is_dataclass
 import hashlib
@@ -181,6 +183,7 @@ class DecisionTableWriter:
             numbers.append(number)
         return self._ref("neighbors", {"encoding": "person_ids", "ids": numbers})
 
+    @timed('decision_log_write')
     def write_record(self, record: dict) -> None:
         if self.closed or self.failed:
             raise RuntimeError("decision writer is closed or failed")
@@ -217,6 +220,7 @@ class DecisionTableWriter:
             self.error = f"{type(exc).__name__}: {exc}"[:500]
             raise
 
+    @timed('decision_log_flush')
     def flush(self) -> None:
         if self.closed:
             return

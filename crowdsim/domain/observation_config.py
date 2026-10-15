@@ -16,7 +16,7 @@ IMPLEMENTED_METRIC_IDS = (
     "pedestrian-psychology-change",
 ) + EVACUATION_METRIC_IDS
 DEFERRED_METRIC_IDS = (
-    "concise-decision-advice", "detailed-decision-plan",
+    "concise-decision-advice", "detailed-decision-plan", "concise-simulation-summary",
 )
 BEHAVIOR_STATES = ("walking", "waiting", "blocked", "avoiding")
 PSYCHOLOGY_STATES = ("calm", "tense", "panic", "unknown")
