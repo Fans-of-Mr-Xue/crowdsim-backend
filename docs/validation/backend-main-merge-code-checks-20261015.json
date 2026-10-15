@@ -1,0 +1,49 @@
+{
+  "date": "2026-10-15",
+  "scope": "Backend merge; code-only checks. No live models, backend servers, SSH tunnels or SUMO/netconvert processes started.",
+  "local_parent": "7f5f65995b618ca85063a7908cc6e774a808fc34",
+  "remote_parent": "7b32a05bf12fc1fa23af66e494477aededcd2186",
+  "backup_branch": "codex/backend-premerge-20261015",
+  "conflict_resolution": {
+    "crowdsim/core/simulation_runtime.py": "Keep local during preset/observation/duration/performance settings and remote artificial society engine/binding/diagnostics.",
+    "crowdsim/infrastructure/websocket_server.py": "Keep local requirement HTTP and preset entry points and remote artificial society submission/configure/attach checks."
+  },
+  "compatibility": [
+    "Existing run.sh and direct module commands, scenario/mode/ports and --restart-services remain available; SUMO 1.24.0/1.27.0 supported.",
+    "Existing .env untouched; shared SSH defaults restored to remote hyq, explicit user configuration still overrides defaults.",
+    "Optional experiment control startup/exit failures do not tear down original required services; explicit restart ownership and active-experiment checks remain strict.",
+    "Ordinary startup can reuse a legacy server with no performance endpoint (404); explicit performance monitoring still requires matching configuration.",
+    "Requirements without a model delegate to the original decision engine. Bound implemented modeling chains still enable their remote behavior.",
+    "Same requirement reset with omitted/empty model ID preserves the binding. Switching requirement without a model restores baseline LLM mode, sampling ranges, period and visual policy.",
+    "Reset preserves observation duration, seeds, local preset observer and performance settings. Frozen during presets reject unrelated model bindings before stopping the old run.",
+    "Remote session test double updated with local duration state; attach request IDs made monotonic to avoid object-ID reuse collisions."
+  ],
+  "static_checks": {
+    "python_syntax_files": 101,
+    "shell": "bash -n run.sh: passed",
+    "whitespace": "git diff --check: passed",
+    "conflict_markers": "none"
+  },
+  "unit_tests": {
+    "command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=tests:.:/tmp /opt/miniconda3/envs/sumo/bin/python -m pytest -p code_only_guard -p backend_merge_offline tests pedestrian_decision_skill/tests --tb=short -q",
+    "passed": 689,
+    "failed": 0,
+    "skipped": 52,
+    "passed_subtests": 549,
+    "elapsed_seconds": 53.69,
+    "skipped_reasons": {
+      "Code-only scope: real SUMO/netconvert binaries excluded": 2,
+      "Code-only scope: real SUMO integration excluded": 50
+    },
+    "isolation": "tests/code_only_guard.py blocks SUMO start, Popen, socket connects/listeners; temporary audit plugin blocks actual subprocess/socket calls even if test fixtures override mocks. Git commit metadata is replaced with frozen local-parent metadata in memory.",
+    "temporary_plugin": "/tmp/backend_merge_offline.py",
+    "log": "/tmp/crowdsim-backend-merge-all.log",
+    "junit": "/tmp/crowdsim-backend-merge-tests.xml"
+  },
+  "not_validated": [
+    "Real model conversations and pedestrian decisions",
+    "Real SUMO runs and replay",
+    "Actual startup/tunnel/service connectivity"
+  ],
+  "pushed": false
+}

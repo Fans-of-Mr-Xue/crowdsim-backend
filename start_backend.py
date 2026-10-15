@@ -17,6 +17,7 @@ import sys
 import time
 from typing import Callable
 from urllib.request import ProxyHandler, Request, build_opener
+from urllib.error import HTTPError
 
 ROOT = Path(__file__).resolve().parent
 SUPPORTED_SUMO_VERSIONS = ("1.24.0", "1.27.0")
@@ -103,6 +104,7 @@ class Service:
     command: list[str]
     probe: Callable[[], bool]
     reuse_check: Callable[[], None] | None = None
+    optional: bool = False
 
 
 @dataclass(frozen=True)
@@ -245,6 +247,8 @@ class Supervisor:
     def __init__(self, *, reuse_existing=True):
         self.children = []
         self.reuse_existing = reuse_existing
+        self.optional_names = set()
+        self.unavailable_services = set()
 
     def spawn(self, name, command, *, interactive=False):
         report(f"启动 {name}")
@@ -258,8 +262,13 @@ class Supervisor:
         return child
 
     def check_children(self):
-        for name, child, _ in self.children:
+        for name, child, _ in list(self.children):
             if child.poll() is not None:
+                if name in self.optional_names:
+                    self.unavailable_services.add(name)
+                    report(f"{name} 已退出（退出码 {child.returncode}）；原有服务继续运行")
+                    self._discard_children([item for item in self.children if item[0] == name])
+                    continue
                 raise StartupError(f"{name} 已退出（退出码 {child.returncode}），请检查上方日志")
 
     def wait_ready(self, name, probe, timeout=60):
@@ -276,6 +285,23 @@ class Supervisor:
         raise StartupError(f"{name} 在 {timeout} 秒内未就绪，请检查端口、认证和远程服务")
 
     def start_service(self, service):
+        checkpoint = len(self.children)
+        try:
+            self._start_service(service)
+        except (StartupError, OSError) as exc:
+            if not service.optional:
+                raise
+            self._discard_children(self.children[checkpoint:])
+            self.unavailable_services.add(service.name)
+            report(f"{service.name} 未就绪：{exc}；原有服务继续运行")
+            # A failure of a required child must still stop the launcher.
+            self.check_children()
+            return False
+        if service.optional:
+            self.optional_names.add(service.name)
+        return True
+
+    def _start_service(self, service):
         if listening(service.port):
             if not self.reuse_existing:
                 raise StartupError(f"重启期间 {service.port} 被再次占用，未复用或停止新占用者，请检查后重试")
@@ -291,6 +317,14 @@ class Supervisor:
             return
         self.spawn(service.name, service.command)
         self.wait_ready(service.name, service.probe)
+
+    def _discard_children(self, children):
+        """Clean up only children created for the failed optional service."""
+        cleanup = Supervisor()
+        cleanup.children = list(children)
+        removed = {child.pid for _, child, _ in children}
+        self.children = [item for item in self.children if item[1].pid not in removed]
+        cleanup.close()
 
     def close(self):
         # Only stop processes created by this launcher, including their descendants.
@@ -322,7 +356,7 @@ class Supervisor:
 
 def tunnel_settings(kind):
     prefix = f"CROWDSIM_{kind}_SSH_"
-    defaults = {"HOST": "211.81.55.186", "PORT": "3000", "USER": "wym"} if kind == "DB" else {}
+    defaults = {"HOST": "211.81.55.186", "PORT": "3000", "USER": "hyq"} if kind == "DB" else {}
     values = {key: os.environ.get(prefix + key, defaults.get(key, "")) for key in ("HOST", "PORT", "USER")}
     if not values["HOST"] or not values["USER"]:
         raise StartupError(f"本机模型服务未就绪，请在 .env 配置 {prefix}HOST、{prefix}PORT、{prefix}USER 和 CROWDSIM_MODEL_REMOTE_PORT")
@@ -394,6 +428,12 @@ def check_performance_reuse(options):
                 'interval_wall_seconds': requested.interval}
     try:
         actual = get_json(8765, '/api/v1/performance/config')
+    except HTTPError as exc:
+        # Legacy servers have no monitoring endpoint. They remain reusable
+        # for ordinary startup; explicit monitoring still needs a new server.
+        if exc.code == 404 and not requested.enabled:
+            return
+        raise StartupError('已有 SUMO 服务无法确认监测设置；请先关闭并按本次参数重启 SUMO 服务') from exc
     except Exception as exc:
         raise StartupError('已有 SUMO 服务无法确认监测设置；请先关闭并按本次参数重启 SUMO 服务') from exc
     if not isinstance(actual, dict) or any(actual.get(key) != value for key, value in expected.items()):
@@ -456,13 +496,20 @@ def main(argv=None):
             Service("实验控制服务", 8766,
                     [sys.executable, "-m", "crowdsim.experiments", "--host", "127.0.0.1", "--port", "8766",
                      "--gateway-url", "ws://127.0.0.1:8765"],
-                    lambda: get_json(8766, "/crowdSim/control/health").get("data", {}).get("orchestrator") == "ready"),
+                    lambda: get_json(8766, "/crowdSim/control/health").get("data", {}).get("orchestrator") == "ready",
+                    optional=True),
         ]
         if args.restart_services:
             restart_local_services(services)
+        control_ready = True
         for service in services:
-            supervisor.start_service(service)
-        report("全部就绪：仿真 8765 / 实验控制 8766 / 对话 8767 / 数据 8768 / 模型 8800 / MongoDB 27018；Ctrl+C 退出")
+            ready = supervisor.start_service(service)
+            if service.port == 8766:
+                control_ready = ready is not False
+        if control_ready:
+            report("全部就绪：仿真 8765 / 实验控制 8766 / 对话 8767 / 数据 8768 / 模型 8800 / MongoDB 27018；Ctrl+C 退出")
+        else:
+            report("原有服务就绪：仿真 8765 / 对话 8767 / 数据 8768 / 模型 8800 / MongoDB 27018；实验控制 8766 不可用；Ctrl+C 退出")
         while True:
             supervisor.check_children()
             time.sleep(1)

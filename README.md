@@ -65,7 +65,7 @@ bash run.sh --restart-services
 
 重启后新服务由本次启动器管理；Ctrl+C、SIGTERM 或终端 SIGHUP 会清理本次创建的服务。默认模式复用的外部进程仍会保留。`--check --restart-services` 仍然只做环境检查，不重启任何服务。
 
-首次配置时，复制 `.env.example` 为 `.env` 并填写 MongoDB 密码和 SSH 参数；已有 `.env` 按模板补齐 `CROWDSIM_MODEL_SSH_*` 即可。默认模板使用 SSH 账号 `wym`；如果模型服务器账号不同，请修改 `CROWDSIM_MODEL_SSH_USER`。远程模型服务需要已经运行并提供本机 8800 对应的 OpenAI 兼容接口，启动器负责建立连接，不负责在远端部署模型。
+首次配置时，复制 `.env.example` 为 `.env` 并填写 MongoDB 密码和 SSH 参数；已有 `.env` 按模板补齐 `CROWDSIM_MODEL_SSH_*` 即可。公共模板沿用 SSH 账号 `hyq`；各自使用的账号由 `.env` 中的 `CROWDSIM_DB_SSH_USER` 和 `CROWDSIM_MODEL_SSH_USER` 覆盖，已有 `.env` 不会被改写。远程模型服务需要已经运行并提供本机 8800 对应的 OpenAI 兼容接口，启动器负责建立连接，不负责在远端部署模型。
 
 SSH 使用现有密钥或 ssh-agent，也可在终端按提示输入 SSH 账户密码；输入时终端不显示字符，SSH 密码不会写入配置。SSH 进程保留启动终端以支持密码输入，后台服务使用独立进程组；请从交互终端运行需要密码认证的启动命令。统一入口使用明确的 SSH 连接参数，不读取用户 SSH 配置中的其他转发规则。已有可用服务和连接会被复用；Ctrl+C 会停止本次创建的服务和隧道，复用的外部进程会保留。启动失败时会清理本次创建的进程，输出失败原因。
 
@@ -100,6 +100,8 @@ conda activate sumo
 `--check` 会加载 `requirements.txt` 对应的服务依赖、识别实际 SUMO 程序版本并解析场景配置，不启动服务或 SSH 隧道，也不验证远端连接。缺少 `pypdf` 或 `beautifulsoup4` 等依赖时先补齐 Python 包；如果镜像源没有返回可用版本，可在当前环境执行 `python -m pip install --index-url https://pypi.org/simple -r requirements.txt`。无需因此安装另一份 SUMO。
 
 默认使用热点场景，可通过 `./run.sh --scenario research` 或 `./run.sh --scenario east-nanjing-road` 切换。`--no-tunnels` 表示只复用现有数据库和模型连接，不创建 SSH 隧道。原有模块入口仍可单独使用，下面是分别启动时的说明。
+
+实验控制服务 8766 会照常自动启动。普通启动时，若该服务端口被占用、启动失败或随后退出，会明确报告实验控制不可用，仿真、对话与数据服务仍继续运行；需要实验控制的功能应在服务恢复后使用。显式 `--restart-services` 仍先核对所有待重启服务的归属和实验状态，无法安全确认时拒绝重启。未开启监测时可以复用没有监测接口的旧仿真服务；显式开启监测时仍要求服务支持并匹配监测配置。
 
 正常启动默认关闭开销监测。单独测试时添加 `./run.sh --monitor-performance`；可配合
 `--performance-interval 10` 调整汇总/系统采样间隔，或 `--performance-no-system` 关闭系统采样。

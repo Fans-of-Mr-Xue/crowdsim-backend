@@ -196,6 +196,18 @@ def test_websocket_preset_reset_constructs_new_runtime_before_initialization(tmp
     server._send_init.assert_awaited_once_with('request')
 
 
+def test_preset_reset_rejects_external_model_before_stopping_current_runtime():
+    from crowdsim.infrastructure.websocket_server import CommandError
+    runtime = SimpleNamespace(run_id='old')
+    server = OverlayServer(runtime, 'unused', 0)
+    server._stop_runtime = AsyncMock()
+    with pytest.raises(CommandError, match='frozen decision'):
+        asyncio.run(server._configure({'during_preset_id': PRESET_ID, 'artificial_society_id': 'model'},
+                                      'request', replace_run=True, seed=99))
+    server._stop_runtime.assert_not_awaited()
+    assert server.simulator is runtime
+
+
 def measured_evidence(*, through=40, finished=False, missing=False):
     preset = load_during_preset(PRESET_ID)
     observer = DuringObservation(preset)

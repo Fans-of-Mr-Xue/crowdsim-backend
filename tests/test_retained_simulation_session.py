@@ -2,13 +2,18 @@
 
 import asyncio
 from contextlib import nullcontext
+import importlib.util
 import json
+from pathlib import Path
+import tempfile
 from types import SimpleNamespace
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
-from crowdsim.core.simulation_runtime import RuntimeState
+from crowdsim.core.simulation_runtime import RuntimeState, SimulationRuntime
 from crowdsim.infrastructure.websocket_server import OverlayServer
+from crowdsim.infrastructure.artificial_society_repository import ArtificialSocietyNotFoundError
+from tests.test_websocket_contract import has_sumo
 
 
 class Client:
@@ -49,6 +54,8 @@ class Runtime:
         self.pending = []
         self.results = []
         self.applied = []
+        self.artificial_society_record = None
+        self.artificial_society_id = None
         self.closed = 0
         self.resets = 0
         self.ticks = 0
@@ -62,8 +69,11 @@ class Runtime:
                                 "spatial_scope": {"location_id": "east-nanjing-road"}}}
 
     def init_frame(self):
+        model = getattr(self, "artificial_society_record", None)
         return {"type": "init", "run_id": self.run_id, "runtime_state": self.state.value,
                 "step_seconds": self.time_seconds, "requirement": {"requirement_id": self.requirement_id},
+                "artificial_society": ({"model_id": model.get("model_id"), "fingerprint": model.get("fingerprint")}
+                                       if isinstance(model, dict) else None),
                 "scenario": {"location_id": self.location_id, "network_sha256": self.network_sha256}}
 
     def frame(self):
@@ -122,6 +132,283 @@ class Runtime:
         return results
 
 
+class GuardedRuntime(Runtime):
+    """Use the production binding guard instead of the permissive session fake."""
+
+    def __init__(self):
+        super().__init__()
+        self._scenario_timeline_end_seconds = None
+        self.population.profile_sampler = Mock()
+        self.artificial_society_record = None
+        self.artificial_society_id = None
+        self.events = []
+
+    @staticmethod
+    def record(requirement_id):
+        result = Runtime.record(requirement_id)
+        result["requirement"]["population"]["distributions"] = {}
+        return result
+
+    def configure_requirement(self, record):
+        SimulationRuntime.configure_requirement(self, record)
+        self.events.append(("bind_requirement", self.state, self.requirement_id))
+
+    def configure_artificial_society(self, record):
+        if record["requirement_id"] != self.requirement_id:
+            raise ValueError("artificial society model does not match configured requirement")
+        self.artificial_society_record = record
+        self.artificial_society_id = record["model_id"]
+        self.events.append(("bind_model", self.state, self.requirement_id))
+
+    def close(self):
+        self.events.append(("close", self.state, self.requirement_id))
+        super().close()
+
+    def reset(self, count=None, **kwargs):
+        # Production reset re-applies the saved model after binding the requirement.
+        if self.artificial_society_record is not None:
+            self.configure_artificial_society(self.artificial_society_record)
+        self.events.append(("reset", self.state, self.requirement_id))
+        super().reset(count, **kwargs)
+
+
+class ResetBindingOrderTests(unittest.IsolatedAsyncioTestCase):
+    def make_server(self, state=RuntimeState.PAUSED):
+        runtime = GuardedRuntime()
+        runtime.state = state
+        server = OverlayServer(runtime, "unused", 0)
+        server.client = Client()
+        server.requirements = SimpleNamespace(load=runtime.record)
+        server.artificial_societies = SimpleNamespace(load=lambda model_id: {
+            "model_id": model_id, "requirement_id": "req-new", "fingerprint": f"fp-{model_id}",
+        })
+        return runtime, server
+
+    async def reset(self, server, **fields):
+        await server._handle_message(json.dumps({
+            "action": "reset", "request_id": "reset-new", "run_id": server.simulator.run_id,
+            "requirement_id": "req-new", **fields,
+        }))
+
+    async def test_reset_closes_before_binding_in_all_retained_states(self):
+        for state in (RuntimeState.READY, RuntimeState.RUNNING, RuntimeState.PAUSED, RuntimeState.FINISHED):
+            with self.subTest(state=state.value):
+                runtime, server = self.make_server(state)
+                await self.reset(server, artificial_society_id="model-new")
+                self.assertEqual("init", server.client.messages[-1]["type"], server.client.messages)
+                self.assertEqual("req-new", runtime.requirement_id)
+                self.assertEqual("model-new", runtime.artificial_society_id)
+                self.assertEqual("close", runtime.events[0][0])
+                self.assertTrue(all(event[1] == RuntimeState.CLOSED for event in runtime.events
+                                    if event[0].startswith("bind_")))
+                self.assertEqual(1, runtime.resets)
+
+    async def test_reset_waits_for_inflight_tick_before_binding(self):
+        runtime, server = self.make_server(RuntimeState.RUNNING)
+        server.task = asyncio.create_task(server._run_loop())
+        await asyncio.wait_for(runtime.tick_started.wait(), 1)
+        resetting = asyncio.create_task(self.reset(server, artificial_society_id="model-new"))
+        try:
+            await asyncio.sleep(0)
+            self.assertFalse(resetting.done())
+            self.assertEqual("req-original", runtime.requirement_id)
+            self.assertEqual([], runtime.events)
+        finally:
+            runtime.tick_release.set()
+            await asyncio.wait_for(resetting, 2)
+            await server._stop_loop()
+        self.assertEqual(1, runtime.ticks)
+        self.assertEqual("init", server.client.messages[-1]["type"], server.client.messages)
+
+    async def test_invalid_reset_preserves_old_binding_and_running_state(self):
+        runtime, server = self.make_server(RuntimeState.RUNNING)
+        original = runtime.requirement_record
+        await self.reset(server, count=3)
+        self.assertEqual("requirement_count_mismatch", server.client.messages[-1]["code"])
+        self.assertIs(original, runtime.requirement_record)
+        self.assertEqual("req-original", runtime.requirement_id)
+        self.assertEqual(RuntimeState.RUNNING, runtime.state)
+        self.assertEqual([], runtime.events)
+
+    async def test_new_requirement_without_model_does_not_reapply_old_model(self):
+        runtime, server = self.make_server()
+        runtime.configure_artificial_society({"model_id": "model-old", "requirement_id": "req-original"})
+        runtime.events.clear()
+        await self.reset(server)
+        self.assertEqual("init", server.client.messages[-1]["type"], server.client.messages)
+        self.assertEqual("req-new", runtime.requirement_id)
+        self.assertIsNone(runtime.artificial_society_record)
+        self.assertIsNone(runtime.artificial_society_id)
+
+    async def test_same_requirement_reset_keeps_existing_model(self):
+        runtime, server = self.make_server()
+        model = {"model_id": "model-old", "requirement_id": "req-original"}
+        runtime.configure_artificial_society(model)
+        runtime.events.clear()
+        await self.reset(server, requirement_id="req-original")
+        self.assertEqual("init", server.client.messages[-1]["type"], server.client.messages)
+        self.assertIs(model, runtime.artificial_society_record)
+        self.assertEqual("close", runtime.events[0][0])
+
+    async def test_empty_model_id_keeps_legacy_same_requirement_reset_semantics(self):
+        runtime, server = self.make_server()
+        model = {"model_id": "model-old", "requirement_id": "req-original"}
+        runtime.configure_artificial_society(model)
+        await self.reset(server, requirement_id="req-original", artificial_society_id="")
+        self.assertEqual("init", server.client.messages[-1]["type"], server.client.messages)
+        self.assertIs(model, runtime.artificial_society_record)
+
+    async def test_model_only_reset_resolves_the_bound_requirement(self):
+        runtime, server = self.make_server()
+        await server._handle_message(json.dumps({
+            "action": "reset", "run_id": runtime.run_id, "artificial_society_id": "model-new",
+        }))
+        self.assertEqual("init", server.client.messages[-1]["type"], server.client.messages)
+        self.assertEqual("req-new", runtime.requirement_id)
+        self.assertEqual("model-new", runtime.artificial_society_id)
+
+    async def test_unknown_model_only_reset_does_not_stop_existing_run(self):
+        runtime, server = self.make_server(RuntimeState.RUNNING)
+        server.artificial_societies.load = Mock(side_effect=ArtificialSocietyNotFoundError("missing"))
+        await server._handle_message(json.dumps({
+            "action": "reset", "run_id": runtime.run_id, "artificial_society_id": "missing-model",
+        }))
+        self.assertEqual("unknown_artificial_society", server.client.messages[-1]["code"])
+        self.assertEqual(RuntimeState.RUNNING, runtime.state)
+        self.assertEqual([], runtime.events)
+
+    async def test_configure_new_requirement_still_requires_explicit_reset(self):
+        runtime, server = self.make_server()
+        await server._handle_message(json.dumps({"action": "configure", "requirement_id": "req-new"}))
+        self.assertEqual("requirement_requires_reset", server.client.messages[-1]["code"])
+        self.assertEqual([], runtime.events)
+
+    async def test_configure_new_model_on_retained_run_requires_explicit_reset(self):
+        runtime, server = self.make_server()
+        runtime.configure_artificial_society({
+            "model_id": "model-old", "fingerprint": "fp-model-old",
+            "requirement_id": "req-original",
+        })
+        runtime.events.clear()
+        await server._handle_message(json.dumps({
+            "action": "configure", "request_id": "model-change",
+            "requirement_id": "req-original", "artificial_society_id": "model-new",
+            "artificial_society_fingerprint": "fp-model-new",
+        }))
+        self.assertEqual("artificial_society_requires_reset", server.client.messages[-1]["code"])
+        self.assertEqual("model-old", runtime.artificial_society_id)
+        self.assertEqual(RuntimeState.PAUSED, runtime.state)
+        self.assertEqual([], runtime.events)
+
+    async def test_configure_and_reset_reject_wrong_model_fingerprint_without_stopping_runtime(self):
+        for action in ("configure", "reset"):
+            with self.subTest(action=action):
+                runtime, server = self.make_server(RuntimeState.PAUSED)
+                payload = {
+                    "action": action,
+                    "request_id": action,
+                    "requirement_id": "req-new",
+                    "artificial_society_id": "model-new",
+                    "artificial_society_fingerprint": "wrong",
+                }
+                if action == "reset":
+                    payload["run_id"] = runtime.run_id
+                await server._handle_message(json.dumps(payload))
+                expected_code = ("artificial_society_requires_reset" if action == "configure"
+                                 else "artificial_society_version_mismatch")
+                self.assertEqual(expected_code, server.client.messages[-1]["code"])
+                self.assertEqual(RuntimeState.PAUSED, runtime.state)
+                self.assertEqual(0, runtime.closed)
+                self.assertEqual([], runtime.events)
+
+
+@unittest.skipUnless(has_sumo(), "real SUMO binary is required")
+class ResetBindingSumoTests(unittest.IsolatedAsyncioTestCase):
+    @unittest.skipUnless(importlib.util.find_spec("shapely"), "observation metrics require shapely")
+    async def test_real_sumo_reset_rebinds_requirement_with_or_without_new_model(self):
+        await self._check_reset()
+
+    async def test_real_sumo_reset_isolated_from_observation_geometry(self):
+        # Exercise the real engine, repositories, reset and frames even when the
+        # optional test environment has not installed the new geometry package.
+        # The separate end-to-end test above retains the real collector.
+        with patch("crowdsim.core.simulation_runtime.ObservationCollector.from_requirement", return_value=None):
+            await self._check_reset()
+
+    async def _check_reset(self):
+        from crowdsim.domain.artificial_society_spec import ArtificialSocietySpec
+        from crowdsim.domain.requirement_spec import RequirementSpec
+        from crowdsim.infrastructure.artificial_society_repository import ArtificialSocietyRepository
+        from crowdsim.infrastructure.experiment_recorder import ExperimentRecorder
+        from crowdsim.infrastructure.requirement_repository import RequirementRepository
+        from crowdsim_overlay_server import build_requirement_runtime, parse_args
+        from tests.test_artificial_society_submission import artificial_society_payload, requirement_payload
+
+        for include_new_model in (True, False):
+            with self.subTest(include_new_model=include_new_model), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                requirements = RequirementRepository(root / "requirements")
+                models = ArtificialSocietyRepository(root / "models", requirements=requirements)
+                old_payload = requirement_payload()
+                old_payload["population"]["total"] = 2
+                old_requirement = requirements.create(RequirementSpec.parse(old_payload))
+                new_payload = requirement_payload()
+                new_payload["population"]["total"] = 3
+                new_requirement = requirements.create(RequirementSpec.parse(new_payload))
+                old_model = models.create(ArtificialSocietySpec.parse(artificial_society_payload(old_requirement)))
+                new_model = models.create(ArtificialSocietySpec.parse(artificial_society_payload(new_requirement)))
+                with patch.dict("os.environ", {"CROWDSIM_PERF": "0", "CROWDSIM_SYSTEM_PERF": "0"}), patch(
+                    "crowdsim.core.simulation_runtime.PROJECT_ROOT", root
+                ), patch(
+                    "crowdsim.core.simulation_runtime.ExperimentRecorder",
+                    side_effect=lambda *args, **kwargs: ExperimentRecorder(*args, **kwargs, root=root / "runs"),
+                ):
+                    runtime = build_requirement_runtime(parse_args([]), old_requirement)
+                    server = OverlayServer(runtime, "unused", 0, requirement_repository=requirements,
+                                           artificial_society_repository=models)
+                    server.client = Client()
+                    try:
+                        await server._handle_message(json.dumps({
+                            "action": "configure", "request_id": "initial",
+                            "requirement_id": old_requirement["requirement_id"],
+                            "artificial_society_id": old_model["model_id"],
+                        }))
+                        self.assertFalse([row for row in server.client.messages if row["type"] == "error"],
+                                         server.client.messages)
+                        self.assertEqual(RuntimeState.READY, runtime.state)
+                        runtime.start()
+                        await runtime.tick_async()
+                        runtime.pause()
+                        old_run, old_writer = runtime.run_id, runtime.recorder.decision_writer
+                        request = {
+                            "action": "reset", "request_id": "replace", "run_id": old_run,
+                            "requirement_id": new_requirement["requirement_id"], "seed": 17,
+                        }
+                        if include_new_model:
+                            request["artificial_society_id"] = new_model["model_id"]
+                        server.client.messages.clear()
+                        await server._handle_message(json.dumps(request))
+                        self.assertFalse([row for row in server.client.messages if row["type"] == "error"],
+                                         server.client.messages)
+                        init = next(row for row in server.client.messages if row["type"] == "init")
+                        self.assertEqual("READY", init["runtime_state"])
+                        self.assertEqual("replace", init["request_id"])
+                        self.assertFalse(init["resumed"])
+                        self.assertNotEqual(old_run, runtime.run_id)
+                        self.assertTrue(old_writer.closed)
+                        self.assertEqual(new_requirement["requirement_id"], runtime.requirement_id)
+                        self.assertEqual(3, init["demand"]["planned"])
+                        self.assertEqual(17, runtime.random_seed)
+                        self.assertEqual(new_model["model_id"] if include_new_model else None,
+                                         runtime.artificial_society_id)
+                        runtime.start()
+                        await runtime.tick_async()
+                        self.assertEqual(RuntimeState.RUNNING, runtime.state)
+                        self.assertEqual(3, runtime.frame()["metrics"]["population"]["planned"])
+                    finally:
+                        await server._stop_runtime()
+
+
 class RetainedSimulationSessionTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.runtime = Runtime()
@@ -134,9 +421,13 @@ class RetainedSimulationSessionTests(unittest.IsolatedAsyncioTestCase):
 
     async def attach(self, **fields):
         config = {"run_id": self.runtime.run_id, "requirement_id": self.runtime.requirement_id,
+                  "artificial_society_id": "", "artificial_society_fingerprint": "",
                   "location_id": self.runtime.location_id, "network_sha256": self.runtime.network_sha256}
         config.update(fields)
-        await self.command("attach_run", request_id="attach", **config)
+        # Object IDs can be reused after a previous request and clearing
+        # messages must not accidentally reuse a processed request ID.
+        self._attach_sequence = getattr(self, "_attach_sequence", 0) + 1
+        await self.command("attach_run", request_id=f"attach-{self._attach_sequence}", **config)
 
     async def test_disconnect_retains_engine_writer_population_and_request_scope(self):
         self.runtime.start()
@@ -200,6 +491,24 @@ class RetainedSimulationSessionTests(unittest.IsolatedAsyncioTestCase):
             await self.attach(**fields)
             self.assertEqual(code, self.client.messages[-1]["code"])
         self.assertEqual(RuntimeState.READY, self.runtime.state)
+
+    async def test_attach_rejects_other_artificial_society_version(self):
+        self.runtime.artificial_society_record = {
+            "model_id": "model-one", "fingerprint": "fingerprint-one",
+        }
+        self.runtime.artificial_society_id = "model-one"
+        await self.attach(artificial_society_id="model-one",
+                          artificial_society_fingerprint="fingerprint-one")
+        self.assertEqual("init", self.client.messages[0]["type"])
+        self.client.messages.clear()
+        for fields in (
+            {"artificial_society_id": "model-two", "artificial_society_fingerprint": "fingerprint-two"},
+            {"artificial_society_id": "model-one", "artificial_society_fingerprint": "wrong"},
+            {"artificial_society_id": "", "artificial_society_fingerprint": ""},
+        ):
+            await self.attach(**fields)
+            self.assertEqual("run_artificial_society_mismatch", self.client.messages[-1]["code"])
+        self.assertEqual(0, self.runtime.resets)
 
     async def test_closed_run_cannot_attach(self):
         self.runtime.close()

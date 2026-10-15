@@ -97,6 +97,15 @@ class UnifiedStartupTests(unittest.TestCase):
         self.supervisor.close.assert_called_once()
         self.restart.assert_not_called()
 
+    def test_unavailable_control_service_does_not_abort_original_services(self):
+        self.supervisor.start_service.side_effect = lambda service: service.port != 8766
+        self.supervisor.check_children.side_effect = KeyboardInterrupt
+        self.assertEqual(0, start_backend.main([]))
+        services = [call.args[0] for call in self.supervisor.start_service.call_args_list]
+        self.assertEqual([8768, 8767, 8765, 8766], [service.port for service in services])
+        self.assertFalse(any(service.optional for service in services[:-1]))
+        self.assertTrue(services[-1].optional)
+
     def test_restart_is_explicit_and_runs_before_starting_local_services(self):
         self.supervisor.check_children.side_effect = KeyboardInterrupt
         sequence = []
