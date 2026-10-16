@@ -9,12 +9,12 @@
 （get_skills_prompt）永不触碰 body，仅暴露摘要 —— 渐进式披露。
 
 用法:
-    from harness.skill_loader import load_skills_dir, get_default_skills_dir
+    from skills.skill_loader import load_skills_dir, get_default_skills_dir
 
     skills = load_skills_dir(get_default_skills_dir())
 
     # 作为脚本运行
-    python -m harness.skill_loader
+    python -m skills.skill_loader
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-from ._frontmatter import read_frontmatter_file
+from _frontmatter import read_frontmatter_file
 
 logger = logging.getLogger(__name__)
 
@@ -244,8 +244,8 @@ def load_skills_dir(directory: str | Path) -> dict[str, SkillDefinition]:
 
 
 def get_default_skills_dir() -> Path:
-    """返回默认的 skills 目录路径（harness/skills）"""
-    return Path(__file__).resolve().parent / "skills"
+    """返回当前项目的 skills 目录。"""
+    return Path(__file__).resolve().parent
 
 
 # ═══════════════════════════════════════════════

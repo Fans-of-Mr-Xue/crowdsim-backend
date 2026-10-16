@@ -4,7 +4,7 @@ import json
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from .context import TurnContext
+    from typing import Any as TurnContext
 
 
 class Tool:
@@ -24,7 +24,7 @@ class Tool:
         raise NotImplementedError
 
     def service(self, context: TurnContext, name: str):
-        """取运行期能力（见 harness/services.py）；未装配时抛 ServiceUnavailable。"""
+        """从调用方提供的运行上下文读取已装配的服务。"""
         return context.require(name)
 
     def _summary(self) -> str:

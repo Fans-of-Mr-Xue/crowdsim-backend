@@ -13,12 +13,11 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Optional
 
-from .config import (
-    SKILL_DESC_MAX_CHARS,
-    SKILL_PROMPT_BUDGET,
-    SKILL_WHEN_MAX_CHARS,
-)
 from .skill_loader import SkillDefinition
+
+SKILL_DESC_MAX_CHARS = 160
+SKILL_PROMPT_BUDGET = 6000
+SKILL_WHEN_MAX_CHARS = 120
 
 if TYPE_CHECKING:
     pass

@@ -126,6 +126,9 @@ class DialogueHandler(BaseHTTPRequestHandler):
                 payload = self._json_body()
                 self.server.workbench_repository.upsert(payload.get("conversation"))
                 self._send(200, {"saved": 1})
+            elif path == "/post-review/chat":
+                from dialogue_service.post_agent import respond
+                self._send(200, respond(self._json_body()))
             else:
                 self._send(404, {"message": "未找到接口"})
         except ValueError as exc:
