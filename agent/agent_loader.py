@@ -5,13 +5,12 @@
   - Markdown body: system prompt
 
 用法:
-    from harness.agent_loader import load_agent, load_agents_dir
+    from agent.agent_loader import load_agent, load_agents_dir
 
-    ask_def = load_agent("harness/agents/Ask.agent.md")
-    agent_map = load_agents_dir("harness/agents/")
+    agent_map = load_agents_dir(get_default_agents_dir())
 
     # 作为脚本运行
-    python -m harness.agent_loader
+    python -m agent.agent_loader
 """
 
 from __future__ import annotations
@@ -21,9 +20,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-from .config import HARDENING_CLAUSE, SYSTEM_PROMPT_BASE, build_runtime_context_prompt
+from _frontmatter import parse_frontmatter as _parse_frontmatter
 # 通用 frontmatter 解析（agent_loader 与 skill_loader 共用）
-from ._frontmatter import parse_frontmatter as _parse_frontmatter  # noqa: F401  保留原 API 名
 
 logger = logging.getLogger(__name__)
 
@@ -78,13 +76,10 @@ class AgentDefinition:
         skill_registry=None,
         runtime_context_prompt: Optional[str] = None,
     ) -> str:
-        parts = [
-            SYSTEM_PROMPT_BASE,
-            build_runtime_context_prompt(),
-        ]
+        parts = []
         if runtime_context_prompt:
             parts.append(runtime_context_prompt)
-        parts.extend([self.system_prompt, HARDENING_CLAUSE])
+        parts.append(self.system_prompt)
 
         # 工具清单：当 tool_registry 存在时不再注入文本速查表，
         # 因为 OpenAI function calling schema 已通过协议层承载完整工具信息。
@@ -95,16 +90,11 @@ class AgentDefinition:
 
         # 只读工具说明：当 agent 声明了 readonly_tools 时注入提示文本
         if self.readonly_tools:
-            from harness.tools import create_default_registry
-            full = create_default_registry()
             lines = ["\n## 只读工具（仅供引用，不可调用）", ""]
-            lines.append("以下工具已出现在你的工具列表中（描述以 [只读] 开头），"
-                         "你可以在实验方案中引用它们，但**不可调用**。"
-                         "如需执行，请建议用户切换到 Agent 模式。\n")
+            lines.append("以下工具仅用于方案引用，不得调用。\n")
             for name in self.readonly_tools:
-                tool = full.get(name)
-                if tool:
-                    lines.append(f"- **{name}**: {tool.description}")
+                tool = tool_registry.get(name) if tool_registry is not None else None
+                lines.append(f"- **{name}**: {tool.description if tool else '未注册'}")
             parts.append("\n".join(lines))
 
         note = phase_instruction(phase, self.mode)
@@ -187,7 +177,7 @@ def load_agents_dir(directory: str | Path) -> dict[str, AgentDefinition]:
 
 def get_default_agents_dir() -> Path:
     """返回默认的 agents 目录路径"""
-    return Path(__file__).resolve().parent / "agents"
+    return Path(__file__).resolve().parent
 
 
 def validate_allowlist(

@@ -13,7 +13,7 @@ from .mechanism_graph import compute_key_nodes, format_loops, list_lag_effects
 from .metrics import (
     active_population_counts, aggregation_start, arrival_rates, bottleneck_width, compare_metrics,
     evacuation_time, gate_capacity, information_coverage, kernel_crowd_pressure,
-    max_contact_pressure, max_kernel_crowd_pressure, mean_movement_speed, normalized_intensity,
+    max_kernel_crowd_pressure, mean_movement_speed, normalized_intensity,
     paired_metric_effect, peak_grid_density, population_factors, response_delays,
     weighted_score,
 )
@@ -60,7 +60,6 @@ __all__ = [
     "linear_mediation",
     "list_lag_effects",
     "local_derivative",
-    "max_contact_pressure",
     "max_kernel_crowd_pressure",
     "mean",
     "mean_movement_speed",

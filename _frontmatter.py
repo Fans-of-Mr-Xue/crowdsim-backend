@@ -10,7 +10,7 @@ from pathlib import Path
 
 import yaml
 
-_FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n?(.*)", re.DOTALL)
+_FRONTMATTER_RE = re.compile(r"\A\ufeff?---[ \t]*\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)(.*)\Z", re.DOTALL)
 
 
 def parse_frontmatter(content: str) -> tuple[dict, str]:
@@ -24,6 +24,8 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
             "无法解析文件: 未找到 YAML frontmatter (--- ... ---)"
         )
     frontmatter = yaml.safe_load(match.group(1)) or {}
+    if not isinstance(frontmatter, dict):
+        raise ValueError("YAML frontmatter 必须是键值对象")
     body = match.group(2).strip()
     return frontmatter, body
 
