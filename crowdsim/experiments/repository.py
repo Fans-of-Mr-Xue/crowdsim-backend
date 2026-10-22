@@ -146,11 +146,20 @@ class CrowdSimRepository:
     def get_experiment(self, user_id: str, workspace_id: str, experiment_id: str):
         return self._find_one("experiments", {"user_id": str(user_id), "workspace_id": str(workspace_id), "experiment_id": str(experiment_id)})
 
-    def list_experiments(self, user_id: str, workspace_id: str, limit: int = 50):
+    def list_experiments(self, user_id: str, workspace_id: str, limit: int = 50, offset: int = 0, *, summary: bool = False):
         query = {"user_id": str(user_id), "workspace_id": str(workspace_id)}
         with self._lock:
             docs = [deepcopy(item) for item in self._memory["experiments"] if all(item.get(k) == v for k, v in query.items())]
-        return [_serialize(doc) for doc in reversed(docs[-max(1, int(limit)):])]
+            docs = list(reversed(docs))[max(0, offset):max(0, offset) + max(1, int(limit))]
+            if summary:
+                run_groups = {doc["experiment_id"]: [] for doc in docs}
+                for run in self._memory["runs"]:
+                    if all(run.get(k) == v for k, v in query.items()) and run.get("experiment_id") in run_groups:
+                        run_groups[run["experiment_id"]].append({key: deepcopy(run.get(key)) for key in ("run_id", "status", "error")})
+                docs = [{**{key: doc.get(key) for key in ("experiment_id", "clientRequestId", "name", "status", "created_at", "updated_at", "duringObservation", "executionVersion", "methods")},
+                         "scenario": {"presetId": (doc.get("scenario") or {}).get("presetId")},
+                         "runs": run_groups[doc["experiment_id"]]} for doc in docs]
+        return [_serialize(doc) for doc in docs]
 
     def update_experiment(self, user_id, workspace_id, experiment_id, values):
         return self._update("experiments", {"user_id": str(user_id), "workspace_id": str(workspace_id), "experiment_id": str(experiment_id)}, values)

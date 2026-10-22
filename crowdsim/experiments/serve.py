@@ -114,7 +114,9 @@ class ControlRequestHandler(BaseHTTPRequestHandler):
                 return self._send_json(200, [{**preset, "fingerprint": preset_fingerprint(preset)} for preset in presets])
             if path == f"{CONTROL_PREFIX}/experiments":
                 limit = max(1, min(200, int((query.get("limit") or [50])[0])))
-                return self._send_json(200, self.bundle.repository.list_experiments(user_id, workspace_id, limit))
+                offset = max(0, int((query.get("offset") or [0])[0]))
+                return self._send_json(200, self.bundle.repository.list_experiments(user_id, workspace_id, limit, offset,
+                                      summary=query.get("summary") == ["1"]))
 
             match = re.fullmatch(rf"{CONTROL_PREFIX}/experiments/([^/]+)/strategy-context", path)
             if match:
