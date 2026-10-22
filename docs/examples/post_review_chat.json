@@ -1,0 +1,23 @@
+{
+  "task": "design",
+  "model": "Qwen3.8-Flash-Next",
+  "maxTokens": 3000,
+  "messages": [{ "role": "user", "content": "先设计观察实验：以实际处置为对照，比较提前 60 秒启动导流时的密度峰值。请指出还需补充什么。" }],
+  "context": {
+    "conversationId": "post-example-001",
+    "goalConfirmed": true,
+    "baselineConfirmed": true,
+    "goal": "在基线对应区域与 0—600 秒内，比较实际处置与提前导流的密度峰值，辅助处置时机选择。",
+    "designStage": "observation",
+    "factualBaseline": { "id": "F-00", "source": "uploaded_simulation_data", "synthetic": true, "reconstructionConfirmed": true, "datasetId": null, "datasetVersion": null, "calibrationScore": null },
+    "availableFactors": ["关键决策启动时点", "干预强度"],
+    "schemeCatalog": [
+      { "id": "observation", "methods": ["配对蒙特卡洛模拟", "时序敏感度分析"] },
+      { "id": "intervention", "methods": ["一次一因子法（OFAT）", "多因子正交 / 析因实验"] },
+      { "id": "mechanism", "methods": ["机制消融实验", "中介效应分析"] }
+    ],
+    "experimentSchemes": { "observation": [], "intervention": [], "mechanism": [] },
+    "responseVariables": ["密度峰值"],
+    "confirmedStages": { "observation": false, "intervention": false, "mechanism": false }
+  }
+}

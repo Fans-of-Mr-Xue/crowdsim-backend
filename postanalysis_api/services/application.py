@@ -17,6 +17,7 @@ from pymongo.errors import PyMongoError
 from postanalysis_api.repositories.mongodb import MongoRepository
 from postanalysis_api.schemas.common import ApiError, integer, number
 from postanalysis_api.schemas.datasets import validate_dataset
+from postanalysis_api.schemas.review_intake import validate_review_intake
 from postanalysis_api.schemas.experiments import validate_experiment, validate_simulation
 from postanalysis_api.schemas.metrics import METRICS, catalog
 from postanalysis_api.workers.executor import UnavailableExecutor
@@ -202,10 +203,11 @@ class PostAnalysisApp:
         targets = body.get("calibrationTargets")
         if not isinstance(plan, dict) or not isinstance(calibration, dict) or not isinstance(targets, dict):
             raise ApiError("VALIDATION_ERROR", "方案、校准信息和校准目标必须为对象", 422)
+        validate_review_intake(plan)
         draft_id = plan.get("id")
         if not isinstance(draft_id, str) or not 1 <= len(draft_id) <= 120:
             raise ApiError("VALIDATION_ERROR", "方案草案必须包含有效 id", 422, "plan.id")
-        score = number(calibration.get("score"), "calibration.score", 0, 100)
+        score = None if calibration.get("score") is None else number(calibration.get("score"), "calibration.score", 0, 100)
         threshold = number(calibration.get("threshold", 80), "calibration.threshold", 0, 100)
         confirmed = calibration.get("confirmed")
         if not isinstance(confirmed, bool):
@@ -235,6 +237,12 @@ class PostAnalysisApp:
             raise ApiError("PAYLOAD_TOO_LARGE", "方案草案超过 2 MiB", 413)
         dataset_id = body.get("datasetId")
         dataset_version = body.get("datasetVersion")
+        if plan.get("reviewIntake") is not None:
+            baseline = plan["factualBaseline"]
+            if (baseline.get("datasetId") != dataset_id or baseline.get("datasetVersion") != dataset_version):
+                raise ApiError("DATASET_VERSION_MISMATCH", "方案快照与提交引用的数据集不一致", 409)
+            if plan.get("conversationId") != body.get("conversationId"):
+                raise ApiError("VALIDATION_ERROR", "方案快照不属于当前对话", 422, "plan.conversationId")
         if dataset_id is not None:
             if not isinstance(dataset_id, str) or not 1 <= len(dataset_id) <= 80:
                 raise ApiError("VALIDATION_ERROR", "datasetId 格式无效", 422, "datasetId")
