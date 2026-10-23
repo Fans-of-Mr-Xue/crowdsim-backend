@@ -40,7 +40,15 @@ def prepare(case, kind="interpretation"):
 
 
 def save(case, source, **changes):
-    return write(case, {"action": "save", "executionVersion": 0, "kind": source.get("kind", "interpretation"), "sourceId": source["sourceId"], "text": "已有一轮有效结果，速度缺失。", "model": "GLM-5.3-Flash", **changes})
+    payload = {"action": "save", "executionVersion": 0, "kind": source.get("kind", "interpretation"), "sourceId": source["sourceId"], "text": "已有一轮有效结果，速度缺失。", "model": "GLM-5.3-Flash", **changes}
+    if payload["kind"] == "interpretation" and payload.get("text"):
+        payload["text"] = formatted_report(payload["text"])
+    return write(case, payload)
+
+
+def formatted_report(answer):
+    return (f"问题回答：{answer}\n关键证据：一轮有效结果[E01]。\n关注重点：暂不判断拥堵。"
+            "\n验证建议：延长观察后复核。\n分析局限：速度缺失，不能作因果判断。")
 
 
 def test_interpretation_preserves_evidence_and_survives_reload_without_changing_runs(report_case):
@@ -238,3 +246,165 @@ def test_summary_query_omits_visual_frames_without_acquiring_or_controlling_simu
     assert c.repo.get_run("u", "during-check", c.runs[0]["run_id"])["status"] == "completed"
     assert request(bundle, f"/experiments/{c.eid}/runtime?summary=1", workspace="foreign")[0] == 404
     assert not c.gateway.commands
+
+
+def measured_records(case):
+    run_id = case.repository.list_runs("u", "during-check", case.eid)[0]["run_id"]
+    return [r["payload"]["observationMetrics"] for r in case.repository._memory["observations"] if r["run_id"] == run_id]
+
+
+def add_spatial_evidence(case):
+    for sample_row in measured_records(case):
+        peak = sample_row["time_seconds"] == 31
+        sample_row["cells"] = [
+            {"cell_id": "a", "person_count": 8 if peak else 2, "area_m2": 2,
+             "density_person_per_m2": 4 if peak else 1, "avg_speed_mps": None if peak else 1, "speed_sample_count": 0 if peak else 2},
+            {"cell_id": "b", "person_count": 4 if peak else 1, "area_m2": 2,
+             "density_person_per_m2": 2 if peak else 0.5, "avg_speed_mps": 0 if peak else 0.2, "speed_sample_count": 4 if peak else 1},
+        ]
+    run = case.repository.list_runs("u", "during-check", case.eid)[0]
+    evidence = run["observationBinding"]
+    evidence["geometry"] = {"density_area_basis": "clipped_grid_area", "area_m2": 4,
+                            "cells": [{"cell_id": "a", "row": 0, "column": 0}, {"cell_id": "b", "row": 1, "column": 1}]}
+    case.repository.update_run("u", "during-check", run["run_id"], {"observationBinding": evidence})
+
+
+def test_prepare_executes_analysis_and_loads_the_actual_during_skill_for_both_outputs(report_case):
+    c = report_case
+    add_spatial_evidence(c)
+    before_runs = c.repository.list_runs("u", "during-check", c.eid)
+    general, concise = prepare(c), prepare(c, "conclusion")
+    assert general["analysis"] == concise["analysis"]
+    assert general["skill"]["name"] == "during_experiment_analysis"
+    assert "同网格热点定位" in general["skill"]["instruction"]
+    assert "问题回答：" in general["skill"]["instruction"]
+    assert "一个单行句子" in concise["skill"]["instruction"]
+    assert general["facts"]["researchQuestion"] == concise["facts"]["researchQuestion"]
+    assert len(general["analysis"]["executedSteps"]) == 5
+    evidence = general["analysis"]["evidence"]
+    quality = next(e for e in evidence if e["kind"] == "data-quality")
+    assert quality["validRuns"] == 1 and quality["partial"]
+    assert "单轮" in quality["replicationAssessment"]
+    local = next(e for e in evidence if e.get("metricId") == "local-density")
+    assert local["maximumSample"]["timeSeconds"] == 31
+    assert local["maximumSample"]["value"] == 4
+    assert local["windowComparison"]["meanChange"] == 0
+    assert "单调" in local["windowComparison"]["definition"]
+    speed = next(e for e in evidence if e.get("metricId") == "global-speed")
+    assert speed["minimumSample"] is None
+    assert speed["windowComparison"]["firstMean"] is None
+    hotspots = [e for e in evidence if e["kind"] == "spatial-hotspot"]
+    assert hotspots[0]["cellId"] == "a"
+    assert hotspots[0]["peakSample"]["personCount"] == 8
+    assert hotspots[0]["peakSample"]["areaM2"] == 2
+    assert hotspots[0]["peakSample"]["sameCellSpeedMps"] is None
+    assert hotspots[1]["peakSample"]["sameCellSpeedMps"] == 0
+    assert hotspots[0]["runsWhereCellIsMaximum"] == 1
+    assert c.repository.list_runs("u", "during-check", c.eid) == before_runs
+
+
+def test_window_analysis_uses_actual_execution_binding_not_unexecuted_requirement_times(report_case):
+    c = report_case
+    run = c.repository.list_runs("u", "during-check", c.eid)[0]
+    evidence = run["observationBinding"]
+    evidence["hotspotActivity"] = {"start_seconds": 60, "end_seconds": 90}
+    c.repository.update_run("u", "during-check", run["run_id"], {"observationBinding": evidence})
+    source = prepare(c)
+    window = next(e for e in source["analysis"]["evidence"] if e["kind"] == "observation-window")["runs"][0]
+    assert window["activityStartSeconds"] == window["lastSeconds"] == 60
+    assert "未覆盖活动开始后" in window["assessment"]
+    assert "不能据此否定" in window["assessment"]
+    assert window["activitySource"] == "本轮已核验的活动执行绑定"
+
+
+def test_invalid_runs_cannot_contaminate_spatial_or_temporal_analysis(report_case):
+    c = report_case
+    add_spatial_evidence(c)
+    invalid = c.repository.list_runs("u", "during-check", c.eid)[1]
+    c.repository.record("observations", "u", "during-check", invalid["run_id"], {
+        "observationMetrics": {"time_seconds": 31, "global": {"density_person_per_m2": 999999},
+                               "cells": [{"cell_id": "fake", "density_person_per_m2": 999999}]}})
+    source = prepare(c)
+    evidence = source["analysis"]["evidence"]
+    assert all(e.get("cellId") != "fake" for e in evidence)
+    assert next(e for e in evidence if e.get("metricId") == "global-density")["maximumSample"]["value"] == 4
+    assert next(e for e in evidence if e["kind"] == "data-quality")["excluded"][0]["runId"] == invalid["run_id"]
+
+
+def test_replication_is_counted_per_seed_and_not_per_time_sample(report_case):
+    from copy import deepcopy
+    c = report_case
+    add_spatial_evidence(c)
+    first, second, _ = c.repository.list_runs("u", "during-check", c.eid)
+    c.repository.update_run("u", "during-check", second["run_id"], {"status": "completed", "observationBinding": first["observationBinding"]})
+    for row in measured_records(c):
+        other = deepcopy(row)
+        for cell in other["cells"]:
+            cell["cell_id"] = "b" if cell["cell_id"] == "a" else "a"
+        c.repository.record("observations", "u", "during-check", second["run_id"], {"observationMetrics": other})
+    source = prepare(c)
+    hotspots = [e for e in source["analysis"]["evidence"] if e["kind"] == "spatial-hotspot"]
+    assert source["facts"]["validRunCount"] == 2
+    assert len(hotspots) == 2
+    assert all(e["measuredRunCount"] == 2 and e["runsWhereCellIsMaximum"] == 1 for e in hotspots)
+
+
+def test_regional_recurrence_deduplicates_tied_peak_cells_within_one_run(report_case):
+    c = report_case
+    add_spatial_evidence(c)
+    measured_records(c)[1]["cells"][1]["density_person_per_m2"] = 4
+    run = c.repository.list_runs("u", "during-check", c.eid)[0]
+    evidence = run["observationBinding"]
+    evidence["geometry"]["cells"] = [{"cell_id": "a", "row": 0, "column": 0},
+                                      {"cell_id": "b", "row": 0, "column": 1},
+                                      {"cell_id": "far", "row": 8, "column": 8}]
+    c.repository.update_run("u", "during-check", run["run_id"], {"observationBinding": evidence})
+    hotspots = [e for e in prepare(c)["analysis"]["evidence"] if e["kind"] == "spatial-hotspot"]
+    assert len(hotspots) == 2 and hotspots[0]["region"] == hotspots[1]["region"]
+    assert all(e["runsWhereCellIsMaximum"] == 1 and e["runsWhereRegionIsMaximum"] == 1 for e in hotspots)
+
+
+def test_intermediate_spatial_changes_invalidate_evidence_even_when_scalar_statistics_stay_equal(report_case):
+    c = report_case
+    add_spatial_evidence(c)
+    source = prepare(c)
+    sample_row = measured_records(c)[1]
+    sample_row["cells"][0]["cell_id"], sample_row["cells"][1]["cell_id"] = "b", "a"
+    current = c.reports.generate("u", "during-check", c.eid)
+    assert current["aggregate"] == source["facts"]["aggregate"]
+    assert current["observationEvidenceVersion"] != source["facts"]["observationEvidenceVersion"]
+    newer = prepare(c)
+    assert newer["analysis"]["evidenceFingerprint"] != source["analysis"]["evidenceFingerprint"]
+
+
+@pytest.mark.parametrize("text", ["这是对统计表的复述。", formatted_report("发现。") + "[E999]", "问题回答：只有一个段落[E01]。"])
+def test_report_requires_the_analysis_format_and_existing_evidence_without_overwriting(report_case, text):
+    c = report_case
+    previous = save(c, prepare(c))
+    source = prepare(c)
+    with pytest.raises(ContractError, match="证据|分析段落"):
+        write(c, {"action": "save", "executionVersion": 0, "sourceId": source["sourceId"], "text": text, "model": "GLM"})
+    assert interpretation(c.repository, "u", "during-check", c.eid) == previous
+
+
+def test_no_selected_spatial_metric_does_not_invent_a_hotspot(report_case):
+    c = report_case
+    experiment = c.repository.get_experiment("u", "during-check", c.eid)
+    binding = experiment["duringObservation"]
+    binding["requirement"]["observation"]["metric_ids"] = ["global-speed", "concise-simulation-summary"]
+    c.repository.update_experiment("u", "during-check", c.eid, {"duringObservation": binding})
+    source = prepare(c)
+    assert not any(e["kind"] == "spatial-hotspot" for e in source["analysis"]["evidence"])
+    assert any("不定位空间热点" in note for note in source["analysis"]["limitations"])
+
+
+def test_output_formatting_keeps_existing_text_ui_and_save_retries_idempotent(report_case):
+    c = report_case
+    source = prepare(c)
+    text = formatted_report("局部聚集，需进一步观测。").replace("\n", "")
+    payload = {"action": "save", "executionVersion": 0, "sourceId": source["sourceId"], "text": text, "model": "GLM"}
+    saved = write(c, payload)
+    assert len(saved["text"].split("\n\n")) == 5
+    assert write(c, payload) == saved
+    concise = save(c, prepare(c, "conclusion"), text="问题回答：现有采样显示局部聚集，但观察窗口不足以评价活动全过程。")
+    assert concise["text"].startswith("现有采样")

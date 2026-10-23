@@ -167,6 +167,7 @@ def observation_report(repository, user_id, workspace_id, experiment, runs):
                         for seed in experiment["scenario"]["seedSet"]
                         if not any(r["seed"] == seed for r in runs)]
     rows, geometry_fingerprint = [], None
+    evidence_hash = hashlib.sha256()
     maximum_gap = experiment["observationIntervalSeconds"] + 1
     for run in runs:
         evidence = run.get("observationBinding") or {}
@@ -190,6 +191,10 @@ def observation_report(repository, user_id, workspace_id, experiment, runs):
             reason = "观测区域与其他有效轮次不一致"
         if not reason:
             geometry_fingerprint = evidence["geometryFingerprint"]
+            # Full valid spatial/time evidence, including intermediate cells,
+            # must invalidate an interpretation even if scalar means do not.
+            evidence_hash.update(json.dumps([run["run_id"], geometry_fingerprint, samples],
+                                            sort_keys=True, ensure_ascii=False).encode())
         series = [{"timeSeconds": s["time_seconds"], "personCount": (s.get("global") or {}).get("person_count"),
                    **{k: v for k, v in values_at(s).items() if k in selected}} for s in samples]
         metrics = {k: {"label": METRICS[k][0], "unit": METRICS[k][1], **stats(p.get(k) for p in series)} for k in selected if k in METRICS}
@@ -211,6 +216,7 @@ def observation_report(repository, user_id, workspace_id, experiment, runs):
               "binding": {k: binding[k] for k in ("conversationId", "snapshotId", "requirementId", "requirementFingerprint", "modelId", "modelFingerprint")},
               "expectedRunCount": len(experiment["scenario"]["seedSet"]), "validRunCount": len(valid),
               "observationIntervalSeconds": experiment["observationIntervalSeconds"],
+              "observationEvidenceVersion": evidence_hash.hexdigest(),
               "runs": rows, "aggregate": aggregate,
               "limitations": ["独立随机种子按顺序执行；汇总只含有效完成轮次。",
                   activity_execution_note(binding["requirement"], rows),
