@@ -123,6 +123,8 @@ def write_interpretation(repository, reports, user_id, workspace_id, experiment_
             cited = set(re.findall(r"\[(E\d+)\]", text))
             if cited - evidence_ids:
                 raise ContractError("解读引用了不存在的分析证据，请重新生成。")
+            if kind == "interpretation" and len(re.sub(r"\s", "", text)) > 700:
+                raise ContractError("报告解读正文超过700字，请按原分析规范精简后重新生成。")
             found_sections = tuple(re.findall("|".join(re.escape(label) for label in REPORT_SECTIONS), text))
             if kind == "interpretation" and (not cited or found_sections != REPORT_SECTIONS or not text.startswith(REPORT_SECTIONS[0])):
                 raise ContractError("报告解读缺少规定的分析段落或证据引用，请重新生成。")

@@ -9,6 +9,7 @@ import json
 from typing import Any
 
 from crowdsim.modeling_algorithm.registry import algorithm_catalog
+from crowdsim.modeling_algorithm.rule_model.catalogue import implemented_rule_method, rule_entry
 
 
 SCHEMA_VERSION = 2
@@ -66,12 +67,13 @@ class ArtificialSocietySpec:
         for name in {"crowd_role", "age_band", "origin", "gender"}:
             _validate_distribution(name, distributions[name])
 
-        _validate_selected_ids(individual.get("roles"), REQUIRED_ROLE_IDS, "individual_model.roles")
+        _validate_selected_ids(individual.get("roles"), {"pedestrian"} if individual.get("role_contract") == "autonomous-agent-v1" else REQUIRED_ROLE_IDS, "individual_model.roles")
         _validate_profile_parameters(individual.get("profile_parameters"))
         _validate_agent_types(individual.get("agent_types"), distributions["crowd_role"])
         _validate_selected_ids(environment.get("layers"), REQUIRED_LAYER_IDS, "environment_model.layers")
         _validate_environment_structure(environment.get("spatial_structure"))
         _validate_selected_ids(rules.get("rules"), REQUIRED_RULE_IDS, "rule_model.rules")
+        _validate_rule_method_entries(rules.get("rules"))
         _validate_runtime_parameters(rules.get("runtime_parameters"))
 
         binding = _object(environment, "scenario_binding")
@@ -104,9 +106,9 @@ class ArtificialSocietySpec:
             "visual_state_thresholds": "runtime_consumed",
             "scenario_binding": "validated_against_requirement",
             "roles": {
-                "pedestrian": "runtime_component",
-                "signal": "runtime_component",
-                "policy": "runtime_component",
+                "pedestrian": "autonomous_runtime_agent",
+                "information_delivery": "runtime_service",
+                "intervention_executor": "runtime_service",
             },
             "environment_layers": "runtime_components",
             "rules": "runtime_components",
@@ -119,6 +121,24 @@ def _object(parent: dict, key: str) -> dict:
     if not isinstance(value, dict):
         raise ArtificialSocietyValidationError(f"{key} must be an object")
     return value
+
+
+def _validate_agent_emotion_state(emotion_state: Any) -> None:
+    """Validate the state-only emotion block for an emotion-enabled agent."""
+    if not isinstance(emotion_state, dict):
+        raise ArtificialSocietyValidationError("emotionState must be an object")
+    method = emotion_state.get("method")
+    if not isinstance(method, str) or not method.strip():
+        raise ArtificialSocietyValidationError("emotionState.method is required when emotion capability is enabled")
+    implemented_emotion = {
+        str(registered["method"]) for registered in algorithm_catalog()
+        if registered["model"] == "individual" and registered["module"] == "emotion" and registered.get("implemented")
+    }
+    if method not in implemented_emotion:
+        raise ArtificialSocietyValidationError(f"emotion method is not executable: {method}")
+    participates = emotion_state.get("participates_in_operation")
+    if not isinstance(participates, bool):
+        raise ArtificialSocietyValidationError("emotionState.participates_in_operation must be a boolean")
 
 
 def _validate_distribution(name: str, rows: Any) -> None:
@@ -167,7 +187,7 @@ def _validate_agent_types(value: Any, crowd_roles: list[dict[str, Any]]) -> None
     actual_ids = {str(item.get("id")) for item in value if isinstance(item, dict)}
     if actual_ids != expected_ids:
         raise ArtificialSocietyValidationError("individual_model.agent_types must match crowd_role distribution")
-    required_modules = {"perception", "goal", "decision", "action"}
+    required_modules = {"perception", "memory", "goal", "decision", "action"}
     for agent in value:
         if not isinstance(agent, dict) or not str(agent.get("name") or "").strip():
             raise ArtificialSocietyValidationError("agent type name is required")
@@ -184,24 +204,47 @@ def _validate_agent_types(value: Any, crowd_roles: list[dict[str, Any]]) -> None
         missing = required_modules - set(module_ids)
         if missing:
             raise ArtificialSocietyValidationError(f"agent architecture is missing: {', '.join(sorted(missing))}")
-        if capabilities.get("emotion") and not {"emotion", "desire"}.issubset(module_ids):
-            raise ArtificialSocietyValidationError("emotion capability requires emotion and desire modules")
-        if capabilities.get("game") and "game" not in module_ids:
-            raise ArtificialSocietyValidationError("game capability requires game module")
-        if capabilities.get("learning") and "learning" not in module_ids:
-            raise ArtificialSocietyValidationError("learning capability requires learning module")
+        # The emotion method lives in emotionState; it must not be an architecture module.
+        if "emotion" in module_ids:
+            raise ArtificialSocietyValidationError("emotion method is selected via emotionState, not the architecture")
+        emotion_state = agent.get("emotionState")
+        if capabilities.get("emotion"):
+            _validate_agent_emotion_state(emotion_state)
+        # Optional modules must exactly reflect the confirmed capability selection.
+        desire_expected = capabilities.get("emotion") is True and isinstance(emotion_state, dict) \
+            and emotion_state.get("participates_in_operation") is True
+        if ("desire" in module_ids) != desire_expected:
+            raise ArtificialSocietyValidationError("desire module must match emotionState.participates_in_operation")
+        if ("game" in module_ids) != (capabilities.get("game") is True):
+            raise ArtificialSocietyValidationError("game module must match game capability")
+        if ("learning" in module_ids) != (capabilities.get("learning") is True):
+            raise ArtificialSocietyValidationError("learning module must match learning capability")
+        canonical_order = ("perception", "memory", "desire", "goal", "game", "decision", "action", "learning")
+        if module_ids != [module for module in canonical_order if module in module_ids]:
+            raise ArtificialSocietyValidationError(
+                "agent architecture order must follow perception-memory-desire-goal-game-decision-action-learning"
+            )
         if any(not str(item.get("method") or "").strip() for item in selected):
             raise ArtificialSocietyValidationError("agent architecture methods are required")
         supported_methods: dict[str, set[str]] = {}
+        implemented_methods: set[tuple[str, str]] = set()
         for registered in algorithm_catalog():
             if registered["model"] == "individual":
-                supported_methods.setdefault(str(registered["module"]), set()).add(str(registered["method"]))
+                module = str(registered["module"])
+                method = str(registered["method"])
+                supported_methods.setdefault(module, set()).add(method)
+                if registered.get("implemented"):
+                    implemented_methods.add((module, method))
         for item in selected:
             module_id = str(item.get("id") or "")
             method = str(item.get("method") or "")
             if method not in supported_methods.get(module_id, set()):
                 raise ArtificialSocietyValidationError(
                     f"unsupported agent method: {module_id}.{method}"
+                )
+            if (module_id, method) not in implemented_methods:
+                raise ArtificialSocietyValidationError(
+                    f"agent method is not executable: {module_id}.{method}"
                 )
         attributes = agent.get("attributes")
         if not isinstance(attributes, dict) or not attributes:
@@ -229,6 +272,8 @@ def _validate_environment_structure(value: Any) -> None:
             if not isinstance(row, dict) or not str(row.get("name") or "").strip():
                 raise ArtificialSocietyValidationError(f"environment {key} names are required")
             capacity = row.get("capacity_per_minute")
+            if capacity is None and value.get("capacity_contract") == "directional-token-bucket-v1" and row.get("state") in {"开放", "关闭"}:
+                continue
             if isinstance(capacity, bool) or not isinstance(capacity, (int, float)) or capacity < 0:
                 raise ArtificialSocietyValidationError(f"environment {key} capacity must be non-negative")
     factors = value.get("factors")
@@ -282,3 +327,30 @@ def _validate_selected_ids(rows: Any, required: set[str], path: str) -> None:
     missing = required - selected
     if missing:
         raise ArtificialSocietyValidationError(f"{path} is missing: {', '.join(sorted(missing))}")
+
+
+def _validate_rule_method_entries(rows: Any) -> None:
+    """Validate an explicit strong-constraint method against the execution catalogue.
+
+    A rule that omits ``method`` inherits the catalogue default and stays valid;
+    only an explicitly supplied value is checked, so legacy payloads that carry
+    just ``id``/``selected`` continue to parse.
+    """
+    if not isinstance(rows, list):
+        return
+    for item in rows:
+        if not isinstance(item, dict) or item.get("selected") is False:
+            continue
+        rule_id = str(item.get("id") or "")
+        method = item.get("method")
+        entry = rule_entry(rule_id)
+        if entry is None:
+            # Optional recommended rules may appear in the same list; they only
+            # fail when they carry an unregistered method.
+            if method is not None:
+                raise ArtificialSocietyValidationError(f"unknown strong rule: {rule_id}")
+            continue
+        if method is None:
+            continue
+        if not implemented_rule_method(rule_id, method):
+            raise ArtificialSocietyValidationError(f"rule method is not executable: {rule_id}.{method}")

@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "models": [
+    {
+      "environment_model_id": "env-memorial-tower-v1",
+      "version": "1",
+      "name": "人民英雄纪念塔聚集与散场环境",
+      "location_id": "memorial-tower",
+      "location_aliases": ["人民英雄纪念塔", "人民英雄纪念碑", "外滩纪念塔"],
+      "event_categories": ["culture", "public-social", "social-leisure"],
+      "population_min": 1,
+      "population_max": 10000,
+      "research_problem_types": [1, 2],
+      "sumo_config": "scenarios/shanghai_bund/bund.hotspot.sumocfg",
+      "road_network_url": "/static/crowd_sim/road_network.json",
+      "network_method": "SUMO 路网拓扑",
+      "entrances": [
+        {"id": "west_gate", "edge_id": "178411801#0", "name": "西侧入口", "capacity_per_minute": null, "state": "开放"},
+        {"id": "south_gate", "edge_id": "177931018#0", "name": "南侧入口", "capacity_per_minute": null, "state": "开放"},
+        {"id": "west_middle_gate", "edge_id": "monument_m3", "name": "西侧中部入口", "capacity_per_minute": null, "state": "开放"}
+      ],
+      "exits": [
+        {"id": "west_gate_out", "edge_id": "178411801#0", "name": "西侧出口", "capacity_per_minute": null, "state": "开放"},
+        {"id": "south_gate_out", "edge_id": "177931018#0", "name": "南侧出口", "capacity_per_minute": null, "state": "开放"},
+        {"id": "west_middle_gate_out", "edge_id": "monument_m3", "name": "西侧中部出口", "capacity_per_minute": null, "state": "开放"}
+      ],
+      "interior_edges": ["679361567#1", "679361567#2", "679361567#2_m3_north"],
+      "during_runtime_ready": true
+    },
+    {
+      "environment_model_id": "env-east-nanjing-road-v1",
+      "version": "1",
+      "name": "南京东路步行街环境",
+      "location_id": "east-nanjing-road",
+      "location_aliases": ["南京东路", "南京东路步行街"],
+      "event_categories": ["commerce", "social-leisure", "public-social"],
+      "population_min": 1,
+      "population_max": 10000,
+      "research_problem_types": [1, 2],
+      "sumo_config": "scenarios/east_nanjing_road/east_nanjing.sumocfg",
+      "road_network_url": "/static/crowd_sim/east_nanjing_road_network.json",
+      "network_method": "SUMO 路网拓扑",
+      "entrances": [],
+      "exits": [],
+      "during_runtime_ready": false
+    }
+  ]
+}

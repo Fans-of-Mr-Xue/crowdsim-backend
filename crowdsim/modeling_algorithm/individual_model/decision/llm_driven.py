@@ -26,7 +26,7 @@ class LLMDrivenDecisionModel:
 
     def __init__(self, *, timeout_seconds: float | None = None) -> None:
         self.base_url = os.environ.get("CROWDSIM_LLM_BASE_URL", "http://127.0.0.1:8800/v1").rstrip("/")
-        self.model = os.environ.get("CROWDSIM_LLM_MODEL", "qwen3.8-flash-next")
+        self.model = os.environ.get("CROWDSIM_LLM_MODEL", "GLM-5.3-Flash")
         self.api_key = os.environ.get("CROWDSIM_MODEL_API_KEY", "")
         self.timeout_seconds = float(timeout_seconds or os.environ.get("CROWDSIM_LLM_DECISION_TIMEOUT", "3"))
         self.cooldown_seconds = float(os.environ.get("CROWDSIM_LLM_FAILURE_COOLDOWN", "30"))
@@ -217,6 +217,8 @@ class LLMDrivenDecisionModel:
             confidence=confidence,
             source=source,
             decided_at=observation.time_seconds,
+            selected_entry_edge=candidate.entry_edge if candidate is not None and candidate.target_kind == "hotspot_route" else None,
+            preserve_future_stages=bool(candidate is not None and candidate.target_kind == "hotspot_route"),
         )
 
     def diagnostics(self) -> dict[str, Any]:

@@ -99,7 +99,8 @@ class DuringRequirementRepository:
                 raise RequirementConflict(previous)
             if previous:
                 _preserve_bindings(previous["state"], state)
-            record = {"schemaVersion": 1, "conversationId": conversation_id, "revision": revision + 1,
+            record = {"schemaVersion": 1, "recordType": "draft_recovery_checkpoint",
+                      "conversationId": conversation_id, "revision": revision + 1,
                       "mutationId": mutation_id, "updatedAt": datetime.now(timezone.utc).isoformat(),
                       "state": deepcopy(state)}
             self.root.mkdir(parents=True, exist_ok=True)

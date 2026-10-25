@@ -28,6 +28,7 @@ class PlanExecutor:
         self.route_provider = route_provider
         self.strategy_limits: Dict[str, float] = {}
         self.hazard_limits: Dict[str, float] = {}
+        self.environment_limits: Dict[str, float] = {}
         self.wait_until: Dict[str, float] = {}
         self.activity_hold_until: Dict[str, float | None] = {}
         self.flow_hold_reasons: Dict[str, set[str]] = {}
@@ -58,7 +59,7 @@ class PlanExecutor:
 
     def retain_active(self, person_ids) -> None:
         active = set(person_ids)
-        for mapping in (self.strategy_limits, self.hazard_limits, self.wait_until,
+        for mapping in (self.strategy_limits, self.hazard_limits, self.environment_limits, self.wait_until,
                         self.activity_hold_until, self.base_limits,
                         self.results, self.route_retry_after, self.route_failures):
             for person_id in set(mapping) - active:
@@ -216,6 +217,15 @@ class PlanExecutor:
             self.strategy_limits.pop(person_id, None)
             self._apply_effective_speed(person_id)
 
+    def set_environment_limit(self, person_id: str, limit: float | None) -> None:
+        if limit is None:
+            self.environment_limits.pop(person_id, None)
+        elif not math.isfinite(limit) or limit < 0:
+            raise ValueError('environment speed limit must be finite and nonnegative')
+        else:
+            self.environment_limits[person_id] = limit
+        self._apply_effective_speed(person_id)
+
     def set_hazard_limit(self, person_id: str, limit: Optional[float]) -> None:
         if limit is None:
             self.hazard_limits.pop(person_id, None)
@@ -249,6 +259,8 @@ class PlanExecutor:
         values = [self.base_limits.get(person_id, 1.35)]
         if person_id in self.strategy_limits:
             values.append(self.strategy_limits[person_id])
+        if person_id in self.environment_limits:
+            values.append(self.environment_limits[person_id])
         if person_id in self.hazard_limits:
             values.append(self.hazard_limits[person_id])
         if person_id in self.activity_hold_until:

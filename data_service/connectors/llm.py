@@ -18,7 +18,7 @@ class JsonModelClient:
     def __init__(self):
         load_database_env()
         self.base_url = os.environ.get("CROWDSIM_LLM_BASE_URL", "http://127.0.0.1:8800/v1").rstrip("/")
-        self.model = os.environ.get("CROWDSIM_LLM_MODEL", "qwen3.8-flash-next")
+        self.model = os.environ.get("CROWDSIM_LLM_MODEL", "GLM-5.3-Flash")
         self.api_key = os.environ.get("CROWDSIM_MODEL_API_KEY", "")
         self.extra = json.loads(os.environ.get("CROWDSIM_LLM_EXTRA_BODY", '{"chat_template_kwargs":{"enable_thinking":false}}'))
         if not isinstance(self.extra, dict) or set(self.extra) & {"messages", "model", "stream"}:

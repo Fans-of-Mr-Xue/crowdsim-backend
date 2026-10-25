@@ -14,6 +14,7 @@ from crowdsim.infrastructure.performance_probe import PerformanceOptions
 from crowdsim_overlay_server import parse_args
 from tests.test_modeling_algorithms import context, implemented_architecture
 from tests.test_requirement_location_v2 import located_requirement
+from crowdsim.modeling_algorithm.rule_model.catalogue import STRONG_RULES, default_rule_methods
 
 
 class StartupCompatibilityTests(unittest.TestCase):
@@ -93,6 +94,7 @@ class RuntimeCompatibilityTests(unittest.TestCase):
             return SimulationRuntime(
                 root / 'scenarios/shanghai_bund/bund.hotspot.sumocfg',
                 use_llm=use_llm, requirement_record=record, random_seed=37,
+                location_id='memorial-tower',
                 timeline_end_seconds=1800, performance_options=PerformanceOptions(True, False, 10),
             )
 
@@ -102,6 +104,16 @@ class RuntimeCompatibilityTests(unittest.TestCase):
             'artificial_society': {
                 'individual_model': {'profile_parameters': {'risk_tolerance': {'min': .9, 'max': .9}},
                                      'agent_types': implemented_architecture()},
+                'environment_model': {
+                    'environment_model_id': 'env-memorial-tower-v1',
+                    'environment_model_version': '1',
+                    'scenario_binding': {'location_id': runtime.location_id},
+                    'spatial_structure': {
+                        'sumo_config': 'scenarios/shanghai_bund/bund.hotspot.sumocfg',
+                        'factors': [{'id': 'density'}, {'id': 'flow'}],
+                        'responses': [{'id': 'density-feedback'}, {'id': 'capacity-feedback'}],
+                    },
+                },
                 'rule_model': {'runtime_parameters': {'decision_period_seconds': 9,
                               'visual_state': {'confirmation_duration_seconds': 12}}},
             },
@@ -160,7 +172,11 @@ class RuntimeCompatibilityTests(unittest.TestCase):
         self.addCleanup(runtime.close)
         runtime.configure_artificial_society(self.model(runtime))
         replacement = {'model_id': 'asm-other', 'requirement_id': runtime.requirement_id,
-                       'artificial_society': {'individual_model': {}, 'rule_model': {}}}
+                       'artificial_society': {
+                           'individual_model': {},
+                           'environment_model': deepcopy(self.model(runtime)['artificial_society']['environment_model']),
+                           'rule_model': {},
+                       }}
         runtime.configure_artificial_society(replacement)
         self.assertFalse(runtime.use_llm)
         self.assertEqual(2, runtime.decision_scheduler.period_seconds)
@@ -173,4 +189,47 @@ class RuntimeCompatibilityTests(unittest.TestCase):
         runtime.state = RuntimeState.RUNNING
         with self.assertRaises(ValueError):
             runtime.clear_artificial_society()
+        self.assertEqual('asm-test', runtime.artificial_society_id)
+
+    def _strong_rule_rows(self, *, fake_method=None, omit=None):
+        methods = default_rule_methods()
+        rows = []
+        for entry in STRONG_RULES:
+            if omit == entry["id"]:
+                continue
+            row = {"id": entry["id"], "selected": True, "method": methods[entry["id"]]}
+            if fake_method == entry["id"]:
+                row["method"] = "不存在的规则算法"
+            rows.append(row)
+        return rows
+
+    def test_runtime_accepts_registered_strong_rule_methods(self):
+        runtime = self.runtime()
+        self.addCleanup(runtime.close)
+        model = self.model(runtime)
+        model['artificial_society']['rule_model']['rules'] = self._strong_rule_rows()
+        runtime.configure_artificial_society(model)
+        self.assertEqual('asm-test', runtime.artificial_society_id)
+
+    def test_runtime_rejects_fake_strong_rule_method(self):
+        runtime = self.runtime()
+        self.addCleanup(runtime.close)
+        model = self.model(runtime)
+        model['artificial_society']['rule_model']['rules'] = self._strong_rule_rows(fake_method='visual-state')
+        with self.assertRaisesRegex(ValueError, "not executable"):
+            runtime.configure_artificial_society(model)
+
+    def test_runtime_rejects_incomplete_strong_rule_list(self):
+        runtime = self.runtime()
+        self.addCleanup(runtime.close)
+        model = self.model(runtime)
+        model['artificial_society']['rule_model']['rules'] = self._strong_rule_rows(omit='message-control')
+        with self.assertRaisesRegex(ValueError, "missing"):
+            runtime.configure_artificial_society(model)
+
+    def test_runtime_legacy_binding_without_rules_list_still_binds(self):
+        runtime = self.runtime()
+        self.addCleanup(runtime.close)
+        # self.model omits rule_model.rules entirely; legacy records still bind.
+        runtime.configure_artificial_society(self.model(runtime))
         self.assertEqual('asm-test', runtime.artificial_society_id)

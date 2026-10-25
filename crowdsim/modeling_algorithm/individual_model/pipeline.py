@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Iterable
 
 from crowdsim.decision.agent_decision import AgentDecisionEngine
 from crowdsim.decision.route_provider import RouteCandidate
 from crowdsim.domain.crowdsim_models import AgentProfile, AgentState, BehaviorPlan, Observation
-from crowdsim.modeling_algorithm.contracts import Experience, GameChoice, PADState
+from crowdsim.modeling_algorithm.contracts import DesireState, Experience, GameChoice, PADState
 from crowdsim.modeling_algorithm.individual_model.decision.llm_driven import LLMDrivenDecisionModel
 from crowdsim.modeling_algorithm.individual_model.desire_goal.emotion_driven_desire import EmotionDrivenDesireModel
 from crowdsim.modeling_algorithm.individual_model.emotion.pad_continuous import PADContinuousEmotionModel
@@ -33,11 +33,15 @@ class RolePipelineConfig:
 
     @property
     def enabled(self) -> bool:
-        required_capabilities = ("emotion", "game", "learning")
-        return (
-            all(self.capabilities.get(name, False) for name in required_capabilities)
-            and all(self.methods.get(module_id) == method for module_id, method in IMPLEMENTED_CHAIN.items())
-        )
+        return any(self.capabilities.get(key, False) for key in ("emotion", "game", "learning")) or self.methods.get("decision") == "LLM-driven"
+
+    @property
+    def desire_enabled(self) -> bool:
+        return self.capabilities.get("emotion", False) and self.methods.get("desire") == "情感驱动欲望"
+
+    @property
+    def replay_enabled(self) -> bool:
+        return self.capabilities.get("learning", False) and self.methods.get("learning") == "经验回放"
 
 
 class IndividualModelingEngine:
@@ -77,7 +81,7 @@ class IndividualModelingEngine:
             )
         self.role_configs = configured
         self.enabled = (
-            any(config.enabled for config in configured.values())
+            any(config.methods.get("decision") == "LLM-driven" for config in configured.values())
             or bool(getattr(self.fallback_engine, "enabled", False))
         )
 
@@ -97,7 +101,8 @@ class IndividualModelingEngine:
             self.delegated_decisions += 1
             return self.fallback_engine.rule_plan(profile, state, observation, candidates)
         emotion, desire, choice = self._evaluate(profile, state, observation, candidates)
-        plan = self._choice_to_plan(profile, observation, candidates, choice, source="bounded_rational")
+        source = "bounded_rational" if self.role_configs[profile.crowd_role].capabilities.get("game") else "modeling_rule"
+        plan = self._choice_to_plan(profile, observation, candidates, choice, source=source)
         self._remember(profile, observation, emotion, desire, plan)
         self.pipeline_decisions += 1
         return plan
@@ -110,6 +115,9 @@ class IndividualModelingEngine:
         candidates: Iterable[RouteCandidate] = (),
     ) -> BehaviorPlan:
         candidates = tuple(candidates)
+        config = self.role_configs.get(profile.crowd_role)
+        if config and config.methods.get("decision") != "LLM-driven":
+            return self.rule_plan(profile, state, observation, candidates)
         if not self.supports(profile):
             self.delegated_decisions += 1
             return await self.fallback_engine.decide(profile, state, observation, candidates)
@@ -120,16 +128,41 @@ class IndividualModelingEngine:
         return plan
 
     def _evaluate(self, profile, state, observation, candidates):
-        previous = self.emotional_states.get(profile.person_id)
-        emotion = self.emotion.update(profile, state, observation, previous)
-        self.emotional_states[profile.person_id] = emotion
-        desire = self.desire.generate(emotion, profile, state, observation)
-        replay_values = self.replay.action_values(role_id=profile.crowd_role)
-        action_bias = {
-            action: max(-0.2, min(0.2, reward * 0.1))
-            for action, reward in replay_values.items()
-        }
-        choice = self.game.choose(profile, state, observation, emotion, desire, candidates, action_bias)
+        config = self.role_configs[profile.crowd_role]
+        emotion = PADState()
+        if config.capabilities.get("emotion"):
+            emotion = self.emotion.update(profile, state, observation, self.emotional_states.get(profile.person_id))
+            self.emotional_states[profile.person_id] = emotion
+        if config.desire_enabled:
+            desire = self.desire.generate(emotion, profile, state, observation)
+        else:
+            # Without a selected desire module, retain the ordinary goal-oriented drive.
+            scores = {"safety": max(state.perceived_risk, observation.perceived_risk),
+                      "avoid_crowding": observation.perceived_crowding, "goal_progress": 1.0 - observation.perceived_risk,
+                      "group_cohesion": profile.group_cohesion, "follow_guidance": profile.authority_compliance,
+                      "rest": state.fatigue}
+            desire = DesireState(scores, max(scores, key=scores.get))
+        replay_values = self.replay.action_values(role_id=profile.crowd_role) if self._replay_enabled(profile) else {}
+        action_bias = {action: max(-0.2, min(0.2, reward * 0.1)) for action, reward in replay_values.items()}
+        if config.capabilities.get("game"):
+            choice = self.game.choose(profile, state, observation, emotion, desire, candidates, action_bias)
+        else:
+            adjusted = state
+            if config.desire_enabled:
+                adjusted = replace(state, perceived_risk=max(state.perceived_risk, desire.scores["safety"]))
+            base = self.fallback_engine.rule_plan(profile, adjusted, observation, candidates)
+            action, target, reason = base.proposed_action, base.target_id, base.reason
+            if config.desire_enabled and not base.route_edges:
+                if desire.primary == "rest":
+                    action, target, reason = "wait", None, "emotional desire prioritizes rest"
+                elif desire.primary == "avoid_crowding":
+                    action, target, reason = "slow_down", None, "emotional desire prioritizes crowd avoidance"
+            # Replay can prefer the safer previously rewarding alternative, not invent routes.
+            if action_bias and not base.route_edges:
+                options = {action: 0.1 + action_bias.get(action, 0.0)}
+                options.update({item: action_bias[item] for item in ("continue", "slow_down", "wait") if item in action_bias and item != action})
+                action = max(options, key=options.get)
+            choice = GameChoice(action, target, desire.scores[desire.primary], {action: 1.0}, reason)
         return emotion, desire, choice
 
     @staticmethod
@@ -143,7 +176,13 @@ class IndividualModelingEngine:
             source=source,
         )
 
+    def _replay_enabled(self, profile: AgentProfile) -> bool:
+        config = self.role_configs.get(profile.crowd_role)
+        return bool(config and config.replay_enabled)
+
     def _remember(self, profile, observation, emotion, desire, plan) -> None:
+        if not self._replay_enabled(profile):
+            return
         speed_ratio = observation.own_motion.speed / max(0.1, profile.free_walking_speed * profile.mobility)
         reward = (
             min(1.0, speed_ratio)
@@ -174,6 +213,7 @@ class IndividualModelingEngine:
             "configured_roles": {
                 role_id: {
                     "enabled": config.enabled,
+                    "replay_enabled": config.replay_enabled,
                     "methods": dict(config.methods),
                     "capabilities": dict(config.capabilities),
                 }

@@ -342,7 +342,15 @@ class ResetBindingSumoTests(unittest.IsolatedAsyncioTestCase):
         from crowdsim.infrastructure.experiment_recorder import ExperimentRecorder
         from crowdsim.infrastructure.requirement_repository import RequirementRepository
         from crowdsim_overlay_server import build_requirement_runtime, parse_args
-        from tests.test_artificial_society_submission import artificial_society_payload, requirement_payload
+        from tests.test_artificial_society_submission import requirement_payload
+        from crowdsim.modeling_algorithm.compiler import compile_artificial_society, default_modeling_requirements
+        from tests.test_modeling_requirements_compiler import confirm_modeling
+
+        def executable_model(record):
+            draft = default_modeling_requirements(record['requirement'])
+            draft['environment']['selected_environment_model_id'] = 'env-memorial-tower-v1'
+            draft['rules']['accepted_recommended_rule_ids'] = list(draft['rules']['recommended_rule_ids'])
+            return ArtificialSocietySpec.parse(compile_artificial_society(record, confirm_modeling(draft)))
 
         for include_new_model in (True, False):
             with self.subTest(include_new_model=include_new_model), tempfile.TemporaryDirectory() as directory:
@@ -355,8 +363,8 @@ class ResetBindingSumoTests(unittest.IsolatedAsyncioTestCase):
                 new_payload = requirement_payload()
                 new_payload["population"]["total"] = 3
                 new_requirement = requirements.create(RequirementSpec.parse(new_payload))
-                old_model = models.create(ArtificialSocietySpec.parse(artificial_society_payload(old_requirement)))
-                new_model = models.create(ArtificialSocietySpec.parse(artificial_society_payload(new_requirement)))
+                old_model = models.create(executable_model(old_requirement))
+                new_model = models.create(executable_model(new_requirement))
                 with patch.dict("os.environ", {"CROWDSIM_PERF": "0", "CROWDSIM_SYSTEM_PERF": "0"}), patch(
                     "crowdsim.core.simulation_runtime.PROJECT_ROOT", root
                 ), patch(

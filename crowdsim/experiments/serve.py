@@ -112,6 +112,20 @@ class ControlRequestHandler(BaseHTTPRequestHandler):
             if path == f"{CONTROL_PREFIX}/during-presets":
                 presets = [load_during_preset(preset_id) for preset_id in PRESET_FILES]
                 return self._send_json(200, [{**preset, "fingerprint": preset_fingerprint(preset)} for preset in presets])
+            if path == f"{CONTROL_PREFIX}/modeling/catalog":
+                from crowdsim.modeling_algorithm.compiler import executable_catalog, strong_rule_catalogue
+                return self._send_json(200, {"algorithms": executable_catalog(),
+                                             "strong_rules": strong_rule_catalogue()})
+            match = re.fullmatch(rf"{CONTROL_PREFIX}/modeling/models/(asm-[0-9a-f]{{32}})", path)
+            if match:
+                from crowdsim.infrastructure.artificial_society_repository import ArtificialSocietyRepository
+                model = ArtificialSocietyRepository().load(match.group(1))
+                requirement_id = str((query.get("requirementId") or [""])[0])
+                fingerprint = str((query.get("fingerprint") or [""])[0])
+                if (not requirement_id or model.get("requirement_id") != requirement_id
+                        or not fingerprint or model.get("fingerprint") != fingerprint):
+                    raise ValueError("artificial society model binding does not match the confirmed requirement")
+                return self._send_json(200, model)
             if path == f"{CONTROL_PREFIX}/experiments":
                 limit = max(1, min(200, int((query.get("limit") or [50])[0])))
                 offset = max(0, int((query.get("offset") or [0])[0]))
@@ -165,10 +179,33 @@ class ControlRequestHandler(BaseHTTPRequestHandler):
         try:
             data = self._json_body()
             if path == f"{CONTROL_PREFIX}/requirements":
-                requirement = data.get("requirement") if "requirement" in data else data
+                requirement = data.get("requirement")
+                source = data.get("source")
                 if not isinstance(requirement, dict):
                     raise ValueError("requirement must be a JSON object")
-                return self._send_json(201, self.bundle.submit_requirement(requirement))
+                if (not isinstance(source, dict) or source.get("type") != "confirmed_snapshot"
+                        or not isinstance(source.get("conversationId"), str) or not source["conversationId"]
+                        or not isinstance(source.get("snapshotId"), str) or not source["snapshotId"]):
+                    raise ValueError("only a confirmed requirement snapshot can be submitted")
+                accepted = self.bundle.submit_requirement(requirement)
+                accepted["source"] = {"type": "confirmed_snapshot", "conversationId": source["conversationId"],
+                                      "snapshotId": source["snapshotId"]}
+                return self._send_json(201, accepted)
+            if path == f"{CONTROL_PREFIX}/modeling/catalog":
+                from crowdsim.modeling_algorithm.compiler import (
+                    environment_candidates, executable_catalog, rule_recommendations,
+                    strong_rule_catalogue,
+                )
+                requirement = data.get("requirement") if isinstance(data.get("requirement"), dict) else {}
+                return self._send_json(200, {
+                    "algorithms": executable_catalog(),
+                    "strong_rules": strong_rule_catalogue(),
+                    "environment_candidates": environment_candidates(requirement),
+                    "rule_recommendations": rule_recommendations(requirement),
+                })
+            if path == f"{CONTROL_PREFIX}/modeling/build":
+                from crowdsim.modeling_algorithm.compiler import build_artificial_society
+                return self._send_json(201, build_artificial_society(data, workspace_id))
             if path == f"{CONTROL_PREFIX}/experiments":
                 return self._send_json(201, self.bundle.orchestrator.create_experiment(user_id, workspace_id, data))
             if path == f"{CONTROL_PREFIX}/during-observations":

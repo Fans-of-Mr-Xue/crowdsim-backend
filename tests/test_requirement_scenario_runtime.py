@@ -264,7 +264,11 @@ class RequirementScenarioWebSocketTests(unittest.IsolatedAsyncioTestCase):
                     try:
                         endpoint = f"http://127.0.0.1:{control.server_port}/crowdSim/control/requirements"
                         async with httpx.AsyncClient(trust_env=False, timeout=30) as client:
-                            saved = await client.post(endpoint, json={"requirement": requirement_payload()})
+                            saved = await client.post(endpoint, json={
+                                "requirement": requirement_payload(),
+                                "source": {"type": "confirmed_snapshot", "conversationId": "runtime-integration",
+                                           "snapshotId": "runtime-snapshot"},
+                            })
                             self.assertEqual(201, saved.status_code, saved.text)
                             requirement_id = saved.json()["data"]["requirement_id"]
                             self.assertIsNone(bundle.gateway._thread)
@@ -285,7 +289,11 @@ class RequirementScenarioWebSocketTests(unittest.IsolatedAsyncioTestCase):
                                 owner = server.client
                                 # Saving another snapshot while the browser runs
                                 # must not compete for or pause its connection.
-                                again = await client.post(endpoint, json={"requirement": requirement_payload()})
+                                again = await client.post(endpoint, json={
+                                    "requirement": requirement_payload(),
+                                    "source": {"type": "confirmed_snapshot", "conversationId": "runtime-integration",
+                                               "snapshotId": "runtime-snapshot-next"},
+                                })
                                 self.assertEqual(201, again.status_code, again.text)
                                 self.assertIs(owner, server.client)
                                 self.assertEqual(RuntimeState.RUNNING, server.simulator.state)

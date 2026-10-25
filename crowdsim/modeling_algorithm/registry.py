@@ -13,7 +13,13 @@ _ALGORITHMS = [
     ("individual", "memory", "有限状态记忆", "individual_model.memory.finite_state_memory", False),
     ("individual", "memory", "短期情境记忆", "individual_model.memory.short_term_context_memory", False),
     ("individual", "memory", "规则知识库", "individual_model.memory.rule_knowledge_base", False),
-    # Individual model: implemented path and reserved alternatives.
+    # Runtime-native modules already executed by the CrowdSim engine.
+    ("individual", "perception", "运行时局部观察", "crowdsim.core.simulation_runtime", True),
+    ("individual", "memory", "运行时有限状态", "crowdsim.domain.crowdsim_models", True),
+    ("individual", "goal", "运行时目标与路线", "crowdsim.decision.route_provider", True),
+    ("individual", "decision", "运行时规则决策", "crowdsim.decision.agent_decision", True),
+    ("individual", "action", "SUMO striping", "crowdsim.sumo.adapter", True),
+    # Individual model: implemented enhanced path and reserved alternatives.
     ("individual", "emotion", "离散情绪状态机", "individual_model.emotion.discrete_emotion_state_machine", False),
     ("individual", "emotion", "PAD 连续情感模型", "individual_model.emotion.pad_continuous", True),
     ("individual", "emotion", "OCC 事件评价模型", "individual_model.emotion.occ_event_appraisal", False),
@@ -31,7 +37,7 @@ _ALGORITHMS = [
     ("individual", "decision", "有限状态机", "individual_model.decision.finite_state_machine", False),
     ("individual", "decision", "BDI 推理", "individual_model.decision.bdi_reasoning", False),
     ("individual", "decision", "LLM-driven", "individual_model.decision.llm_driven", True),
-    ("individual", "action", "SUMO striping", "individual_model.action.sumo_striping", False),
+    ("individual", "action", "SUMO striping（占位文件）", "individual_model.action.sumo_striping", False),
     ("individual", "action", "社会力运动", "individual_model.action.social_force_motion", False),
     ("individual", "action", "混合运动控制", "individual_model.action.hybrid_motion_control", False),
     ("individual", "learning", "参数自适应", "individual_model.learning.parameter_adaptation", False),
@@ -49,7 +55,7 @@ _ALGORITHMS = [
     ("environment", "factor", "区域风险水平", "environment_model.factors.regional_risk", False),
     ("environment", "factor", "信息覆盖强度", "environment_model.factors.information_coverage", False),
     # Environment response theories and methods.
-    ("environment", "response", "基本图模型", "environment_model.responses.fundamental_diagram", False),
+    ("environment", "response", "基本图模型", "environment_model.responses.fundamental_diagram", True),
     ("environment", "response", "社会力模型", "environment_model.responses.social_force", False),
     ("environment", "response", "元胞传输模型", "environment_model.responses.cell_transmission", False),
     ("environment", "response", "排队论", "environment_model.responses.queueing_theory", False),

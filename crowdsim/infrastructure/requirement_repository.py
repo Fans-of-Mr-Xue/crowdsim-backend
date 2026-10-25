@@ -22,7 +22,8 @@ class RequirementNotFoundError(FileNotFoundError):
 
 class RequirementRepository:
     def __init__(self, root: str | Path | None = None) -> None:
-        self.root = Path(root or PROJECT_ROOT / "runs" / "requirements")
+        runs_root = Path(os.environ.get("CROWDSIM_RUNS_ROOT") or PROJECT_ROOT / "runs")
+        self.root = Path(root) if root is not None else runs_root / "requirements"
 
     def create(self, spec: RequirementSpec, *, purpose: str | None = None) -> dict:
         spec = RequirementSpec.parse(spec.payload, allow_empty_population=purpose == "experiment")

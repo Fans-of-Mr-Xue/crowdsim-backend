@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import uuid
@@ -28,7 +29,8 @@ class ArtificialSocietyRepository:
         *,
         requirements: RequirementRepository | None = None,
     ) -> None:
-        self.root = Path(root or PROJECT_ROOT / "runs" / "artificial_societies")
+        runs_root = Path(os.environ.get("CROWDSIM_RUNS_ROOT") or PROJECT_ROOT / "runs")
+        self.root = Path(root) if root is not None else runs_root / "artificial_societies"
         self.requirements = requirements or RequirementRepository()
 
     def create(self, spec: ArtificialSocietySpec) -> dict:

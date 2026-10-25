@@ -224,6 +224,7 @@ class SimulationRuntime:
         self.during_observer = DuringObservation(self.during_preset) if self.during_preset else None
         self.artificial_society_record: dict | None = None
         self.artificial_society_id: str | None = None
+        self.environment_model_binding: dict = {}
         if requirement_record is not None:
             self.configure_requirement(requirement_record)
 
@@ -363,6 +364,7 @@ class SimulationRuntime:
             if self.hotspot_catalog is not None:
                 self.hotspot_route_choice = HotspotRouteChoice(self.network, self.route_provider)
             self.plan_executor = PlanExecutor(self.adapter, self.route_provider)
+            self._configure_model_gates()
             for person_id in self.current.persons:
                 self.plan_executor.register_profile(self.population.profile_for(person_id))
             self._update_hotspot_activity(self.current)
@@ -500,6 +502,7 @@ class SimulationRuntime:
                 self.recorder.record_messages(deliveries)
         if self.plan_executor is not None:
             self._refresh_dynamic_control_targets()
+            self._refresh_model_environment()
             self._maintain_hotspot_activity(self.time_seconds)
             self.plan_executor.maintain(self.time_seconds)
             for person_id, state in self.population.states.items():
@@ -739,6 +742,10 @@ class SimulationRuntime:
             self.observations[person_id] = replace(observation, available_goal_ids=tuple(item.target_id for item in candidates))
 
     def _refresh_hotspot_route_context(self, person_id, hotspot_id, observation) -> bool:
+        rule_parameters = (self.artificial_society_record or {}).get("artificial_society", {}).get("rule_model", {}).get("runtime_parameters", {})
+        if rule_parameters.get("congestion_route_choice") is False:
+            self.decision_candidates[person_id] = ()
+            return True
         if self.hotspot_catalog is None or self.hotspot_route_choice is None or self.plan_executor is None:
             return False
         hotspot = self.hotspot_catalog.hotspots.get(hotspot_id)
@@ -1024,6 +1031,34 @@ class SimulationRuntime:
         self.decision_engine.configure(agent_types)
         if self.decision_engine.enabled:
             self.use_llm = True
+        environment_model = model.get("environment_model", {})
+        binding = dict(environment_model.get("scenario_binding") or {})
+        if binding.get("location_id") != self.location_id:
+            raise ValueError("environment model does not match runtime location")
+        structure = dict(environment_model.get("spatial_structure") or {})
+        sumo_config = str(structure.get("sumo_config") or "")
+        if not sumo_config or not self.config_path.as_posix().endswith(sumo_config):
+            raise ValueError("environment model SUMO configuration does not match runtime")
+        factors = {str(item.get("id")) for item in structure.get("factors") or [] if item.get("selected") is not False}
+        responses = {str(item.get("id")) for item in structure.get("responses") or [] if item.get("selected") is not False}
+        if not {"density", "flow"}.issubset(factors):
+            raise ValueError("runtime environment requires density and flow factors")
+        if not {"density-feedback", "capacity-feedback"}.issubset(responses):
+            raise ValueError("runtime environment requires density and capacity responses")
+        self.environment_model_binding = {
+            "environment_model_id": environment_model.get("environment_model_id"),
+            "environment_model_version": environment_model.get("environment_model_version"),
+            "location_id": binding.get("location_id"),
+            "sumo_config": sumo_config,
+            "road_network_url": structure.get("road_network_url"),
+            "factors": sorted(factors),
+            "responses": sorted(responses),
+            "capacity_contract": structure.get("capacity_contract"),
+            "density_response": dict(structure.get("density_response") or {}),
+            "entrances": json.loads(json.dumps(structure.get("entrances", []))),
+            "exits": json.loads(json.dumps(structure.get("exits", []))),
+            "interior_edges": list(structure.get("interior_edges", [])),
+        }
         runtime_parameters = model.get("rule_model", {}).get("runtime_parameters", {})
         decision_period = float(runtime_parameters.get("decision_period_seconds", self.decision_scheduler.period_seconds))
         if decision_period <= 0:
@@ -1033,8 +1068,42 @@ class SimulationRuntime:
         if isinstance(visual_state, dict):
             self.visual_policy = CrowdVisualPolicy(**visual_state)
             self.state_updater.visual_policy = self.visual_policy
+        self._bind_strong_rules(model.get("rule_model", {}).get("rules"))
         self.artificial_society_record = json.loads(json.dumps(record, ensure_ascii=False))
         self.artificial_society_id = str(record.get("model_id") or "") or None
+
+    def _bind_strong_rules(self, rows: Any) -> None:
+        """Accept only catalogue-registered strong constraints and executable methods.
+
+        When ``rule_model.rules`` is omitted the runtime keeps its built-in defaults
+        (legacy records that only carry ``runtime_parameters`` still bind); when it
+        is supplied it must list all six mandatory constraints and every explicit
+        method must be one the runtime actually executes.
+        """
+        if rows is None:
+            return
+        from crowdsim.modeling_algorithm.rule_model.catalogue import (
+            STRONG_RULES,
+            implemented_rule_method,
+        )
+        if not isinstance(rows, list):
+            raise ValueError("rule_model.rules must be an array")
+        required = {item["id"] for item in STRONG_RULES}
+        selected = {
+            str(row.get("id")) for row in rows
+            if isinstance(row, dict) and row.get("selected") is not False
+        }
+        missing = required - selected
+        if missing:
+            raise ValueError(f"runtime rules missing: {', '.join(sorted(missing))}")
+        for row in rows:
+            if not isinstance(row, dict) or row.get("selected") is False:
+                continue
+            method = row.get("method")
+            if method is None:
+                continue
+            if not implemented_rule_method(str(row.get("id")), method):
+                raise ValueError(f"rule method is not executable: {row.get('id')}.{method}")
 
     def clear_artificial_society(self) -> None:
         """Restore launch defaults before binding another model or requirement."""
@@ -1049,6 +1118,7 @@ class SimulationRuntime:
         self.use_llm = self._base_use_llm
         self.visual_policy = self._base_visual_policy
         self.state_updater.visual_policy = self.visual_policy
+        self.environment_model_binding = {}
         self.artificial_society_record = None
         self.artificial_society_id = None
 
@@ -1456,11 +1526,48 @@ class SimulationRuntime:
         if changed:
             self._refresh_control_speed_limits()
 
+    def _refresh_model_environment(self) -> None:
+        options = self.environment_model_binding.get("density_response", {})
+        if options.get("method") != "基本图模型":
+            return
+        from crowdsim.modeling_algorithm.environment_model.responses.fundamental_diagram import execute
+        for person_id, observation in self.observations.items():
+            profile = self.population.profile_for(person_id)
+            limit = execute(observation.objective_density_per_m2, profile.free_walking_speed * profile.mobility,
+                critical_density=options["critical_density"], minimum_speed_ratio=options["minimum_speed_ratio"])
+            self.plan_executor.set_environment_limit(person_id, limit)
+
+    def _configure_model_gates(self) -> None:
+        binding = self.environment_model_binding
+        self._model_gate_directions = {}
+        if binding.get("capacity_contract") != "directional-token-bucket-v1":
+            return
+        for kind in ("entrances", "exits"):
+            for port in binding.get(kind, []):
+                edge_id = port["edge_id"]
+                if edge_id not in self.network.pedestrian_edge_ids():
+                    raise ValueError(f"model port has no pedestrian edge: {edge_id}")
+                capacity = port.get("capacity_per_minute")
+                if capacity is None and port["state"] == "开放":
+                    continue
+                action_id = f"model-gate:{kind}:{port['id']}"
+                self._inflow_meters[action_id] = InflowMeter(action_id, edge_id,
+                    0.0 if port["state"] == "关闭" else 1.0,
+                    float(capacity) / 60.0 if capacity is not None else 1.0,
+                    self.time_seconds, enforce_capacity=True)
+                self._inflow_holds[action_id] = set()
+                self._model_gate_directions[action_id] = kind
+        self._refresh_inflow_controls()
+
     def _refresh_inflow_controls(self) -> None:
         if self.current is None or self.plan_executor is None:
             return
         for action_id, meter in self._inflow_meters.items():
             candidates = self._entry_meter_candidates(meter.entry_id)
+            direction = getattr(self, "_model_gate_directions", {}).get(action_id)
+            if direction:
+                interior = set(self.environment_model_binding.get("interior_edges", []))
+                candidates = {pid for pid in candidates if (self.current.persons[pid].edge_id in interior) == (direction == "exits")}
             held, _ = meter.regulate(candidates, self.time_seconds)
             previous = self._inflow_holds.get(action_id, set())
             for person_id in previous - held:
@@ -1607,6 +1714,7 @@ class SimulationRuntime:
             "requirement_id": self.artificial_society_record.get("requirement_id"),
             "source": self.artificial_society_record.get("source"),
             "capabilities": self.artificial_society_record.get("capabilities", {}),
+            "environment_model": dict(self.environment_model_binding),
             "modeling_algorithms": self.decision_engine.diagnostics(),
         }
 

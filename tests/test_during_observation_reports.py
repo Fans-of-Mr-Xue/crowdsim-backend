@@ -387,6 +387,21 @@ def test_report_requires_the_analysis_format_and_existing_evidence_without_overw
     assert interpretation(c.repository, "u", "during-check", c.eid) == previous
 
 
+def test_report_length_limit_preserves_existing_result(report_case):
+    c = report_case
+    previous = save(c, prepare(c))
+    source = prepare(c)
+    with pytest.raises(ContractError, match="700字"):
+        write(c, {"action": "save", "executionVersion": 0, "sourceId": source["sourceId"],
+                  "text": formatted_report("观测" * 400), "model": "GLM"})
+    assert interpretation(c.repository, "u", "during-check", c.eid) == previous
+    # Paragraph whitespace must not consume the content budget.
+    text = formatted_report("观测")
+    result = write(c, {"action": "save", "executionVersion": 0, "sourceId": source["sourceId"],
+                       "text": text.replace("\n", "\n" * 200), "model": "GLM"})
+    assert result["text"] == text.replace("\n", "\n\n")
+
+
 def test_no_selected_spatial_metric_does_not_invent_a_hotspot(report_case):
     c = report_case
     experiment = c.repository.get_experiment("u", "during-check", c.eid)

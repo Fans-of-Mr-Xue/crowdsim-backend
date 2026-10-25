@@ -8,9 +8,11 @@ import tempfile
 from types import SimpleNamespace
 import unittest
 
+from unittest.mock import patch
+
 from dialog_storage.during_requirements import DuringRequirementRepository, RequirementConflict
 from dialog_storage.repository import ConversationRepository
-from dialogue_service.server import DialogueHandler
+from dialogue_service.server import DialogueHandler, _allowed_origins
 
 
 def state(title="test"):
@@ -23,6 +25,13 @@ def state(title="test"):
 
 
 class DuringStorageTests(unittest.TestCase):
+    def test_local_frontend_origins_include_active_development_ports_and_env_extensions(self):
+        with patch.dict("os.environ", {"CROWDSIM_DIALOG_ALLOWED_ORIGINS": "http://example.test:7000/"}, clear=False):
+            origins = _allowed_origins()
+        for origin in ("http://localhost:8080", "http://localhost:8081", "http://127.0.0.1:8081", "http://localhost:9090"):
+            self.assertIn(origin, origins)
+        self.assertIn("http://example.test:7000", origins)
+
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
@@ -142,6 +151,16 @@ class DuringStorageTests(unittest.TestCase):
         (self.repo.root / "study.json").write_text("broken", encoding="utf-8")
         get, responses = self.handler(path); get.do_GET()
         self.assertEqual(503, responses[0][0])
+
+    def test_single_conversation_upsert_does_not_delete_other_phase_history(self):
+        conversations = [{"id": phase, "mode": phase, "messages": [{"role": "user", "content": phase}]} for phase in ("pre", "post")]
+        post, responses = self.handler('/conversations/sync', {"conversations": conversations}); post.do_POST()
+        self.assertEqual(200, responses[0][0])
+        during = {"id": "during", "mode": "during", "messages": [{"role": "user", "content": "during"}]}
+        post, responses = self.handler('/conversations/upsert', {"conversation": during}); post.do_POST()
+        self.assertEqual(200, responses[0][0])
+        get, responses = self.handler('/conversations'); get.do_GET()
+        self.assertEqual({"pre", "post", "during"}, {item['id'] for item in responses[0][1]['conversations']})
 
     def test_existing_chat_routes_still_preserve_pre_and_post_history(self):
         conversations = [{"id": phase, "mode": phase, "messages": [{"role": "user", "content": phase}]} for phase in ("pre", "post")]

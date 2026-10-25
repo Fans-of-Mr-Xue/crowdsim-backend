@@ -8,6 +8,7 @@ from crowdsim.domain.artificial_society_spec import (
 from crowdsim.domain.requirement_spec import RequirementSpec
 from crowdsim.infrastructure.artificial_society_repository import ArtificialSocietyRepository
 from crowdsim.infrastructure.requirement_repository import RequirementRepository
+from crowdsim.modeling_algorithm.rule_model.catalogue import default_rule_methods
 
 
 def requirement_payload():
@@ -62,13 +63,13 @@ def artificial_society_payload(requirement_record):
                 "id": "commuter", "name": "通勤者", "proportion": 100,
                 "attributes": {"speed": {"min": 1.0, "max": 1.6}},
                 "capabilities": {"emotion": True, "game": True, "learning": False},
+                "emotionState": {"method": "PAD 连续情感模型", "participates_in_operation": False},
                 "architecture": [
-                    {"id": "perception", "selected": True, "method": "局部邻域观测"},
-                    {"id": "emotion", "selected": True, "method": "PAD 连续情感模型"},
-                    {"id": "desire", "selected": True, "method": "情感驱动欲望"},
-                    {"id": "goal", "selected": True, "method": "BDI 目标栈"},
+                    {"id": "perception", "selected": True, "method": "运行时局部观察"},
+                    {"id": "memory", "selected": True, "method": "运行时有限状态"},
+                    {"id": "goal", "selected": True, "method": "运行时目标与路线"},
                     {"id": "game", "selected": True, "method": "有限理性博弈"},
-                    {"id": "decision", "selected": True, "method": "效用最大化"},
+                    {"id": "decision", "selected": True, "method": "LLM-driven"},
                     {"id": "action", "selected": True, "method": "SUMO striping"},
                 ],
             }],
@@ -115,18 +116,27 @@ class ArtificialSocietySubmissionTests(unittest.TestCase):
             self.assertEqual("runtime_consumed", record["capabilities"]["agent_types"])
             self.assertEqual("runtime_consumed_for_implemented_chain", record["capabilities"]["agent_module_methods"])
             self.assertEqual("published_environment_contract", record["capabilities"]["environment_responses"])
-            self.assertEqual("PAD 连续情感模型", record["artificial_society"]["individual_model"]["agent_types"][0]["architecture"][1]["method"])
+            agent0 = record["artificial_society"]["individual_model"]["agent_types"][0]
+            self.assertEqual("PAD 连续情感模型", agent0["emotionState"]["method"])
+            self.assertNotIn("emotion", {item["id"] for item in agent0["architecture"]})
 
-    def test_emotion_capability_requires_emotion_and_desire_modules(self):
+    def test_architecture_rejects_an_emotion_module(self):
         with tempfile.TemporaryDirectory() as directory:
             requirements = RequirementRepository(f"{directory}/requirements")
             requirement = requirements.create(RequirementSpec.parse(requirement_payload()))
             payload = artificial_society_payload(requirement)
-            payload["individual_model"]["agent_types"][0]["architecture"] = [
-                item for item in payload["individual_model"]["agent_types"][0]["architecture"]
-                if item["id"] != "desire"
-            ]
-            with self.assertRaisesRegex(ArtificialSocietyValidationError, "emotion capability"):
+            payload["individual_model"]["agent_types"][0]["architecture"].append(
+                {"id": "emotion", "selected": True, "method": "PAD 连续情感模型"})
+            with self.assertRaisesRegex(ArtificialSocietyValidationError, "emotionState, not the architecture"):
+                ArtificialSocietySpec.parse(payload)
+
+    def test_emotion_state_without_method_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            requirements = RequirementRepository(f"{directory}/requirements")
+            requirement = requirements.create(RequirementSpec.parse(requirement_payload()))
+            payload = artificial_society_payload(requirement)
+            payload["individual_model"]["agent_types"][0]["emotionState"] = {"participates_in_operation": False}
+            with self.assertRaisesRegex(ArtificialSocietyValidationError, "emotionState.method is required"):
                 ArtificialSocietySpec.parse(payload)
 
     def test_unknown_agent_method_is_rejected(self):
@@ -134,7 +144,7 @@ class ArtificialSocietySubmissionTests(unittest.TestCase):
             requirements = RequirementRepository(f"{directory}/requirements")
             requirement = requirements.create(RequirementSpec.parse(requirement_payload()))
             payload = artificial_society_payload(requirement)
-            payload["individual_model"]["agent_types"][0]["architecture"][1]["method"] = "不存在的情感算法"
+            payload["individual_model"]["agent_types"][0]["architecture"][2]["method"] = "不存在的情感算法"
             with self.assertRaisesRegex(ArtificialSocietyValidationError, "unsupported agent method"):
                 ArtificialSocietySpec.parse(payload)
 
@@ -163,6 +173,37 @@ class ArtificialSocietySubmissionTests(unittest.TestCase):
             payload = artificial_society_payload(requirement)
             payload["rule_model"]["runtime_parameters"]["visual_state"]["crowded_density_person_per_m2"] = 0.2
             with self.assertRaisesRegex(ArtificialSocietyValidationError, "strictly increasing"):
+                ArtificialSocietySpec.parse(payload)
+
+    def test_valid_strong_rule_method_parses(self):
+        with tempfile.TemporaryDirectory() as directory:
+            requirements = RequirementRepository(f"{directory}/requirements")
+            requirement = requirements.create(RequirementSpec.parse(requirement_payload()))
+            payload = artificial_society_payload(requirement)
+            methods = default_rule_methods()
+            for rule in payload["rule_model"]["rules"]:
+                rule["method"] = methods[rule["id"]]
+            spec = ArtificialSocietySpec.parse(payload)
+            parsed = {rule["id"]: rule for rule in spec.payload["rule_model"]["rules"]}
+            for rule_id, method in methods.items():
+                self.assertEqual(method, parsed[rule_id]["method"])
+
+    def test_fake_strong_rule_method_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            requirements = RequirementRepository(f"{directory}/requirements")
+            requirement = requirements.create(RequirementSpec.parse(requirement_payload()))
+            payload = artificial_society_payload(requirement)
+            payload["rule_model"]["rules"][0]["method"] = "不存在的规则算法"
+            with self.assertRaisesRegex(ArtificialSocietyValidationError, "not executable"):
+                ArtificialSocietySpec.parse(payload)
+
+    def test_unknown_rule_with_method_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            requirements = RequirementRepository(f"{directory}/requirements")
+            requirement = requirements.create(RequirementSpec.parse(requirement_payload()))
+            payload = artificial_society_payload(requirement)
+            payload["rule_model"]["rules"].append({"id": "made-up-rule", "selected": True, "method": "任意"})
+            with self.assertRaisesRegex(ArtificialSocietyValidationError, "unknown strong rule"):
                 ArtificialSocietySpec.parse(payload)
 
 

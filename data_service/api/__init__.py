@@ -4,6 +4,7 @@ from aiohttp import web
 from .datasets import register_database_routes
 from .emergency_plans import register_plan_routes
 from .regulations import register_regulation_routes
+from .model_gateway import register_model_gateway_routes
 
 
 def create_app(repository=None, *, model=None):
@@ -11,4 +12,5 @@ def create_app(repository=None, *, model=None):
     repository = register_database_routes(app, repository)
     register_plan_routes(app, repository.db, model=model)
     register_regulation_routes(app, repository.db, model=model)
+    register_model_gateway_routes(app)
     return app

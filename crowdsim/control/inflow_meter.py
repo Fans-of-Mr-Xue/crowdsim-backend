@@ -15,6 +15,7 @@ class InflowMeter:
     last_time: float
     tokens: float = 0.0
     admitted: set[str] = field(default_factory=set)
+    enforce_capacity: bool = False
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.rate <= 1.0:
@@ -26,14 +27,14 @@ class InflowMeter:
     def regulate(self, candidates: set[str], now: float) -> tuple[set[str], set[str]]:
         candidates = set(candidates)
         self.admitted.intersection_update(candidates)
-        if self.rate >= 1.0:
+        if self.rate >= 1.0 and not self.enforce_capacity:
             self.admitted.update(candidates)
             self.last_time = float(now)
             return set(), set(candidates)
         elapsed = max(0.0, float(now) - self.last_time)
         self.last_time = float(now)
         self.tokens = min(
-            self.nominal_capacity_per_second * 5.0,
+            max(1.0, self.nominal_capacity_per_second * 5.0),
             self.tokens + elapsed * self.nominal_capacity_per_second * self.rate,
         )
         waiting = sorted(candidates - self.admitted)

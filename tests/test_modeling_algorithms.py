@@ -1,4 +1,7 @@
 import asyncio
+from copy import deepcopy
+from unittest.mock import Mock
+from crowdsim.control.inflow_meter import InflowMeter
 from pathlib import Path
 import unittest
 
@@ -7,6 +10,7 @@ from crowdsim.decision.agent_decision import AgentDecisionEngine
 from crowdsim.decision.route_provider import RouteCandidate
 from crowdsim.domain.crowdsim_models import AgentProfile, AgentState, MotionSnapshot, Observation
 from crowdsim.modeling_algorithm.contracts import Experience, PADState
+from crowdsim.modeling_algorithm.environment_model.responses.fundamental_diagram import execute as fundamental_diagram_speed
 from crowdsim.modeling_algorithm.individual_model.decision.llm_driven import LLMDrivenDecisionModel
 from crowdsim.modeling_algorithm.individual_model.desire_goal.emotion_driven_desire import EmotionDrivenDesireModel
 from crowdsim.modeling_algorithm.individual_model.emotion.pad_continuous import PADContinuousEmotionModel
@@ -105,6 +109,62 @@ class ModelingAlgorithmTests(unittest.TestCase):
         self.assertEqual(1, len(engine.replay))
         self.assertTrue(engine.supports(profile))
 
+    def test_emotion_state_does_not_drive_desire_when_desire_module_is_absent(self):
+        profile, state, observation = context()
+        agents = deepcopy(implemented_architecture())
+        agents[0]["capabilities"] = {"emotion": True, "game": False, "learning": False}
+        agents[0]["architecture"] = [
+            item for item in agents[0]["architecture"]
+            if item["id"] in {"perception", "memory", "goal", "decision", "action"}
+        ]
+        next(item for item in agents[0]["architecture"] if item["id"] == "decision")["method"] = "运行时规则决策"
+        engine = IndividualModelingEngine(AgentDecisionEngine())
+        engine.configure(agents)
+        engine.emotion.update = Mock(wraps=engine.emotion.update)
+        engine.desire.generate = Mock(side_effect=AssertionError("unselected desire module must not run"))
+        plan = engine.rule_plan(profile, state, observation)
+        self.assertIsNotNone(plan)
+        self.assertTrue(engine.emotion.update.called)
+        self.assertFalse(engine.role_configs[profile.crowd_role].desire_enabled)
+
+    def test_independent_capabilities_execute_without_unselected_modules(self):
+        profile, state, observation = context()
+        for capability in ("emotion", "game", "learning"):
+            with self.subTest(capability=capability):
+                agents = deepcopy(implemented_architecture())
+                agents[0]["capabilities"] = {key: key == capability for key in ("emotion", "game", "learning")}
+                allowed = {"perception", "goal", "decision", "action", capability}
+                if capability == "emotion":
+                    allowed.add("desire")
+                agents[0]["architecture"] = [item for item in agents[0]["architecture"] if item["id"] in allowed]
+                next(item for item in agents[0]["architecture"] if item["id"] == "decision")["method"] = "运行时规则决策"
+                engine = IndividualModelingEngine(AgentDecisionEngine())
+                engine.configure(agents)
+                engine.emotion.update = Mock(wraps=engine.emotion.update)
+                engine.game.choose = Mock(wraps=engine.game.choose)
+                engine.llm.decide = Mock(side_effect=AssertionError("unselected LLM must not run"))
+                plan = asyncio.run(engine.decide(profile, state, observation))
+                self.assertIsNotNone(plan)
+                self.assertEqual(capability == "emotion", engine.emotion.update.called)
+                self.assertEqual(capability == "game", engine.game.choose.called)
+                self.assertEqual(capability == "learning", bool(len(engine.replay)))
+
+    def test_linear_fundamental_diagram_reduces_speed_and_has_floor(self):
+        self.assertEqual(1.4, fundamental_diagram_speed(0, 1.4, critical_density=4, minimum_speed_ratio=.1))
+        self.assertAlmostEqual(.7, fundamental_diagram_speed(2, 1.4, critical_density=4, minimum_speed_ratio=.1))
+        self.assertAlmostEqual(.14, fundamental_diagram_speed(9, 1.4, critical_density=4, minimum_speed_ratio=.1))
+        self.assertIsNone(fundamental_diagram_speed(None, 1.4))
+
+    def test_absolute_capacity_enforces_full_rate_and_preserves_legacy_full_rate(self):
+        people = {f"p{i}" for i in range(10)}
+        meter = InflowMeter("gate", "edge", 1, 1, 0, enforce_capacity=True)
+        held, released = meter.regulate(people, 0)
+        self.assertEqual(1, len(released))
+        self.assertEqual(9, len(held))
+        self.assertEqual(1, len(meter.regulate(people, 1)[1]))
+        legacy = InflowMeter("gate", "edge", 1, 1, 0)
+        self.assertEqual(set(), legacy.regulate(people, 0)[0])
+
     def test_pipeline_falls_back_for_unconfigured_role(self):
         profile, state, observation = context(role="other")
         engine = IndividualModelingEngine(AgentDecisionEngine())
@@ -118,6 +178,7 @@ class ModelingAlgorithmTests(unittest.TestCase):
         runtime = SimulationRuntime(
             root / "scenarios/shanghai_bund/bund.hotspot.sumocfg",
             sumo_binary=str(root / ".venv-backend/bin/sumo"),
+            location_id="memorial-tower",
         )
         runtime.requirement_id = "req-1"
         runtime.configure_artificial_society({
@@ -132,14 +193,29 @@ class ModelingAlgorithmTests(unittest.TestCase):
                     "profile_parameters": {},
                     "agent_types": implemented_architecture(),
                 },
+                "environment_model": {
+                    "environment_model_id": "env-memorial-tower-v1",
+                    "environment_model_version": "1",
+                    "scenario_binding": {"location_id": "memorial-tower"},
+                    "spatial_structure": {
+                        "sumo_config": "scenarios/shanghai_bund/bund.hotspot.sumocfg",
+                        "road_network_url": "/static/crowd_sim/road_network.json",
+                        "factors": [{"id": "density", "selected": True}, {"id": "flow", "selected": True}],
+                        "responses": [{"id": "density-feedback", "selected": True}, {"id": "capacity-feedback", "selected": True}],
+                    },
+                },
                 "rule_model": {"runtime_parameters": {"decision_period_seconds": 3.0}},
             },
         })
         self.assertTrue(runtime.use_llm)
         self.assertTrue(runtime.decision_engine.role_configs["visitor"].enabled)
         self.assertEqual(3.0, runtime.decision_scheduler.period_seconds)
-        diagnostics = runtime.artificial_society_diagnostics()["modeling_algorithms"]
-        self.assertEqual("modeling_algorithm.individual_model.pipeline", diagnostics["backend"])
+        diagnostics = runtime.artificial_society_diagnostics()
+        self.assertEqual("modeling_algorithm.individual_model.pipeline", diagnostics["modeling_algorithms"]["backend"])
+        self.assertEqual("env-memorial-tower-v1", diagnostics["environment_model"]["environment_model_id"])
+        self.assertEqual(["density", "flow"], diagnostics["environment_model"]["factors"])
+        runtime.clear_artificial_society()
+        self.assertEqual({}, runtime.environment_model_binding)
 
     def test_llm_decision_accepts_only_supplied_candidate(self):
         profile, state, observation = context()
