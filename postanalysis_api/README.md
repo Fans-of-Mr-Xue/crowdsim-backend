@@ -49,7 +49,7 @@ python crowdsim_overlay_server.py --host 127.0.0.1 --port 8765
 | `GET /results/{experimentId}/{section}` | `section` 为 `metrics`、`comparison`、`causal-graph`、`observation`、`intervention`、`mechanism` | 真实结果封存后可读；此前 409 |
 
 `GET /model-connections` 的 `status` 为 `ready`、`model_unavailable`、`http_error`（另返回 `httpStatus`）或 `unreachable`；该端点不代替对话服务。模型地址读取 `CROWDSIM_LLM_BASE_URL`，默认 `http://127.0.0.1:8800/v1`。期望模型 ID 优先读取 `CROWDSIM_POST_LLM_MODEL`，再读取 `CROWDSIM_LLM_MODEL`，默认 `GLM-5.3-Flash`，页面显示名为 `GLM-5.3 Flash`。可选 API Key 优先读取 `CROWDSIM_POST_LLM_API_KEY`，再读取 `CROWDSIM_MODEL_API_KEY`；与事后 Agent 使用相同配置。
-
+ 
 ## 数据集请求
 
 `POST /datasets` 请求字段必填；前端上传数据时还需提供 `rawFile`，原件存入 GridFS：
