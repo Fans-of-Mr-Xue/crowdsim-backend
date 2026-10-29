@@ -20,6 +20,7 @@ from urllib.request import ProxyHandler, Request, build_opener
 from urllib.error import HTTPError
 
 ROOT = Path(__file__).resolve().parent
+WINDOWS = os.name == "nt"
 SUPPORTED_SUMO_VERSIONS = ("1.24.0", "1.27.0")
 SERVICE_DEPENDENCIES = (
     ("websockets", "websockets"),
@@ -47,7 +48,8 @@ def report(message):
 
 def check_service_dependencies():
     failures = []
-    for package, module in SERVICE_DEPENDENCIES:
+    dependencies = SERVICE_DEPENDENCIES + ((("psutil", "psutil"),) if WINDOWS else ())
+    for package, module in dependencies:
         try:
             importlib.import_module(module)
         except ImportError as exc:
@@ -111,10 +113,82 @@ class Service:
 class ServiceProcess:
     pid: int
     parent_pid: int
-    uid: int
+    uid: int | str
     started: str
     command: tuple[str, ...]
     cwd: Path
+
+
+class WindowsProcesses:
+    """Read native process identities and stop only a verified PID lifetime."""
+
+    def __init__(self):
+        try:
+            self.api = importlib.import_module("psutil")
+        except ImportError as exc:
+            raise StartupError("Windows 重启需要 psutil，请使用当前 Python 安装 requirements.txt") from exc
+        try:
+            self.owner = self.api.Process().username().casefold()
+        except self.api.Error as exc:
+            raise StartupError("无法确认当前 Windows 用户，未停止任何服务") from exc
+
+    def listening_pids(self, port):
+        try:
+            connections = self.api.net_connections(kind="tcp")
+            listeners = [item for item in connections if item.status == self.api.CONN_LISTEN
+                         and item.laddr.port == port]
+            if any(not item.pid for item in listeners):
+                raise StartupError(f"无法确定 {port} 的监听进程，未停止任何服务")
+            return {item.pid for item in listeners}
+        except self.api.Error as exc:
+            raise StartupError("无法读取 Windows 监听进程，未停止任何服务") from exc
+
+    def identity(self, pid):
+        try:
+            process = self.api.Process(pid)
+            with process.oneshot():
+                command, cwd = tuple(process.cmdline()), process.cwd()
+                if not command or not cwd:
+                    raise StartupError(f"无法核对进程 {pid} 的身份，未停止它")
+                return ServiceProcess(pid, process.ppid(), process.username().casefold(),
+                                      repr(process.create_time()), command, Path(cwd).resolve())
+        except self.api.NoSuchProcess:
+            return None
+        except (self.api.Error, OSError) as exc:
+            raise StartupError(f"无法核对 Windows 进程 {pid} 的身份，未停止它") from exc
+
+    def lifetime(self, pid):
+        try:
+            process = self.api.Process(pid)
+            return process.username().casefold(), repr(process.create_time())
+        except self.api.NoSuchProcess:
+            return None
+        except self.api.Error as exc:
+            raise StartupError(f"无法核对 Windows 进程 {pid} 的退出状态") from exc
+
+    def has_children(self, pids):
+        try:
+            for pid in pids:
+                try:
+                    if self.api.Process(pid).children():
+                        return True
+                except self.api.NoSuchProcess:
+                    continue
+            return False
+        except self.api.Error as exc:
+            raise StartupError("无法核对仿真子进程，未停止任何服务") from exc
+
+    def terminate(self, identity):
+        try:
+            process = self.api.Process(identity.pid)
+            if (process.username().casefold(), repr(process.create_time())) != (identity.uid, identity.started):
+                raise StartupError("服务进程已变化，未停止该进程")
+            # psutil also checks for PID reuse immediately before termination.
+            process.terminate()
+        except self.api.NoSuchProcess:
+            return
+        except self.api.Error as exc:
+            raise StartupError(f"无法停止 Windows 进程 {identity.pid}，请手动检查") from exc
 
 
 def process_query(command):
@@ -157,11 +231,12 @@ def process_identity(pid):
                           tuple(shlex.split(fields[8])), Path(paths[0]).resolve())
 
 
-def matches_service(process, service):
-    if process.cwd != ROOT.resolve() or process.uid != os.geteuid():
+def matches_service(process, service, *, owner=None):
+    if process.cwd != ROOT.resolve() or process.uid != (os.geteuid() if owner is None else owner):
         return False
     command = list(process.command)
-    if not command or not re.fullmatch(r"python(?:\d+(?:\.\d+)*)?", Path(command.pop(0)).name):
+    executable_pattern = r"python(?:\d+(?:\.\d+)*)?(?:\.exe)?" if WINDOWS else r"python(?:\d+(?:\.\d+)*)?"
+    if not command or not re.fullmatch(executable_pattern, Path(command.pop(0)).name, re.IGNORECASE if WINDOWS else 0):
         return False
     while command and command[0] in {"-u", "-B"}:
         command.pop(0)
@@ -173,29 +248,38 @@ def matches_service(process, service):
 
 def restart_local_services(services):
     """Explicit local-only restart. Validate every target before stopping any."""
-    if os.name == "nt" or not all(shutil.which(tool) for tool in ("ps", "lsof")):
+    windows = WindowsProcesses() if WINDOWS else None
+    if not windows and not all(shutil.which(tool) for tool in ("ps", "lsof")):
         raise StartupError("--restart-services 需要 macOS/Linux 的 ps 和 lsof；普通启动不受影响")
+    identity_of = windows.identity if windows else process_identity
+    lifetime_of = windows.lifetime if windows else process_lifetime
+    owner = windows.owner if windows else os.geteuid()
     targets = []
     for service in services:
         if service.port not in {8765, 8766, 8767, 8768}:
             raise StartupError("重启模式仅用于本机 8765～8768，未停止任何服务")
-        output = process_query(["lsof", "-nP", "-a", f"-iTCP:{service.port}", "-sTCP:LISTEN", "-Fp"])
-        pids = {int(line[1:]) for line in output.splitlines() if line.startswith("p") and line[1:].isdigit()}
+        if windows:
+            pids = windows.listening_pids(service.port)
+        else:
+            output = process_query(["lsof", "-nP", "-a", f"-iTCP:{service.port}", "-sTCP:LISTEN", "-Fp"])
+            pids = {int(line[1:]) for line in output.splitlines() if line.startswith("p") and line[1:].isdigit()}
         if not pids:
             if listening(service.port):
                 raise StartupError(f"无法确定 {service.port} 的监听进程，未停止任何服务")
             continue
         if len(pids) != 1:
             raise StartupError(f"{service.port} 存在多个监听进程，未停止任何服务")
-        process = process_identity(pids.pop())
+        process = identity_of(pids.pop())
         if process is None:
             continue
-        if not matches_service(process, service):
+        if not matches_service(process, service, owner=owner):
             raise StartupError(f"{service.port} 不属于本用户的当前项目服务，未停止任何服务")
         if process.parent_pid > 1:
-            parent = process_identity(process.parent_pid)
-            if parent and parent.cwd == ROOT.resolve() and any(Path(arg).name == "start_backend.py" for arg in parent.command[1:]):
-                raise StartupError("旧 run.sh 启动器仍在运行，请先在其终端按 Ctrl+C；未停止任何服务")
+            parent = identity_of(process.parent_pid)
+            if parent and parent.cwd == ROOT.resolve() and any(
+                (Path(arg).name.casefold() if WINDOWS else Path(arg).name) == "start_backend.py" for arg in parent.command[1:]
+            ):
+                raise StartupError("旧后端启动器仍在运行（run.sh / run.ps1），请先在其终端按 Ctrl+C；未停止任何服务")
         targets.append((service, process))
 
     if any(service.port == 8766 for service, _ in targets):
@@ -210,32 +294,39 @@ def restart_local_services(services):
     simulator_pids = {process.pid for service, process in targets if service.port == 8765}
     if simulator_pids:
         # SUMO stays alive for paused runs too. Do not discard these sessions.
-        rows = process_query(["ps", "-axo", "pid=,ppid="])
-        if any(len(parts := row.split()) == 2 and int(parts[1]) in simulator_pids for row in rows.splitlines()):
+        if windows:
+            has_children = windows.has_children(simulator_pids)
+        else:
+            rows = process_query(["ps", "-axo", "pid=,ppid="])
+            has_children = any(len(parts := row.split()) == 2 and int(parts[1]) in simulator_pids for row in rows.splitlines())
+        if has_children:
             raise StartupError("仿真服务仍有子进程，请先结束运行中或暂停的仿真；未停止任何服务")
 
     # Check PID/start time again to avoid signalling a recycled or replaced PID.
     for _, process in targets:
-        current = process_identity(process.pid)
+        current = identity_of(process.pid)
         if current is not None and current != process:
             raise StartupError("服务进程已变化，请重试；未停止任何服务")
     order = {8766: 0, 8765: 1, 8767: 2, 8768: 3}
     for service, process in sorted(targets, key=lambda item: order[item[0].port]):
-        current = process_identity(process.pid)
+        current = identity_of(process.pid)
         if current is None:
             continue
         if current != process:
             raise StartupError(f"{service.port} 进程已变化，未停止该进程")
         report(f"重启本机 {service.name}（{service.port}），停止旧进程 {process.pid}")
         try:
-            os.kill(process.pid, signal.SIGTERM)
+            if windows:
+                windows.terminate(process)
+            else:
+                os.kill(process.pid, signal.SIGTERM)
         except ProcessLookupError:
             continue
         deadline = time.monotonic() + 5
-        # After SIGTERM, cwd/arguments can disappear before ps stops listing
+        # After termination, cwd/arguments can disappear before the OS stops listing
         # the process. Only its PID lifetime is needed to wait for exit; never
         # retry a signal against a PID that has since been reused.
-        while process_lifetime(process.pid) == (process.uid, process.started):
+        while lifetime_of(process.pid) == (process.uid, process.started):
             if time.monotonic() >= deadline:
                 raise StartupError(f"{service.port} 旧进程未退出，请手动检查；不会强制结束未知进程")
             time.sleep(0.1)
@@ -460,10 +551,15 @@ def main(argv=None):
             signal.signal(signal.SIGHUP, request_shutdown)
         if sys.version_info < (3, 10):
             raise StartupError("统一启动需要 Python 3.10 或更新版本，请使用安装了 requirements.txt 的解释器")
+        report(f"检查后端环境：Python {sys.version.split()[0]}（{sys.executable}）")
+        from crowdsim.windows_platform import configure_windows_platform
+        configure_windows_platform()
         from dotenv import load_dotenv
         load_dotenv(ROOT / ".env", override=False)
         os.environ["PATH"] = str(Path(sys.executable).parent) + os.pathsep + os.environ.get("PATH", "")
+        report("正在检查 Python 服务依赖…")
         check_service_dependencies()
+        report("服务依赖检查通过，正在检查 SUMO 与场景配置…")
         from crowdsim.infrastructure.sumo_adapter import discover_sumo_binary
         from crowdsim_overlay_server import parse_args, resolve_service_scenario
         sumo_args = ["--scenario", args.scenario, "--mode", args.mode, *simulation_args]

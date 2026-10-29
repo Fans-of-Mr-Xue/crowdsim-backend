@@ -11,3 +11,4 @@ pypdf>=6.0,<7.0
 PyMuPDF>=1.26,<2.0
 beautifulsoup4>=4.12,<5.0
 shapely>=2.0,<3
+psutil>=5.9,<8.0; sys_platform == "win32"

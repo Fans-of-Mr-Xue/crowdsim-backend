@@ -235,6 +235,50 @@ class CrowdSimRepository:
                 raise
             return self.get_experiment(user_id, workspace_id, experiment_id)
 
+    def restart_observation_run(self, user_id, workspace_id, run_id):
+        """Replace one round's evidence only after its old worker has stopped.
+
+        Keep the old raw runtime directory and its ID until initialization closes
+        that runtime. Other rounds, their order, seeds and evidence stay intact.
+        A pending flag survives partial writes so cleanup can safely be retried.
+        """
+        from .contracts import ContractError
+        with self._lock:
+            run = self.get_run(user_id, workspace_id, run_id)
+            experiment = self.get_experiment(user_id, workspace_id, run["experiment_id"]) if run else None
+            if not experiment or not experiment.get("duringObservation") or not run.get("restartPending"):
+                raise ContractError("没有待重新运行的事中本轮实验。")
+            owns = lambda row: row.get("user_id") == str(user_id) and row.get("workspace_id") == str(workspace_id)
+            for kind in (*self.APPEND_ONLY, "reports"):
+                previous = self._memory[kind]
+                self._memory[kind] = [row for row in previous if not (owns(row) and (
+                    row.get("experiment_id") == run["experiment_id"] if kind == "reports" else row.get("run_id") == run_id))]
+                try:
+                    self._flush(kind)
+                except Exception:
+                    self._memory[kind] = previous
+                    raise
+            # Rebuild the row so no old summary/completion/model evidence leaks
+            # into the new attempt. Keeping the row position preserves round N.
+            keep = {key: deepcopy(run[key]) for key in (
+                "run_id", "user_id", "workspace_id", "experiment_id", "method_id", "seed", "config",
+                "formal", "created_at", "runtime_run_id", "restartCount", "provenance") if key in run}
+            history = list(run.get("previous_runtime_run_ids") or [])
+            if run.get("runtime_run_id") and run["runtime_run_id"] not in history:
+                history.append(run["runtime_run_id"])
+            keep["previous_runtime_run_ids"] = history
+            keep.update(status="draft", controller_state=None, manualIntervention=False,
+                        started_at=None, completed_at=None, error=None, restartPending=False, updated_at=_now())
+            index = next(i for i, row in enumerate(self._memory["runs"]) if owns(row) and row["run_id"] == run_id)
+            previous = self._memory["runs"][index]
+            self._memory["runs"][index] = keep
+            try:
+                self._flush("runs")
+            except Exception:
+                self._memory["runs"][index] = previous
+                raise
+            return self.get_run(user_id, workspace_id, run_id)
+
     def record(self, kind: str, user_id: str, workspace_id: str, run_id: str, payload: dict[str, Any]):
         if kind not in self.APPEND_ONLY:
             raise ValueError(f"unknown record kind: {kind}")

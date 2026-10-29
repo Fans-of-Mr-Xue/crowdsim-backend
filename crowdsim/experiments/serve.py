@@ -231,6 +231,12 @@ class ControlRequestHandler(BaseHTTPRequestHandler):
             match = re.fullmatch(rf"{CONTROL_PREFIX}/experiments/([^/]+)/reset-observation", path)
             if match:
                 return self._send_json(200, self.bundle.orchestrator.reset_observation_experiment(user_id, workspace_id, match.group(1), data))
+            match = re.fullmatch(rf"{CONTROL_PREFIX}/runs/([^/]+)/restart-observation", path)
+            if match:
+                return self._send_json(202, self.bundle.orchestrator.restart_observation_run(user_id, workspace_id, match.group(1), data))
+            match = re.fullmatch(rf"{CONTROL_PREFIX}/runs/([^/]+)/speed", path)
+            if match:
+                return self._send_json(200, self.bundle.orchestrator.set_run_speed(user_id, workspace_id, match.group(1), data))
             match = re.fullmatch(rf"{CONTROL_PREFIX}/runs/([^/]+)/(pause|resume|stop)", path)
             if match:
                 item = getattr(self.bundle.orchestrator, f"{match.group(2)}_run")(user_id, workspace_id, match.group(1))

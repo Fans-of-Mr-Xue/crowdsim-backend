@@ -26,10 +26,22 @@ def validate_reset(experiment, runs, expected_run_ids):
         raise ContractError("请先结束本组实验，并等待后台收尾完成，再重新运行。")
 
 
+def runtime_ids_for_runs(runs):
+    ids = set()
+    for run in runs:
+        history = run.get("previous_runtime_run_ids") or []
+        if not isinstance(history, list) or any(not isinstance(value, str) for value in history):
+            raise ContractError("历史运行目录编号无效，未清除。")
+        ids.update(history)
+        if run.get("runtime_run_id"):
+            ids.add(run["runtime_run_id"])
+    return ids
+
+
 def runtime_paths(runs, other_runs):
     root = RUNTIME_ROOT.resolve()
-    runtime_ids = {run["runtime_run_id"] for run in runs if run.get("runtime_run_id")}
-    if any(run.get("runtime_run_id") in runtime_ids for run in other_runs):
+    runtime_ids = runtime_ids_for_runs(runs)
+    if runtime_ids_for_runs(other_runs) & runtime_ids:
         raise ContractError("运行文件仍被其他实验引用，未清除。")
     paths = []
     for runtime_id in runtime_ids:

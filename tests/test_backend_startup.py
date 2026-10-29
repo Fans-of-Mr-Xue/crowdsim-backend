@@ -6,6 +6,7 @@ import subprocess
 import sys
 import unittest
 from dataclasses import replace
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import start_backend
@@ -67,6 +68,10 @@ class UnifiedStartupTests(unittest.TestCase):
         stack.enter_context(patch("start_backend.check_sumo_version", return_value="1.27.0"))
         stack.enter_context(patch("crowdsim.infrastructure.sumo_adapter.discover_sumo_binary", return_value="sumo"))
         stack.enter_context(patch("start_backend.signal.signal"))
+        if os.name == 'nt':
+            # Some dependency imports probe Windows via cmd /c ver. Keep this
+            # unrelated OS probe outside the no-child-process service checks.
+            stack.enter_context(patch('platform.system', return_value='Windows'))
         stack.enter_context(patch("start_backend.socket.create_connection", side_effect=AssertionError("network forbidden")))
         stack.enter_context(patch("start_backend.subprocess.Popen", side_effect=AssertionError("process forbidden")))
         self.tunnels = stack.enter_context(patch("start_backend.ensure_tunnels"))
@@ -181,7 +186,7 @@ class SupervisorTests(unittest.TestCase):
         supervisor = start_backend.Supervisor()
         child = Mock(pid=12345)
         child.poll.return_value = None
-        with patch("start_backend.subprocess.Popen", return_value=child) as popen, patch("start_backend.os.killpg") as killpg:
+        with patch("start_backend.subprocess.Popen", return_value=child) as popen, patch("start_backend.os.killpg", create=True) as killpg:
             supervisor.spawn("SSH", ["ssh"], interactive=True)
             self.assertFalse(popen.call_args.kwargs["start_new_session"])
             self.assertIsNone(popen.call_args.kwargs["stdin"])
@@ -195,7 +200,7 @@ class SupervisorTests(unittest.TestCase):
     def test_background_service_keeps_group_cleanup(self):
         supervisor = start_backend.Supervisor()
         child = Mock(pid=12345)
-        with patch("start_backend.subprocess.Popen", return_value=child) as popen, patch("start_backend.os.killpg") as killpg:
+        with patch("start_backend.subprocess.Popen", return_value=child) as popen, patch("start_backend.os.killpg", create=True) as killpg:
             supervisor.spawn("service", ["python"])
             self.assertTrue(popen.call_args.kwargs["start_new_session"])
             self.assertEqual(subprocess.DEVNULL, popen.call_args.kwargs["stdin"])
@@ -208,7 +213,7 @@ class SupervisorTests(unittest.TestCase):
         child = Mock(pid=12345)
         child.poll.return_value = None
         child.wait.side_effect = [subprocess.TimeoutExpired(["ssh"], 5), 0]
-        with patch("start_backend.subprocess.Popen", return_value=child), patch("start_backend.os.killpg") as killpg:
+        with patch("start_backend.subprocess.Popen", return_value=child), patch("start_backend.os.killpg", create=True) as killpg:
             supervisor.spawn("SSH", ["ssh"], interactive=True)
             supervisor.close()
         killpg.assert_not_called()
@@ -220,7 +225,7 @@ class SupervisorTests(unittest.TestCase):
         supervisor = start_backend.Supervisor()
         child = Mock(pid=12345)
         child.wait.side_effect = [subprocess.TimeoutExpired(["python"], 5), 0]
-        with patch("start_backend.subprocess.Popen", return_value=child), patch("start_backend.os.killpg") as killpg:
+        with patch("start_backend.subprocess.Popen", return_value=child), patch("start_backend.os.killpg", create=True) as killpg:
             supervisor.spawn("service", ["python"])
             supervisor.close()
         self.assertEqual([signal.SIGTERM, signal.SIGKILL], [call.args[1] for call in killpg.call_args_list])
@@ -229,7 +234,7 @@ class SupervisorTests(unittest.TestCase):
     def test_default_reuse_does_not_take_ownership_or_stop_an_existing_service(self):
         service = start_backend.Service('dialogue', 8767, ['python', '-m', 'dialogue_service.server'], Mock(return_value=True))
         supervisor = start_backend.Supervisor()
-        with patch('start_backend.listening', return_value=True), patch('start_backend.subprocess.Popen') as popen, patch('start_backend.os.killpg') as killpg:
+        with patch('start_backend.listening', return_value=True), patch('start_backend.subprocess.Popen') as popen, patch('start_backend.os.killpg', create=True) as killpg:
             supervisor.start_service(service)
             supervisor.close()
         self.assertEqual([], supervisor.children)
@@ -246,14 +251,14 @@ class SupervisorTests(unittest.TestCase):
         service.probe.assert_not_called()
 
 
-@unittest.skipIf(os.name == 'nt', 'POSIX restart mode')
 class RestartServicesTests(unittest.TestCase):
     def setUp(self):
         stack = contextlib.ExitStack()
         self.addCleanup(stack.close)
         stack.enter_context(contextlib.redirect_stdout(io.StringIO()))
+        stack.enter_context(patch('start_backend.WINDOWS', False))
         stack.enter_context(patch('start_backend.shutil.which', return_value='/usr/bin/tool'))
-        stack.enter_context(patch('start_backend.os.geteuid', return_value=501))
+        stack.enter_context(patch('start_backend.os.geteuid', return_value=501, create=True))
         stack.enter_context(patch('start_backend.listening', return_value=False))
         self.services = [
             start_backend.Service('data', 8768, ['python', '-m', 'data_service'], lambda: True),
@@ -432,6 +437,150 @@ class ProcessLifetimeTests(unittest.TestCase):
             start_backend.StartupError, '退出状态'
         ):
             start_backend.process_lifetime(123)
+
+
+class WindowsRestartTests(unittest.TestCase):
+    def setUp(self):
+        stack = contextlib.ExitStack()
+        self.addCleanup(stack.close)
+        stack.enter_context(contextlib.redirect_stdout(io.StringIO()))
+        stack.enter_context(patch('start_backend.WINDOWS', True))
+        stack.enter_context(patch('start_backend.listening', return_value=False))
+        stack.enter_context(patch('start_backend.process_query', side_effect=AssertionError('POSIX tools forbidden')))
+        stack.enter_context(patch('start_backend.os.kill', side_effect=AssertionError('native signals forbidden')))
+        self.api = stack.enter_context(patch('start_backend.WindowsProcesses')).return_value
+        self.api.owner = 'host\\user'
+        self.services = [start_backend.Service(name, port, ['python.exe', *command], lambda: True) for name, port, command in (
+            ('data', 8768, ['-m', 'data_service']), ('dialogue', 8767, ['-m', 'dialogue_service.server']),
+            ('simulation', 8765, ['crowdsim_overlay_server.py']), ('control', 8766, ['-m', 'crowdsim.experiments']))]
+        self.processes = {s.port: start_backend.ServiceProcess(s.port, 1, self.api.owner, '123.5', tuple(s.command), start_backend.ROOT.resolve()) for s in self.services}
+        self.api.listening_pids.side_effect = lambda port: {port} if port in self.processes else set()
+        self.api.identity.side_effect = lambda pid: self.processes.get(pid)
+        self.api.lifetime.side_effect = lambda pid: (p.uid, p.started) if (p := self.processes.get(pid)) else None
+        self.api.has_children.return_value = False
+        self.api.terminate.side_effect = lambda p: self.processes.pop(p.pid)
+        self.health = stack.enter_context(patch('start_backend.get_json', return_value={'data': {'activeRunId': None, 'queuedRuns': 0}}))
+
+    def test_windows_restarts_only_verified_services_in_dependency_order(self):
+        start_backend.restart_local_services(self.services)
+        self.assertEqual([8766, 8765, 8767, 8768], [call.args[0].pid for call in self.api.terminate.call_args_list])
+        self.api.has_children.assert_called_once_with({8765})
+
+    def test_foreign_users_directories_and_commands_block_every_termination(self):
+        original = self.processes[8768]
+        for change in (replace(original, uid='another\\user'), replace(original, cwd=start_backend.ROOT.parent),
+                       replace(original, command=('python.exe', '-m', 'unrelated')), replace(original, command=('cmd.exe',))):
+            with self.subTest(change=change):
+                self.processes[8768] = change
+                with self.assertRaises(start_backend.StartupError):
+                    start_backend.restart_local_services(self.services)
+                self.api.terminate.assert_not_called()
+
+    def test_busy_or_unreadable_experiment_state_and_live_sumo_block_restart(self):
+        for data in ({'activeRunId': 'run', 'queuedRuns': 0}, {'activeRunId': None, 'queuedRuns': 1}, {}):
+            self.health.return_value = {'data': data}
+            with self.assertRaises(start_backend.StartupError):
+                start_backend.restart_local_services(self.services)
+        self.health.return_value = {'data': {'activeRunId': None, 'queuedRuns': 0}}
+        self.api.has_children.return_value = True
+        with self.assertRaisesRegex(start_backend.StartupError, '子进程'):
+            start_backend.restart_local_services(self.services)
+        self.api.terminate.assert_not_called()
+
+    def test_live_old_supervisor_prevents_restart(self):
+        self.processes[8768] = replace(self.processes[8768], parent_pid=100)
+        self.processes[100] = replace(self.processes[8768], pid=100, command=('python.exe', 'START_BACKEND.PY'))
+        with self.assertRaisesRegex(start_backend.StartupError, '启动器仍在运行'):
+            start_backend.restart_local_services(self.services)
+        self.api.terminate.assert_not_called()
+
+    def test_unknown_ambiguous_and_out_of_scope_listeners_are_not_stopped(self):
+        for pids in (set(), {10, 20}):
+            self.api.listening_pids.side_effect = None; self.api.listening_pids.return_value = pids
+            with patch('start_backend.listening', return_value=True), self.assertRaises(start_backend.StartupError):
+                start_backend.restart_local_services(self.services)
+        for port in (8080, 8800, 27018):
+            with self.assertRaises(start_backend.StartupError):
+                start_backend.restart_local_services([replace(self.services[0], port=port)])
+        self.api.terminate.assert_not_called()
+
+    def test_pid_reuse_is_rejected_before_stopping_anything(self):
+        counts = {}
+        def identity(pid):
+            counts[pid] = counts.get(pid, 0) + 1
+            p = self.processes.get(pid)
+            return replace(p, started='reused') if pid == 8768 and counts[pid] > 1 else p
+        self.api.identity.side_effect = identity
+        with self.assertRaisesRegex(start_backend.StartupError, '进程已变化'):
+            start_backend.restart_local_services(self.services)
+        self.api.terminate.assert_not_called()
+
+    def test_access_denied_fails_closed_and_slow_exit_never_escalates(self):
+        self.api.identity.side_effect = start_backend.StartupError('access denied')
+        with self.assertRaises(start_backend.StartupError):
+            start_backend.restart_local_services(self.services)
+        self.api.terminate.assert_not_called()
+        self.api.identity.side_effect = lambda pid: self.processes.get(pid)
+        self.api.terminate.side_effect = None
+        with patch('start_backend.time.monotonic', side_effect=[0, 6]), self.assertRaisesRegex(start_backend.StartupError, '未退出'):
+            start_backend.restart_local_services(self.services)
+        self.api.terminate.assert_called_once()
+
+
+class WindowsProcessApiTests(unittest.TestCase):
+    def setUp(self):
+        class ApiError(Exception): pass
+        class Gone(ApiError): pass
+        self.api = SimpleNamespace(Error=ApiError, NoSuchProcess=Gone, CONN_LISTEN='LISTEN', Process=Mock(), net_connections=Mock())
+        self.process = Mock()
+        self.process.username.return_value = 'HOST\\User'
+        self.process.create_time.return_value = 123.5
+        self.process.ppid.return_value = 1
+        self.process.cmdline.return_value = [sys.executable, '-m', 'data_service']
+        self.process.cwd.return_value = str(start_backend.ROOT)
+        self.process.oneshot.side_effect = contextlib.nullcontext
+        self.api.Process.return_value = self.process
+        with patch('start_backend.importlib.import_module', return_value=self.api):
+            self.inspector = start_backend.WindowsProcesses()
+
+    def test_reads_identity_and_exit_wait_does_not_depend_on_cwd(self):
+        identity = self.inspector.identity(123)
+        self.assertEqual(('host\\user', '123.5', start_backend.ROOT.resolve()), (identity.uid, identity.started, identity.cwd))
+        self.process.cwd.side_effect = self.api.Error('cwd released')
+        self.assertEqual(('host\\user', '123.5'), self.inspector.lifetime(123))
+
+    def test_ipv4_and_ipv6_listeners_are_deduplicated_and_unknown_pid_blocks(self):
+        def listener(pid, port=8765):
+            return SimpleNamespace(pid=pid, status='LISTEN', laddr=SimpleNamespace(port=port))
+        self.api.net_connections.return_value = [listener(123), listener(123), listener(456, 8080)]
+        self.assertEqual({123}, self.inspector.listening_pids(8765))
+        self.api.net_connections.return_value = [listener(None)]
+        with self.assertRaises(start_backend.StartupError):
+            self.inspector.listening_pids(8765)
+
+    def test_terminate_rechecks_lifetime_and_never_signals_reused_pid(self):
+        identity = self.inspector.identity(123)
+        self.process.create_time.return_value = 456.0
+        with self.assertRaisesRegex(start_backend.StartupError, '进程已变化'):
+            self.inspector.terminate(identity)
+        self.process.terminate.assert_not_called()
+        self.process.create_time.return_value = 123.5
+        self.inspector.terminate(identity)
+        self.process.terminate.assert_called_once_with()
+
+    def test_exited_and_unreadable_processes_are_distinguished(self):
+        self.api.Process.side_effect = self.api.NoSuchProcess()
+        self.assertIsNone(self.inspector.identity(123))
+        self.assertIsNone(self.inspector.lifetime(123))
+        self.assertFalse(self.inspector.has_children({123}))
+        self.api.Process.side_effect = self.api.Error('access denied')
+        for method in (self.inspector.identity, self.inspector.lifetime):
+            with self.assertRaises(start_backend.StartupError): method(123)
+        with self.assertRaises(start_backend.StartupError): self.inspector.has_children({123})
+
+    def test_missing_psutil_is_reported_without_process_fallback(self):
+        with patch('start_backend.importlib.import_module', side_effect=ModuleNotFoundError()), self.assertRaisesRegex(start_backend.StartupError, 'psutil'):
+            start_backend.WindowsProcesses()
 
 
 if __name__ == "__main__":

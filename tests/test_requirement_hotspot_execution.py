@@ -16,6 +16,7 @@ from crowdsim.decision.route_provider import RouteProvider
 from crowdsim.domain.crowdsim_models import AgentState, MotionSnapshot
 from crowdsim.domain.hotspot_activity import requirement_hotspot_activity, activity_phase
 from crowdsim.domain.requirement_spec import RequirementSpec
+from crowdsim.environment.hotspot_catalog import HotspotCatalog
 from crowdsim.infrastructure.network_adapter import ResearchNetwork
 from crowdsim.infrastructure.sumo_adapter import SumoStepResult
 from crowdsim.experiments.during_observation import normal_early_completion, verify_initialization
@@ -94,6 +95,8 @@ def test_generation_keeps_absolute_times_open_ends_and_real_external_exits(tmp_p
     assert report["timeline_shift_seconds"] == 0
     assert report["visitor_release_window_seconds"] == ([end, end] if end is not None else None)
     assert report["generation_version"] == 4
+    assert report["viewing_zone_counts"] == {"east_best_view": 12}
+    assert report["target_edge_counts"] == {"679361567#1": 12, "679361567#2": 0, "679361567#2_m3_north": 0}
     for person in ET.parse(output).getroot().findall("person"):
         params = {p.get("key"): p.get("value") for p in person.findall("param")}
         release = params.get("crowdsim.hotspot_release_time")
@@ -126,9 +129,80 @@ def test_generation_keeps_absolute_times_open_ends_and_real_external_exits(tmp_p
     _, legacy = spec.generate(tmp_path / "legacy", BUND / "bund.net.xml", 2)
     assert legacy["activity_window_seconds"] == [600, 800]
     assert legacy["generation_version"] == 3 and "requirement_activity" not in legacy
+    assert len(spec.configuration()[1]["viewing_zones"]) == 7
     repeat, _ = spec.generate(tmp_path / "repeat", BUND / "bund.net.xml", 12,
                               activity=activity, observation_scope=scope)
     assert repeat.read_bytes() == output.read_bytes()
+
+
+@pytest.mark.parametrize("count", [0, 1, 800])
+@pytest.mark.parametrize("seed", [20260908, 20260910])
+def test_class_one_targets_only_the_eastern_arc_without_changing_topology(tmp_path, network, count, seed):
+    raw = requirement(0, None, 300)
+    scope = Polygon([network.lonlat_to_xy_strict(*p) for p in raw["spatial_scope"]["boundary"]["coordinates"][0]])
+    config = ROOT / "config/crowd_hotspots.json"
+    original_bytes = config.read_bytes()
+    payload = json.loads(original_bytes)
+    original = next(h for h in payload["hotspots"] if h["id"] == "people_heroes_monument")
+    spec = HotspotDemandSpec(BUND / "bund_ped.rou.xml", config, seed=seed)
+    output, report = spec.generate(tmp_path, BUND / "bund.net.xml", count,
+                                   activity=requirement_hotspot_activity(raw), observation_scope=scope)
+    saved = json.loads((tmp_path / "hotspot.config.json").read_text())
+    hotspot = next(h for h in saved["hotspots"] if h["id"] == "people_heroes_monument")
+    assert hotspot["viewing_zones"] == [{
+        "id": "east_best_view", "edge": "679361567#1", "position_range_meters": [35, 90], "weight": 1.0,
+    }]
+    for key in ("target_edges", "measurement_edges", "entry_edges", "access_portals", "visitor_spawn_edges", "spawn_distribution"):
+        assert hotspot[key] == original[key]
+    assert saved["hotspots"][0] == payload["hotspots"][0]  # Other locations retain their configuration.
+    assert config.read_bytes() == original_bytes
+    assert report["viewing_zone_counts"] == ({"east_best_view": count} if count else {})
+    assert report["target_edge_counts"] == {edge: count if edge == "679361567#1" else 0 for edge in original["target_edges"]}
+    people = ET.parse(output).getroot().findall("person")
+    assert len(people) == count
+    for person in people:
+        walk = person.findall("walk")[0]
+        assert walk.get("edges").split()[-1] == "679361567#1"
+        assert 35 <= float(walk.get("arrivalPos")) <= 90
+    if count == 800:
+        assert len(report["spawn_edge_counts"]) > 1
+        assert report["spawn_distribution"] == "edge_length_uniform"
+
+
+def test_missing_eastern_zone_is_rejected_instead_of_falling_back_to_other_targets(tmp_path):
+    payload = json.loads((ROOT / "config/crowd_hotspots.json").read_text())
+    hotspot = next(h for h in payload["hotspots"] if h["id"] == "people_heroes_monument")
+    hotspot["viewing_zones"] = [z for z in hotspot["viewing_zones"] if z["id"] != "east_best_view"]
+    config = tmp_path / "missing-east.json"
+    config.write_text(json.dumps(payload))
+    spec = HotspotDemandSpec(BUND / "bund_ped.rou.xml", config)
+    with pytest.raises(ValueError, match="东侧主要观景区"):
+        spec.generate(tmp_path / "output", BUND / "bund.net.xml", 12,
+                      activity=requirement_hotspot_activity(requirement()))
+    assert not (tmp_path / "output").exists()
+
+
+@pytest.mark.parametrize("class_one", [True, False])
+def test_runtime_catalog_matches_the_generated_run_before_any_engine_can_start(tmp_path, monkeypatch, class_one):
+    raw = requirement(0, None, 300) if class_one else requirement()
+    if not class_one:
+        del raw["scenario"]["hotspot_start_seconds"]
+        del raw["scenario"]["hotspot_end_seconds"]
+    raw["population"]["total"] = 12
+    spec = HotspotDemandSpec(BUND / "bund_ped.rou.xml", ROOT / "config/crowd_hotspots.json")
+    instance = SimulationRuntime(BUND / "bund.hotspot.sumocfg", demand_mode="generated_hotspot",
+        hotspot_demand_spec=spec, requirement_record={"requirement_id": "code-check", "requirement": raw})
+    monkeypatch.setattr("crowdsim.core.simulation_runtime.PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(instance, "_abort_resources", Mock())
+    monkeypatch.setattr(instance.adapter, "start", Mock(side_effect=RuntimeError("test boundary before engine startup")))
+    with pytest.raises(RuntimeError, match="test boundary before engine startup"):
+        instance.initialize()
+    instance.adapter.start.assert_called_once_with()
+    actual = next(h for h in instance.hotspot_catalog.serialize() if h["id"] == "people_heroes_monument")
+    snapshot = tmp_path / "runs" / instance.run_id / "hotspot.config.json"
+    expected = next(h for h in HotspotCatalog(instance.network, snapshot).serialize() if h["id"] == "people_heroes_monument")
+    assert actual["viewing_zones"] == expected["viewing_zones"]
+    assert len(actual["viewing_zones"]) == (1 if class_one else 7)
 
 
 def motion(time=10, stages=1, edge="ring"):

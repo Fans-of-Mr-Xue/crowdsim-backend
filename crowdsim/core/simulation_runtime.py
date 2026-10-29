@@ -337,6 +337,9 @@ class SimulationRuntime:
                     run_directory, self._net_path_from_config(), self.demand_count, **activity_options
                 )
                 if self.hotspot_catalog is not None:
+                    if activity_options:
+                        # Expose the same per-run targets that generated the routes.
+                        self.hotspot_catalog = HotspotCatalog(self.network, run_directory / "hotspot.config.json")
                     self.hotspot_catalog.apply_demand_timing(self.demand_generation_report)
                 self.population = PopulationManager([source], profile_sampler=self.population.profile_sampler)
                 # Empty baseline runs must still replace the preset route file.

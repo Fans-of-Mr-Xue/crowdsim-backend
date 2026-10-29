@@ -199,6 +199,7 @@ def observation_report(repository, user_id, workspace_id, experiment, runs):
                    **{k: v for k, v in values_at(s).items() if k in selected}} for s in samples]
         metrics = {k: {"label": METRICS[k][0], "unit": METRICS[k][1], **stats(p.get(k) for p in series)} for k in selected if k in METRICS}
         rows.append({"runId": run["run_id"], "seed": run["seed"], "status": run["status"],
+                     "restartCount": run.get("restartCount", 0),
                      "valid": reason is None, "excludedReason": reason, "metrics": metrics,
                      "personCount": {**stats(p.get("personCount") for p in series),
                                      "first": series[0]["personCount"] if series else None,

@@ -44,6 +44,11 @@ class HotspotDemandSpec:
         if activity is not None:
             # Only the per-run copy changes; the shared scene and other entry
             # points retain their calibrated preset and random departure delays.
+            if hotspot["id"] == "people_heroes_monument":
+                east = [zone for zone in hotspot.get("viewing_zones", ()) if zone["id"] == "east_best_view"]
+                if len(east) != 1:
+                    raise ValueError("纪念塔热点缺少唯一的东侧主要观景区")
+                hotspot["viewing_zones"] = [{**east[0], "weight": 1.0}]
             hotspot["requirement_activity"] = deepcopy(activity)
             end = activity["end_seconds"]
             hotspot["activity_window_seconds"] = [activity["start_seconds"], end] if end is not None else None

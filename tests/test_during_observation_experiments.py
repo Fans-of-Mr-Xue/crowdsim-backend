@@ -154,6 +154,8 @@ class Gateway:
             self.runtime_id = f"runtime-{len(self.commands)}"
             return {"type": "init", "run_id": self.runtime_id, "requirement": self.record,
                     "artificial_society": self.model, "observation_geometry": {"area_m2": 5, "cells": ["a"]}}
+        if command["action"] == "set_speed":
+            return {"type": "speed", "speedFactor": command["speedFactor"]}
         if command["action"] == "start":
             gateway = self
             class Terminal:
@@ -288,6 +290,37 @@ def test_http_create_retry_queue_repetitions_and_measured_report(study, monkeypa
     assert all(r["status"] == "completed" for r in repo.list_runs("u", "during-check"))
     with pytest.raises(LookupError):
         ReportService(repo).generate("u", "during-other", experiment["experiment_id"])
+
+
+def test_speed_change_applies_only_to_current_round_and_next_round_starts_at_fastest(study, monkeypatch):
+    repo, gateway, orchestrator, payload = setup(study, monkeypatch)
+    experiment = orchestrator.create_observation_experiment("u", "during-check", payload)
+    frozen = deepcopy(experiment)
+    orchestrator.start_experiment("u", "during-check", experiment["experiment_id"])
+    seen = []
+    original = gateway.callback
+
+    def on_frame(frame):
+        original(frame)
+        if frame.get("step_seconds") != 1 or frame.get("run_id") == "stale":
+            return
+        active = orchestrator._active
+        view = orchestrator.runtime_view("u", "during-check", experiment["experiment_id"])
+        seen.append(view["speedFactor"])
+        if len(seen) == 1:
+            orchestrator.set_run_speed("u", "during-check", active["run"]["run_id"],
+                                       {"speedFactor": 2, "expectedRuntimeRunId": active["runtime_run_id"]})
+            assert orchestrator._runtime_view["speedFactor"] == 2
+
+    gateway.callback = on_frame
+    monkeypatch.setattr(gateway, "forget_request", lambda _: None, raising=False)
+    orchestrator._queue.put(None)
+    orchestrator._worker_loop()
+    assert seen == [3, 3, 3]
+    assert [c["speedFactor"] for c in gateway.commands if c["action"] == "set_speed"] == [3, 2, 3, 3]
+    saved = repo.get_experiment("u", "during-check", experiment["experiment_id"])
+    assert saved["scenario"] == frozen["scenario"] and saved["duringObservation"] == frozen["duringObservation"]
+    assert saved["status"] == "completed"
 
 
 def test_three_rounds_accept_real_gateway_close_ack_and_preserve_results(study, monkeypatch):

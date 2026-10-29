@@ -45,23 +45,43 @@ ARDE 算法和 SUMO 仿真全部由本仓库提供，运行时不依赖 MACE。
 
 ## 启动
 
-日常使用只需在仓库根目录执行一个后端命令：
+日常使用在仓库根目录按当前终端选择入口。Windows PowerShell（包括提示符含 `PS` 的 Cursor 终端）：
 
-```sh
-./run.sh
+```powershell
+.\run.ps1
+```
+
+Git Bash / macOS / Linux 终端：
+
+```bash
+bash ./run.sh
 ```
 
 统一入口 `start_backend.py` 自动检查 SUMO 和依赖，复用或建立模型（本机 8800 → 服务器 8800）与数据库（本机 27018 → 服务器 27018）的 SSH 隧道，然后启动 SUMO（8765）、实验控制（8766）、对话存储（8767）和数据服务（8768）。事中聊天和实验方案页依赖 8766；该服务也纳入就绪检查和退出清理。已运行且健康的服务会复用，退出启动器不会关闭复用的进程。这些模块仍以独立进程运行，不会把爬虫或数据库操作加入仿真循环。前端仍用 `npm run dev` 单独启动，无需再手动启动对话、实验控制服务或执行 SSH 映射命令。
 
-修改后端代码后，可显式重启本机四个服务以加载新代码：
+修改后端代码后，可显式重启本机四个服务以加载新代码。PowerShell 使用：
 
-```sh
-bash run.sh --restart-services
+```powershell
+.\run.ps1 --restart-services
+```
+
+Git Bash / macOS / Linux 使用：
+
+```bash
+bash ./run.sh --restart-services
+```
+
+PowerShell 中不要直接执行 `./run.sh`：`.sh` 会交给 Windows 文件关联程序处理，可能另开窗口或立即返回当前提示符。应执行 `.\run.ps1`；如需使用 Bash 入口，请明确写 `bash ./run.sh`。出现来自 Cursor / Node.js 的 `punycode` 弃用提示，不代表 Python 后端已经启动；应以 `[CrowdSim]` 日志为准。
+
+只检查环境而不启动或重启服务，PowerShell 使用：
+
+```powershell
+.\run.ps1 --check --restart-services
 ```
 
 不加该参数时仍按原方式复用服务，其他同学的启动习惯不变。重启模式只处理当前用户、当前仓库的 8765～8768 进程，核对进程命令、工作目录和启动时间；不会按端口无差别结束进程，也不重启远程大模型／数据库或已有 SSH 隧道。它会中断使用这四个本机服务的页面连接，因此共用同一台电脑的同学应先结束相关操作。
 
-如果旧 `run.sh` 启动器仍在运行，需先在那个终端按 Ctrl+C，再运行上述命令；这可以避免旧启动器发现子服务退出后连带清理其余服务与隧道。运行中／排队的实验、仍有子进程的仿真（包括暂停的 SUMO）会阻止自动重启；无法确认归属或状态时也会退出并提示手动处理。重启模式目前需要 macOS/Linux 的 `ps` 和 `lsof`，不影响其他平台的普通启动。
+如果旧启动器仍在运行，需先在那个终端按 Ctrl+C，再运行上述命令；这可以避免旧启动器发现子服务退出后连带清理其余服务与隧道。运行中／排队的实验、仍有子进程的仿真（包括暂停的 SUMO）会阻止自动重启；无法确认归属或状态时也会退出并提示手动处理。macOS/Linux 使用 `ps` 和 `lsof`；Windows 使用 `requirements.txt` 中的 `psutil` 获取原生进程信息，核对通过后只终止对应 PID，不按端口或进程名批量结束。
 
 重启后新服务由本次启动器管理；Ctrl+C、SIGTERM 或终端 SIGHUP 会清理本次创建的服务。默认模式复用的外部进程仍会保留。`--check --restart-services` 仍然只做环境检查，不重启任何服务。
 
@@ -69,7 +89,7 @@ bash run.sh --restart-services
 
 SSH 使用现有密钥或 ssh-agent，也可在终端按提示输入 SSH 账户密码；输入时终端不显示字符，SSH 密码不会写入配置。SSH 进程保留启动终端以支持密码输入，后台服务使用独立进程组；请从交互终端运行需要密码认证的启动命令。统一入口使用明确的 SSH 连接参数，不读取用户 SSH 配置中的其他转发规则。已有可用服务和连接会被复用；Ctrl+C 会停止本次创建的服务和隧道，复用的外部进程会保留。启动失败时会清理本次创建的进程，输出失败原因。
 
-统一入口要求 Python 3.10 或更新版本。`run.sh` 优先使用 `CROWDSIM_PYTHON`，其次使用明确设置的 `CROWDSIM_CONDA` 环境，再使用本仓库 `.venv-backend/bin/python`，最后使用 PATH 中的 `python`。如需在其他电脑初始化独立环境，可执行：
+统一入口要求 Python 3.10 或更新版本。`run.sh` 和 `run.ps1` 优先使用环境变量 `CROWDSIM_PYTHON`，其次使用明确设置的 `CROWDSIM_CONDA` 环境；均未设置时读取本机 `.env` 中的 `CROWDSIM_PYTHON`，再使用本仓库虚拟环境（Windows 为 `.venv-backend/Scripts/python.exe`），最后使用 PATH 中的 `python`。脚本只按文本读取解释器路径，不执行 `.env` 内容。本机路径变化时同步更新 `CROWDSIM_PYTHON` 和 `SUMO_BINARY`；路径可以使用正斜杠，含空格时在配置值两端加引号。如需在其他电脑初始化独立环境，可执行：
 
 ```sh
 python -m venv .venv-backend
@@ -98,6 +118,8 @@ conda activate sumo
 ```
 
 `--check` 会加载 `requirements.txt` 对应的服务依赖、识别实际 SUMO 程序版本并解析场景配置，不启动服务或 SSH 隧道，也不验证远端连接。缺少 `pypdf` 或 `beautifulsoup4` 等依赖时先补齐 Python 包；如果镜像源没有返回可用版本，可在当前环境执行 `python -m pip install --index-url https://pypi.org/simple -r requirements.txt`。无需因此安装另一份 SUMO。
+
+Windows 后端在加载 HTTP 依赖前启用 Python 的本机系统信息回退路径，避免 `platform.system()` 的 WMI 查询无响应导致启动一直没有输出。该初始化同时覆盖仿真、实验控制、对话和数据服务；启动器会先打印 Python 环境及依赖检查进度。更新代码后，已经卡住的旧启动进程需要先在原终端按 Ctrl+C 结束，再重新执行启动命令。
 
 默认使用热点场景，可通过 `./run.sh --scenario research` 或 `./run.sh --scenario east-nanjing-road` 切换。`--no-tunnels` 表示只复用现有数据库和模型连接，不创建 SSH 隧道。原有模块入口仍可单独使用，下面是分别启动时的说明。
 

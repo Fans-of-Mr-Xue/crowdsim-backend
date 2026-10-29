@@ -5,6 +5,7 @@ from __future__ import annotations
 from copy import deepcopy
 from datetime import datetime, timezone
 import logging
+import math
 import queue
 import random
 import threading
@@ -113,6 +114,47 @@ class ExperimentOrchestrator:
         self.gateway.submit({"action": "pause"})
         return self.repository.update_run(user_id, workspace_id, run_id, {"status": "paused"})
 
+    def set_run_speed(self, user_id, workspace_id, run_id, payload):
+        speed = payload.get("speedFactor")
+        if type(speed) not in (int, float) or not 0.05 <= speed <= 3 or not math.isfinite(speed):
+            raise ContractError("仿真速度必须为 0.05 到 3 之间的数值。")
+        expected = payload.get("expectedRuntimeRunId")
+        if not isinstance(expected, str) or not expected:
+            raise ContractError("请提供当前轮次的实际运行 ID。")
+
+        def current_attempt():
+            run, active = self._require_active_run(user_id, workspace_id, run_id, allowed_statuses={"running", "paused"})
+            experiment = self.repository.get_experiment(user_id, workspace_id, run["experiment_id"])
+            if not experiment or not experiment.get("duringObservation"):
+                raise ContractError("速度调节仅用于事中第一类平行实验。")
+            if (experiment.get("stop_requested") or run.get("restartPending") or active["terminal"].is_set()
+                    or not active.get("accept_frames") or active.get("runtime_run_id") != expected
+                    or run.get("runtime_run_id") != expected):
+                raise RuntimeError("RUN_NOT_ACTIVE")
+            return active
+
+        # Serialize with round handover/restart, but leave the frame lock free:
+        # gateway callbacks also acquire it before the next ACK can be delivered.
+        with self._start_lock:
+            with self._lock:
+                active = current_attempt()
+            request_id = self.gateway.submit({"action": "set_speed", "run_id": expected, "speedFactor": float(speed)})
+            try:
+                ack = self.gateway.wait_for_ack(request_id, timeout=10)
+            finally:
+                self.gateway.forget_request(request_id)
+            if not ack:
+                raise TimeoutError("速度调节确认超时，请刷新当前轮状态后重试。")
+            actual = ack.get("speedFactor")
+            if (ack.get("type") != "speed" or type(actual) not in (int, float)
+                    or not 0.05 <= actual <= 3 or not math.isfinite(actual)):
+                raise RuntimeError("后端未确认有效的仿真速度，请刷新状态后重试。")
+            with self._lock:
+                if current_attempt() is not active:
+                    raise RuntimeError("RUN_NOT_ACTIVE")
+                self._runtime_view["speedFactor"] = float(actual)
+            return {"runId": run_id, "runtimeRunId": expected, "speedFactor": float(actual)}
+
     def runtime_view(self, user_id, workspace_id, experiment_id, *, summary_only=False):
         """Read the managed run without acquiring a second simulator connection."""
         experiment = self.repository.get_experiment(user_id, workspace_id, experiment_id)
@@ -144,9 +186,9 @@ class ExperimentOrchestrator:
             active = self._active
             owns = active and (active["user_id"], active["workspace_id"], active["experiment"]["experiment_id"]) == (user_id, workspace_id, experiment_id)
             for run in self.repository.list_runs(user_id, workspace_id, experiment_id):
-                if run["status"] not in {"completed", "failed", "cancelled"}:
+                if run["status"] not in {"completed", "failed", "cancelled"} or run.get("restartPending"):
                     self.repository.update_run(user_id, workspace_id, run["run_id"], {
-                        "status": "cancelled", "completed_at": datetime.now(timezone.utc),
+                        "status": "cancelled", "completed_at": datetime.now(timezone.utc), "restartPending": False,
                     })
             if owns:
                 active["terminal"].set()
@@ -163,6 +205,98 @@ class ExperimentOrchestrator:
         self.gateway.submit({"action": "start"})
         return self.repository.update_run(user_id, workspace_id, run_id, {"status": "running"})
 
+    def restart_observation_run(self, user_id, workspace_id, run_id, payload):
+        from .during_observation_restart import current_observation_run
+        pause_run_id = None
+        with self._start_lock, self._lock:
+            run = self.repository.get_run(user_id, workspace_id, run_id)
+            if not run:
+                raise LookupError("RUN_NOT_FOUND")
+            experiment_id = run["experiment_id"]
+            experiment = self.repository.get_experiment(user_id, workspace_id, experiment_id)
+            if not experiment or not experiment.get("duringObservation"):
+                raise ContractError("本轮重新运行仅用于事中第一类平行实验。")
+            expected = payload.get("expectedRestartCount")
+            count = run.get("restartCount", 0)
+            if type(expected) is not int or expected < 0:
+                raise ContractError("请提供当前轮次的重新运行版本。")
+            # A lost HTTP response must not restart the same round twice.
+            if count == expected + 1:
+                if run.get("restartPending") or run["status"] in {"draft", "queued"}:
+                    processing = self._processing or self._active
+                    if processing and processing["run"]["run_id"] != run_id:
+                        raise ContractError("后台已进入其他轮次，请刷新后重新确认。")
+                    if not processing:
+                        with self._queue.mutex:
+                            queued = any(item and item["run"]["run_id"] == run_id for item in self._queue.queue)
+                        if not queued:
+                            run = self.repository.update_run(user_id, workspace_id, run_id, {"restartPending": True})
+                            self._schedule_observation_restart(user_id, workspace_id, experiment, run)
+                    self._ensure_worker()
+                return {**self.repository.get_experiment(user_id, workspace_id, experiment_id),
+                        "runs": self.repository.list_runs(user_id, workspace_id, experiment_id)}
+            if count != expected:
+                raise ContractError("本轮实验已重新运行，请刷新状态后重试。")
+            runs = self.repository.list_runs(user_id, workspace_id, experiment_id)
+            current = current_observation_run(runs)
+            if not current or current["run_id"] != run_id:
+                raise ContractError("当前轮次已变化，请刷新后重新确认。")
+            processing = self._processing or self._active
+            if processing and (processing["user_id"], processing["workspace_id"], processing["run"]["run_id"]) != (user_id, workspace_id, run_id):
+                raise ContractError("后台已进入其他轮次，请刷新后重新确认。")
+            run = self.repository.update_run(user_id, workspace_id, run_id, {
+                "status": "cancelled", "restartPending": True, "restartCount": count + 1,
+            })
+            experiment = self.repository.update_experiment(user_id, workspace_id, experiment_id, {
+                "status": "running", "stop_requested": False,
+            })
+            if self._active:
+                self._active["accept_frames"] = False
+                self._active["terminal"].set()
+                pause_run_id = self._active.get("runtime_run_id")
+            if not processing:
+                self._schedule_observation_restart(user_id, workspace_id, experiment, run)
+            self._ensure_worker()
+            result = {**self.repository.get_experiment(user_id, workspace_id, experiment_id),
+                      "runs": self.repository.list_runs(user_id, workspace_id, experiment_id)}
+        # The gateway callback also needs the worker lock. Send outside it, and
+        # address only the old runtime if the new attempt has already started.
+        if pause_run_id:
+            try:
+                self.gateway.submit({"action": "pause", "run_id": pause_run_id})
+            except Exception:
+                self.logger.warning("Round restart saved; simulator pause could not be delivered", exc_info=True)
+        return result
+
+    def _schedule_observation_restart(self, user_id, workspace_id, experiment, run):
+        """Called under start/worker locks after the old attempt has stopped."""
+        experiment = self.repository.update_experiment(user_id, workspace_id, experiment["experiment_id"], {
+            "status": "running", "stop_requested": False,
+        })
+        updated = self.repository.restart_observation_run(user_id, workspace_id, run["run_id"])
+        self.events.discard_runs({run["run_id"]})
+        if self._runtime_view and self._runtime_view.get("runId") == run["run_id"]:
+            self._runtime_view = None
+        if getattr(self.gateway, "latest_frame", None) and self.gateway.latest_frame.get("run_id") == run.get("runtime_run_id"):
+            self.gateway.latest_frame = None
+        item = {"user_id": user_id, "workspace_id": workspace_id, "experiment": experiment, "run": updated}
+        with self._queue.mutex:
+            # Replace a queued copy, then put the retry ahead of later rounds.
+            duplicates = [old for old in self._queue.queue if old and old["run"]["run_id"] == run["run_id"]]
+            for old in duplicates:
+                self._queue.queue.remove(old)
+                self._queue.unfinished_tasks -= 1
+            queued = {old["run"]["run_id"] for old in self._queue.queue if old}
+            # After a control-service restart, restore only unstarted rounds;
+            # completed/failed/cancelled siblings must never be rerun here.
+            for sibling in self.repository.list_runs(user_id, workspace_id, experiment["experiment_id"]):
+                if sibling["run_id"] != run["run_id"] and sibling["status"] in {"draft", "queued"} and sibling["run_id"] not in queued:
+                    self._queue.queue.append({**item, "run": sibling})
+                    self._queue.unfinished_tasks += 1
+            self._queue.queue.appendleft(item)
+            self._queue.unfinished_tasks += 1
+            self._queue.not_empty.notify_all()
+
     def reset_observation_experiment(self, user_id, workspace_id, experiment_id, payload):
         with self._start_lock:
             expected = payload.get("expectedRunIds")
@@ -170,7 +304,8 @@ class ExperimentOrchestrator:
             with self._lock, self._queue.mutex:
                 if self._processing or self._active or self._queue.unfinished_tasks:
                     raise ContractError("后台仍有实验执行或收尾，请稍后重新运行。")
-            runtime_ids = {run["runtime_run_id"] for run in runs if run.get("runtime_run_id")}
+            from .during_observation_reset import runtime_ids_for_runs
+            runtime_ids = runtime_ids_for_runs(runs)
             if runtime_ids and urlsplit(getattr(self.gateway, "url", "ws://127.0.0.1:8765")).hostname not in {"127.0.0.1", "localhost", "::1"}:
                 raise ContractError("当前清理仅支持本机仿真文件，未删除运行记录。")
             if not self.repository.acquire_gateway_lease(self.owner_id, ttl_seconds=90):
@@ -285,11 +420,21 @@ class ExperimentOrchestrator:
 
     def _worker_loop(self) -> None:
         while True:
-            item = self._queue.get()
-            if item is None:
-                return
-            with self._lock:
-                self._processing = item
+            # Wait outside the start lock; claiming work and accepting a restart
+            # share that lock so the next round cannot slip into the handover.
+            with self._queue.not_empty:
+                while not self._queue._qsize():
+                    self._queue.not_empty.wait()
+            with self._start_lock:
+                try:
+                    item = self._queue.get_nowait()
+                except queue.Empty:
+                    continue
+                if item is None:
+                    self._queue.task_done()
+                    return
+                with self._lock:
+                    self._processing = item
             finish = True
             try:
                 self._execute_run(item)
@@ -317,22 +462,33 @@ class ExperimentOrchestrator:
                 self.logger.exception("CrowdSim run failed")
             finally:
                 self.repository.release_gateway_lease(self.owner_id)
-                with self._lock:
+                close_gateway = False
+                with self._start_lock, self._lock:
                     self._request_actions = {
                         request_id: info
                         for request_id, info in self._request_actions.items()
                         if info.get("active") is not self._active
                     }
                     self._active = None
-                self._queue.task_done()
-                try:
+                    self._queue.task_done()
+                    current = self.repository.get_run(item["user_id"], item["workspace_id"], item["run"]["run_id"])
+                    if item["experiment"].get("duringObservation") and current and current.get("restartPending"):
+                        experiment = self.repository.get_experiment(item["user_id"], item["workspace_id"], item["experiment"]["experiment_id"])
+                        try:
+                            self._schedule_observation_restart(item["user_id"], item["workspace_id"], experiment, current)
+                        except Exception as exc:
+                            self.repository.update_run(item["user_id"], item["workspace_id"], current["run_id"], {
+                                "status": "failed", "restartPending": False, "error": f"本轮重新运行准备失败：{exc}",
+                            })
+                            self.logger.exception("Could not prepare round restart")
+                        finish = True
                     if finish:
                         self._finish_experiment_if_done(item["user_id"], item["workspace_id"], item["experiment"]["experiment_id"])
                         if item["experiment"].get("duringObservation") and self._queue.empty():
-                            self.gateway.close()
-                finally:
-                    with self._lock:
-                        self._processing = None
+                            close_gateway = True
+                    self._processing = None
+                if close_gateway:
+                    self.gateway.close()
 
     def _execute_run(self, item: dict[str, Any]) -> None:
         user_id, workspace_id, experiment, run = item["user_id"], item["workspace_id"], item["experiment"], item["run"]
@@ -346,7 +502,9 @@ class ExperimentOrchestrator:
             status = self.gateway.wait_for_ack(self.gateway.submit({"action": "get_status"}), timeout=20)
             if not status or status.get("type") != "status":
                 raise RuntimeError("无法确认当前仿真状态，未重置现有仿真。")
-            owned = bool(status.get("run_id")) and any(r.get("runtime_run_id") == status["run_id"] and r["status"] in {"completed", "failed", "cancelled"}
+            owned = bool(status.get("run_id")) and any(r.get("runtime_run_id") == status["run_id"] and (
+                        r["status"] in {"completed", "failed", "cancelled"}
+                        or r["run_id"] == run["run_id"] and run.get("restartCount", 0) > 0)
                         for r in self.repository.list_runs(user_id, workspace_id))
             if str(status.get("state") or "").lower() in {"running", "paused"} and not owned:
                 raise RuntimeError("已有独立仿真正在运行或暂停，请先在原页面结束该仿真，再提交新实验。")
@@ -427,11 +585,18 @@ class ExperimentOrchestrator:
             event_result = self.gateway.wait_for_ack(event_id, timeout=30)
             if not event_result or event_result.get("status") != "applied":
                 raise RuntimeError(f"CrowdSim emergency event setup failed: {event_result}")
-        speed_factor = float(experiment["scenario"].get("speedFactor", 20.0))
+        speed_factor = float(experiment["scenario"].get("speedFactor", 3.0 if experiment.get("duringObservation") else 20.0))
         speed_id = self.gateway.submit({"action": "set_speed", "speedFactor": speed_factor})
         speed_result = self.gateway.wait_for_ack(speed_id, timeout=30)
         if not speed_result or speed_result.get("type") == "error":
             raise RuntimeError(f"CrowdSim speed configuration failed: {speed_result}")
+        if experiment.get("duringObservation"):
+            actual_speed = speed_result.get("speedFactor")
+            if (speed_result.get("type") != "speed" or type(actual_speed) not in (int, float)
+                    or not 0.05 <= actual_speed <= 3 or not math.isfinite(actual_speed)):
+                raise RuntimeError("CrowdSim did not acknowledge a valid observation speed")
+            with self._lock:
+                self._runtime_view["speedFactor"] = float(actual_speed)
         if active["terminal"].is_set():
             if active["failure"]:
                 raise RuntimeError(active["failure"])
@@ -457,15 +622,16 @@ class ExperimentOrchestrator:
             raise TimeoutError("CrowdSim run exceeded wallTimeoutSeconds")
         if active["failure"]:
             raise RuntimeError(active["failure"])
-        current = self.repository.get_run(user_id, workspace_id, run["run_id"])
-        if current and current["status"] == "cancelled":
-            return
-        observations = self.repository.list_records("observations", user_id, workspace_id, run["run_id"], limit=100000)
-        summary = summarize_observations(observations)
-        self.repository.update_run(user_id, workspace_id, run["run_id"], {
-            "status": "completed", "completed_at": datetime.now(timezone.utc), "summary": summary,
-            "controller_state": controller.snapshot_state(),
-        })
+        with self._lock:
+            current = self.repository.get_run(user_id, workspace_id, run["run_id"])
+            if current and current["status"] == "cancelled":
+                return
+            observations = self.repository.list_records("observations", user_id, workspace_id, run["run_id"], limit=100000)
+            summary = summarize_observations(observations)
+            self.repository.update_run(user_id, workspace_id, run["run_id"], {
+                "status": "completed", "completed_at": datetime.now(timezone.utc), "summary": summary,
+                "controller_state": controller.snapshot_state(),
+            })
         self.events.publish("run_completed", {"summary": summary}, run_id=run["run_id"])
 
     def _prepare_reset_payload(self, scenario: dict[str, Any], seed: int) -> dict[str, Any]:
@@ -518,6 +684,15 @@ class ExperimentOrchestrator:
         return payload
 
     def _on_gateway_event(self, payload: dict[str, Any]) -> None:
+        # Serialize class-one frame writers with the restart handover. A callback
+        # that already captured the old attempt cannot append evidence after its
+        # records have been cleared. Other experiment modes retain their path.
+        with self._lock:
+            if self._active and self._active["experiment"].get("duringObservation"):
+                return self._dispatch_gateway_event(payload)
+        self._dispatch_gateway_event(payload)
+
+    def _dispatch_gateway_event(self, payload: dict[str, Any]) -> None:
         with self._lock:
             active = self._active
         if payload.get("type") == "gateway_state":
@@ -707,6 +882,6 @@ class ExperimentOrchestrator:
 
     def _finish_experiment_if_done(self, user_id, workspace_id, experiment_id):
         runs = self.repository.list_runs(user_id, workspace_id, experiment_id)
-        if runs and all(run["status"] in {"completed", "failed", "cancelled"} for run in runs):
+        if runs and all(run["status"] in {"completed", "failed", "cancelled"} and not run.get("restartPending") for run in runs):
             status = "completed" if all(run["status"] == "completed" for run in runs) else "completed_with_failures"
             self.repository.update_experiment(user_id, workspace_id, experiment_id, {"status": status})
