@@ -1,7 +1,7 @@
-"""Explicit boundary for a future real SUMO batch runner.
+"""Executor protocol and explicit unavailable implementation for injection.
 
-The existing C0-C5 service does not implement the post-analysis F-00/CF batch
-contract. This module deliberately exposes no fake completion or timer.
+The production post app uses workers.sumo_batch.SumoBatchExecutor, separate
+from the C0-C5 during service. Neither implementation returns preview numbers.
 """
 
 from __future__ import annotations

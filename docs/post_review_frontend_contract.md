@@ -1,5 +1,7 @@
 # 事后需求界定与方案快照对接（2026-10-22）
 
+2026-10-30补充：当前可执行方法、指标与结果字段以[执行与分析共同契约](post_execution_analysis_contract.md)为准；SUMO和后端待实现项见[对接清单](post_sumo_handoff.md)。本文保留现有HTTP字段，不将设计充分性建议写成已实现的结构化校验。
+
 本次接口服务于既有“事后：复盘解释”流程。顺序是：接入数据、明确确认基线、规范化并确认目的、逐类设计和确认观察/干预/机制实验、确认完整方案、进入方案设计快照。后续仍为反事实运行、观察分析、干预分析、机制分析、复盘报告。
 
 ## 可直接用于接口的示例
@@ -38,8 +40,11 @@ Idempotency-Key: example-dataset-001
 | `intake`、`baseline_review`、`goal_review`、`historical_event` | `post_data_assessment` | 数据接入、基线核对、目标规范化、来源梳理 |
 | `design` | `post_causal_hypothesis`、`counterfactual_design` | 当前类型实验的建议及结构化变更 |
 | `parameter_defaults`、`parameter_intent` | `counterfactual_design` | 兼容原有参数问答 |
+| `pc_defaults` | `post_causal_hypothesis`、`counterfactual_design` | 已绑定执行能力的干预设计中建议PC特征，不运行PC |
 
 后端加载 `agent/PostAgent.agent.md` 与白名单 skill 全文，并校验 JSON。`goal_review` 返回 `assistant_message`、可选 `proposed_goal`、`missing_fields`；目标建议必须由用户确认后采用。
+
+goal_review、design、pc_defaults及两种兼容参数问答会同时注入共同契约正文。当前组答复没有primaryMetric/decisionRule等新字段；主要终点、控制项、范围、判断条件和缺口使用既有hypothesis/change及assistant_message表达。manipulatedFeatureId由工作台设置；不能在对话组答复中新增该字段。工作台executionSettings、组execution和HTTP执行矩阵是不同层级。
 
 设计请求包含 `designStage=observation|intervention|mechanism`、`availableFactors`、`schemeCatalog`、`experimentSchemes`。`experiments` 只替换当前类型；`experiment_updates` 只更新当前类型已有 ID，不影响其他类型。每组明确 `id/name/factor/change/hypothesis/method`。解释性问题可以只返回 `assistant_message`，不会自动改变工作台。总组数为 3–12，每组重复为 1–50。
 
@@ -53,4 +58,4 @@ Idempotency-Key: example-dataset-001
 
 对话服务需要 `Crowdbackend/requirements.txt` 中的 PyYAML；公开资料读取还使用现有 aiohttp、pypdf 和 BeautifulSoup 组件。数据和方案入库需要现有 8765 服务及 MongoDB；8767 负责对话存储与 PostAgent。更改后需要重启后端服务。
 
-确认完整方案只保存并跳转到快照。现有 F-00/CF 批量执行器未接入的状态保持如实返回，不能将草案保存或基线确认称为真实实验已完成。
+确认完整方案只保存并跳转到快照。2026-10-23起纪念塔测试映射已接入独立F-00/CF执行器；仍需在实验运行页明确确认工程矩阵，再显式启动。其他场景缺少能力时如实返回不可执行，不能将草案保存或基线确认称为实验完成。完整数据、执行参数及Mongo归档规范见[纪念塔事后完整测试](post_memorial_end_to_end_test.md)。

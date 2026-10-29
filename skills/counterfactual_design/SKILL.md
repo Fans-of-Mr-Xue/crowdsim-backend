@@ -1,6 +1,6 @@
 ---
 name: counterfactual_design
-description: 按事后 API 结构生成可校验的 F-00/CF 反事实实验方案。
+description: 根据当前 SUMO 能力设计事后配对策略比较、OFAT 和机制消融方案，输出兼容工作台的建议。
 when_to_use: 数据版本和关键节点假设已明确，需要设计或修正实验时。
 phases: [post]
 modes: [plan]
@@ -8,40 +8,12 @@ modes: [plan]
 
 # 反事实实验方案模板
 
-需求界定先说明并依次设计三类实验：观察比较平行世界的风险演化；干预检验因素水平与交互效应；机制用隔离、消融或中介对照检验微观到宏观的作用链。每类收集可检验假设、相对 F-00 的变化、控制条件、指标、方法、共同种子与重复次数，以及证据缺口。人工社会的已发布模型与事实基线保持锁定；机制消融仅写入待执行实验配置。
+以[执行与分析共同契约](../../docs/post_execution_analysis_contract.md)为字段、方法、测量和结果的共同依据。当前对话只提建议，不调用 frontmatter 工具；执行能力来自业务上下文和实际 `/api/v1/post/capabilities`。未取得能力时保留待映射草案。
 
-对话任务的 designStage 指向当前类型。experiments 只替换当前类型，experiment_updates 只修改当前类型已有组；纯解释问题不返回变更字段。三类分别由用户确认；公共条件或本类草案发生变化时重新确认。完整方案确认后提交 /api/v1/post/review-plans 保存 reviewIntake 及完整草案，进入方案快照，不自动启动实验。未实测校准评分使用 null。
-
-先用 `get_simulation_context` 读取场景、模型、几何、规则、区域、动作及指标能力；能力未声明时保留草案并标记待映射，不猜造 SUMO 参数。用 `validate_experiment_design` 校验以下完整对象：
-
-```json
-{
-  "name": "方案名称",
-  "datasetId": "已注册的数据集ID",
-  "scenario": {
-    "scenarioId": "后端声明的场景ID",
-    "modelId": "后端声明的模型ID",
-    "modelVersion": "后端声明的模型版本",
-    "startClock": "20:00",
-    "durationSeconds": 15600,
-    "geometryVersion": "后端声明的几何版本",
-    "ruleVersion": "后端声明的规则版本"
-  },
-  "seedStart": 1000,
-  "parallelism": 1,
-  "metricIds": ["从 metricCatalog 选择的指标ID"],
-  "pcFeatures": [
-    {"id": "feature_1", "metricId": "指标ID", "regionId": "global", "windowStartSeconds": 0, "windowEndSeconds": 600, "aggregation": "peak"},
-    {"id": "feature_2", "metricId": "指标ID", "regionId": "global", "windowStartSeconds": 600, "windowEndSeconds": 1200, "aggregation": "mean"}
-  ],
-  "groups": [
-    {"id": "CF-01", "name": "实验组名", "repeatCount": 6, "hypothesis": "可检验假设", "manipulatedFeatureId": "feature_1", "interventions": [
-      {"id": "action_1", "actionType": "后端声明的动作", "targetRegionId": "后端声明的区域", "atSeconds": 300, "parameters": {}}
-    ]}
-  ]
-}
-```
-
-模板里的版本、动作、区域、指标和数值仅说明字段形状，不可直接作为真实场景参数。F-00 由后端隐式生成；各 CF 组只改变明确的干预变量，按同种子与 F-00 配对。每组写清假设、时点、区域、强度、主要指标、控制项和证伪条件。`pcFeatures` 至少两项，引用的 `metricId` 必须包含在 `metricIds`。后端校验失败时依据字段错误修正，不能跳过校验。
-
-方案确认后可用 `compile_sumo_config` 请求真实适配器编译。若适配器未接入，明确停在“可校验草案”；不得把 API 请求体称作已编译 SUMO 配置。用户确认且后端声明执行能力后，才用 `submit_simulation_task` 启动已创建的实验批次。
+1. 先核对数据版本、场景与 `metadata.sourceRecords` 执行前提。普通时间线接入成功不等于可运行。纪念塔仅使用已确认 A→M1、B→M2、C→M3 测试映射；源流量/FIFO重建和未校准性质写明，未测数值及校准分数保留 null。
+2. 逐类设计：观察用完整策略与F-00作配对比较；干预用OFAT相对F-00或完整观察组改变一个控制因素；机制相对完整观察组只改变遵从比例或响应延迟之一。使用共同契约中的三个实际方法名。请求交互、中介或微观作用链时，指出尚需的执行/事件/算法能力，不把名称当成实现。
+3. 每组明确参照、数值变化、控制条件、主要指标/单位、目标范围、预期方向与判断条件、重复依据和缺口。放入已有 hypothesis/change 及说明文字，不新增答复白名单外字段。说明主要指标当前为全程全局值；区域/窗口PC特征不能替代尚未实现的区域/窗口主要终点。
+4. 数值执行建议仅在 executionCapabilities 已给出时返回 execution 四个字段。核对文字与数值、参照组、动作实际生效时点，提醒零变化/重复配置；延迟超窗只用于明确的不生效对照。开放/引导是当前的出口分配和释放计划，不能描述成实体闸门或实时消息传播。
+5. designStage 指向当前类型；experiments 完整替换当前类型并匹配 group_count，experiment_updates 只更新已有ID。解释或检查只返回 assistant_message。factor 来自 availableFactors，method 来自当前目录。不得在对话中输出完整HTTP批次或 manipulatedFeatureId；后者由工作台设置并保存在快照。
+6. 共同种子按组配对，各指标报告实际有效配对数。重复1—50可用于工程检查；不足20对只作描述性估计，PC至少需要20个完整独立F-00样本，达到门槛也不等于统计充分。建议以试验方差和目标精度确定正式重复数，不能凭空保证显著性。
+7. 三类分别确认，公共条件或本类变化后重新确认。完整确认只保存reviewIntake和快照；运行页载入、核对、保存执行矩阵后才显式启动。后端错误按字段修正，不绕过版本、参照或隔离校验。尚需SUMO能力的部分列为待对接事项，不写成已运行结果。

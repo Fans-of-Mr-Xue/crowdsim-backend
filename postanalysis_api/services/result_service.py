@@ -64,8 +64,8 @@ def build_result(task: dict, runs: list[dict]) -> dict:
                     "interventionSupportedDirections": analysis["interventionSupportedDirections"]}
     result = {"datasetVersion": task["datasetVersion"], "definitionVersion": METRIC_VERSION,
               "metrics": aggregates, "comparison": comparison, "causalGraph": causal_graph,
-              "observation": {"candidateGraph": analysis["pc"], "baselineRunCount": len(baseline_seeds)},
-              "intervention": {"groups": analysis["groups"],
+              "observation": {"baselineRunCount": len(baseline_seeds)},
+              "intervention": {"candidateGraph": analysis["pc"], "groups": analysis["groups"],
                                "supportedDirections": analysis["interventionSupportedDirections"]},
               "analysisStatus": analysis["analysisStatus"]}
     # Mechanism analysis needs actual switch/decision/message event evidence.

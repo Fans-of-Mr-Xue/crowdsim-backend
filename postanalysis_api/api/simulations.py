@@ -13,11 +13,16 @@ def handle(request: Request):
             return request.mutation(lambda: (201, request.app.create_simulation(request.user, request.workspace, request.body)))
         if request.method == "GET":
             return response(request.app.repo.list("simulations", request.user, request.workspace))
-    match = re.fullmatch(r"/simulations/([A-Za-z0-9_-]+)(?:/(start|cancel|events))?", request.path)
+    match = re.fullmatch(r"/simulations/([A-Za-z0-9_-]+)(?:/(start|cancel|events|runs|runtime))?", request.path)
     if match:
         item_id, action = match.groups()
         if request.method == "GET" and not action:
             return response(request.app.repo.get("simulations", item_id, request.user, request.workspace))
+        if request.method == "GET" and action == "runtime":
+            return response(request.app.runtime("simulations", item_id, request.user, request.workspace))
+        if request.method == "GET" and action == "runs":
+            request.app.repo.get("simulations", item_id, request.user, request.workspace)
+            return response({"simulationId": item_id, "runs": request.app.repo.runs_for_experiment(item_id, request.user, request.workspace)})
         if request.method == "GET" and action == "events":
             after = int((request.query.get("after") or [0])[0])
             if after < 0:

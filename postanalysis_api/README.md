@@ -1,6 +1,10 @@
 # 事后阶段本地任务 API：v1 契约与联调说明
 
-本目录提供挂载在 SUMO 8765 服务内的 HTTP 接口骨架、后端字段校验、MongoDB 持久化和真实结果计算入口。事后数据集、事实校准目标、方案草案、实验任务、运行记录和结果分别存入 `postanalysis_datasets`、`postanalysis_review_plans` 等独立集合，不与共享数据服务的 `datasets` 集合混用；上传原件保存在 `postanalysis_files` GridFS bucket。**当前没有 F-00/CF 批量 SUMO 执行器及 A/B/C、A/B 汇流区、安全区的路网/面积映射**。因此任务可以导入、创建和查询，但 `start` 返回 `503 CAPABILITY_UNAVAILABLE`；不会计时模拟任务、伪造完成次数或生成示例指标。SUMO 同事接入 `workers/executor.py` 的执行器并声明能力后，才允许真正启动。
+当前执行与分析字段以[事后共同契约](../docs/post_execution_analysis_contract.md)为准；该文件按真实workers执行路径核对，并由事后设计对话加载。待扩展的SUMO/TraCI、测量和后端工作见[对接清单](../docs/post_sumo_handoff.md)，不能视为已经接入。
+
+本目录提供挂载在 SUMO 8765 服务内的 HTTP 接口、字段校验、MongoDB 持久化及真实结果计算。现已接入 `workers/sumo_batch.py`，使用独立SUMO进程执行纪念塔 `memorial-post-test` 的F-00/CF批次，保留现有事中运行时。A→M1、B→M2、C→M3为已确认工程测试映射，M3不是真实北侧通道；其他场景仍须声明能力后才能执行。源数据未观测指标保持null，实际指标来自FCD/tripinfo，未校准误差单独展示。
+
+事后数据集、方案、任务及API结果保留在 `postanalysis_*` 集合，上传原件保存在 `postanalysis_files` GridFS bucket。新增 `post` 总索引及每次运行以UTC时间戳和类型命名的明细、轨迹、结果集合。完整规范数据、执行矩阵、页面流程、算法定义及验证命令见[纪念塔事后完整测试](../docs/post_memorial_end_to_end_test.md)。
 
 ## 进程、路径与目录
 
@@ -30,19 +34,21 @@ python crowdsim_overlay_server.py --host 127.0.0.1 --port 8765
 
 | 方法与路径（前缀省略） | 作用 | 当前状态 |
 | --- | --- | --- |
-| `GET /capabilities` | 契约版本、执行器场景/模型/区域/动作/指标/并行上限、规则与指标目录 | 可用；当前 `simulation.ready=false` |
+| `GET /capabilities` | 契约版本、执行器场景/模型/区域/动作/指标/并行上限、规则与指标目录 | 可用；本机SUMO存在时纪念塔测试场景ready |
 | `GET /model-connections` | 只读检查 `http://127.0.0.1:8800/v1/models`，返回配置模型是否可见 | 可用；无密钥时不返回密钥 |
 | `POST /datasets`、`GET /datasets`、`GET /datasets/{id}` | 导入标准化时间线、列表、详情 | 可用 |
 | `POST /review-plans`、`GET /review-plans`、`GET /review-plans/{id}` | 保存和读取事实校准目标及完整事后方案草案 | 可用 |
 | `GET /datasets/{id}/timeline?fromSeconds=0&toSeconds=15600&regionId=A&offset=0&limit=500` | 按秒、区域分页读取；区间含两端 | 可用 |
 | `POST /simulations`、`GET /simulations`、`GET /simulations/{id}` | 创建/查询一次事实仿真草稿 | 可用 |
-| `POST /simulations/{id}/start`、`POST /simulations/{id}/cancel`、`GET /simulations/{id}/events?after=0` | 启动、取消、按游标查进度事件 | 启动等执行器 |
+| `POST /simulations/{id}/start`、`POST /simulations/{id}/cancel`、`GET /simulations/{id}/events?after=0` | 启动、取消、按游标查进度事件 | 纪念塔规范数据可用 |
 | `POST /experiments`、`GET /experiments`、`GET /experiments/{id}` | 创建/查询一批 F-00 + CF 方案 | 可用 |
-| `POST /experiments/{id}/start`、`POST /experiments/{id}/cancel` | 启动/取消整批 | 启动等执行器 |
+| `POST /experiments/{id}/start`、`POST /experiments/{id}/cancel` | 启动/取消整批 | 纪念塔规范数据可用 |
 | `GET /experiments/{id}/events?after=0`、`GET /experiments/{id}/runs` | 任务事件和完整运行级记录 | 可用；未运行时为空 |
+| `GET /experiments/{id}/runtime`、`GET /simulations/{id}/runtime` | 当前真实运行、SUMO 时钟及最新 3D 坐标帧 | 可用；内存中每 0.5 秒最多更新一次，建议每秒轮询 |
+| `GET /runs/{id}/trajectory?after=-1&limit=10` | 按归档块游标读取完整轨迹，响应附 WGS84 经纬度 | 可用；不修改原始归档，`limit` 为 1—20 |
 | `GET /results/{experimentId}/{section}` | `section` 为 `metrics`、`comparison`、`causal-graph`、`observation`、`intervention`、`mechanism` | 真实结果封存后可读；此前 409 |
 
-`GET /model-connections` 的 `status` 为 `ready`、`model_unavailable`、`http_error`（另返回 `httpStatus`）或 `unreachable`；该端点不代替对话服务，也不改变 8800 的模型请求路径。期望模型 ID 由后端 `CROWDSIM_POST_LLM_MODEL` 设置，默认 `qwen3.8-flash-next`，页面显示名为 `Qwen3.8-Flash-Next`；可选 API Key 只从 `CROWDSIM_POST_LLM_API_KEY` 环境变量读取。
+`GET /model-connections` 的 `status` 为 `ready`、`model_unavailable`、`http_error`（另返回 `httpStatus`）或 `unreachable`；该端点不代替对话服务。模型地址读取 `CROWDSIM_LLM_BASE_URL`，默认 `http://127.0.0.1:8800/v1`。期望模型 ID 优先读取 `CROWDSIM_POST_LLM_MODEL`，再读取 `CROWDSIM_LLM_MODEL`，默认 `GLM-5.3-Flash`，页面显示名为 `GLM-5.3 Flash`。可选 API Key 优先读取 `CROWDSIM_POST_LLM_API_KEY`，再读取 `CROWDSIM_MODEL_API_KEY`；与事后 Agent 使用相同配置。
 
 ## 数据集请求
 
@@ -111,6 +117,10 @@ python crowdsim_overlay_server.py --host 127.0.0.1 --port 8765
 
 后端计划 `max(groups[].repeatCount)` 次去重 F-00 基线，以及 `sum(groups[].repeatCount)` 次干预运行。各组使用同一共享种子序列的前缀：例如 A 组 10 次、B 组 20 次，需 20 次 F-00、30 次干预；每个干预运行以同一种子配对 F-00，基线种子不能重复算作两个 PC 样本。`progress` 分别返回计划、完成、失败及每组计数；前端不能由时间百分比推算完成次数。
 
+`runtime` 返回 `{taskId,status,progress,activeRun,frame,sequence,updatedAt,liveAvailable,availableReason,frameError}`。`activeRun` 包含 `runId/planId/experimentType/seed/runIndex/totalRuns/stepSeconds/durationSeconds/progress/phase/personCount`；`runIndex` 从 1 开始，单次 `progress` 为 0—1。`phase` 区分 `preparing/running/archiving/completed/cancelled/failed`；时钟到达总时长但仍在归档时，不增加完成次数。顶层 `progress` 沿用数据库中的完成计数，不能用单次时钟替代。
+
+`frame={timeSeconds,persons,coordinateSystem:"WGS84",source:"sumo-traci",totalPersons,truncated}`，每个人有 `id/x/y/lng/lat/speed/angle/edgeId`。`x/y` 是 SUMO 米制坐标，`lng/lat` 用同一路网投影转换；不把米制位置作为经纬度，也不使用演示轨迹。实时显示最多返回 5000 人，超过时明确 `truncated=true`，完整 FCD 和数据库轨迹不受截断影响。运行开始/归档/结束保存 `activeRun` 元数据，逐帧只更新有界内存缓存；终态最多保留最近 64 个任务的最后帧。`availableReason=live/last_frame/awaiting_first_frame/worker_not_active` 区分实时、终态最后帧、等待第一帧及当前进程无运行帧。服务重启后 `frame=null`、`liveAvailable=false`，旧轨迹通过归档接口回放；不会把旧帧标成正在运行。
+
 下面是创建草稿的结构示例。`datasetId` 必须先通过导入接口取得；`scenarioId`、动作及区域只有在能力接口声明后才能启动：
 
 ```json
@@ -157,28 +167,28 @@ python crowdsim_overlay_server.py --host 127.0.0.1 --port 8765
 
 | 对象 | 必返字段与类型 | 约束 |
 | --- | --- | --- |
-| 数据集元信息 | `id:string`、`version:string`、`name:string`、`sourceKind:string`、`observationCount:integer`、`createdAt:string` | 时间线通过分页接口单独读取；版本为数据行 SHA-256 |
+| 数据集元信息 | `id:string`、`version:string`、`name:string`、`sourceKind:string`、`observationCount:integer`、`createdAt:string` | 时间线分页读取；版本覆盖规范观测及存在的执行metadata |
 | 仿真任务 | `id:string`、`status:string`、`datasetVersion:string`、`scenario:object`、`seed:integer`、`progress:object`、`resultId:string|null` | `progress.planned=1`；完成数和失败数均为整数 |
 | 反事实批次 | `id:string`、`status:string`、`datasetVersion:string`、`seedStart:integer`、`groups:array`、`progress:object`、`resultId:string|null` | `progress` 含 `baselinePlanned/baselineCompleted/interventionPlanned/interventionCompleted/failed` 及每组 `groupId/planned/completed/failed`；计数不超过计划 |
-| 运行记录 | `id:string`、`experimentId:string`、`planId:string`、`seed:integer`、`status:string`、`metrics:object`、`features:object` | `planId=F-00` 或已锁定组 ID；同一 `(experimentId,planId,seed)` 不得重复；成功记录须有原始证据引用 |
+| 运行记录 | `id:string`、`experimentId:string`、`planId:string`、`seed:integer`、`status:string`；成功后有 `metrics:object`、`featureValues:object`、`measurement`、`archive` | `planId=F-00`或已锁定组；指标为裸数值/null；同一组与种子应唯一，但数据库尚缺该复合唯一索引 |
 | 事件页 | `events:array`、`nextAfter:integer` | 每条含 `sequence:integer`、`at:UTC ISO-8601 string`、`type:string`、`detail:object`；按 sequence 递增 |
-| 指标值 | `value:number|null`、`unit:string`、`definitionVersion:string`、`missingReason:string|null` | `value=null` 时必须给出缺失原因；分组均值另给 `sampleCount/plannedCount` |
-| 配对比较 | `groupId:string`、`baselinePlanId="F-00"`、`effects:object` | 每项含 `effect:number|null`、`ci95:[number,number]|null`、`unit`、`definitionVersion`、`validPairs/plannedPairs`、`missingReason` |
-| PC 候选图 | `status:string`、`sampleCount:integer`、`graph:object` 或 `reason:string` | 图含骨架、未定向/已定向边、分离集、独立性检验记录与冲突；样本不足不返回伪图 |
+| 指标分布 | `data.distributions[]`内的`groupId/metricId/n/mean/std/unit` | n是该组该指标的有效样本数；指标版本位于结果文档/运行measurement |
+| 配对比较 | `data.effects[]`内的`referenceGroupId/groupId/metricId/unit/pairCount/seeds/estimate/ci95/direction/method/inferenceStatus` | 候选减实际参照；参照可为F-00或观察CF组；至少2对才有区间，不足20对为描述性估计 |
+| PC 候选图 | `data.status/nodes/edges/sampleCount`及状态对应的`reason/algorithm/tests/assumptions` | 独立F-00样本；边标记collider或undirected，尚无干预支持方向字段 |
 
-进度事件只能由执行器依据真实运行回执更新。每组 `completed + failed ≤ planned`；最终 `completed` 必须关联同版本结果，部分失败用 `partial` 并保留缺失原因。执行器须为 SUMO、需求生成、Agent 决策及可能的模型采样分别记录随机种子或可复现设置；只给 SUMO 设种子不足以保证完整实验可复现。
+进度事件只能由执行器依据真实回执更新，每组completed+failed≤planned；completed必须关联同版本结果。API状态机预留partial，但当前SUMO执行器遇错即停止，不封存部分分析；重启仅标记interrupted，尚无补跑/重新分析恢复。当前需求与SUMO使用共同种子，没有LLM个体决策采样。完整输入、软件版本及异常恢复的扩展见对接清单。
 
 ## 指标、风险等级与分析结果
 
-规则版本 `rule-model/1.0`，指标版本 `post-metrics/1.0`。5 m × 5 m 网格；密度由网格人数/有效面积计算。四级**压力风险区域**：低 `<1.0`、中 `[1.0,2.0)`、中高 `[2.0,3.5)`、高 `≥3.5` 人/m²。聚集事件为同一网格密度 `≥2.0` 持续 10 秒；拥挤事件为密度 `≥3.5` 且平均速度 `≤0.5 m/s` 同时持续 10 秒。高风险区域和拥挤事件是不同输出。广播、分流、替代路线的触发/解除值在 `GET /capabilities.metricCatalog.policyTriggers` 中版本化。
+真实路径为workers/measurement.py、workers/analysis.py和workers/causal.py。当前指标post-metrics/1.1、分析post-analysis/1.0、控制post-controls/1.0。metricCatalog中的rule-model/1.0风险目录和policyTriggers是通用定义，不能据此声称执行器已运行自动广播、分流或替代路线触发。
 
-`peak_pressure_proxy = ρ × Var(v_x,v_y)` 为连续代理量，单位 `person/m2*(m/s)^2`，**不是 N 或接触压力**；其高低风险标签暂时沿用同位置的密度等级，不对代理量直接套用 1.0/2.0/3.5 阈值。`risk_exposed_unique` 为进入高风险网格的去重人数；`risk_exposure` 为高风险网格内人数乘仿真秒数求和。结果另附四级各自的去重人数和人·秒。`evacuation_time` 需要目标人员及安全区到达时间，未完成按右删失记 `null`；`resource_cost` 需要已版本化成本表。缺输入时不能补示例数字。
+五米裁剪网格、五秒FCD采样，输出全程全局的峰值密度、人员—时间加权均速、压力代理峰值、高风险去重人数/人时、拥堵网格累计时长和全部到达时间。高风险为密度≥3.5，拥堵还要求速度≤0.5且连续至少10秒；当前不返回四级各自的暴露数组或resource_cost。压力代理为密度乘速度向量方差，不是接触压力；主动停留计入速度和拥堵。全部到达时间取最后行走完成的最大秒数，从20:00计，全体未完成即null并标记右删失，不等于干预后安全区疏散耗时。
 
-`services/metric_calculator.py` 接受执行器保存的完整轨迹、固定网格有效面积、人员 ID/二维速度、压力核观测点/半径、目标人员与安全到达、资源量/成本表，复用 `algorithm.metrics` 的密度、速度、压力和疏散公式。每项返回 `{"value":number|null,"unit":"...","definitionVersion":"post-metrics/1.0","missingReason":null|"..."}`。可用缺失原因包括 `NO_TRAJECTORY`、`AREA_UNMAPPED`、`NO_KERNEL_CONFIG`、`INSUFFICIENT_TIME_POINTS`、`NO_SAFE_ZONE_OR_CENSORED`、`NO_VERSIONED_COST_TABLE`、`MISSING_OR_FAILED_RUN`。时间积分使用每帧到下一帧的仿真秒数，不用墙上时钟。
+PC特征支持2—8项已选密度/速度/压力指标，global/A/B/C与左闭右开窗口；特征帧均值和主指标人员—时间均值口径不同。PC-Stable仅用完整独立F-00种子，至少20行且列有方差，返回样本不足、退化或部分可估计状态；只做骨架及collider标记，不做干预方向核验。
 
-`services/causal_analysis.py` 在**全部计划运行到终态**后启动：每个完整 F-00 种子运行形成一行，只取有限且同列的数值；F-00 样本不足、列常数或独立性检验失败时返回 `insufficient_data` 与原因。经典 Gaussian PC 只发现 F-00 的候选图，不混合不同干预环境。每组各自与同种子 F-00 计算配对差、95% 自助抽样区间、有效配对数；失败配对明确标为 `MISSING_OR_FAILED_PAIR`。只有候选边、时间先后、隔离干预证据和效应区间同时支持时，才给出 `interventionSupportedDirections`；其余边仍未定向。这个方向证据只针对仿真模型，不能直接称为真实世界已证明因果。
+观察、干预、机制section都返回experiments和status，干预另含causalGraph；机制当前已提供相对完整观察组的消融效应，但没有完整的接收/遵从/实际改道作用链。computed只表示计算，不是机制验证结论。comparison按各组实际参照和同种子有效交集计算，至少2对提供2000次配对Bootstrap区间，不足20对标记descriptive_only。
 
-`observation` 返回 F-00 候选图，`intervention` 返回各组配对效应及方向证据，`mechanism` 需 SUMO 同事补充可切换规则、命令/消息/改道/到达等事件证据后才开放；未有证据时返回 409 `ANALYSIS_UNAVAILABLE`。分析结论文案由前端或 LLM 基于这些结构化证据生成，提示词必须约束：引用 run ID、组 ID、指标定义版本、有效样本数和缺失原因；区分合成参考曲线、真实 SUMO 运行和推断；不得补造缺失指标、因果方向或机理事件。
+services/metric_calculator.py、result_service.py、causal_analysis.py保留另一套协议，未接入当前执行器。不要把其中的指标envelope、features、validPairs/plannedPairs/missingReason或interventionSupportedDirections称作当前HTTP输出。精确字段、缺失解释及可取回证据见共同契约。
 
 ## 错误码
 
@@ -200,6 +210,6 @@ python crowdsim_overlay_server.py --host 127.0.0.1 --port 8765
 
 ## 前端校验与待接工作
 
-前端应先读取 8765 的 `GET /capabilities`，按返回上限校验每组 `repeatCount`、总组数、并行度、区域/动作/指标能力；检查必填项、严格数值类型、`atSeconds` 时间顺序和 PC 特征窗口；显示后端 `error.field` 与 `error.code`。这些校验是交互提示，最终约束仍由后端执行。反事实工作台的原有 WebSocket 连接已改为 8765；页面布局和交互未调整。该页面当前仍发送旧式 `start(mode=counterfactual_batch)`，其载荷不含完整数据集、干预参数和逐组次数，8765 会明确返回 `batch_adapter_unavailable`，不会把一次实时仿真误当成批量实验。真实联调时还需让页面通过同一 8765 的 HTTP 接口提交完整方案，并改为逐组次数、真实进度和结果，停止使用演示公式结果。
+事后PostBackendWorkflow已通过同一8765 HTTP接口载入执行矩阵、保存草稿并显式启动，读取真实进度、轨迹和结果；不通过旧式WebSocket start消息执行批次。前端与后端均核对能力、版本和输入；用户仍需确认工程参数。服务未提供能力时如实停止，不能回退到演示结果。
 
-SUMO 同事需提供：A/B/C、A/B 汇流区、安全区及 5 m 网格的有效面积/路网 ID；20:00 独立初态与固定种子重跑；可执行干预动作及参数边界；独立进程或其他安全并行方式；每个运行的轨迹、人员 ID/速度、到达和事件日志；模型/几何/规则版本；取消回执和资源上限。接入前 `GET /capabilities.simulation.ready=false` 是正确状态。
+尚待补齐模型校准与测量有效性、实际控制/机制证据、窗口区域终点、到达口径、软件/文件复现材料，以及后端部分结果和一致性恢复。负责层次、产物及验收标准见[SUMO与后端对接清单](../docs/post_sumo_handoff.md)。

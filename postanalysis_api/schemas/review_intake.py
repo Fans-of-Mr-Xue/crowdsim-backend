@@ -35,6 +35,9 @@ def validate_review_intake(plan):
             if row["id"] in ids:
                 fail("实验组 ID 不能重复")
             ids.add(row["id"])
+            if "execution" in row:
+                from .execution import validate_group_execution
+                validate_group_execution(row["execution"])
         total += len(rows)
     if not 3 <= total <= 12:
         fail("三类实验合计需要 3–12 个组")
@@ -44,6 +47,11 @@ def validate_review_intake(plan):
     repeats = settings.get("repeatCount")
     if type(repeats) is not int or not 1 <= repeats <= 50:
         fail("重复次数须为 1–50 的整数")
+    if "executionSettings" in plan:
+        from .execution import validate_execution_settings
+        execution = validate_execution_settings(plan["executionSettings"])
+        if execution["seedStart"] + repeats - 1 > 2147483647:
+            fail("派生随机种子超出32位整数范围")
     variables = plan.get("variableDefinitions") or {}
     if not isinstance(variables, dict):
         fail("变量定义必须是对象")

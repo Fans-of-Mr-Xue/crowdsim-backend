@@ -6,7 +6,7 @@ from .common import array, choice, integer, object_, optional_number, text_, fai
 
 
 def validate_dataset(payload: dict) -> dict:
-    data = object_(payload, "body", keys={"name", "sourceKind", "sourceNote", "observations"})
+    data = object_(payload, "body", keys={"name", "sourceKind", "sourceNote", "observations", "metadata"})
     name = text_(data.get("name"), "name", max_len=120)
     source = choice(data.get("sourceKind"), "sourceKind", {"synthetic_reference", "observed"})
     note = text_(data.get("sourceNote"), "sourceNote", min_len=1, max_len=500)
@@ -31,4 +31,15 @@ def validate_dataset(payload: dict) -> dict:
                      "sourceTime": text_(row.get("sourceTime", str(time)), f"{field}.sourceTime", max_len=80),
                      "state": text_(row.get("state", ""), f"{field}.state", min_len=0, max_len=500)})
     rows.sort(key=lambda item: (item["timeSeconds"], item["regionId"]))
-    return {"name": name, "sourceKind": source, "sourceNote": note, "observations": rows}
+    result = {"name": name, "sourceKind": source, "sourceNote": note, "observations": rows}
+    if "metadata" in data:
+        import json
+        metadata = object_(data["metadata"], "metadata")
+        try:
+            encoded = json.dumps(metadata, allow_nan=False, ensure_ascii=False)
+        except (TypeError, ValueError):
+            fail("metadata", "元数据必须是有效 JSON")
+        if len(encoded.encode("utf-8")) > 2 * 1024 * 1024:
+            fail("metadata", "元数据不得超过 2 MiB")
+        result["metadata"] = metadata
+    return result

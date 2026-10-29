@@ -65,6 +65,8 @@ def analyze_completed_batch(task: dict, runs: list[dict]) -> dict:
     group_results = []
     supported_directions = []
     for group in groups:
+        if group.get("experimentType", "intervention") != "intervention":
+            continue
         seeds = baseline_seeds[:group["repeatCount"]]
         paired_runs = [(by_key[("F-00", seed)], by_key[(group["id"], seed)]) for seed in seeds]
         effects = {}

@@ -16,6 +16,7 @@ from pymongo.errors import DuplicateKeyError
 
 from data_service.config import load_database_env
 from postanalysis_api.schemas.common import ApiError
+from postanalysis_api.repositories.trajectory_codec import encode as encode_trajectory, decode as decode_trajectory
 
 
 def now() -> str:
@@ -87,7 +88,72 @@ class MongoRepository:
         document = {"id": item_id, "ownerId": user, "workspaceId": workspace,
                     "createdAt": timestamp, "updatedAt": timestamp, **deepcopy(payload)}
         self._collection(kind).insert_one(document)
+        document.pop("_id", None)
         return deepcopy(document)
+
+    def begin_archive(self, run_id, experiment_type, user, workspace, configuration):
+        """Mongo has no child tables: a catalog points to three per-run collections."""
+        allowed = {"simulation", "experiment", "observation", "intervention", "mechanism", "baseline"}
+        if experiment_type not in allowed:
+            raise ValueError("Unknown post experiment type")
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+        run_name = f"{stamp}_{experiment_type}_{uuid4().hex[:8]}"
+        collections = {"detail": f"post_{run_name}", "trajectory": f"post_trajectory_{run_name}",
+                       "result": f"post_result_{run_name}"}
+        catalog = self.db["post"]
+        catalog.create_index("runId", unique=True)
+        catalog.create_index([("ownerId", 1), ("workspaceId", 1), ("createdAt", -1)])
+        entry = {"runId": run_id, "runName": run_name, "experimentType": experiment_type,
+                 "ownerId": user, "workspaceId": workspace, "createdAt": now(),
+                 "status": "running", "collections": collections}
+        catalog.insert_one(deepcopy(entry))
+        for name in collections.values():
+            self.db[name].create_index([("runId", 1), ("sequence", 1)])
+        self.db[collections["detail"]].insert_one({"runId": run_id, "sequence": 0,
+                                                  "configuration": deepcopy(configuration), "createdAt": now()})
+        return entry
+
+    def archive_entry(self, run_id, user, workspace):
+        item = self.db["post"].find_one({"runId": run_id, "ownerId": user, "workspaceId": workspace}, {"_id": 0})
+        if item is None:
+            raise ApiError("NOT_FOUND", "运行存档不存在或不属于当前工作区", 404)
+        return item
+
+    def append_trajectory(self, archive, sequence, frames):
+        self.db[archive["collections"]["trajectory"]].insert_one(
+            {"runId": archive["runId"], "sequence": sequence, **encode_trajectory(frames)})
+
+    def archive_execution_inputs(self, archive, manifest_bytes, route_bytes, command):
+        stored = []
+        try:
+            for name, content in (("input.json", manifest_bytes), ("demand.rou.xml", route_bytes)):
+                identifier = self.files.upload_from_stream(name, content, metadata={
+                    "ownerId": archive["ownerId"], "workspaceId": archive["workspaceId"],
+                    "runId": archive["runId"], "kind": "post_sumo_execution_input"})
+                stored.append(identifier)
+            self.db[archive["collections"]["detail"]].insert_one({
+                "runId": archive["runId"], "sequence": 1, "createdAt": now(),
+                "compiledInput": {"manifestFileId": str(stored[0]), "routeFileId": str(stored[1]),
+                                  "routeSha256": hashlib.sha256(route_bytes).hexdigest(),
+                                  "manifestSha256": hashlib.sha256(manifest_bytes).hexdigest(), "command": command}})
+        except Exception:
+            for identifier in stored:
+                self.files.delete(identifier)
+            raise
+
+    def finish_archive(self, archive, status, result):
+        self.db[archive["collections"]["result"]].replace_one(
+            {"runId": archive["runId"]}, {"runId": archive["runId"], "sequence": 0,
+                                           "status": status, "result": deepcopy(result), "createdAt": now()}, upsert=True)
+        self.db["post"].update_one({"runId": archive["runId"]},
+                                 {"$set": {"status": status, "updatedAt": now()}})
+
+    def trajectory(self, run_id, user, workspace, after=-1, limit=10):
+        archive = self.archive_entry(run_id, user, workspace)
+        items = list(self.db[archive["collections"]["trajectory"]].find(
+            {"runId": run_id, "sequence": {"$gt": after}}, {"_id": 0}).sort("sequence", 1).limit(limit))
+        items = [decode_trajectory(item) for item in items]
+        return {"runId": run_id, "items": items, "nextAfter": items[-1]["sequence"] if items else after}
 
     def create_dataset_with_file(self, user: str, workspace: str, payload: dict,
                                  filename: str, content_type: str, content: bytes) -> dict:
@@ -146,6 +212,22 @@ class MongoRepository:
         updated.pop("_id", None)
         return updated
 
+    def transition_task(self, kind, item_id, user, workspace, expected_status, changes):
+        document = self._collection(kind).find_one_and_update(
+            {"id": item_id, "ownerId": user, "workspaceId": workspace, "status": expected_status},
+            {"$set": {**deepcopy(changes), "updatedAt": now()}}, return_document=ReturnDocument.AFTER)
+        if document is None:
+            self.get(kind, item_id, user, workspace)
+            raise ApiError("INVALID_TASK_STATE", "任务状态已变化，请刷新后重试", 409)
+        document.pop("_id", None)
+        return document
+
+    def runs_for_experiment(self, item_id, user, workspace):
+        return list(self._collection("runs").find(
+            {"experimentId": item_id, "ownerId": user, "workspaceId": workspace},
+            {"_id": 0, "timeline": 0, "controlEvents": 0, "calibration.populationResiduals": 0})
+            .sort([("createdAt", 1), ("id", 1)]).limit(650))
+
     def list(self, kind: str, user: str, workspace: str, *, limit: int = 50) -> list[dict]:
         items = self._collection(kind).find({"ownerId": user, "workspaceId": workspace}) \
             .sort([("createdAt", -1), ("id", 1)]).limit(limit)
@@ -154,6 +236,10 @@ class MongoRepository:
             item.pop("_id", None)
             if kind == "datasets":
                 item.pop("observations", None)
+            if kind == "runs":
+                item.pop("timeline", None)
+                item.pop("controlEvents", None)
+                item.get("calibration", {}).pop("populationResiduals", None)
             result.append(item)
         return result
 
@@ -216,4 +302,10 @@ class MongoRepository:
             {"$set": {"status": "interrupted", "updatedAt": now()}})
         self.db[self.COLLECTIONS["experiments"]].update_many(
             {"status": {"$in": ["queued", "running", "cancelling"]}},
+            {"$set": {"status": "interrupted", "updatedAt": now()}})
+        self.db[self.COLLECTIONS["runs"]].update_many(
+            {"status": {"$in": ["queued", "running"]}},
+            {"$set": {"status": "interrupted", "updatedAt": now()}})
+        self.db["post"].update_many(
+            {"status": {"$in": ["queued", "running"]}},
             {"$set": {"status": "interrupted", "updatedAt": now()}})

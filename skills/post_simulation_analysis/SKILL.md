@@ -8,6 +8,12 @@ modes: [plan]
 
 # 仿真进度与分析
 
-使用 `get_simulation_progress` 读取实验状态、真实完成数及事件游标。只有状态为 `completed` 或 `partial` 且存在 `resultId` 时调用 `get_simulation_results`、`analyze_simulation_results`。结果来自数据库封存记录，按 `experimentId`、`planId`、`seed`、数据版本与指标版本对齐。
+按[执行与分析共同契约](../../docs/post_execution_analysis_contract.md)读取当前 workers 路径的结果，不使用另一套 services 分析协议。对话本身没有任务/结果查询工具；仅解释实际提供的回执，缺少数据时列出需要读取的HTTP资源。
 
-观察段解释 F-00 指标与 PC 候选；干预段解释同种子配对差、置信区间、有效配对数；机制段须有规则切换、决策、消息、改道等真实事件。无机制证据时写“暂不可分析”。若用户有子问题，再分别使用 `generate_observe_answer`、`generate_intervene_answer`、`generate_mechanism_answer`；服务未接入则给出基于结构化证据的人工可核查摘要，不宣称已经由工具生成。
+1. 用 `/experiments/{id}`、`/events`、`/runs` 核对真实状态和次数。结果接口仅在 completed/partial 且有resultId时可读；当前执行器失败/取消会停止，不封存部分分析，重启只标记interrupted。保留已完成运行的证据，不声称支持自动补跑或分析恢复。
+2. 对齐dataset版本、reviewPlanVersion、experimentId、planId、sourceGroupId、referenceGroupId、seed、runId、resultId。所有读取沿用owner/workspace。轨迹通过 `/runs/{id}/trajectory` 分页，实际事件和校准明细通过运行详情读取。
+3. 观察读取metrics.distributions的n/mean/std和观察组效应；干预读取对应组与实际参照的同种子差；机制读取相对完整观察组的消融效应。effect字段为pairCount/seeds/estimate/ci95，差值为候选减参照。不要把单组n当配对数，或补出旧字段validPairs/plannedPairs/missingReason。
+4. 至少2对才给2000次配对Bootstrap区间，不足20对为descriptive_only；估计为空结合运行状态和删失信息解释。computed仅表示计算，不表示假设成立。指标单位、指标版本与分析版本分别保留。
+5. 当前七项主要指标是全程全局汇总，主动停留计入速度和拥堵；全部到达时间从20:00计，未完成为null。压力是密度乘速度向量方差代理。PC特征窗口不自动成为主要终点窗口；其速度帧均值与全程人员—时间加权速度不同。
+6. PC候选图位于causal-graph及intervention.causalGraph；独立F-00样本不足、常量、奇异检验状态照实呈现。当前没有interventionSupportedDirections。模块消融可分析，消息/遵从/实际改道链缺失时保留“作用路径未验证”，不把整个机制section误称为不可用。
+7. 展示人数校准残差、到达/计划人数、源数据收支残差和指标区分能力；持续堵塞、全删失或极端网格值先给出诊断项。解释仅基于同一封存结果，不声称已调用generate_*工具或生成了已保存报告。

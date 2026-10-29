@@ -13,6 +13,8 @@ from urllib.request import ProxyHandler, Request, build_opener
 from crowdsim.domain.llm_generation import MAX_OUTPUT_TOKENS, generation_options
 
 ROOT = Path(__file__).resolve().parents[1]
+EXECUTION_ANALYSIS_CONTRACT = ROOT / "docs" / "post_execution_analysis_contract.md"
+EXECUTION_CONTRACT_TASKS = {"goal_review", "design", "pc_defaults", "parameter_defaults", "parameter_intent"}
 TASK_SKILLS = {
     "intake": ("post_data_assessment",),
     "baseline_review": ("post_data_assessment",),
@@ -21,24 +23,39 @@ TASK_SKILLS = {
     "parameter_intent": ("counterfactual_design",),
     "historical_event": ("post_data_assessment",),
     "design": ("post_causal_hypothesis", "counterfactual_design"),
+    "pc_defaults": ("post_causal_hypothesis", "counterfactual_design"),
 }
 EDITABLE_PARAMETERS = {"name", "region", "controlStrategy", "observedSecond", "observeArea", "selectedRegion"}
-GROUP_FIELDS = {"id", "scheme_type", "name", "hypothesis", "factor", "change", "method"}
+GROUP_FIELDS = {"id", "scheme_type", "name", "hypothesis", "factor", "change", "method", "execution"}
 SCHEME_TYPES = {"observation", "intervention", "mechanism"}
 
 CONTRACTS = {
+    "pc_defaults": '根据已确认的实验目的、时间窗及可用指标，为干预分析建议 PC 特征。只输出 {"assistant_message":"中文说明","pcFeatures":[{"id":"英文唯一编号","metricId":"peak_density|mean_speed|peak_pressure_proxy","regionId":"global|A|B|C","windowStartSeconds":0,"windowEndSeconds":19800,"aggregation":"peak|mean|end"}]}。选择2至8个特征，每项引用已选指标；同一指标可用于不同区域或窗口，特征ID必须唯一。时间为20:00起的整数秒，窗口左闭右开且不超过19800。仅提出参数，不运行PC或虚构分析结果；独立F-00样本不足20或无方差时不能估计。',
     "intake": '输出 {"assistant_message":"中文答复"}，围绕用户的问题解释流程或补问缺失信息。',
     "baseline_review": '输出 {"assistant_message":"核对结果及缺口","baseline_updates":{}}。baseline_updates 只允许 name、location、window、description 字符串；只采纳用户明确给出的元数据修正，不猜测。不能改变原始时序、数据版本、来源性质或代用户确认。window 是显示标签，不能转换原始时间口径。',
     "goal_review": '输出 {"assistant_message":"复述并引导补全目标","proposed_goal":"供用户确认的规范目标","missing_fields":["未明确的对象/范围/指标/对照/用途"]}。围绕研究对象、区域与时间窗、响应指标、对照方式、用途规范化目标。缺项明确补问，可提供候选参考但不可把建议写成用户已提出的事实。不能替用户确认目标。',
     "parameter_defaults": '输出 {"assistant_message":"建议及缺口","parameters":{}}。parameters 只能包含 name、region、controlStrategy、observedSecond、observeArea、selectedRegion 字符串。未提供的值不填，不生成预估观测结果。',
     "parameter_intent": '输出 {"assistant_message":"说明","action":"modify|complete|need_modify|no_modify|unknown","updates":[{"key":"允许修改的参数","value":"明确的新值"}],"resetKeys":[],"note":"说明"}。updates/resetKeys 只允许 name、region、controlStrategy、observedSecond、observeArea、selectedRegion。没有明确新值时补问。',
     "historical_event": '只据后端 collectedEvidence 整理公开事件事实；无资料时请用户提供可读取的来源。输出 {"assistant_message":"资料摘要或缺口","name":"事件名或未核实","date":"有据日期或未核实","region":"有据地点或未核实","window":"有据时段或未核实","initialCrowd":"有据规模或未核实","summary":"有据事实与缺口","rows":[],"sources":[{"title":"实际读取的标题","url":"实际读取的URL"}]}。不能凭模型记忆补充史实，数值时间线另行接收和校验。',
-    "design": '''输出一个对象，必须有 assistant_message 中文答复；可选 parameters、experiments、experiment_updates、group_count、repeat_count。parameters 只允许 name、region、controlStrategy、observedSecond、observeArea、selectedRegion 字符串。experiments 表示完整替换当前实验组，必须提供等于数组长度的 group_count（1–12）。每组字段为 scheme_type（observation/intervention/mechanism）、name、hypothesis、factor、change、method（可选）。每组必须是不同的可检验假设，写清相对 F-00 的变化；factor 必须来自上下文 availableFactors，method 必须来自对应 schemeCatalog 的 methods。experiment_updates 仅用于局部更新，必须有当前实验组的 id 及 scheme_type，其余同上，不能与 experiments 同时返回。只问原理时仅返回 assistant_message。repeat_count 为 1–50 的整数。当前没有真实工具执行权限，不得生成校准分数、替换事实基线、确认用户目标、输出实验结果或声称已运行。''',
+    "design": '''输出一个对象，必须有 assistant_message 中文答复；可选 parameters、experiments、experiment_updates、group_count、repeat_count。parameters 只允许 name、region、controlStrategy、observedSecond、observeArea、selectedRegion 字符串。experiments 表示完整替换当前实验组，必须提供等于数组长度的 group_count（1–12）。每组字段为 scheme_type（observation/intervention/mechanism）、name、hypothesis、factor、change、method（可选）。明确可检验假设和相对实际参照组的变化：观察参照F-00，干预参照F-00或已有观察组，机制参照完整观察组。factor 必须来自上下文 availableFactors，method 必须来自对应 schemeCatalog 的 methods。experiment_updates 仅用于局部更新，必须有当前实验组的 id 及 scheme_type，并至少提供一个实际修改字段，其余同上，不能与 experiments 同时返回。局部更新不增删实验组，无需 group_count；若附带该字段，它仅为1–12的数量注记，不要求返回 experiments。只询问原理或检查现有草案时仅返回 assistant_message，不返回空 experiments 或空 experiment_updates。repeat_count 为 1–50 的整数。主要终点、范围和判断条件写入已有hypothesis/change或assistant_message，不新增白名单外字段；manipulatedFeatureId由工作台设置。当前没有真实工具执行权限，不得生成校准分数、替换事实基线、确认用户目标、输出实验结果或声称已运行。''',
 }
 
 
 class PostAgentUnavailable(RuntimeError):
     pass
+
+
+def _execution_contract(task):
+    """Inject the shared post-only contract where goals or designs depend on it."""
+    if task not in EXECUTION_CONTRACT_TASKS:
+        return ""
+    try:
+        body = EXECUTION_ANALYSIS_CONTRACT.read_text(encoding="utf-8").strip()
+    except (OSError, UnicodeError) as exc:
+        raise PostAgentUnavailable("事后执行与分析共同契约无法读取，未请求模型，请检查服务文件") from exc
+    if not body:
+        raise PostAgentUnavailable("事后执行与分析共同契约为空，未请求模型，请检查服务文件")
+    return body
 
 
 def _text(value, label, limit=6000):
@@ -68,6 +85,7 @@ def validate_reply(task, reply, context):
         "goal_review": {"proposed_goal", "missing_fields"},
         "baseline_review": {"baseline_updates"},
         "design": {"parameters", "experiments", "experiment_updates", "group_count", "repeat_count"},
+        "pc_defaults": {"pcFeatures"},
         "parameter_defaults": {"parameters"},
         "parameter_intent": {"action", "updates", "resetKeys", "note"},
         "historical_event": {"name", "date", "region", "window", "initialCrowd", "summary", "rows", "sources"},
@@ -76,6 +94,17 @@ def validate_reply(task, reply, context):
         raise ValueError("模型答复包含本阶段未授权字段，已保留原草案")
     if "parameters" in reply:
         _parameters(reply["parameters"])
+    if task == "pc_defaults":
+        if context.get("designStage") != "intervention" or not context.get("executionCapabilities"):
+            raise ValueError("PC 参数仅用于已绑定执行能力的干预分析")
+        from postanalysis_api.schemas.common import ApiError
+        from postanalysis_api.schemas.execution import validate_execution_settings
+        settings = dict(context.get("executionSettings") or {})
+        settings["pcFeatures"] = reply.get("pcFeatures")
+        try:
+            reply["pcFeatures"] = validate_execution_settings(settings)["pcFeatures"]
+        except ApiError as exc:
+            raise ValueError(exc.message) from None
     if task == "baseline_review":
         updates = reply.get("baseline_updates", {})
         if not isinstance(updates, dict) or set(updates) - {"name", "location", "window", "description"}:
@@ -114,6 +143,20 @@ def validate_reply(task, reply, context):
             raise ValueError("不能重置锁定参数")
     if task != "design":
         return reply
+    # Models may include default empty containers while only reviewing a draft.
+    # Remove those no-ops without altering any actual field update or caller data.
+    reply = dict(reply)
+    updates = reply.get("experiment_updates")
+    if isinstance(updates, list):
+        reply["experiment_updates"] = [
+            group for group in updates
+            if not (isinstance(group, dict) and set(group) == {"id", "scheme_type"})
+        ]
+    for key in ("experiments", "experiment_updates"):
+        if isinstance(reply.get(key), list) and not reply[key]:
+            del reply[key]
+    if "experiments" not in reply:
+        reply.pop("group_count", None)
     if "repeat_count" in reply:
         _integer(reply["repeat_count"], "repeat_count", 1, 50)
     if "experiments" in reply and "experiment_updates" in reply:
@@ -146,12 +189,23 @@ def validate_reply(task, reply, context):
             required = ("name", "hypothesis", "factor", "change") if key == "experiments" else ("id",)
             for field in required:
                 _text(group.get(field), field, 1000)
-            for field in set(group) - {"scheme_type"}:
+            for field in set(group) - {"scheme_type", "execution"}:
                 _text(group[field], field, 1000)
+            if "execution" in group:
+                if not context.get("executionCapabilities"):
+                    raise ValueError("当前数据未声明工程执行能力，不能生成 SUMO 参数")
+                from postanalysis_api.schemas.common import ApiError
+                from postanalysis_api.schemas.execution import validate_group_execution
+                try:
+                    validate_group_execution(group["execution"])
+                except ApiError as exc:
+                    raise ValueError(exc.message) from None
             if key == "experiment_updates":
                 identity = (kind, group["id"])
                 if identity not in known or identity in seen:
                     raise ValueError("更新的实验组不存在或重复，已保留原草案")
+                if not (set(group) - {"id", "scheme_type"}):
+                    raise ValueError("局部更新必须包含实际修改字段，已保留原草案")
                 seen.add(identity)
             if "factor" in group and group["factor"] not in factors:
                 raise ValueError("请先在工作台定义该影响因素，再修改实验组")
@@ -162,17 +216,18 @@ def validate_reply(task, reply, context):
 
 def _model_reply(messages, model, max_tokens):
     base = os.environ.get("CROWDSIM_LLM_BASE_URL", "http://127.0.0.1:8800/v1").rstrip("/")
-    actual_model = os.environ.get("CROWDSIM_LLM_MODEL", "qwen3.8-flash-next")
-    if model not in (None, "", "Qwen3.8-Flash-Next", "qwen3.8-flash-next", actual_model):
-        raise ValueError("事后 agent 使用后端配置的模型，请选择 Qwen3.8-Flash-Next 或检查后端模型配置")
+    actual_model = os.environ.get("CROWDSIM_POST_LLM_MODEL") or os.environ.get("CROWDSIM_LLM_MODEL", "GLM-5.3-Flash")
+    if model not in (None, "", "GLM-5.3-Flash", "GLM-5.3-Flash-8800", "GLM-5.3-Flash-exl3-4.05bpw", actual_model):
+        raise ValueError("事后 agent 使用后端配置的模型，请选择 GLM-5.3 Flash 或检查后端模型配置")
     body = {"model": actual_model, "messages": messages, "stream": False,
             **generation_options(actual_model, max_tokens, {
                 "temperature": 0.15, "chat_template_kwargs": {"enable_thinking": False},
                 "response_format": {"type": "json_object"},
             })}
     headers = {"Content-Type": "application/json"}
-    if os.environ.get("CROWDSIM_MODEL_API_KEY"):
-        headers["Authorization"] = "Bearer " + os.environ["CROWDSIM_MODEL_API_KEY"]
+    token = os.environ.get("CROWDSIM_POST_LLM_API_KEY") or os.environ.get("CROWDSIM_MODEL_API_KEY")
+    if token:
+        headers["Authorization"] = "Bearer " + token
     request = Request(base + "/chat/completions", data=json.dumps(body).encode(), headers=headers)
     try:
         with build_opener(ProxyHandler({})).open(request, timeout=150) as response:
@@ -202,9 +257,9 @@ def respond(payload, *, complete=None):
     if not isinstance(context, dict):
         raise ValueError("context 必须是对象")
     context = {key: value for key, value in context.items() if key != "collectedEvidence"}
-    if task == "design" and not context.get("goalConfirmed"):
+    if task in {"design", "pc_defaults"} and not context.get("goalConfirmed"):
         raise ValueError("请先确认数据基线和实验目的，再进入方案设计")
-    if task == "design" and context.get("baselineConfirmed") is False:
+    if task in {"design", "pc_defaults"} and context.get("baselineConfirmed") is False:
         raise ValueError("请先明确确认事实基线")
     history = payload.get("messages", [])
     if not isinstance(history, list) or not history:
@@ -238,6 +293,9 @@ def respond(payload, *, complete=None):
         raise PostAgentUnavailable("事后 Agent 或所需 skill 配置不完整")
     instructions = agent.build_system_prompt(phase="post", skill_registry=visible)
     instructions += "\n\n" + "\n\n".join(skill.build_prompt(mode=agent.mode, phase="post") for skill in selected)
+    execution_contract = _execution_contract(task)
+    if execution_contract:
+        instructions += "\n\n" + execution_contract
     instructions += (
         "\n\n## 本接口实际能力及输出约束\n"
         "本轮执行数据评估和方案建议，不调度仿真、编译、发布或数据库写入。"
@@ -255,8 +313,14 @@ def respond(payload, *, complete=None):
     if task == "design":
         instructions += ('\n按观察→干预→机制逐类引导；每轮优先补问 1–2 个缺项。designStage 指定当前设计类型，'
                          '只修改该类型。experiments 在此时仅完整替换当前类型，其他两类保持已有草案。'
-                         '明确假设、因素水平、F-00 对照、固定条件、响应指标、重复次数与证据需求。'
+                         '明确假设、因素水平、实际参照组、固定条件、主要指标/单位和范围、判断条件、重复依据与证据缺口。'
                          '机制实验只能提出隔离/消融配置，不改写已发布人工社会或基线。')
+        if context.get("executionCapabilities"):
+            instructions += ('\n当前纪念塔测试模型允许在每组额外返回 execution 对象，且仅包含 '
+                'startSeconds（1—19799整数）、compliance（0—1）、delaySeconds（0—19800整数）、referenceDesignId（F-00或已有观察组ID）。'
+                '必须与用户文字方案一致；不确定时补问，不擅自确认。观察比较完整策略；干预相对参照组只改一个因素；'
+                '机制固定通道与时点，只将引导遵从比例设0或改变响应延迟中的一个。'
+                '这些设置只是建议，用户确认快照和工程执行矩阵后才由后端编译并运行。')
     budget = payload.get("maxTokens", MAX_OUTPUT_TOKENS)
     _integer(budget, "maxTokens", 128, 6000)
     budget = min(budget, MAX_OUTPUT_TOKENS)

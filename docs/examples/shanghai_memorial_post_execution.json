@@ -1,0 +1,197 @@
+{
+  "name": "纪念塔三类反事实完整测试",
+  "datasetId": "UPLOAD_DATASET_ID",
+  "scenario": {
+    "scenarioId": "memorial-post-test",
+    "modelId": "memorial-post-striping",
+    "modelVersion": "post-striping/1.0",
+    "geometryVersion": "memorial-test-map-v1-11271ae87af408b9",
+    "ruleVersion": "post-controls/1.0",
+    "startClock": "20:00",
+    "durationSeconds": 19800
+  },
+  "seedStart": 20261023,
+  "parallelism": 1,
+  "groups": [
+    {
+      "id": "CF-01",
+      "name": "提前开放与引导世界线",
+      "sourceGroupId": "OBS-01",
+      "experimentType": "observation",
+      "repeatCount": 6,
+      "hypothesis": "提前开放 C 测试通道并引导可改变密度和风险暴露",
+      "manipulatedFeatureId": "late_density",
+      "referenceGroupId": "F-00",
+      "interventions": [
+        {
+          "id": "open-C",
+          "actionType": "open_gate",
+          "targetRegionId": "C",
+          "atSeconds": 13800,
+          "parameters": {}
+        },
+        {
+          "id": "guide-C",
+          "actionType": "guidance",
+          "targetRegionId": "C",
+          "atSeconds": 13800,
+          "parameters": {
+            "compliance": 0.7,
+            "delaySeconds": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "CF-02",
+      "name": "启动时点单因子实验 · 13800s",
+      "sourceGroupId": "INT-01",
+      "experimentType": "intervention",
+      "repeatCount": 6,
+      "hypothesis": "固定引导比例与延迟，改变启动时点将影响风险暴露",
+      "manipulatedFeatureId": "late_density",
+      "referenceGroupId": "CF-01",
+      "interventions": [
+        {
+          "id": "open-C",
+          "actionType": "open_gate",
+          "targetRegionId": "C",
+          "atSeconds": 13800,
+          "parameters": {}
+        },
+        {
+          "id": "guide-C",
+          "actionType": "guidance",
+          "targetRegionId": "C",
+          "atSeconds": 13800,
+          "parameters": {
+            "compliance": 0.7,
+            "delaySeconds": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "CF-03",
+      "name": "启动时点单因子实验 · 14100s",
+      "sourceGroupId": "INT-01",
+      "experimentType": "intervention",
+      "repeatCount": 6,
+      "hypothesis": "固定引导比例与延迟，改变启动时点将影响风险暴露",
+      "manipulatedFeatureId": "late_density",
+      "referenceGroupId": "CF-01",
+      "interventions": [
+        {
+          "id": "open-C",
+          "actionType": "open_gate",
+          "targetRegionId": "C",
+          "atSeconds": 14100,
+          "parameters": {}
+        },
+        {
+          "id": "guide-C",
+          "actionType": "guidance",
+          "targetRegionId": "C",
+          "atSeconds": 14100,
+          "parameters": {
+            "compliance": 0.7,
+            "delaySeconds": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "CF-04",
+      "name": "启动时点单因子实验 · 14400s",
+      "sourceGroupId": "INT-01",
+      "experimentType": "intervention",
+      "repeatCount": 6,
+      "hypothesis": "固定引导比例与延迟，改变启动时点将影响风险暴露",
+      "manipulatedFeatureId": "late_density",
+      "referenceGroupId": "CF-01",
+      "interventions": [
+        {
+          "id": "open-C",
+          "actionType": "open_gate",
+          "targetRegionId": "C",
+          "atSeconds": 14400,
+          "parameters": {}
+        },
+        {
+          "id": "guide-C",
+          "actionType": "guidance",
+          "targetRegionId": "C",
+          "atSeconds": 14400,
+          "parameters": {
+            "compliance": 0.7,
+            "delaySeconds": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "CF-05",
+      "name": "引导响应模块消融",
+      "sourceGroupId": "MEC-01",
+      "experimentType": "mechanism",
+      "repeatCount": 6,
+      "hypothesis": "固定开放时点，取消引导遵从模块后风险变化将减弱",
+      "manipulatedFeatureId": "late_density",
+      "referenceGroupId": "CF-01",
+      "interventions": [
+        {
+          "id": "open-C",
+          "actionType": "open_gate",
+          "targetRegionId": "C",
+          "atSeconds": 13800,
+          "parameters": {}
+        },
+        {
+          "id": "guide-C",
+          "actionType": "guidance",
+          "targetRegionId": "C",
+          "atSeconds": 13800,
+          "parameters": {
+            "compliance": 0,
+            "delaySeconds": 0
+          }
+        }
+      ]
+    }
+  ],
+  "metricIds": [
+    "peak_density",
+    "mean_speed",
+    "peak_pressure_proxy",
+    "risk_exposed_unique",
+    "risk_exposure",
+    "congestion_duration",
+    "evacuation_time"
+  ],
+  "pcFeatures": [
+    {
+      "id": "early_density",
+      "metricId": "peak_density",
+      "regionId": "global",
+      "windowStartSeconds": 12000,
+      "windowEndSeconds": 13800,
+      "aggregation": "peak"
+    },
+    {
+      "id": "late_density",
+      "metricId": "peak_density",
+      "regionId": "global",
+      "windowStartSeconds": 13800,
+      "windowEndSeconds": 16200,
+      "aggregation": "peak"
+    },
+    {
+      "id": "late_speed",
+      "metricId": "mean_speed",
+      "regionId": "global",
+      "windowStartSeconds": 16200,
+      "windowEndSeconds": 19800,
+      "aggregation": "mean"
+    }
+  ]
+}

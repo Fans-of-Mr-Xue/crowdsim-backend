@@ -1,0 +1,2037 @@
+{
+  "name": "上海纪念塔事后完整测试基线（原始合成数据规范化）",
+  "sourceKind": "synthetic_reference",
+  "sourceNote": "合成案例按原数据等比例缩放至同一时刻总人数峰值300人，人数及区间进出流量四舍五入为整数；人口占比保留原值。非真实事故监测记录。密度、速度、压力原文缺失，保留 null，由 SUMO 运行测量；取整后的收支残差如实记录。",
+  "observations": [
+    {
+      "timeSeconds": 0,
+      "regionId": "A",
+      "population": 43,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T20:00+08:00",
+      "state": "跨年投影秀预热；A西主入口高承载；B南入口开放；C北应急通道封闭且无人"
+    },
+    {
+      "timeSeconds": 0,
+      "regionId": "B",
+      "population": 18,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T20:00+08:00",
+      "state": "跨年投影秀预热；A西主入口高承载；B南入口开放；C北应急通道封闭且无人"
+    },
+    {
+      "timeSeconds": 0,
+      "regionId": "C",
+      "population": 0,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T20:00+08:00",
+      "state": "跨年投影秀预热；A西主入口高承载；B南入口开放；C北应急通道封闭且无人"
+    },
+    {
+      "timeSeconds": 3600,
+      "regionId": "A",
+      "population": 69,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T21:00+08:00",
+      "state": "外滩方向持续汇入；A入口排队初现；B入口缓慢；C仍封闭"
+    },
+    {
+      "timeSeconds": 3600,
+      "regionId": "B",
+      "population": 30,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T21:00+08:00",
+      "state": "外滩方向持续汇入；A入口排队初现；B入口缓慢；C仍封闭"
+    },
+    {
+      "timeSeconds": 3600,
+      "regionId": "C",
+      "population": 0,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T21:00+08:00",
+      "state": "外滩方向持续汇入；A入口排队初现；B入口缓慢；C仍封闭"
+    },
+    {
+      "timeSeconds": 5400,
+      "regionId": "A",
+      "population": 89,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T21:30+08:00",
+      "state": "纪念塔前快闪表演吸引人群；A入口承载约70%；B约30%；C无有效人流"
+    },
+    {
+      "timeSeconds": 5400,
+      "regionId": "B",
+      "population": 38,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T21:30+08:00",
+      "state": "纪念塔前快闪表演吸引人群；A入口承载约70%；B约30%；C无有效人流"
+    },
+    {
+      "timeSeconds": 5400,
+      "regionId": "C",
+      "population": 0,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T21:30+08:00",
+      "state": "纪念塔前快闪表演吸引人群；A入口承载约70%；B约30%；C无有效人流"
+    },
+    {
+      "timeSeconds": 7200,
+      "regionId": "A",
+      "population": 108,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T22:00+08:00",
+      "state": "倒计时预热；黄浦公园与观景平台人群开始累积；A入口高承载；B入口回流增加"
+    },
+    {
+      "timeSeconds": 7200,
+      "regionId": "B",
+      "population": 46,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T22:00+08:00",
+      "state": "倒计时预热；黄浦公园与观景平台人群开始累积；A入口高承载；B入口回流增加"
+    },
+    {
+      "timeSeconds": 7200,
+      "regionId": "C",
+      "population": 0,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T22:00+08:00",
+      "state": "倒计时预热；黄浦公园与观景平台人群开始累积；A入口高承载；B入口回流增加"
+    },
+    {
+      "timeSeconds": 9000,
+      "regionId": "A",
+      "population": 128,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T22:30+08:00",
+      "state": "平台与通道持续累积；A西入口瓶颈前移；B南入口出现汇流；C北通道仍关闭"
+    },
+    {
+      "timeSeconds": 9000,
+      "regionId": "B",
+      "population": 55,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T22:30+08:00",
+      "state": "平台与通道持续累积；A西入口瓶颈前移；B南入口出现汇流；C北通道仍关闭"
+    },
+    {
+      "timeSeconds": 9000,
+      "regionId": "C",
+      "population": 0,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T22:30+08:00",
+      "state": "平台与通道持续累积；A西入口瓶颈前移；B南入口出现汇流；C北通道仍关闭"
+    },
+    {
+      "timeSeconds": 10800,
+      "regionId": "A",
+      "population": 154,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T23:00+08:00",
+      "state": "人群向纪念塔核心区压缩；A入口高承载；B入口出现逆向人流；C通道基本无人"
+    },
+    {
+      "timeSeconds": 10800,
+      "regionId": "B",
+      "population": 66,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T23:00+08:00",
+      "state": "人群向纪念塔核心区压缩；A入口高承载；B入口出现逆向人流；C通道基本无人"
+    },
+    {
+      "timeSeconds": 10800,
+      "regionId": "C",
+      "population": 0,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T23:00+08:00",
+      "state": "人群向纪念塔核心区压缩；A入口高承载；B入口出现逆向人流；C通道基本无人"
+    },
+    {
+      "timeSeconds": 12000,
+      "regionId": "A",
+      "population": 174,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T23:20+08:00",
+      "state": "台阶口和平台回流形成双向对冲；A与B汇流处速度骤降；C仍未启用"
+    },
+    {
+      "timeSeconds": 12000,
+      "regionId": "B",
+      "population": 75,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T23:20+08:00",
+      "state": "台阶口和平台回流形成双向对冲；A与B汇流处速度骤降；C仍未启用"
+    },
+    {
+      "timeSeconds": 12000,
+      "regionId": "C",
+      "population": 0,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T23:20+08:00",
+      "state": "台阶口和平台回流形成双向对冲；A与B汇流处速度骤降；C仍未启用"
+    },
+    {
+      "timeSeconds": 12600,
+      "regionId": "A",
+      "population": 194,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T23:30+08:00",
+      "state": "局部瓶颈出现停滞；A西入口前密度快速上升；B南入口回堵；C无分流"
+    },
+    {
+      "timeSeconds": 12600,
+      "regionId": "B",
+      "population": 83,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T23:30+08:00",
+      "state": "局部瓶颈出现停滞；A西入口前密度快速上升；B南入口回堵；C无分流"
+    },
+    {
+      "timeSeconds": 12600,
+      "regionId": "C",
+      "population": 0,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T23:30+08:00",
+      "state": "局部瓶颈出现停滞；A西入口前密度快速上升；B南入口回堵；C无分流"
+    },
+    {
+      "timeSeconds": 12900,
+      "regionId": "A",
+      "population": 207,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T23:35+08:00",
+      "state": "局部瓶颈出现停滞和跌倒传播；A/B交汇区压力峰值；C北通道仍封闭"
+    },
+    {
+      "timeSeconds": 12900,
+      "regionId": "B",
+      "population": 88,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T23:35+08:00",
+      "state": "局部瓶颈出现停滞和跌倒传播；A/B交汇区压力峰值；C北通道仍封闭"
+    },
+    {
+      "timeSeconds": 12900,
+      "regionId": "C",
+      "population": 0,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T23:35+08:00",
+      "state": "局部瓶颈出现停滞和跌倒传播；A/B交汇区压力峰值；C北通道仍封闭"
+    },
+    {
+      "timeSeconds": 13500,
+      "regionId": "A",
+      "population": 210,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T23:45+08:00",
+      "state": "信息不明导致反向移动；核心区短时过载；C通道未开放无法分流"
+    },
+    {
+      "timeSeconds": 13500,
+      "regionId": "B",
+      "population": 90,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T23:45+08:00",
+      "state": "信息不明导致反向移动；核心区短时过载；C通道未开放无法分流"
+    },
+    {
+      "timeSeconds": 13500,
+      "regionId": "C",
+      "population": 0,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T23:45+08:00",
+      "state": "信息不明导致反向移动；核心区短时过载；C通道未开放无法分流"
+    },
+    {
+      "timeSeconds": 13800,
+      "regionId": "A",
+      "population": 197,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T23:50+08:00",
+      "state": "应急疏散启动但核心区释放缓慢；A/B仍拥堵；C尚未形成有效通道"
+    },
+    {
+      "timeSeconds": 13800,
+      "regionId": "B",
+      "population": 84,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T23:50+08:00",
+      "state": "应急疏散启动但核心区释放缓慢；A/B仍拥堵；C尚未形成有效通道"
+    },
+    {
+      "timeSeconds": 13800,
+      "regionId": "C",
+      "population": 0,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2014-12-31T23:50+08:00",
+      "state": "应急疏散启动但核心区释放缓慢；A/B仍拥堵；C尚未形成有效通道"
+    },
+    {
+      "timeSeconds": 14400,
+      "regionId": "A",
+      "population": 190,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T00:00+08:00",
+      "state": "倒计时结束；人群集中离场；A/B出口瓶颈加剧；C仍未有效分流"
+    },
+    {
+      "timeSeconds": 14400,
+      "regionId": "B",
+      "population": 82,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T00:00+08:00",
+      "state": "倒计时结束；人群集中离场；A/B出口瓶颈加剧；C仍未有效分流"
+    },
+    {
+      "timeSeconds": 14400,
+      "regionId": "C",
+      "population": 0,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T00:00+08:00",
+      "state": "倒计时结束；人群集中离场；A/B出口瓶颈加剧；C仍未有效分流"
+    },
+    {
+      "timeSeconds": 14700,
+      "regionId": "A",
+      "population": 160,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T00:05+08:00",
+      "state": "现场收到调控信号；广播引导并尝试开放C北侧应急通道；策略刚启动存在滞后"
+    },
+    {
+      "timeSeconds": 14700,
+      "regionId": "B",
+      "population": 80,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T00:05+08:00",
+      "state": "现场收到调控信号；广播引导并尝试开放C北侧应急通道；策略刚启动存在滞后"
+    },
+    {
+      "timeSeconds": 14700,
+      "regionId": "C",
+      "population": 27,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T00:05+08:00",
+      "state": "现场收到调控信号；广播引导并尝试开放C北侧应急通道；策略刚启动存在滞后"
+    },
+    {
+      "timeSeconds": 15300,
+      "regionId": "A",
+      "population": 146,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T00:15+08:00",
+      "state": "引导初期；部分人群转向C但路径不熟；A/B压力仍高"
+    },
+    {
+      "timeSeconds": 15300,
+      "regionId": "B",
+      "population": 73,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T00:15+08:00",
+      "state": "引导初期；部分人群转向C但路径不熟；A/B压力仍高"
+    },
+    {
+      "timeSeconds": 15300,
+      "regionId": "C",
+      "population": 24,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T00:15+08:00",
+      "state": "引导初期；部分人群转向C但路径不熟；A/B压力仍高"
+    },
+    {
+      "timeSeconds": 15600,
+      "regionId": "A",
+      "population": 115,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T00:20+08:00",
+      "state": "C北通道开始分流但滞后明显；A/B密度未即时下降；外围开始限流"
+    },
+    {
+      "timeSeconds": 15600,
+      "regionId": "B",
+      "population": 69,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T00:20+08:00",
+      "state": "C北通道开始分流但滞后明显；A/B密度未即时下降；外围开始限流"
+    },
+    {
+      "timeSeconds": 15600,
+      "regionId": "C",
+      "population": 46,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T00:20+08:00",
+      "state": "C北通道开始分流但滞后明显；A/B密度未即时下降；外围开始限流"
+    },
+    {
+      "timeSeconds": 16200,
+      "regionId": "A",
+      "population": 62,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T00:30+08:00",
+      "state": "调控策略开始生效；C北侧通道分流增加；A/B拥堵缓解"
+    },
+    {
+      "timeSeconds": 16200,
+      "regionId": "B",
+      "population": 45,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T00:30+08:00",
+      "state": "调控策略开始生效；C北侧通道分流增加；A/B拥堵缓解"
+    },
+    {
+      "timeSeconds": 16200,
+      "regionId": "C",
+      "population": 71,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T00:30+08:00",
+      "state": "调控策略开始生效；C北侧通道分流增加；A/B拥堵缓解"
+    },
+    {
+      "timeSeconds": 17100,
+      "regionId": "A",
+      "population": 28,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T00:45+08:00",
+      "state": "人为引导与外围分流共同作用；C承担主要疏散；核心区密度回落"
+    },
+    {
+      "timeSeconds": 17100,
+      "regionId": "B",
+      "population": 22,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T00:45+08:00",
+      "state": "人为引导与外围分流共同作用；C承担主要疏散；核心区密度回落"
+    },
+    {
+      "timeSeconds": 17100,
+      "regionId": "C",
+      "population": 62,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T00:45+08:00",
+      "state": "人为引导与外围分流共同作用；C承担主要疏散；核心区密度回落"
+    },
+    {
+      "timeSeconds": 18000,
+      "regionId": "A",
+      "population": 20,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T01:00+08:00",
+      "state": "人群密度进入可控区间；A/B恢复通行；C继续疏散"
+    },
+    {
+      "timeSeconds": 18000,
+      "regionId": "B",
+      "population": 13,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T01:00+08:00",
+      "state": "人群密度进入可控区间；A/B恢复通行；C继续疏散"
+    },
+    {
+      "timeSeconds": 18000,
+      "regionId": "C",
+      "population": 33,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T01:00+08:00",
+      "state": "人群密度进入可控区间；A/B恢复通行；C继续疏散"
+    },
+    {
+      "timeSeconds": 19200,
+      "regionId": "A",
+      "population": 7,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T01:20+08:00",
+      "state": "基本疏散完成；三处出入口恢复低负荷"
+    },
+    {
+      "timeSeconds": 19200,
+      "regionId": "B",
+      "population": 5,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T01:20+08:00",
+      "state": "基本疏散完成；三处出入口恢复低负荷"
+    },
+    {
+      "timeSeconds": 19200,
+      "regionId": "C",
+      "population": 12,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T01:20+08:00",
+      "state": "基本疏散完成；三处出入口恢复低负荷"
+    },
+    {
+      "timeSeconds": 19800,
+      "regionId": "A",
+      "population": 0,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T01:30+08:00",
+      "state": "基本清场完成；仅少量收尾人员与零星滞留；A/B/C均低负荷"
+    },
+    {
+      "timeSeconds": 19800,
+      "regionId": "B",
+      "population": 0,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T01:30+08:00",
+      "state": "基本清场完成；仅少量收尾人员与零星滞留；A/B/C均低负荷"
+    },
+    {
+      "timeSeconds": 19800,
+      "regionId": "C",
+      "population": 0,
+      "density": null,
+      "meanSpeed": null,
+      "pressureProxy": null,
+      "sourceTime": "2015-01-01T01:30+08:00",
+      "state": "基本清场完成；仅少量收尾人员与零星滞留；A/B/C均低负荷"
+    }
+  ],
+  "metadata": {
+    "schemaVersion": "post-dataset/2.0",
+    "location": "上海市人民英雄纪念塔",
+    "timezone": "Asia/Shanghai",
+    "startTime": "2014-12-31T20:00:00+08:00",
+    "durationSeconds": 19800,
+    "sourceFile": "Simulation_data_ShanghaiMemorialTower_detail.md",
+    "sourceSha256": "f913230620ca7e30aff08eefd2cac24140d47b49038e3b87df11d4349466d202",
+    "synthetic": true,
+    "sourceRecords": [
+      {
+        "sourceLine": 27,
+        "timeSeconds": 0,
+        "regionId": "A",
+        "population": 43,
+        "intervalEntered": 43,
+        "intervalExited": 0,
+        "agePercent": {
+          "elderly": 8,
+          "teenager": 18,
+          "other": 74
+        },
+        "nationalityPercent": {
+          "China": 87,
+          "Korea": 4,
+          "Russia": 2,
+          "other": 7
+        },
+        "strategy": "无专项应急策略；常规开放，C北应急通道封闭",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 28,
+        "timeSeconds": 0,
+        "regionId": "B",
+        "population": 18,
+        "intervalEntered": 18,
+        "intervalExited": 0,
+        "agePercent": {
+          "elderly": 8,
+          "teenager": 18,
+          "other": 74
+        },
+        "nationalityPercent": {
+          "China": 83,
+          "Korea": 6,
+          "Russia": 4,
+          "other": 7
+        },
+        "strategy": "无专项应急策略；常规开放，C北应急通道封闭",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 29,
+        "timeSeconds": 0,
+        "regionId": "C",
+        "population": 0,
+        "intervalEntered": 0,
+        "intervalExited": 0,
+        "agePercent": {
+          "elderly": 8,
+          "teenager": 18,
+          "other": 74
+        },
+        "nationalityPercent": {
+          "China": 85,
+          "Korea": 5,
+          "Russia": 3,
+          "other": 7
+        },
+        "strategy": "无专项应急策略；常规开放，C北应急通道封闭",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 30,
+        "timeSeconds": 3600,
+        "regionId": "A",
+        "population": 69,
+        "intervalEntered": 28,
+        "intervalExited": 2,
+        "agePercent": {
+          "elderly": 8,
+          "teenager": 18,
+          "other": 74
+        },
+        "nationalityPercent": {
+          "China": 87,
+          "Korea": 4,
+          "Russia": 2,
+          "other": 7
+        },
+        "strategy": "无专项应急策略；常规汇入管理，C仍封闭",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 31,
+        "timeSeconds": 3600,
+        "regionId": "B",
+        "population": 30,
+        "intervalEntered": 12,
+        "intervalExited": 1,
+        "agePercent": {
+          "elderly": 8,
+          "teenager": 18,
+          "other": 74
+        },
+        "nationalityPercent": {
+          "China": 83,
+          "Korea": 6,
+          "Russia": 4,
+          "other": 7
+        },
+        "strategy": "无专项应急策略；常规汇入管理，C仍封闭",
+        "populationResidual": 1
+      },
+      {
+        "sourceLine": 32,
+        "timeSeconds": 3600,
+        "regionId": "C",
+        "population": 0,
+        "intervalEntered": 0,
+        "intervalExited": 0,
+        "agePercent": {
+          "elderly": 8,
+          "teenager": 18,
+          "other": 74
+        },
+        "nationalityPercent": {
+          "China": 85,
+          "Korea": 5,
+          "Russia": 3,
+          "other": 7
+        },
+        "strategy": "无专项应急策略；常规汇入管理，C仍封闭",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 33,
+        "timeSeconds": 5400,
+        "regionId": "A",
+        "population": 89,
+        "intervalEntered": 22,
+        "intervalExited": 3,
+        "agePercent": {
+          "elderly": 8,
+          "teenager": 18,
+          "other": 74
+        },
+        "nationalityPercent": {
+          "China": 87,
+          "Korea": 4,
+          "Russia": 2,
+          "other": 7
+        },
+        "strategy": "快闪现场秩序维护；常规开放，C未启用",
+        "populationResidual": 1
+      },
+      {
+        "sourceLine": 34,
+        "timeSeconds": 5400,
+        "regionId": "B",
+        "population": 38,
+        "intervalEntered": 10,
+        "intervalExited": 2,
+        "agePercent": {
+          "elderly": 8,
+          "teenager": 18,
+          "other": 74
+        },
+        "nationalityPercent": {
+          "China": 83,
+          "Korea": 6,
+          "Russia": 4,
+          "other": 7
+        },
+        "strategy": "快闪现场秩序维护；常规开放，C未启用",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 35,
+        "timeSeconds": 5400,
+        "regionId": "C",
+        "population": 0,
+        "intervalEntered": 0,
+        "intervalExited": 0,
+        "agePercent": {
+          "elderly": 8,
+          "teenager": 18,
+          "other": 74
+        },
+        "nationalityPercent": {
+          "China": 85,
+          "Korea": 5,
+          "Russia": 3,
+          "other": 7
+        },
+        "strategy": "快闪现场秩序维护；常规开放，C未启用",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 36,
+        "timeSeconds": 7200,
+        "regionId": "A",
+        "population": 108,
+        "intervalEntered": 24,
+        "intervalExited": 4,
+        "agePercent": {
+          "elderly": 6,
+          "teenager": 22,
+          "other": 72
+        },
+        "nationalityPercent": {
+          "China": 84,
+          "Korea": 6,
+          "Russia": 4,
+          "other": 6
+        },
+        "strategy": "倒计时预热常规管理；加强A/B观察，C未启用",
+        "populationResidual": -1
+      },
+      {
+        "sourceLine": 37,
+        "timeSeconds": 7200,
+        "regionId": "B",
+        "population": 46,
+        "intervalEntered": 10,
+        "intervalExited": 2,
+        "agePercent": {
+          "elderly": 6,
+          "teenager": 22,
+          "other": 72
+        },
+        "nationalityPercent": {
+          "China": 80,
+          "Korea": 8,
+          "Russia": 5,
+          "other": 7
+        },
+        "strategy": "倒计时预热常规管理；加强A/B观察，C未启用",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 38,
+        "timeSeconds": 7200,
+        "regionId": "C",
+        "population": 0,
+        "intervalEntered": 0,
+        "intervalExited": 0,
+        "agePercent": {
+          "elderly": 6,
+          "teenager": 22,
+          "other": 72
+        },
+        "nationalityPercent": {
+          "China": 82,
+          "Korea": 7,
+          "Russia": 5,
+          "other": 6
+        },
+        "strategy": "倒计时预热常规管理；加强A/B观察，C未启用",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 39,
+        "timeSeconds": 9000,
+        "regionId": "A",
+        "population": 128,
+        "intervalEntered": 24,
+        "intervalExited": 5,
+        "agePercent": {
+          "elderly": 6,
+          "teenager": 22,
+          "other": 72
+        },
+        "nationalityPercent": {
+          "China": 84,
+          "Korea": 6,
+          "Russia": 4,
+          "other": 6
+        },
+        "strategy": "常规拥堵预警；A/B汇流观察，C仍关闭",
+        "populationResidual": 1
+      },
+      {
+        "sourceLine": 40,
+        "timeSeconds": 9000,
+        "regionId": "B",
+        "population": 55,
+        "intervalEntered": 11,
+        "intervalExited": 2,
+        "agePercent": {
+          "elderly": 6,
+          "teenager": 22,
+          "other": 72
+        },
+        "nationalityPercent": {
+          "China": 80,
+          "Korea": 8,
+          "Russia": 5,
+          "other": 7
+        },
+        "strategy": "常规拥堵预警；A/B汇流观察，C仍关闭",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 41,
+        "timeSeconds": 9000,
+        "regionId": "C",
+        "population": 0,
+        "intervalEntered": 0,
+        "intervalExited": 0,
+        "agePercent": {
+          "elderly": 6,
+          "teenager": 22,
+          "other": 72
+        },
+        "nationalityPercent": {
+          "China": 82,
+          "Korea": 7,
+          "Russia": 5,
+          "other": 6
+        },
+        "strategy": "常规拥堵预警；A/B汇流观察，C仍关闭",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 42,
+        "timeSeconds": 10800,
+        "regionId": "A",
+        "population": 154,
+        "intervalEntered": 33,
+        "intervalExited": 7,
+        "agePercent": {
+          "elderly": 6,
+          "teenager": 22,
+          "other": 72
+        },
+        "nationalityPercent": {
+          "China": 84,
+          "Korea": 6,
+          "Russia": 4,
+          "other": 6
+        },
+        "strategy": "常规疏导；监测B逆向人流，C未启用",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 43,
+        "timeSeconds": 10800,
+        "regionId": "B",
+        "population": 66,
+        "intervalEntered": 15,
+        "intervalExited": 3,
+        "agePercent": {
+          "elderly": 6,
+          "teenager": 22,
+          "other": 72
+        },
+        "nationalityPercent": {
+          "China": 80,
+          "Korea": 8,
+          "Russia": 5,
+          "other": 7
+        },
+        "strategy": "常规疏导；监测B逆向人流，C未启用",
+        "populationResidual": -1
+      },
+      {
+        "sourceLine": 44,
+        "timeSeconds": 10800,
+        "regionId": "C",
+        "population": 0,
+        "intervalEntered": 0,
+        "intervalExited": 0,
+        "agePercent": {
+          "elderly": 6,
+          "teenager": 22,
+          "other": 72
+        },
+        "nationalityPercent": {
+          "China": 82,
+          "Korea": 7,
+          "Russia": 5,
+          "other": 6
+        },
+        "strategy": "常规疏导；监测B逆向人流，C未启用",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 45,
+        "timeSeconds": 12000,
+        "regionId": "A",
+        "population": 174,
+        "intervalEntered": 28,
+        "intervalExited": 9,
+        "agePercent": {
+          "elderly": 6,
+          "teenager": 22,
+          "other": 72
+        },
+        "nationalityPercent": {
+          "China": 84,
+          "Korea": 6,
+          "Russia": 4,
+          "other": 6
+        },
+        "strategy": "常规疏导；A/B汇流处重点观察，C仍未启用",
+        "populationResidual": 1
+      },
+      {
+        "sourceLine": 46,
+        "timeSeconds": 12000,
+        "regionId": "B",
+        "population": 75,
+        "intervalEntered": 13,
+        "intervalExited": 4,
+        "agePercent": {
+          "elderly": 6,
+          "teenager": 22,
+          "other": 72
+        },
+        "nationalityPercent": {
+          "China": 80,
+          "Korea": 8,
+          "Russia": 5,
+          "other": 7
+        },
+        "strategy": "常规疏导；A/B汇流处重点观察，C仍未启用",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 47,
+        "timeSeconds": 12000,
+        "regionId": "C",
+        "population": 0,
+        "intervalEntered": 0,
+        "intervalExited": 0,
+        "agePercent": {
+          "elderly": 6,
+          "teenager": 22,
+          "other": 72
+        },
+        "nationalityPercent": {
+          "China": 82,
+          "Korea": 7,
+          "Russia": 5,
+          "other": 6
+        },
+        "strategy": "常规疏导；A/B汇流处重点观察，C仍未启用",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 48,
+        "timeSeconds": 12600,
+        "regionId": "A",
+        "population": 194,
+        "intervalEntered": 30,
+        "intervalExited": 10,
+        "agePercent": {
+          "elderly": 6,
+          "teenager": 22,
+          "other": 72
+        },
+        "nationalityPercent": {
+          "China": 84,
+          "Korea": 6,
+          "Russia": 4,
+          "other": 6
+        },
+        "strategy": "局部停滞预警；准备分流预案，C无分流",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 49,
+        "timeSeconds": 12600,
+        "regionId": "B",
+        "population": 83,
+        "intervalEntered": 14,
+        "intervalExited": 5,
+        "agePercent": {
+          "elderly": 6,
+          "teenager": 22,
+          "other": 72
+        },
+        "nationalityPercent": {
+          "China": 80,
+          "Korea": 8,
+          "Russia": 5,
+          "other": 7
+        },
+        "strategy": "局部停滞预警；准备分流预案，C无分流",
+        "populationResidual": -1
+      },
+      {
+        "sourceLine": 50,
+        "timeSeconds": 12600,
+        "regionId": "C",
+        "population": 0,
+        "intervalEntered": 0,
+        "intervalExited": 0,
+        "agePercent": {
+          "elderly": 6,
+          "teenager": 22,
+          "other": 72
+        },
+        "nationalityPercent": {
+          "China": 82,
+          "Korea": 7,
+          "Russia": 5,
+          "other": 6
+        },
+        "strategy": "局部停滞预警；准备分流预案，C无分流",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 51,
+        "timeSeconds": 12900,
+        "regionId": "A",
+        "population": 207,
+        "intervalEntered": 26,
+        "intervalExited": 12,
+        "agePercent": {
+          "elderly": 6,
+          "teenager": 22,
+          "other": 72
+        },
+        "nationalityPercent": {
+          "China": 84,
+          "Korea": 6,
+          "Russia": 4,
+          "other": 6
+        },
+        "strategy": "跌倒传播预警；A/B交汇区紧急观察，C仍封闭",
+        "populationResidual": -1
+      },
+      {
+        "sourceLine": 52,
+        "timeSeconds": 12900,
+        "regionId": "B",
+        "population": 88,
+        "intervalEntered": 12,
+        "intervalExited": 6,
+        "agePercent": {
+          "elderly": 6,
+          "teenager": 22,
+          "other": 72
+        },
+        "nationalityPercent": {
+          "China": 80,
+          "Korea": 8,
+          "Russia": 5,
+          "other": 7
+        },
+        "strategy": "跌倒传播预警；A/B交汇区紧急观察，C仍封闭",
+        "populationResidual": -1
+      },
+      {
+        "sourceLine": 53,
+        "timeSeconds": 12900,
+        "regionId": "C",
+        "population": 0,
+        "intervalEntered": 0,
+        "intervalExited": 0,
+        "agePercent": {
+          "elderly": 6,
+          "teenager": 22,
+          "other": 72
+        },
+        "nationalityPercent": {
+          "China": 82,
+          "Korea": 7,
+          "Russia": 5,
+          "other": 6
+        },
+        "strategy": "跌倒传播预警；A/B交汇区紧急观察，C仍封闭",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 54,
+        "timeSeconds": 13500,
+        "regionId": "A",
+        "population": 210,
+        "intervalEntered": 17,
+        "intervalExited": 14,
+        "agePercent": {
+          "elderly": 5,
+          "teenager": 25,
+          "other": 70
+        },
+        "nationalityPercent": {
+          "China": 82,
+          "Korea": 7,
+          "Russia": 5,
+          "other": 6
+        },
+        "strategy": "信息不明反向移动预警；未发布有效分流策略，C未开放",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 55,
+        "timeSeconds": 13500,
+        "regionId": "B",
+        "population": 90,
+        "intervalEntered": 9,
+        "intervalExited": 7,
+        "agePercent": {
+          "elderly": 5,
+          "teenager": 25,
+          "other": 70
+        },
+        "nationalityPercent": {
+          "China": 78,
+          "Korea": 9,
+          "Russia": 6,
+          "other": 7
+        },
+        "strategy": "信息不明反向移动预警；未发布有效分流策略，C未开放",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 56,
+        "timeSeconds": 13500,
+        "regionId": "C",
+        "population": 0,
+        "intervalEntered": 0,
+        "intervalExited": 0,
+        "agePercent": {
+          "elderly": 5,
+          "teenager": 25,
+          "other": 70
+        },
+        "nationalityPercent": {
+          "China": 80,
+          "Korea": 8,
+          "Russia": 6,
+          "other": 6
+        },
+        "strategy": "信息不明反向移动预警；未发布有效分流策略，C未开放",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 57,
+        "timeSeconds": 13800,
+        "regionId": "A",
+        "population": 197,
+        "intervalEntered": 8,
+        "intervalExited": 21,
+        "agePercent": {
+          "elderly": 5,
+          "teenager": 25,
+          "other": 70
+        },
+        "nationalityPercent": {
+          "China": 82,
+          "Korea": 7,
+          "Russia": 5,
+          "other": 6
+        },
+        "strategy": "启动应急疏散；A/B继续疏导，C尚未形成有效通道",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 58,
+        "timeSeconds": 13800,
+        "regionId": "B",
+        "population": 84,
+        "intervalEntered": 4,
+        "intervalExited": 9,
+        "agePercent": {
+          "elderly": 5,
+          "teenager": 25,
+          "other": 70
+        },
+        "nationalityPercent": {
+          "China": 78,
+          "Korea": 9,
+          "Russia": 6,
+          "other": 7
+        },
+        "strategy": "启动应急疏散；A/B继续疏导，C尚未形成有效通道",
+        "populationResidual": -1
+      },
+      {
+        "sourceLine": 59,
+        "timeSeconds": 13800,
+        "regionId": "C",
+        "population": 0,
+        "intervalEntered": 0,
+        "intervalExited": 0,
+        "agePercent": {
+          "elderly": 5,
+          "teenager": 25,
+          "other": 70
+        },
+        "nationalityPercent": {
+          "China": 80,
+          "Korea": 8,
+          "Russia": 6,
+          "other": 6
+        },
+        "strategy": "启动应急疏散；A/B继续疏导，C尚未形成有效通道",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 60,
+        "timeSeconds": 14400,
+        "regionId": "A",
+        "population": 190,
+        "intervalEntered": 5,
+        "intervalExited": 11,
+        "agePercent": {
+          "elderly": 5,
+          "teenager": 25,
+          "other": 70
+        },
+        "nationalityPercent": {
+          "China": 82,
+          "Korea": 7,
+          "Russia": 5,
+          "other": 6
+        },
+        "strategy": "倒计时结束集中离场疏导；A/B瓶颈管理，C仍未有效分流",
+        "populationResidual": -1
+      },
+      {
+        "sourceLine": 61,
+        "timeSeconds": 14400,
+        "regionId": "B",
+        "population": 82,
+        "intervalEntered": 2,
+        "intervalExited": 5,
+        "agePercent": {
+          "elderly": 5,
+          "teenager": 25,
+          "other": 70
+        },
+        "nationalityPercent": {
+          "China": 78,
+          "Korea": 9,
+          "Russia": 6,
+          "other": 7
+        },
+        "strategy": "倒计时结束集中离场疏导；A/B瓶颈管理，C仍未有效分流",
+        "populationResidual": 1
+      },
+      {
+        "sourceLine": 62,
+        "timeSeconds": 14400,
+        "regionId": "C",
+        "population": 0,
+        "intervalEntered": 0,
+        "intervalExited": 0,
+        "agePercent": {
+          "elderly": 5,
+          "teenager": 25,
+          "other": 70
+        },
+        "nationalityPercent": {
+          "China": 80,
+          "Korea": 8,
+          "Russia": 6,
+          "other": 6
+        },
+        "strategy": "倒计时结束集中离场疏导；A/B瓶颈管理，C仍未有效分流",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 63,
+        "timeSeconds": 14700,
+        "regionId": "A",
+        "population": 160,
+        "intervalEntered": 8,
+        "intervalExited": 38,
+        "agePercent": {
+          "elderly": 4,
+          "teenager": 28,
+          "other": 68
+        },
+        "nationalityPercent": {
+          "China": 80,
+          "Korea": 8,
+          "Russia": 5,
+          "other": 7
+        },
+        "strategy": "广播引导；尝试开放C北侧应急通道；启动分流调控，存在滞后",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 64,
+        "timeSeconds": 14700,
+        "regionId": "B",
+        "population": 80,
+        "intervalEntered": 4,
+        "intervalExited": 5,
+        "agePercent": {
+          "elderly": 4,
+          "teenager": 28,
+          "other": 68
+        },
+        "nationalityPercent": {
+          "China": 76,
+          "Korea": 10,
+          "Russia": 7,
+          "other": 7
+        },
+        "strategy": "广播引导；尝试开放C北侧应急通道；启动分流调控，存在滞后",
+        "populationResidual": -1
+      },
+      {
+        "sourceLine": 65,
+        "timeSeconds": 14700,
+        "regionId": "C",
+        "population": 27,
+        "intervalEntered": 28,
+        "intervalExited": 2,
+        "agePercent": {
+          "elderly": 4,
+          "teenager": 28,
+          "other": 68
+        },
+        "nationalityPercent": {
+          "China": 78,
+          "Korea": 9,
+          "Russia": 7,
+          "other": 6
+        },
+        "strategy": "广播引导；尝试开放C北侧应急通道；启动分流调控，存在滞后",
+        "populationResidual": 1
+      },
+      {
+        "sourceLine": 66,
+        "timeSeconds": 15300,
+        "regionId": "A",
+        "population": 146,
+        "intervalEntered": 6,
+        "intervalExited": 20,
+        "agePercent": {
+          "elderly": 4,
+          "teenager": 28,
+          "other": 68
+        },
+        "nationalityPercent": {
+          "China": 80,
+          "Korea": 8,
+          "Russia": 5,
+          "other": 7
+        },
+        "strategy": "继续广播引导；人工引导部分人群转向C；路径不熟，A/B继续疏导",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 67,
+        "timeSeconds": 15300,
+        "regionId": "B",
+        "population": 73,
+        "intervalEntered": 3,
+        "intervalExited": 10,
+        "agePercent": {
+          "elderly": 4,
+          "teenager": 28,
+          "other": 68
+        },
+        "nationalityPercent": {
+          "China": 76,
+          "Korea": 10,
+          "Russia": 7,
+          "other": 7
+        },
+        "strategy": "继续广播引导；人工引导部分人群转向C；路径不熟，A/B继续疏导",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 68,
+        "timeSeconds": 15300,
+        "regionId": "C",
+        "population": 24,
+        "intervalEntered": 5,
+        "intervalExited": 7,
+        "agePercent": {
+          "elderly": 4,
+          "teenager": 28,
+          "other": 68
+        },
+        "nationalityPercent": {
+          "China": 78,
+          "Korea": 9,
+          "Russia": 7,
+          "other": 6
+        },
+        "strategy": "继续广播引导；人工引导部分人群转向C；路径不熟，A/B继续疏导",
+        "populationResidual": -1
+      },
+      {
+        "sourceLine": 69,
+        "timeSeconds": 15600,
+        "regionId": "A",
+        "population": 115,
+        "intervalEntered": 5,
+        "intervalExited": 36,
+        "agePercent": {
+          "elderly": 4,
+          "teenager": 28,
+          "other": 68
+        },
+        "nationalityPercent": {
+          "China": 80,
+          "Korea": 8,
+          "Russia": 5,
+          "other": 7
+        },
+        "strategy": "C北通道开始分流；外围限流；A/B继续疏导，滞后明显",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 70,
+        "timeSeconds": 15600,
+        "regionId": "B",
+        "population": 69,
+        "intervalEntered": 2,
+        "intervalExited": 7,
+        "agePercent": {
+          "elderly": 4,
+          "teenager": 28,
+          "other": 68
+        },
+        "nationalityPercent": {
+          "China": 76,
+          "Korea": 10,
+          "Russia": 7,
+          "other": 7
+        },
+        "strategy": "C北通道开始分流；外围限流；A/B继续疏导，滞后明显",
+        "populationResidual": 1
+      },
+      {
+        "sourceLine": 71,
+        "timeSeconds": 15600,
+        "regionId": "C",
+        "population": 46,
+        "intervalEntered": 24,
+        "intervalExited": 3,
+        "agePercent": {
+          "elderly": 4,
+          "teenager": 28,
+          "other": 68
+        },
+        "nationalityPercent": {
+          "China": 78,
+          "Korea": 9,
+          "Russia": 7,
+          "other": 6
+        },
+        "strategy": "C北通道开始分流；外围限流；A/B继续疏导，滞后明显",
+        "populationResidual": 1
+      },
+      {
+        "sourceLine": 72,
+        "timeSeconds": 16200,
+        "regionId": "A",
+        "population": 62,
+        "intervalEntered": 3,
+        "intervalExited": 56,
+        "agePercent": {
+          "elderly": 3,
+          "teenager": 30,
+          "other": 67
+        },
+        "nationalityPercent": {
+          "China": 82,
+          "Korea": 6,
+          "Russia": 4,
+          "other": 8
+        },
+        "strategy": "加强C北侧通道分流；A/B拥堵缓解疏导；调控生效",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 73,
+        "timeSeconds": 16200,
+        "regionId": "B",
+        "population": 45,
+        "intervalEntered": 2,
+        "intervalExited": 26,
+        "agePercent": {
+          "elderly": 3,
+          "teenager": 30,
+          "other": 67
+        },
+        "nationalityPercent": {
+          "China": 78,
+          "Korea": 8,
+          "Russia": 6,
+          "other": 8
+        },
+        "strategy": "加强C北侧通道分流；A/B拥堵缓解疏导；调控生效",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 74,
+        "timeSeconds": 16200,
+        "regionId": "C",
+        "population": 71,
+        "intervalEntered": 28,
+        "intervalExited": 3,
+        "agePercent": {
+          "elderly": 3,
+          "teenager": 30,
+          "other": 67
+        },
+        "nationalityPercent": {
+          "China": 80,
+          "Korea": 7,
+          "Russia": 5,
+          "other": 8
+        },
+        "strategy": "加强C北侧通道分流；A/B拥堵缓解疏导；调控生效",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 75,
+        "timeSeconds": 17100,
+        "regionId": "A",
+        "population": 28,
+        "intervalEntered": 2,
+        "intervalExited": 36,
+        "agePercent": {
+          "elderly": 3,
+          "teenager": 30,
+          "other": 67
+        },
+        "nationalityPercent": {
+          "China": 82,
+          "Korea": 6,
+          "Russia": 4,
+          "other": 8
+        },
+        "strategy": "人工引导+外围分流；C承担主要疏散；核心区回落",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 76,
+        "timeSeconds": 17100,
+        "regionId": "B",
+        "population": 22,
+        "intervalEntered": 2,
+        "intervalExited": 24,
+        "agePercent": {
+          "elderly": 3,
+          "teenager": 30,
+          "other": 67
+        },
+        "nationalityPercent": {
+          "China": 78,
+          "Korea": 8,
+          "Russia": 6,
+          "other": 8
+        },
+        "strategy": "人工引导+外围分流；C承担主要疏散；核心区回落",
+        "populationResidual": -1
+      },
+      {
+        "sourceLine": 77,
+        "timeSeconds": 17100,
+        "regionId": "C",
+        "population": 62,
+        "intervalEntered": 8,
+        "intervalExited": 17,
+        "agePercent": {
+          "elderly": 3,
+          "teenager": 30,
+          "other": 67
+        },
+        "nationalityPercent": {
+          "China": 80,
+          "Korea": 7,
+          "Russia": 5,
+          "other": 8
+        },
+        "strategy": "人工引导+外围分流；C承担主要疏散；核心区回落",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 78,
+        "timeSeconds": 18000,
+        "regionId": "A",
+        "population": 20,
+        "intervalEntered": 1,
+        "intervalExited": 9,
+        "agePercent": {
+          "elderly": 3,
+          "teenager": 30,
+          "other": 67
+        },
+        "nationalityPercent": {
+          "China": 82,
+          "Korea": 6,
+          "Russia": 4,
+          "other": 8
+        },
+        "strategy": "C继续疏散；A/B恢复通行管理；密度可控",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 79,
+        "timeSeconds": 18000,
+        "regionId": "B",
+        "population": 13,
+        "intervalEntered": 1,
+        "intervalExited": 10,
+        "agePercent": {
+          "elderly": 3,
+          "teenager": 30,
+          "other": 67
+        },
+        "nationalityPercent": {
+          "China": 78,
+          "Korea": 8,
+          "Russia": 6,
+          "other": 8
+        },
+        "strategy": "C继续疏散；A/B恢复通行管理；密度可控",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 80,
+        "timeSeconds": 18000,
+        "regionId": "C",
+        "population": 33,
+        "intervalEntered": 5,
+        "intervalExited": 34,
+        "agePercent": {
+          "elderly": 3,
+          "teenager": 30,
+          "other": 67
+        },
+        "nationalityPercent": {
+          "China": 80,
+          "Korea": 7,
+          "Russia": 5,
+          "other": 8
+        },
+        "strategy": "C继续疏散；A/B恢复通行管理；密度可控",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 81,
+        "timeSeconds": 19200,
+        "regionId": "A",
+        "population": 7,
+        "intervalEntered": 0,
+        "intervalExited": 13,
+        "agePercent": {
+          "elderly": 4,
+          "teenager": 22,
+          "other": 74
+        },
+        "nationalityPercent": {
+          "China": 84,
+          "Korea": 4,
+          "Russia": 3,
+          "other": 9
+        },
+        "strategy": "收尾疏散；三处出入口低负荷恢复",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 82,
+        "timeSeconds": 19200,
+        "regionId": "B",
+        "population": 5,
+        "intervalEntered": 0,
+        "intervalExited": 9,
+        "agePercent": {
+          "elderly": 4,
+          "teenager": 22,
+          "other": 74
+        },
+        "nationalityPercent": {
+          "China": 80,
+          "Korea": 6,
+          "Russia": 5,
+          "other": 9
+        },
+        "strategy": "收尾疏散；三处出入口低负荷恢复",
+        "populationResidual": 1
+      },
+      {
+        "sourceLine": 83,
+        "timeSeconds": 19200,
+        "regionId": "C",
+        "population": 12,
+        "intervalEntered": 2,
+        "intervalExited": 23,
+        "agePercent": {
+          "elderly": 4,
+          "teenager": 22,
+          "other": 74
+        },
+        "nationalityPercent": {
+          "China": 82,
+          "Korea": 5,
+          "Russia": 4,
+          "other": 9
+        },
+        "strategy": "收尾疏散；三处出入口低负荷恢复",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 84,
+        "timeSeconds": 19800,
+        "regionId": "A",
+        "population": 0,
+        "intervalEntered": 0,
+        "intervalExited": 7,
+        "agePercent": {
+          "elderly": 4,
+          "teenager": 22,
+          "other": 74
+        },
+        "nationalityPercent": {
+          "China": 84,
+          "Korea": 4,
+          "Russia": 3,
+          "other": 9
+        },
+        "strategy": "清场收尾；清理零星滞留，三入口低负荷",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 85,
+        "timeSeconds": 19800,
+        "regionId": "B",
+        "population": 0,
+        "intervalEntered": 0,
+        "intervalExited": 5,
+        "agePercent": {
+          "elderly": 4,
+          "teenager": 22,
+          "other": 74
+        },
+        "nationalityPercent": {
+          "China": 80,
+          "Korea": 6,
+          "Russia": 5,
+          "other": 9
+        },
+        "strategy": "清场收尾；清理零星滞留，三入口低负荷",
+        "populationResidual": 0
+      },
+      {
+        "sourceLine": 86,
+        "timeSeconds": 19800,
+        "regionId": "C",
+        "population": 0,
+        "intervalEntered": 0,
+        "intervalExited": 11,
+        "agePercent": {
+          "elderly": 4,
+          "teenager": 22,
+          "other": 74
+        },
+        "nationalityPercent": {
+          "China": 82,
+          "Korea": 5,
+          "Russia": 4,
+          "other": 9
+        },
+        "strategy": "清场收尾；清理零星滞留，三入口低负荷",
+        "populationResidual": -1
+      }
+    ],
+    "executionProfile": {
+      "scenarioId": "memorial-post-test",
+      "mappingVersion": "memorial-test-map-v1",
+      "regionMapping": {
+        "A": {
+          "label": "M1",
+          "edgeId": "178411801#0"
+        },
+        "B": {
+          "label": "M2",
+          "edgeId": "177931018#0"
+        },
+        "C": {
+          "label": "M3",
+          "edgeId": "monument_m3"
+        }
+      },
+      "mappingNote": "经用户确认的工程测试映射；M3是西侧中部工程假设入口，不是真实北侧通道。",
+      "baselineControl": {
+        "gateOpenSeconds": 14700,
+        "guidanceStartSeconds": 14700,
+        "guidanceDelaySeconds": 1500,
+        "compliance": 0.4
+      },
+      "controlOrigin": "工程测试设定，不是原文数值观测；源文字只记录尝试开放和分流生效的阶段。",
+      "reconstruction": "区间进入均匀分布，离开按FIFO重建停留时间，SUMO生成运动轨迹；原始人数只作校准目标。"
+    },
+    "quality": {
+      "populationResiduals": [
+        {
+          "sourceLine": 31,
+          "regionId": "B",
+          "timeSeconds": 3600,
+          "populationResidual": 1
+        },
+        {
+          "sourceLine": 33,
+          "regionId": "A",
+          "timeSeconds": 5400,
+          "populationResidual": 1
+        },
+        {
+          "sourceLine": 36,
+          "regionId": "A",
+          "timeSeconds": 7200,
+          "populationResidual": -1
+        },
+        {
+          "sourceLine": 39,
+          "regionId": "A",
+          "timeSeconds": 9000,
+          "populationResidual": 1
+        },
+        {
+          "sourceLine": 43,
+          "regionId": "B",
+          "timeSeconds": 10800,
+          "populationResidual": -1
+        },
+        {
+          "sourceLine": 45,
+          "regionId": "A",
+          "timeSeconds": 12000,
+          "populationResidual": 1
+        },
+        {
+          "sourceLine": 49,
+          "regionId": "B",
+          "timeSeconds": 12600,
+          "populationResidual": -1
+        },
+        {
+          "sourceLine": 51,
+          "regionId": "A",
+          "timeSeconds": 12900,
+          "populationResidual": -1
+        },
+        {
+          "sourceLine": 52,
+          "regionId": "B",
+          "timeSeconds": 12900,
+          "populationResidual": -1
+        },
+        {
+          "sourceLine": 58,
+          "regionId": "B",
+          "timeSeconds": 13800,
+          "populationResidual": -1
+        },
+        {
+          "sourceLine": 60,
+          "regionId": "A",
+          "timeSeconds": 14400,
+          "populationResidual": -1
+        },
+        {
+          "sourceLine": 61,
+          "regionId": "B",
+          "timeSeconds": 14400,
+          "populationResidual": 1
+        },
+        {
+          "sourceLine": 64,
+          "regionId": "B",
+          "timeSeconds": 14700,
+          "populationResidual": -1
+        },
+        {
+          "sourceLine": 65,
+          "regionId": "C",
+          "timeSeconds": 14700,
+          "populationResidual": 1
+        },
+        {
+          "sourceLine": 68,
+          "regionId": "C",
+          "timeSeconds": 15300,
+          "populationResidual": -1
+        },
+        {
+          "sourceLine": 70,
+          "regionId": "B",
+          "timeSeconds": 15600,
+          "populationResidual": 1
+        },
+        {
+          "sourceLine": 71,
+          "regionId": "C",
+          "timeSeconds": 15600,
+          "populationResidual": 1
+        },
+        {
+          "sourceLine": 76,
+          "regionId": "B",
+          "timeSeconds": 17100,
+          "populationResidual": -1
+        },
+        {
+          "sourceLine": 82,
+          "regionId": "B",
+          "timeSeconds": 19200,
+          "populationResidual": 1
+        },
+        {
+          "sourceLine": 86,
+          "regionId": "C",
+          "timeSeconds": 19800,
+          "populationResidual": -1
+        }
+      ],
+      "missingMetrics": [
+        "density",
+        "meanSpeed",
+        "pressureProxy"
+      ],
+      "flowSemantics": "Interval totals, never persons/second; each entrance is a separate observation region.",
+      "demographicSemantics": "Age and nationality are independent marginal distributions; no joint distribution is inferred."
+    }
+  }
+}

@@ -1,6 +1,6 @@
 {
   "task": "design",
-  "model": "Qwen3.8-Flash-Next",
+  "model": "GLM-5.3-Flash",
   "maxTokens": 3000,
   "messages": [{ "role": "user", "content": "先设计观察实验：以实际处置为对照，比较提前 60 秒启动导流时的密度峰值。请指出还需补充什么。" }],
   "context": {
