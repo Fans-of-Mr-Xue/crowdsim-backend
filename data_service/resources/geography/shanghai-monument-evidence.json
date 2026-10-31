@@ -1,0 +1,37 @@
+[
+  {
+    "title": "OpenStreetMap 原始几何与设施标签",
+    "publisher": "OpenStreetMap contributors",
+    "url": "https://www.openstreetmap.org/#map=19/31.2438/121.4865",
+    "retrievedAt": "2026-10-15",
+    "usage": "步道、台阶、下沉层、材质和入口几何；缺失宽度不推定为实测。"
+  },
+  {
+    "title": "外滩滨水区城市设计",
+    "publisher": "上海市规划和自然资源局",
+    "url": "https://ghzyj.sh.gov.cn/ghgs/20191231/0032-174998.html",
+    "retrievedAt": "2026-10-15",
+    "usage": "核对滨水步行空间与地道组织背景；规划描述不直接作为现状竣工几何。"
+  },
+  {
+    "title": "上海市人民英雄纪念塔背后的故事",
+    "publisher": "方志上海（官方澎湃号）",
+    "url": "https://m.thepaper.cn/newsDetail_forward_12861470",
+    "retrievedAt": "2026-10-15",
+    "usage": "确认下沉式广场、上下平台、平桥、大台阶和坡道的存在；不据文字资料虚构轮廓或通道宽度。"
+  },
+  {
+    "title": "黄浦公园",
+    "publisher": "复旦大学上海红色文化资源网",
+    "url": "https://shhongse.fudan.edu.cn/info/1019/1454.htm",
+    "retrievedAt": "2026-10-15",
+    "usage": "核对纪念设施及外滩历史纪念馆的场地背景，不作为通道尺寸来源。"
+  },
+  {
+    "title": "黄浦公园（西南门）",
+    "publisher": "高德地图",
+    "url": "https://www.amap.com/place/B00155KKW1",
+    "retrievedAt": "2026-10-16",
+    "usage": "确认西南园门 POI；GCJ-02 转 WGS84。POI 不是门洞测绘，不证明全部出口数量或历史开放状态。"
+  }
+]

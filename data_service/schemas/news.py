@@ -56,4 +56,15 @@ def validate_task(payload):
     if not isinstance(source, str) or len(source) > 200:
         raise ValueError("配置来源无效")
     result["configSource"] = source
+    # HTTP resolves this reference from the canonical analysis task and roads.
+    # Crawlers only consume the persisted reference; they never choose a road source.
+    link = payload.get('analysisTaskLink')
+    if link is not None:
+        from .environments import finite_json, validate_geometry
+        if not isinstance(link, dict) or not isinstance(link.get('taskId'), str) or not link['taskId'] or type(link.get('revision')) is not int or link['revision'] < 1:
+            raise ValueError('分析任务关联无效')
+        if link.get('roadNetworkId') is not None and (not isinstance(link['roadNetworkId'], str) or len(link['roadNetworkId']) > 100):
+            raise ValueError('任务路网关联无效')
+        finite_json(link)
+        result['analysisTaskLink'] = {**link, 'regionGeometry': validate_geometry(link.get('regionGeometry'))}
     return result

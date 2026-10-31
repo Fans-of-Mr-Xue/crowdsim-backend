@@ -8,8 +8,9 @@ from .llm import ModelError
 from ..config import load_database_env
 
 MODEL_SPECS = (
+    ('GLM-5.3-Flash-8800', 'GLM-5.3 Flash（8800）', 'GLM_MAIN', 8800, 'GLM-5.3-Flash'),
     ('Qwen3.8-Flash-Next', 'Qwen3.8 Flash Next', 'QWEN', 8800, 'qwen3.8-flash-next'),
-    ('GLM-5.3-Flash', 'GLM-5.3 Flash', 'GLM', 8899, 'GLM-5.3-Flash-exl3-4.05bpw'),
+    ('GLM-5.3-Flash', 'GLM-5.3 Flash · Tabby（8899）', 'GLM', 8899, 'GLM-5.3-Flash-exl3-4.05bpw'),
     ('DiffusionGemma', 'DiffusionGemma 26B', 'DIFFUSIONGEMMA', 8500, 'diffusiongemma-26B-A4B-it:q4'),
 )
 
@@ -20,7 +21,7 @@ def model_configs():
         'id': identifier, 'label': label, 'port': int(os.environ.get(f'CROWDSIM_{prefix}_LOCAL_PORT', port)),
         'model': os.environ.get(f'CROWDSIM_{prefix}_MODEL', name),
         'base_url': os.environ.get(f'CROWDSIM_{prefix}_BASE_URL', f"http://127.0.0.1:{os.environ.get(f'CROWDSIM_{prefix}_LOCAL_PORT', port)}/v1").rstrip('/'),
-        'api_key': os.environ.get(f'CROWDSIM_{prefix}_API_KEY', os.environ.get('CROWDSIM_MODEL_API_KEY', '') if prefix == 'QWEN' else ''),
+        'api_key': os.environ.get(f'CROWDSIM_{prefix}_API_KEY', os.environ.get('CROWDSIM_MODEL_API_KEY', '') if prefix in ('QWEN', 'GLM_MAIN') else ''),
     } for identifier, label, prefix, port, name in MODEL_SPECS}
 
 
@@ -57,7 +58,7 @@ class ModelGateway:
         # No timer/startup probing: the frontend calls this only when its menu opens.
         return await asyncio.gather(*(self.availability(provider) for provider in self.providers.values()))
 
-    async def chat(self, identifier, payload):
+    async def chat(self, identifier, payload, *, concise_json=False):
         provider = self.providers.get(identifier)
         if provider is None:
             raise ValueError('请选择已配置的模型')
@@ -75,6 +76,15 @@ class ModelGateway:
         body = {**payload, 'model': provider['model'], 'stream': False}
         if identifier != 'Qwen3.8-Flash-Next':
             body.pop('chat_template_kwargs', None)
+        if concise_json:
+            # Page edits need a complete JSON answer, rather than a reasoning
+            # trace consuming the answer budget. Keep this policy separate from
+            # ordinary chat and apply only to providers with known support.
+            if identifier in ('GLM-5.3-Flash-8800', 'GLM-5.3-Flash'):
+                body.update(enable_thinking=False, reasoning_budget_tokens=0)
+                body['chat_template_kwargs'] = {'enable_thinking': False}
+            elif identifier == 'Qwen3.8-Flash-Next':
+                body['chat_template_kwargs'] = {**body.get('chat_template_kwargs', {}), 'enable_thinking': False}
         try:
             async with self.session.post(provider['base_url'] + '/chat/completions', json=body, headers=self.headers(provider)) as response:
                 if response.status != 200:

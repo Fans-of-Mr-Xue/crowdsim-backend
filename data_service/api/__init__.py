@@ -7,15 +7,32 @@ from .regulations import register_regulation_routes
 from .research_documents import register_research_routes
 from .news import register_news_routes
 from .environments import register_environment_routes
+from .subjects import register_subject_routes
+from .cases import register_case_routes
 from .models import register_model_routes
+from .analysis_tasks import register_analysis_task_routes
+from .domain_models import register_domain_model_routes
+from .domain_portrait import register_domain_portrait_routes
+from .pre_assessments import register_pre_assessment_routes
+from .page_assistant import register_page_assistant_routes
+from ..services.task_roads import TaskRoadService
+from ..repositories.environments import EnvironmentRepository
 
 
 def create_app(repository=None, *, model=None):
     app = web.Application(client_max_size=8 * 1024 * 1024)
     repository = register_database_routes(app, repository)
     register_model_routes(app)
+    register_page_assistant_routes(app, repository.db)
     register_environment_routes(app, repository.db)
-    register_news_routes(app, repository.db, model=model)
+    register_subject_routes(app, repository.db)
+    register_case_routes(app, repository.db)
+    task_roads = TaskRoadService(repository.db, EnvironmentRepository(repository.db))
+    register_analysis_task_routes(app, repository.db, task_roads=task_roads)
+    register_domain_model_routes(app, repository.db, task_roads=task_roads)
+    register_domain_portrait_routes(app, repository.db, task_roads=task_roads)
+    register_pre_assessment_routes(app, repository.db, task_roads=task_roads)
+    register_news_routes(app, repository.db, model=model, task_roads=task_roads)
     register_research_routes(app, repository.db, model=model)
     register_plan_routes(app, repository.db, model=model)
     register_regulation_routes(app, repository.db, model=model)

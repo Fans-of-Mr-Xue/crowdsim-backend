@@ -8,6 +8,7 @@ from pymongo import ReturnDocument
 from pymongo.errors import DuplicateKeyError
 from .datasets import DatasetConflictError
 from .knowledge_documents import now
+from .environment_road_versions import EnvironmentRoadVersionRepository
 from ..schemas.environments import validate_profile, leaflet_polygon
 
 RESOURCES = Path(__file__).resolve().parents[1] / 'resources'
@@ -18,6 +19,7 @@ class EnvironmentRepository:
         self.database = database
         self.collection = database['environment_profiles']
         self.assets = GridFSBucket(database, bucket_name='environment_assets')
+        self.road_versions = EnvironmentRoadVersionRepository(database)
 
     def initialize(self):
         self.collection.create_index([('is_deleted', 1), ('sort_order', 1)])
@@ -33,6 +35,11 @@ class EnvironmentRepository:
             timestamp = now()
             road_file = None
             roads = seed_roads.get(identifier)
+            if roads and roads.get('resource'):
+                resource = (RESOURCES / roads['resource']).resolve()
+                if RESOURCES.resolve() not in resource.parents:
+                    raise ValueError('环境路网资源路径无效')
+                roads = json.loads(resource.read_text())
             if roads:
                 road_file = self.assets.upload_from_stream(identifier + '-roads.geojson', io.BytesIO(json.dumps(roads, ensure_ascii=False).encode()))
                 data.update(roads_file_id=road_file, roadsCount=len(roads['features']), roadsStatus='available', roadsMessage=f"已获取 {len(roads['features'])} 条区域及周边道路 / 步行通道")
@@ -44,6 +51,8 @@ class EnvironmentRepository:
                 raise
             if road_file and result.upserted_id is None:
                 self.assets.delete(road_file)
+            elif road_file and result.upserted_id is not None:
+                self.road_versions.capture({'_id': identifier, **data, 'revision': 1}, roads)
         milan = self.collection.find_one({'_id': 'milan-portrait-region'})
         if milan and not milan.get('density_media_id'):
             with (RESOURCES / 'milan_density.gif').open('rb') as source:
@@ -81,9 +90,13 @@ class EnvironmentRepository:
                 raise KeyError(identifier)
             if existing['revision'] != revision:
                 raise DatasetConflictError('区域画像已被其他用户修改，请刷新后重试')
+            self.road_versions.capture(existing)
         identifier = identifier or uuid4().hex
         data['cityCode'] = data.get('cityCode') or 'REG-' + identifier[:8].upper()
         roads = data.pop('roads', None)
+        if roads is not None and roads.get('features'):
+            from ..services.pedestrian_network import clip_network
+            roads = clip_network(roads, data['geometry'])
         new_file_id = None
         geometry_changed = existing is not None and existing['geometry'] != data['geometry']
         if roads is not None:
@@ -110,11 +123,7 @@ class EnvironmentRepository:
             if isinstance(exc, DuplicateKeyError):
                 raise DatasetConflictError('同名区域画像已存在，请修改名称或编辑已有区域') from None
             raise
-        if existing and existing.get('roads_file_id') and (roads is not None or geometry_changed):
-            try:
-                self.assets.delete(existing['roads_file_id'])
-            except NoFile:
-                pass
+        self.road_versions.capture(doc, roads)
         return self.public(doc)
 
     def delete(self, identifier, revision):
@@ -122,10 +131,12 @@ class EnvironmentRepository:
         if not result.matched_count:
             raise DatasetConflictError('区域画像已更新或删除，请刷新后重试')
 
-    def open_roads(self, identifier):
+    def open_roads(self, identifier, *, revision=None):
         doc = self.collection.find_one({'_id': identifier, 'is_deleted': {'$ne': True}})
         if doc is None:
             raise KeyError(identifier)
+        if revision is not None and doc['revision'] != revision:
+            return self.road_versions.read(identifier, revision)
         if not doc.get('roads_file_id'):
             return {'type': 'FeatureCollection', 'features': []}
         with self.assets.open_download_stream(doc['roads_file_id']) as stream:

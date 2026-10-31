@@ -1,0 +1,7796 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.486737651,
+            31.243969881
+          ],
+          [
+            121.486797512,
+            31.244068017
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "foot": "yes",
+        "level": "0",
+        "display_level": "0",
+        "level_source": "sumo_hotspot_surface_scenario",
+        "sumo_edge_id": "177931018#0",
+        "sumo_lane_id": "177931018#0_0",
+        "sumo_function": "normal",
+        "sumo_length_m": 12.28,
+        "width": 2.0,
+        "width_source": "sumo_simulation_parameter",
+        "speed_mps": 2.78,
+        "name": "纪念塔连接通道",
+        "source_type": "sumo",
+        "scenario_id": "people_heroes_monument",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.485774615,
+            31.244757657
+          ],
+          [
+            121.485852872,
+            31.24472935
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "foot": "yes",
+        "level": "0",
+        "display_level": "0",
+        "level_source": "sumo_hotspot_surface_scenario",
+        "sumo_edge_id": "177931046",
+        "sumo_lane_id": "177931046_0",
+        "sumo_function": "normal",
+        "sumo_length_m": 8.08,
+        "width": 2.0,
+        "width_source": "sumo_simulation_parameter",
+        "speed_mps": 1.39,
+        "name": "园内步道",
+        "source_type": "sumo",
+        "scenario_id": "people_heroes_monument",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.486551469,
+            31.244273696
+          ],
+          [
+            121.486664845,
+            31.244281887
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "foot": "yes",
+        "level": "0",
+        "display_level": "0",
+        "level_source": "sumo_hotspot_surface_scenario",
+        "sumo_edge_id": "178411801#0",
+        "sumo_lane_id": "178411801#0_0",
+        "sumo_function": "normal",
+        "sumo_length_m": 10.83,
+        "width": 2.0,
+        "width_source": "sumo_simulation_parameter",
+        "speed_mps": 2.78,
+        "name": "纪念塔连接通道",
+        "source_type": "sumo",
+        "scenario_id": "people_heroes_monument",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.486019378,
+            31.243039795
+          ],
+          [
+            121.486043005,
+            31.243046208
+          ],
+          [
+            121.486118166,
+            31.243073706
+          ],
+          [
+            121.486148538,
+            31.243091746
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "foot": "yes",
+        "level": "0",
+        "display_level": "0",
+        "level_source": "sumo_hotspot_surface_scenario",
+        "sumo_edge_id": "178564467",
+        "sumo_lane_id": "178564467_0",
+        "sumo_function": "normal",
+        "sumo_length_m": 13.65,
+        "width": 2.0,
+        "width_source": "sumo_simulation_parameter",
+        "speed_mps": 2.78,
+        "name": "178564467",
+        "source_type": "sumo",
+        "scenario_id": "people_heroes_monument",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.485807806,
+            31.243960826
+          ],
+          [
+            121.485809903,
+            31.243961031
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "foot": "yes",
+        "level": "0",
+        "display_level": "0",
+        "level_source": "sumo_hotspot_surface_scenario",
+        "sumo_edge_id": "552032617",
+        "sumo_lane_id": "552032617_0",
+        "sumo_function": "normal",
+        "sumo_length_m": 0.2,
+        "width": 2.0,
+        "width_source": "sumo_simulation_parameter",
+        "speed_mps": 2.78,
+        "name": "552032617",
+        "source_type": "sumo",
+        "scenario_id": "people_heroes_monument",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.486696358,
+            31.244307428
+          ],
+          [
+            121.486699894,
+            31.244322716
+          ],
+          [
+            121.486720044,
+            31.244369413
+          ],
+          [
+            121.486751931,
+            31.244411016
+          ],
+          [
+            121.486793909,
+            31.244445341
+          ],
+          [
+            121.48684401,
+            31.24447074
+          ],
+          [
+            121.486899421,
+            31.244485736
+          ],
+          [
+            121.486957425,
+            31.244489576
+          ],
+          [
+            121.487014872,
+            31.244482314
+          ],
+          [
+            121.487069029,
+            31.244464006
+          ],
+          [
+            121.487116835,
+            31.24443579
+          ],
+          [
+            121.487156062,
+            31.244398994
+          ],
+          [
+            121.487184471,
+            31.244355755
+          ],
+          [
+            121.487200669,
+            31.244307951
+          ],
+          [
+            121.487203981,
+            31.244258282
+          ],
+          [
+            121.487194051,
+            31.244209359
+          ],
+          [
+            121.487171366,
+            31.244163534
+          ],
+          [
+            121.487137251,
+            31.244123348
+          ],
+          [
+            121.487093356,
+            31.244090715
+          ],
+          [
+            121.487041963,
+            31.244067377
+          ],
+          [
+            121.486985676,
+            31.244054625
+          ],
+          [
+            121.486927636,
+            31.24405304
+          ],
+          [
+            121.486870571,
+            31.244062743
+          ],
+          [
+            121.48683284,
+            31.244078176
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "foot": "yes",
+        "level": "0",
+        "display_level": "0",
+        "level_source": "sumo_hotspot_surface_scenario",
+        "sumo_edge_id": "679361567#1",
+        "sumo_lane_id": "679361567#1_0",
+        "sumo_function": "normal",
+        "sumo_length_m": 121.78,
+        "width": 2.0,
+        "width_source": "sumo_simulation_parameter",
+        "speed_mps": 2.78,
+        "name": "纪念塔外环",
+        "source_type": "sumo",
+        "scenario_id": "people_heroes_monument",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.48678391,
+            31.244104484
+          ],
+          [
+            121.486774785,
+            31.244110421
+          ],
+          [
+            121.486739588,
+            31.244144739
+          ],
+          [
+            121.486713543,
+            31.244184488
+          ],
+          [
+            121.486697729,
+            31.244228055
+          ],
+          [
+            121.486693755,
+            31.244259944
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "foot": "yes",
+        "level": "0",
+        "display_level": "0",
+        "level_source": "sumo_hotspot_surface_scenario",
+        "sumo_edge_id": "679361567#2",
+        "sumo_lane_id": "679361567#2_0",
+        "sumo_function": "normal",
+        "sumo_length_m": 19.83,
+        "width": 2.0,
+        "width_source": "sumo_simulation_parameter",
+        "speed_mps": 2.78,
+        "name": "纪念塔外环",
+        "source_type": "sumo",
+        "scenario_id": "people_heroes_monument",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.485665636,
+            31.244796338
+          ],
+          [
+            121.485731529,
+            31.244773027
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "foot": "yes",
+        "level": "0",
+        "display_level": "0",
+        "level_source": "sumo_hotspot_surface_scenario",
+        "sumo_edge_id": "906417851#0",
+        "sumo_lane_id": "906417851#0_0",
+        "sumo_function": "normal",
+        "sumo_length_m": 6.79,
+        "width": 2.0,
+        "width_source": "sumo_simulation_parameter",
+        "speed_mps": 2.78,
+        "name": "园内步道 / 公园接入通道",
+        "source_type": "sumo",
+        "scenario_id": "people_heroes_monument",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.485774931,
+            31.244757571
+          ],
+          [
+            121.485776936,
+            31.244756963
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "foot": "yes",
+        "level": "0",
+        "display_level": "0",
+        "level_source": "sumo_hotspot_surface_scenario",
+        "sumo_edge_id": "906417851#1",
+        "sumo_lane_id": "906417851#1_0",
+        "sumo_function": "normal",
+        "sumo_length_m": 0.2,
+        "width": 2.0,
+        "width_source": "sumo_simulation_parameter",
+        "speed_mps": 2.78,
+        "name": "园内步道",
+        "source_type": "sumo",
+        "scenario_id": "people_heroes_monument",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.485866247,
+            31.244733477
+          ],
+          [
+            121.485887125,
+            31.244767463
+          ],
+          [
+            121.48655757,
+            31.24452321
+          ],
+          [
+            121.48652371,
+            31.244295923
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "foot": "yes",
+        "level": "0",
+        "display_level": "0",
+        "level_source": "sumo_hotspot_surface_scenario",
+        "sumo_edge_id": "906417852#0",
+        "sumo_lane_id": "906417852#0_0",
+        "sumo_function": "normal",
+        "sumo_length_m": 99.03,
+        "width": 2.0,
+        "width_source": "sumo_simulation_parameter",
+        "speed_mps": 2.78,
+        "name": "园内步道",
+        "source_type": "sumo",
+        "scenario_id": "people_heroes_monument",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.485938031,
+            31.243854012
+          ],
+          [
+            121.485872288,
+            31.244032494
+          ],
+          [
+            121.485687367,
+            31.244605791
+          ],
+          [
+            121.485746182,
+            31.244743068
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "foot": "yes",
+        "level": "0",
+        "display_level": "0",
+        "level_source": "sumo_hotspot_surface_scenario",
+        "sumo_edge_id": "906417852#10",
+        "sumo_lane_id": "906417852#10_0",
+        "sumo_function": "normal",
+        "sumo_length_m": 102.92,
+        "width": 2.0,
+        "width_source": "sumo_simulation_parameter",
+        "speed_mps": 2.78,
+        "name": "园内步道",
+        "source_type": "sumo",
+        "scenario_id": "people_heroes_monument",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.486534668,
+            31.244247426
+          ],
+          [
+            121.486607011,
+            31.244129105
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "foot": "yes",
+        "level": "0",
+        "display_level": "0",
+        "level_source": "sumo_hotspot_surface_scenario",
+        "sumo_edge_id": "906417852#1",
+        "sumo_lane_id": "906417852#1_0",
+        "sumo_function": "normal",
+        "sumo_length_m": 14.82,
+        "width": 2.0,
+        "width_source": "sumo_simulation_parameter",
+        "speed_mps": 2.78,
+        "name": "园内步道",
+        "source_type": "sumo",
+        "scenario_id": "people_heroes_monument",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.486631483,
+            31.244089158
+          ],
+          [
+            121.486704365,
+            31.243969941
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "foot": "yes",
+        "level": "0",
+        "display_level": "0",
+        "level_source": "sumo_hotspot_surface_scenario",
+        "sumo_edge_id": "906417852#2",
+        "sumo_lane_id": "906417852#2_0",
+        "sumo_function": "normal",
+        "sumo_length_m": 14.93,
+        "width": 2.0,
+        "width_source": "sumo_simulation_parameter",
+        "speed_mps": 2.78,
+        "name": "园内步道",
+        "source_type": "sumo",
+        "scenario_id": "people_heroes_monument",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.48653639825156,
+            31.24304110838885
+          ],
+          [
+            121.48650054607087,
+            31.242991662878246
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "foot": "yes",
+        "level": "0",
+        "display_level": "0",
+        "level_source": "sumo_hotspot_surface_scenario",
+        "sumo_edge_id": "906417852#5",
+        "sumo_lane_id": "906417852#5_0",
+        "sumo_function": "normal",
+        "sumo_length_m": 16.01,
+        "width": 2.0,
+        "width_source": "sumo_simulation_parameter",
+        "speed_mps": 2.78,
+        "name": "园内步道",
+        "source_type": "sumo",
+        "scenario_id": "people_heroes_monument",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.486367924,
+            31.242615202
+          ],
+          [
+            121.486248441,
+            31.24264113
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "foot": "yes",
+        "level": "0",
+        "display_level": "0",
+        "level_source": "sumo_hotspot_surface_scenario",
+        "sumo_edge_id": "906417852#7",
+        "sumo_lane_id": "906417852#7_0",
+        "sumo_function": "normal",
+        "sumo_length_m": 11.74,
+        "width": 2.0,
+        "width_source": "sumo_simulation_parameter",
+        "speed_mps": 2.78,
+        "name": "园内步道",
+        "source_type": "sumo",
+        "scenario_id": "people_heroes_monument",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.486225665,
+            31.242666934
+          ],
+          [
+            121.486233033,
+            31.24290275
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "foot": "yes",
+        "level": "0",
+        "display_level": "0",
+        "level_source": "sumo_hotspot_surface_scenario",
+        "sumo_edge_id": "906417852#8",
+        "sumo_lane_id": "906417852#8_0",
+        "sumo_function": "normal",
+        "sumo_length_m": 26.15,
+        "width": 2.0,
+        "width_source": "sumo_simulation_parameter",
+        "speed_mps": 2.78,
+        "name": "园内步道 / 公园接入通道",
+        "source_type": "sumo",
+        "scenario_id": "people_heroes_monument",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.4862164,
+            31.243017307
+          ],
+          [
+            121.486159279,
+            31.24316224
+          ],
+          [
+            121.486029245,
+            31.243605915
+          ],
+          [
+            121.485953944,
+            31.243810897
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "foot": "yes",
+        "level": "0",
+        "display_level": "0",
+        "level_source": "sumo_hotspot_surface_scenario",
+        "sumo_edge_id": "906417852#9",
+        "sumo_lane_id": "906417852#9_0",
+        "sumo_function": "normal",
+        "sumo_length_m": 91.51,
+        "width": 2.0,
+        "width_source": "sumo_simulation_parameter",
+        "speed_mps": 2.78,
+        "name": "园内步道",
+        "source_type": "sumo",
+        "scenario_id": "people_heroes_monument",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.485971514,
+            31.243841596
+          ],
+          [
+            121.486268913,
+            31.243964272
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "foot": "yes",
+        "level": "0",
+        "display_level": "0",
+        "level_source": "sumo_hotspot_surface_scenario",
+        "sumo_edge_id": "906417853#0",
+        "sumo_lane_id": "906417853#0_0",
+        "sumo_function": "normal",
+        "sumo_length_m": 31.42,
+        "width": 2.0,
+        "width_source": "sumo_simulation_parameter",
+        "speed_mps": 2.78,
+        "name": "园内步道",
+        "source_type": "sumo",
+        "scenario_id": "people_heroes_monument",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.486316168,
+            31.243983773
+          ],
+          [
+            121.486595417,
+            31.244098927
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "foot": "yes",
+        "level": "0",
+        "display_level": "0",
+        "level_source": "sumo_hotspot_surface_scenario",
+        "sumo_edge_id": "906417853#1",
+        "sumo_lane_id": "906417853#1_0",
+        "sumo_function": "normal",
+        "sumo_length_m": 29.5,
+        "width": 2.0,
+        "width_source": "sumo_simulation_parameter",
+        "speed_mps": 2.78,
+        "name": "园内步道",
+        "source_type": "sumo",
+        "scenario_id": "people_heroes_monument",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.486303633,
+            31.243953314
+          ],
+          [
+            121.48646115,
+            31.243649523
+          ],
+          [
+            121.48664796579554,
+            31.24335919214379
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "foot": "yes",
+        "level": "0",
+        "display_level": "0",
+        "level_source": "sumo_hotspot_surface_scenario",
+        "sumo_edge_id": "906417854",
+        "sumo_lane_id": "906417854_0",
+        "sumo_function": "normal",
+        "sumo_length_m": 78.56,
+        "width": 2.0,
+        "width_source": "sumo_simulation_parameter",
+        "speed_mps": 2.78,
+        "name": "园内步道",
+        "source_type": "sumo",
+        "scenario_id": "people_heroes_monument",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.48624989,
+            31.243017611
+          ],
+          [
+            121.486261161,
+            31.243035155
+          ],
+          [
+            121.486291872,
+            31.243058251
+          ],
+          [
+            121.486329991,
+            31.243071149
+          ],
+          [
+            121.486371032,
+            31.243071993
+          ],
+          [
+            121.486409953,
+            31.243060994
+          ],
+          [
+            121.486442113,
+            31.243039361
+          ],
+          [
+            121.486462499,
+            31.243011995
+          ],
+          [
+            121.486467046,
+            31.242996803
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "foot": "yes",
+        "level": "0",
+        "display_level": "0",
+        "level_source": "sumo_hotspot_surface_scenario",
+        "sumo_edge_id": "906417855#1",
+        "sumo_lane_id": "906417855#1_0",
+        "sumo_function": "normal",
+        "sumo_length_m": 27.05,
+        "width": 2.0,
+        "width_source": "sumo_simulation_parameter",
+        "speed_mps": 2.78,
+        "name": "园内步道",
+        "source_type": "sumo",
+        "scenario_id": "people_heroes_monument",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.486425774,
+            31.242891939
+          ],
+          [
+            121.486397131,
+            31.242877438
+          ],
+          [
+            121.486360071,
+            31.242870506
+          ],
+          [
+            121.486322427,
+            31.242873942
+          ],
+          [
+            121.486287877,
+            31.242887428
+          ],
+          [
+            121.486263523,
+            31.242906808
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "foot": "yes",
+        "level": "0",
+        "display_level": "0",
+        "level_source": "sumo_hotspot_surface_scenario",
+        "sumo_edge_id": "906417855#2",
+        "sumo_lane_id": "906417855#2_0",
+        "sumo_function": "normal",
+        "sumo_length_m": 17.16,
+        "width": 2.0,
+        "width_source": "sumo_simulation_parameter",
+        "speed_mps": 2.78,
+        "name": "园内步道",
+        "source_type": "sumo",
+        "scenario_id": "people_heroes_monument",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.48621187,
+            31.242629964
+          ],
+          [
+            121.486179331,
+            31.242589796
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "foot": "yes",
+        "level": "0",
+        "display_level": "0",
+        "level_source": "sumo_hotspot_surface_scenario",
+        "sumo_edge_id": "909084827#0",
+        "sumo_lane_id": "909084827#0_0",
+        "sumo_function": "normal",
+        "sumo_length_m": 5.43,
+        "width": 2.0,
+        "width_source": "sumo_simulation_parameter",
+        "speed_mps": 2.78,
+        "name": "909084827#0",
+        "source_type": "sumo",
+        "scenario_id": "people_heroes_monument",
+        "clip_part": 0
+      }
+    }
+  ],
+  "source": {
+    "provider": "sumo",
+    "label": "上海人民英雄纪念塔 SUMO 仿真路网",
+    "filename": "bund.net.xml",
+    "scenario_id": "people_heroes_monument",
+    "scope": "boundary_clipped",
+    "coordinateSystem": "WGS84",
+    "projection": {
+      "netOffset": "-337299.12,-3451800.16",
+      "convBoundary": "0.00,0.00,32747.53,10233.27",
+      "origBoundary": "121.233447,30.963067,135.422007,34.681517",
+      "projParameter": "+proj=utm +zone=51 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"
+    },
+    "network_sha256": "5efc7576d2ffe89a59f74f02f675568c43e946dab2e5cfe9380f6b49e2c1e1c7",
+    "scenario_sha256": "e63618ad0eb58f6c823446bc14db2223a262da8034a02168e573fdad0344e3db",
+    "width_status": "simulation_parameters_not_field_measurements"
+  },
+  "simulation_network": {
+    "hotspot_id": "people_heroes_monument",
+    "lanes": [
+      {
+        "id": "177931018#0_0",
+        "edge_id": "177931018#0",
+        "function": "normal",
+        "from_node": "599722293",
+        "to_node": "6361541058",
+        "width_m": 2.0,
+        "length_m": 12.28,
+        "shape": [
+          [
+            121.486737651,
+            31.243969881
+          ],
+          [
+            121.486797512,
+            31.244068017
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "177931046_0",
+        "edge_id": "177931046",
+        "function": "normal",
+        "from_node": "1883306436",
+        "to_node": "1883306110",
+        "width_m": 2.0,
+        "length_m": 8.08,
+        "shape": [
+          [
+            121.485774615,
+            31.244757657
+          ],
+          [
+            121.485852872,
+            31.24472935
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "178411801#0_0",
+        "edge_id": "178411801#0",
+        "function": "normal",
+        "from_node": "595760221",
+        "to_node": "6361541057",
+        "width_m": 2.0,
+        "length_m": 10.83,
+        "shape": [
+          [
+            121.486551469,
+            31.244273696
+          ],
+          [
+            121.486664845,
+            31.244281887
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "178564467_0",
+        "edge_id": "178564467",
+        "function": "normal",
+        "from_node": "1889012691",
+        "to_node": "1889012649",
+        "width_m": 2.0,
+        "length_m": 13.65,
+        "shape": [
+          [
+            121.486019378,
+            31.243039795
+          ],
+          [
+            121.486043005,
+            31.243046208
+          ],
+          [
+            121.486118166,
+            31.243073706
+          ],
+          [
+            121.486148538,
+            31.243091746
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "552032617_0",
+        "edge_id": "552032617",
+        "function": "normal",
+        "from_node": "5330450398",
+        "to_node": "5330450399",
+        "width_m": 2.0,
+        "length_m": 0.2,
+        "shape": [
+          [
+            121.485807806,
+            31.243960826
+          ],
+          [
+            121.485809903,
+            31.243961031
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "679361567#1_0",
+        "edge_id": "679361567#1",
+        "function": "normal",
+        "from_node": "6361541057",
+        "to_node": "6361541058",
+        "width_m": 2.0,
+        "length_m": 121.78,
+        "shape": [
+          [
+            121.486696358,
+            31.244307428
+          ],
+          [
+            121.486699894,
+            31.244322716
+          ],
+          [
+            121.486720044,
+            31.244369413
+          ],
+          [
+            121.486751931,
+            31.244411016
+          ],
+          [
+            121.486793909,
+            31.244445341
+          ],
+          [
+            121.48684401,
+            31.24447074
+          ],
+          [
+            121.486899421,
+            31.244485736
+          ],
+          [
+            121.486957425,
+            31.244489576
+          ],
+          [
+            121.487014872,
+            31.244482314
+          ],
+          [
+            121.487069029,
+            31.244464006
+          ],
+          [
+            121.487116835,
+            31.24443579
+          ],
+          [
+            121.487156062,
+            31.244398994
+          ],
+          [
+            121.487184471,
+            31.244355755
+          ],
+          [
+            121.487200669,
+            31.244307951
+          ],
+          [
+            121.487203981,
+            31.244258282
+          ],
+          [
+            121.487194051,
+            31.244209359
+          ],
+          [
+            121.487171366,
+            31.244163534
+          ],
+          [
+            121.487137251,
+            31.244123348
+          ],
+          [
+            121.487093356,
+            31.244090715
+          ],
+          [
+            121.487041963,
+            31.244067377
+          ],
+          [
+            121.486985676,
+            31.244054625
+          ],
+          [
+            121.486927636,
+            31.24405304
+          ],
+          [
+            121.486870571,
+            31.244062743
+          ],
+          [
+            121.48683284,
+            31.244078176
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "679361567#2_0",
+        "edge_id": "679361567#2",
+        "function": "normal",
+        "from_node": "6361541058",
+        "to_node": "6361541057",
+        "width_m": 2.0,
+        "length_m": 19.83,
+        "shape": [
+          [
+            121.48678391,
+            31.244104484
+          ],
+          [
+            121.486774785,
+            31.244110421
+          ],
+          [
+            121.486739588,
+            31.244144739
+          ],
+          [
+            121.486713543,
+            31.244184488
+          ],
+          [
+            121.486697729,
+            31.244228055
+          ],
+          [
+            121.486693755,
+            31.244259944
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417851#0_0",
+        "edge_id": "906417851#0",
+        "function": "normal",
+        "from_node": "8417005097",
+        "to_node": "8417005110",
+        "width_m": 2.0,
+        "length_m": 6.79,
+        "shape": [
+          [
+            121.485665636,
+            31.244796338
+          ],
+          [
+            121.485731529,
+            31.244773027
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417851#1_0",
+        "edge_id": "906417851#1",
+        "function": "normal",
+        "from_node": "8417005110",
+        "to_node": "1883306436",
+        "width_m": 2.0,
+        "length_m": 0.2,
+        "shape": [
+          [
+            121.485774931,
+            31.244757571
+          ],
+          [
+            121.485776936,
+            31.244756963
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417852#0_0",
+        "edge_id": "906417852#0",
+        "function": "normal",
+        "from_node": "1883306110",
+        "to_node": "595760221",
+        "width_m": 2.0,
+        "length_m": 99.03,
+        "shape": [
+          [
+            121.485866247,
+            31.244733477
+          ],
+          [
+            121.485887125,
+            31.244767463
+          ],
+          [
+            121.48655757,
+            31.24452321
+          ],
+          [
+            121.48652371,
+            31.244295923
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417852#10_0",
+        "edge_id": "906417852#10",
+        "function": "normal",
+        "from_node": "8417005111",
+        "to_node": "8417005110",
+        "width_m": 2.0,
+        "length_m": 102.92,
+        "shape": [
+          [
+            121.485938031,
+            31.243854012
+          ],
+          [
+            121.485872288,
+            31.244032494
+          ],
+          [
+            121.485687367,
+            31.244605791
+          ],
+          [
+            121.485746182,
+            31.244743068
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417852#1_0",
+        "edge_id": "906417852#1",
+        "function": "normal",
+        "from_node": "595760221",
+        "to_node": "8417005112",
+        "width_m": 2.0,
+        "length_m": 14.82,
+        "shape": [
+          [
+            121.486534668,
+            31.244247426
+          ],
+          [
+            121.486607011,
+            31.244129105
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417852#2_0",
+        "edge_id": "906417852#2",
+        "function": "normal",
+        "from_node": "8417005112",
+        "to_node": "599722293",
+        "width_m": 2.0,
+        "length_m": 14.93,
+        "shape": [
+          [
+            121.486631483,
+            31.244089158
+          ],
+          [
+            121.486704365,
+            31.243969941
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417852#5_0",
+        "edge_id": "906417852#5",
+        "function": "normal",
+        "from_node": "8417005101",
+        "to_node": "8417005102",
+        "width_m": 2.0,
+        "length_m": 16.01,
+        "shape": [
+          [
+            121.486588053,
+            31.243112348
+          ],
+          [
+            121.486499183,
+            31.242989783
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417852#7_0",
+        "edge_id": "906417852#7",
+        "function": "normal",
+        "from_node": "8417005103",
+        "to_node": "8417005104",
+        "width_m": 2.0,
+        "length_m": 11.74,
+        "shape": [
+          [
+            121.486367924,
+            31.242615202
+          ],
+          [
+            121.486248441,
+            31.24264113
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417852#8_0",
+        "edge_id": "906417852#8",
+        "function": "normal",
+        "from_node": "8417005104",
+        "to_node": "8417005105",
+        "width_m": 2.0,
+        "length_m": 26.15,
+        "shape": [
+          [
+            121.486225665,
+            31.242666934
+          ],
+          [
+            121.486233033,
+            31.24290275
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417852#9_0",
+        "edge_id": "906417852#9",
+        "function": "normal",
+        "from_node": "8417005105",
+        "to_node": "8417005111",
+        "width_m": 2.0,
+        "length_m": 91.51,
+        "shape": [
+          [
+            121.4862164,
+            31.243017307
+          ],
+          [
+            121.486159279,
+            31.24316224
+          ],
+          [
+            121.486029245,
+            31.243605915
+          ],
+          [
+            121.485953944,
+            31.243810897
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417853#0_0",
+        "edge_id": "906417853#0",
+        "function": "normal",
+        "from_node": "8417005111",
+        "to_node": "8417005113",
+        "width_m": 2.0,
+        "length_m": 31.42,
+        "shape": [
+          [
+            121.485971514,
+            31.243841596
+          ],
+          [
+            121.486268913,
+            31.243964272
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417853#1_0",
+        "edge_id": "906417853#1",
+        "function": "normal",
+        "from_node": "8417005113",
+        "to_node": "8417005112",
+        "width_m": 2.0,
+        "length_m": 29.5,
+        "shape": [
+          [
+            121.486316168,
+            31.243983773
+          ],
+          [
+            121.486595417,
+            31.244098927
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417854_0",
+        "edge_id": "906417854",
+        "function": "normal",
+        "from_node": "8417005113",
+        "to_node": "8417005115",
+        "width_m": 2.0,
+        "length_m": 78.56,
+        "shape": [
+          [
+            121.486303633,
+            31.243953314
+          ],
+          [
+            121.48646115,
+            31.243649523
+          ],
+          [
+            121.486672934,
+            31.243320389
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417855#1_0",
+        "edge_id": "906417855#1",
+        "function": "normal",
+        "from_node": "8417005105",
+        "to_node": "8417005102",
+        "width_m": 2.0,
+        "length_m": 27.05,
+        "shape": [
+          [
+            121.48624989,
+            31.243017611
+          ],
+          [
+            121.486261161,
+            31.243035155
+          ],
+          [
+            121.486291872,
+            31.243058251
+          ],
+          [
+            121.486329991,
+            31.243071149
+          ],
+          [
+            121.486371032,
+            31.243071993
+          ],
+          [
+            121.486409953,
+            31.243060994
+          ],
+          [
+            121.486442113,
+            31.243039361
+          ],
+          [
+            121.486462499,
+            31.243011995
+          ],
+          [
+            121.486467046,
+            31.242996803
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417855#2_0",
+        "edge_id": "906417855#2",
+        "function": "normal",
+        "from_node": "8417005102",
+        "to_node": "8417005105",
+        "width_m": 2.0,
+        "length_m": 17.16,
+        "shape": [
+          [
+            121.486425774,
+            31.242891939
+          ],
+          [
+            121.486397131,
+            31.242877438
+          ],
+          [
+            121.486360071,
+            31.242870506
+          ],
+          [
+            121.486322427,
+            31.242873942
+          ],
+          [
+            121.486287877,
+            31.242887428
+          ],
+          [
+            121.486263523,
+            31.242906808
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "909084827#0_0",
+        "edge_id": "909084827#0",
+        "function": "normal",
+        "from_node": "8417005104",
+        "to_node": "8440881662",
+        "width_m": 2.0,
+        "length_m": 5.43,
+        "shape": [
+          [
+            121.48621187,
+            31.242629964
+          ],
+          [
+            121.486179331,
+            31.242589796
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":1883306110_w0_0",
+        "edge_id": ":1883306110_w0",
+        "function": "walkingarea",
+        "from_node": "1883306110",
+        "to_node": "1883306110",
+        "width_m": 4.0,
+        "length_m": 1.35,
+        "shape": [
+          [
+            121.485856941,
+            31.244737607
+          ],
+          [
+            121.485875449,
+            31.244729255
+          ],
+          [
+            121.485868534,
+            31.244721776
+          ],
+          [
+            121.485864365,
+            31.244719832
+          ],
+          [
+            121.485859652,
+            31.244719055
+          ],
+          [
+            121.485854396,
+            31.244719444
+          ],
+          [
+            121.485848806,
+            31.244721002
+          ],
+          [
+            121.485856941,
+            31.244737607
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":1883306436_w0_0",
+        "edge_id": ":1883306436_w0",
+        "function": "walkingarea",
+        "from_node": "1883306436",
+        "to_node": "1883306436",
+        "width_m": 4.0,
+        "length_m": 0.23,
+        "shape": [
+          [
+            121.485778682,
+            31.244766005
+          ],
+          [
+            121.485770546,
+            31.2447494
+          ],
+          [
+            121.485767801,
+            31.24475036
+          ],
+          [
+            121.48577583,
+            31.244767054
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":1889012691_w0_0",
+        "edge_id": ":1889012691_w0",
+        "function": "walkingarea",
+        "from_node": "1889012691",
+        "to_node": "1889012691",
+        "width_m": 2.0,
+        "length_m": 4.17,
+        "shape": [
+          [
+            121.486016197,
+            31.243048328
+          ],
+          [
+            121.48602256,
+            31.243031172
+          ],
+          [
+            121.486011294,
+            31.243026529
+          ],
+          [
+            121.486007351,
+            31.243023595
+          ],
+          [
+            121.486004675,
+            31.243020226
+          ],
+          [
+            121.486003057,
+            31.243016328
+          ],
+          [
+            121.4860026,
+            31.243012082
+          ],
+          [
+            121.48598161,
+            31.243011474
+          ],
+          [
+            121.485979416,
+            31.243056826
+          ],
+          [
+            121.486000401,
+            31.243057795
+          ],
+          [
+            121.486002509,
+            31.243050693
+          ],
+          [
+            121.486004747,
+            31.243048644
+          ],
+          [
+            121.486007808,
+            31.243047598
+          ],
+          [
+            121.48601159,
+            31.243047462
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":5330450398_w0_0",
+        "edge_id": ":5330450398_w0",
+        "function": "walkingarea",
+        "from_node": "5330450398",
+        "to_node": "5330450398",
+        "width_m": 2.0,
+        "length_m": 3.96,
+        "shape": [
+          [
+            121.485810072,
+            31.243970144
+          ],
+          [
+            121.485812563,
+            31.243952221
+          ],
+          [
+            121.485801349,
+            31.243937745
+          ],
+          [
+            121.485781166,
+            31.243932636
+          ],
+          [
+            121.485766297,
+            31.243976124
+          ],
+          [
+            121.48578648,
+            31.243981233
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":595760221_w0_0",
+        "edge_id": ":595760221_w0",
+        "function": "walkingarea",
+        "from_node": "595760221",
+        "to_node": "595760221",
+        "width_m": 4.0,
+        "length_m": 4.14,
+        "shape": [
+          [
+            121.486513296,
+            31.244297063
+          ],
+          [
+            121.486534123,
+            31.244294782
+          ],
+          [
+            121.486535079,
+            31.244287486
+          ],
+          [
+            121.486537218,
+            31.244285075
+          ],
+          [
+            121.4865405,
+            31.2442834
+          ],
+          [
+            121.486545027,
+            31.244282641
+          ],
+          [
+            121.486550591,
+            31.244282707
+          ],
+          [
+            121.486552348,
+            31.244264685
+          ],
+          [
+            121.486544505,
+            31.244262698
+          ],
+          [
+            121.486542434,
+            31.244260869
+          ],
+          [
+            121.486541634,
+            31.244258334
+          ],
+          [
+            121.486542208,
+            31.244255273
+          ],
+          [
+            121.486543947,
+            31.244251595
+          ],
+          [
+            121.486525391,
+            31.244243167
+          ],
+          [
+            121.486514802,
+            31.244261897
+          ],
+          [
+            121.486512274,
+            31.244268994
+          ],
+          [
+            121.486511316,
+            31.244276381
+          ],
+          [
+            121.486511699,
+            31.244285316
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":599722293_w0_0",
+        "edge_id": ":599722293_w0",
+        "function": "walkingarea",
+        "from_node": "599722293",
+        "to_node": "599722293",
+        "width_m": 4.0,
+        "length_m": 4.44,
+        "shape": [
+          [
+            121.486728344,
+            31.243974102
+          ],
+          [
+            121.486746957,
+            31.243965751
+          ],
+          [
+            121.486741071,
+            31.243952961
+          ],
+          [
+            121.486740106,
+            31.243947627
+          ],
+          [
+            121.486740602,
+            31.243942852
+          ],
+          [
+            121.486742347,
+            31.243938813
+          ],
+          [
+            121.486745551,
+            31.243935422
+          ],
+          [
+            121.486731167,
+            31.243922172
+          ],
+          [
+            121.486714981,
+            31.243936325
+          ],
+          [
+            121.486710062,
+            31.243941951
+          ],
+          [
+            121.486705871,
+            31.243947946
+          ],
+          [
+            121.486701234,
+            31.24395556
+          ],
+          [
+            121.486695088,
+            31.243965681
+          ],
+          [
+            121.486713644,
+            31.243974109
+          ],
+          [
+            121.486718559,
+            31.243968754
+          ],
+          [
+            121.486720984,
+            31.243968151
+          ],
+          [
+            121.486723493,
+            31.243968813
+          ],
+          [
+            121.486725876,
+            31.243970825
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":6361541057_w0_0",
+        "edge_id": ":6361541057_w0",
+        "function": "walkingarea",
+        "from_node": "6361541057",
+        "to_node": "6361541057",
+        "width_m": 5.0,
+        "length_m": 4.2,
+        "shape": [
+          [
+            121.486686039,
+            31.244309201
+          ],
+          [
+            121.486706571,
+            31.244305653
+          ],
+          [
+            121.486706584,
+            31.244298256
+          ],
+          [
+            121.486708202,
+            31.244295569
+          ],
+          [
+            121.486710857,
+            31.244293705
+          ],
+          [
+            121.486714446,
+            31.244292485
+          ],
+          [
+            121.48671918,
+            31.244291909
+          ],
+          [
+            121.486718522,
+            31.244273949
+          ],
+          [
+            121.486709827,
+            31.244272673
+          ],
+          [
+            121.486706915,
+            31.244270925
+          ],
+          [
+            121.486704961,
+            31.244268376
+          ],
+          [
+            121.486704069,
+            31.244265028
+          ],
+          [
+            121.486704135,
+            31.244260879
+          ],
+          [
+            121.48668327,
+            31.244259009
+          ],
+          [
+            121.486680514,
+            31.244267186
+          ],
+          [
+            121.48667795,
+            31.244269953
+          ],
+          [
+            121.486674561,
+            31.244271807
+          ],
+          [
+            121.486670555,
+            31.244272752
+          ],
+          [
+            121.486665723,
+            31.244272876
+          ],
+          [
+            121.486663967,
+            31.244290808
+          ],
+          [
+            121.486674425,
+            31.244293457
+          ],
+          [
+            121.486678478,
+            31.244296121
+          ],
+          [
+            121.486681783,
+            31.244299588
+          ],
+          [
+            121.486684338,
+            31.244303948
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":6361541058_w0_0",
+        "edge_id": ":6361541058_w0",
+        "function": "walkingarea",
+        "from_node": "6361541058",
+        "to_node": "6361541058",
+        "width_m": 4.0,
+        "length_m": 4.4,
+        "shape": [
+          [
+            121.486806186,
+            31.244116655
+          ],
+          [
+            121.486826722,
+            31.244112837
+          ],
+          [
+            121.486825546,
+            31.244101005
+          ],
+          [
+            121.486826778,
+            31.244096148
+          ],
+          [
+            121.486829152,
+            31.244092116
+          ],
+          [
+            121.48683267,
+            31.24408882
+          ],
+          [
+            121.486837329,
+            31.244086349
+          ],
+          [
+            121.48682835,
+            31.244070004
+          ],
+          [
+            121.486819605,
+            31.244071886
+          ],
+          [
+            121.486815833,
+            31.244071391
+          ],
+          [
+            121.486812496,
+            31.244069908
+          ],
+          [
+            121.486809387,
+            31.244067345
+          ],
+          [
+            121.486806817,
+            31.244063887
+          ],
+          [
+            121.486788204,
+            31.244072238
+          ],
+          [
+            121.486790484,
+            31.244080745
+          ],
+          [
+            121.486789471,
+            31.244084973
+          ],
+          [
+            121.48678699,
+            31.244089094
+          ],
+          [
+            121.48678304,
+            31.244093197
+          ],
+          [
+            121.486777515,
+            31.244097282
+          ],
+          [
+            121.486790305,
+            31.244111686
+          ],
+          [
+            121.486797601,
+            31.244108525
+          ],
+          [
+            121.486800536,
+            31.24410883
+          ],
+          [
+            121.486802929,
+            31.244110211
+          ],
+          [
+            121.486804777,
+            31.244112849
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":8417005097_w0_0",
+        "edge_id": ":8417005097_w0",
+        "function": "walkingarea",
+        "from_node": "8417005097",
+        "to_node": "8417005097",
+        "width_m": 4.0,
+        "length_m": 4.1,
+        "shape": [
+          [
+            121.485639174,
+            31.244829315
+          ],
+          [
+            121.485658806,
+            31.244822961
+          ],
+          [
+            121.485657456,
+            31.244815457
+          ],
+          [
+            121.485658346,
+            31.24481231
+          ],
+          [
+            121.48566049,
+            31.244809539
+          ],
+          [
+            121.485663572,
+            31.24480723
+          ],
+          [
+            121.485667908,
+            31.244805296
+          ],
+          [
+            121.485663259,
+            31.244787379
+          ],
+          [
+            121.485653359,
+            31.244789247
+          ],
+          [
+            121.485649485,
+            31.24478857
+          ],
+          [
+            121.485646151,
+            31.244786907
+          ],
+          [
+            121.485643571,
+            31.24478408
+          ],
+          [
+            121.485641637,
+            31.244780268
+          ],
+          [
+            121.485621601,
+            31.244785625
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":8417005102_w0_0",
+        "edge_id": ":8417005102_w0",
+        "function": "walkingarea",
+        "from_node": "8417005102",
+        "to_node": "8417005102",
+        "width_m": 4.0,
+        "length_m": 9.44,
+        "shape": [
+          [
+            121.486456012,
+            31.242997394
+          ],
+          [
+            121.486478082,
+            31.242996121
+          ],
+          [
+            121.486481118,
+            31.242990112
+          ],
+          [
+            121.486483022,
+            31.242989232
+          ],
+          [
+            121.486485221,
+            31.242989619
+          ],
+          [
+            121.486487608,
+            31.242991361
+          ],
+          [
+            121.486490287,
+            31.24299455
+          ],
+          [
+            121.486508079,
+            31.242985017
+          ],
+          [
+            121.486493913,
+            31.242964732
+          ],
+          [
+            121.486484396,
+            31.242949193
+          ],
+          [
+            121.486478208,
+            31.242935588
+          ],
+          [
+            121.486473813,
+            31.242921463
+          ],
+          [
+            121.48646989,
+            31.242904096
+          ],
+          [
+            121.486464802,
+            31.242880761
+          ],
+          [
+            121.486444169,
+            31.242884126
+          ],
+          [
+            121.486444111,
+            31.242887734
+          ],
+          [
+            121.486443153,
+            31.242888535
+          ],
+          [
+            121.486441471,
+            31.242888695
+          ],
+          [
+            121.486439275,
+            31.242888128
+          ],
+          [
+            121.48643677,
+            31.242887197
+          ],
+          [
+            121.486414569,
+            31.242896678
+          ],
+          [
+            121.486432864,
+            31.242908261
+          ],
+          [
+            121.486446717,
+            31.242921866
+          ],
+          [
+            121.486455916,
+            31.242937581
+          ],
+          [
+            121.486460567,
+            31.242955408
+          ],
+          [
+            121.486460564,
+            31.242975345
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":8417005103_w0_0",
+        "edge_id": ":8417005103_w0",
+        "function": "walkingarea",
+        "from_node": "8417005103",
+        "to_node": "8417005103",
+        "width_m": 4.0,
+        "length_m": 10.64,
+        "shape": [
+          [
+            121.486409594,
+            31.242728009
+          ],
+          [
+            121.486430228,
+            31.242724644
+          ],
+          [
+            121.486432757,
+            31.242724042
+          ],
+          [
+            121.486452493,
+            31.242717689
+          ],
+          [
+            121.486439378,
+            31.242690741
+          ],
+          [
+            121.486427933,
+            31.24267103
+          ],
+          [
+            121.486418532,
+            31.242654771
+          ],
+          [
+            121.486411133,
+            31.242638084
+          ],
+          [
+            121.486406215,
+            31.242617277
+          ],
+          [
+            121.486403943,
+            31.242588562
+          ],
+          [
+            121.486382936,
+            31.242589036
+          ],
+          [
+            121.48638113,
+            31.242596954
+          ],
+          [
+            121.486378768,
+            31.242600174
+          ],
+          [
+            121.486375262,
+            31.242602749
+          ],
+          [
+            121.486370819,
+            31.242604862
+          ],
+          [
+            121.486365334,
+            31.242606421
+          ],
+          [
+            121.486370515,
+            31.242623893
+          ],
+          [
+            121.486381693,
+            31.242634039
+          ],
+          [
+            121.486387871,
+            31.242648275
+          ],
+          [
+            121.486394685,
+            31.242668744
+          ],
+          [
+            121.486401927,
+            31.242695262
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":8417005104_w0_0",
+        "edge_id": ":8417005104_w0",
+        "function": "walkingarea",
+        "from_node": "8417005104",
+        "to_node": "8417005104",
+        "width_m": 4.0,
+        "length_m": 3.86,
+        "shape": [
+          [
+            121.486215161,
+            31.242667171
+          ],
+          [
+            121.486236169,
+            31.242666697
+          ],
+          [
+            121.486237659,
+            31.242658865
+          ],
+          [
+            121.486239703,
+            31.242655732
+          ],
+          [
+            121.486242578,
+            31.24265324
+          ],
+          [
+            121.486246389,
+            31.2426513
+          ],
+          [
+            121.486251031,
+            31.242649911
+          ],
+          [
+            121.486245851,
+            31.242632349
+          ],
+          [
+            121.486235759,
+            31.242633132
+          ],
+          [
+            121.486231363,
+            31.242632268
+          ],
+          [
+            121.486227295,
+            31.242630597
+          ],
+          [
+            121.486223659,
+            31.242628118
+          ],
+          [
+            121.486220457,
+            31.242624833
+          ],
+          [
+            121.486203283,
+            31.242635095
+          ],
+          [
+            121.486211197,
+            31.242645834
+          ],
+          [
+            121.48621323,
+            31.242650007
+          ],
+          [
+            121.486214314,
+            31.242654441
+          ],
+          [
+            121.486214856,
+            31.24265995
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":8417005105_w0_0",
+        "edge_id": ":8417005105_w0",
+        "function": "walkingarea",
+        "from_node": "8417005105",
+        "to_node": "8417005105",
+        "width_m": 4.0,
+        "length_m": 9.53,
+        "shape": [
+          [
+            121.486238945,
+            31.243019196
+          ],
+          [
+            121.486260939,
+            31.243016117
+          ],
+          [
+            121.486250137,
+            31.242995602
+          ],
+          [
+            121.486244671,
+            31.242976231
+          ],
+          [
+            121.486244438,
+            31.242957915
+          ],
+          [
+            121.486249543,
+            31.242940654
+          ],
+          [
+            121.486259985,
+            31.242924539
+          ],
+          [
+            121.486275662,
+            31.242909387
+          ],
+          [
+            121.486251594,
+            31.242904232
+          ],
+          [
+            121.486247358,
+            31.242906527
+          ],
+          [
+            121.486245675,
+            31.242906688
+          ],
+          [
+            121.48624453,
+            31.242906043
+          ],
+          [
+            121.486243817,
+            31.242904681
+          ],
+          [
+            121.486243537,
+            31.242902513
+          ],
+          [
+            121.486222529,
+            31.242902987
+          ],
+          [
+            121.486223405,
+            31.242927085
+          ],
+          [
+            121.486223748,
+            31.242945041
+          ],
+          [
+            121.486222987,
+            31.242959828
+          ],
+          [
+            121.486220341,
+            31.242974321
+          ],
+          [
+            121.486215026,
+            31.242991579
+          ],
+          [
+            121.486206472,
+            31.243014393
+          ],
+          [
+            121.48622633,
+            31.24302013
+          ],
+          [
+            121.486229992,
+            31.243014399
+          ],
+          [
+            121.486232001,
+            31.243013521
+          ],
+          [
+            121.486234197,
+            31.243014088
+          ],
+          [
+            121.486236477,
+            31.243015919
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":8417005110_w0_0",
+        "edge_id": ":8417005110_w0",
+        "function": "walkingarea",
+        "from_node": "8417005110",
+        "to_node": "8417005110",
+        "width_m": 4.0,
+        "length_m": 3.75,
+        "shape": [
+          [
+            121.485784066,
+            31.244764174
+          ],
+          [
+            121.485776037,
+            31.24474748
+          ],
+          [
+            121.485755997,
+            31.244739936
+          ],
+          [
+            121.485736367,
+            31.2447462
+          ],
+          [
+            121.48573792,
+            31.244754158
+          ],
+          [
+            121.485737027,
+            31.244757485
+          ],
+          [
+            121.485734986,
+            31.244760348
+          ],
+          [
+            121.485731798,
+            31.244762746
+          ],
+          [
+            121.485727462,
+            31.24476468
+          ],
+          [
+            121.485735491,
+            31.244781374
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":8417005111_w0_0",
+        "edge_id": ":8417005111_w0",
+        "function": "walkingarea",
+        "from_node": "8417005111",
+        "to_node": "8417005111",
+        "width_m": 4.0,
+        "length_m": 4.1,
+        "shape": [
+          [
+            121.485966974,
+            31.243849752
+          ],
+          [
+            121.485976054,
+            31.24383344
+          ],
+          [
+            121.485967215,
+            31.243828104
+          ],
+          [
+            121.485964534,
+            31.243825005
+          ],
+          [
+            121.48596312,
+            31.24382147
+          ],
+          [
+            121.485962971,
+            31.243817679
+          ],
+          [
+            121.485963877,
+            31.24381354
+          ],
+          [
+            121.485943908,
+            31.243808163
+          ],
+          [
+            121.485927995,
+            31.243851278
+          ],
+          [
+            121.485948068,
+            31.243856747
+          ],
+          [
+            121.485952267,
+            31.243850211
+          ],
+          [
+            121.485955129,
+            31.24384853
+          ],
+          [
+            121.485958605,
+            31.243847849
+          ],
+          [
+            121.485962483,
+            31.243848256
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":8417005112_w0_0",
+        "edge_id": ":8417005112_w0",
+        "function": "walkingarea",
+        "from_node": "8417005112",
+        "to_node": "8417005112",
+        "width_m": 4.0,
+        "length_m": 4.04,
+        "shape": [
+          [
+            121.486640762,
+            31.244093326
+          ],
+          [
+            121.486622205,
+            31.244084989
+          ],
+          [
+            121.486616441,
+            31.244090875
+          ],
+          [
+            121.486612952,
+            31.244092368
+          ],
+          [
+            121.486609059,
+            31.244092863
+          ],
+          [
+            121.486604657,
+            31.24409236
+          ],
+          [
+            121.486599957,
+            31.244090771
+          ],
+          [
+            121.486590877,
+            31.244107083
+          ],
+          [
+            121.486597944,
+            31.244111677
+          ],
+          [
+            121.486599685,
+            31.244114404
+          ],
+          [
+            121.486600265,
+            31.244117568
+          ],
+          [
+            121.486599579,
+            31.244121079
+          ],
+          [
+            121.486597734,
+            31.244124846
+          ],
+          [
+            121.48661629,
+            31.244133274
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":8417005113_w0_0",
+        "edge_id": ":8417005113_w0",
+        "function": "walkingarea",
+        "from_node": "8417005113",
+        "to_node": "8417005113",
+        "width_m": 4.0,
+        "length_m": 4.04,
+        "shape": [
+          [
+            121.486311627,
+            31.243991929
+          ],
+          [
+            121.486320708,
+            31.243975617
+          ],
+          [
+            121.486313642,
+            31.243970933
+          ],
+          [
+            121.486311799,
+            31.243968025
+          ],
+          [
+            121.486311116,
+            31.243964769
+          ],
+          [
+            121.486311595,
+            31.243961076
+          ],
+          [
+            121.486313235,
+            31.243956945
+          ],
+          [
+            121.486294033,
+            31.243949592
+          ],
+          [
+            121.486288893,
+            31.243955847
+          ],
+          [
+            121.486285718,
+            31.243957433
+          ],
+          [
+            121.486282033,
+            31.243958021
+          ],
+          [
+            121.486277946,
+            31.243957522
+          ],
+          [
+            121.486273454,
+            31.243956116
+          ],
+          [
+            121.486264375,
+            31.243972338
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":8440881662_w0_0",
+        "edge_id": ":8440881662_w0",
+        "function": "walkingarea",
+        "from_node": "8440881662",
+        "to_node": "8440881662",
+        "width_m": 6.4,
+        "length_m": 6.1,
+        "shape": [
+          [
+            121.486170744,
+            31.242594927
+          ],
+          [
+            121.486188023,
+            31.242584666
+          ],
+          [
+            121.486184662,
+            31.242578131
+          ],
+          [
+            121.486185122,
+            31.242575611
+          ],
+          [
+            121.486186835,
+            31.242573556
+          ],
+          [
+            121.48619001,
+            31.242571969
+          ],
+          [
+            121.486194437,
+            31.242570939
+          ],
+          [
+            121.486181482,
+            31.242514222
+          ],
+          [
+            121.486164134,
+            31.242515642
+          ],
+          [
+            121.486157742,
+            31.242514845
+          ],
+          [
+            121.486152837,
+            31.242512983
+          ],
+          [
+            121.486149628,
+            31.242510058
+          ],
+          [
+            121.486147801,
+            31.242506157
+          ],
+          [
+            121.486127167,
+            31.242509523
+          ],
+          [
+            121.486127148,
+            31.242517281
+          ],
+          [
+            121.486125526,
+            31.242520239
+          ],
+          [
+            121.486122758,
+            31.242522642
+          ],
+          [
+            121.486119055,
+            31.242524403
+          ],
+          [
+            121.486114732,
+            31.242525525
+          ],
+          [
+            121.486127688,
+            31.242582151
+          ],
+          [
+            121.486145129,
+            31.242581455
+          ],
+          [
+            121.486152771,
+            31.242582898
+          ],
+          [
+            121.486159552,
+            31.242585684
+          ],
+          [
+            121.486165579,
+            31.242589634
+          ]
+        ],
+        "pedestrian": true
+      }
+    ],
+    "connections": [
+      {
+        "from_lane": ":1883306110_w0_0",
+        "to_lane": "906417852#0_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": "177931046_0",
+        "to_lane": ":1883306110_w0_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": ":1883306436_w0_0",
+        "to_lane": "177931046_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": "906417851#1_0",
+        "to_lane": ":1883306436_w0_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": ":1889012691_w0_0",
+        "to_lane": "178564467_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": ":5330450398_w0_0",
+        "to_lane": "552032617_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": ":595760221_w0_0",
+        "to_lane": "178411801#0_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": ":595760221_w0_0",
+        "to_lane": "906417852#1_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": "906417852#0_0",
+        "to_lane": ":595760221_w0_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": ":599722293_w0_0",
+        "to_lane": "177931018#0_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": "906417852#2_0",
+        "to_lane": ":599722293_w0_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": ":6361541057_w0_0",
+        "to_lane": "679361567#1_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": "679361567#2_0",
+        "to_lane": ":6361541057_w0_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": "178411801#0_0",
+        "to_lane": ":6361541057_w0_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": ":6361541058_w0_0",
+        "to_lane": "679361567#2_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": "679361567#1_0",
+        "to_lane": ":6361541058_w0_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": "177931018#0_0",
+        "to_lane": ":6361541058_w0_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": ":8417005097_w0_0",
+        "to_lane": "906417851#0_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": ":8417005102_w0_0",
+        "to_lane": "906417855#2_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": "906417855#1_0",
+        "to_lane": ":8417005102_w0_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": "906417852#5_0",
+        "to_lane": ":8417005102_w0_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": ":8417005103_w0_0",
+        "to_lane": "906417852#7_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": ":8417005104_w0_0",
+        "to_lane": "906417852#8_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": ":8417005104_w0_0",
+        "to_lane": "909084827#0_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": "906417852#7_0",
+        "to_lane": ":8417005104_w0_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": ":8417005105_w0_0",
+        "to_lane": "906417855#1_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": ":8417005105_w0_0",
+        "to_lane": "906417852#9_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": "906417855#2_0",
+        "to_lane": ":8417005105_w0_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": "906417852#8_0",
+        "to_lane": ":8417005105_w0_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": ":8417005110_w0_0",
+        "to_lane": "906417851#1_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": "906417852#10_0",
+        "to_lane": ":8417005110_w0_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": "906417851#0_0",
+        "to_lane": ":8417005110_w0_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": ":8417005111_w0_0",
+        "to_lane": "906417853#0_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": ":8417005111_w0_0",
+        "to_lane": "906417852#10_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": "906417852#9_0",
+        "to_lane": ":8417005111_w0_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": ":8417005112_w0_0",
+        "to_lane": "906417852#2_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": "906417853#1_0",
+        "to_lane": ":8417005112_w0_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": "906417852#1_0",
+        "to_lane": ":8417005112_w0_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": ":8417005113_w0_0",
+        "to_lane": "906417853#1_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": ":8417005113_w0_0",
+        "to_lane": "906417854_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": "906417853#0_0",
+        "to_lane": ":8417005113_w0_0",
+        "direction": "s"
+      },
+      {
+        "from_lane": "909084827#0_0",
+        "to_lane": ":8440881662_w0_0",
+        "direction": "s"
+      }
+    ],
+    "excluded_edge_ids": [
+      "177931018#1",
+      "178411801#1",
+      "679361563",
+      "679361564",
+      "679361565#1",
+      "679361565#2",
+      "679361566#1"
+    ],
+    "excluded_roads": {
+      "type": "FeatureCollection",
+      "features": [
+        {
+          "type": "Feature",
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                121.486816402,
+                31.2441147
+              ],
+              [
+                121.48681848,
+                31.244122663
+              ]
+            ]
+          },
+          "properties": {
+            "highway": "footway",
+            "foot": "yes",
+            "level": "0",
+            "display_level": "0",
+            "level_source": "sumo_hotspot_surface_scenario",
+            "sumo_edge_id": "177931018#1",
+            "sumo_lane_id": "177931018#1_0",
+            "sumo_function": "normal",
+            "sumo_length_m": 0.9,
+            "width": 2.0,
+            "width_source": "sumo_simulation_parameter",
+            "speed_mps": 2.78,
+            "name": "177931018#1",
+            "source_type": "sumo",
+            "scenario_id": "people_heroes_monument"
+          }
+        },
+        {
+          "type": "Feature",
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                121.486718903,
+                31.244282974
+              ],
+              [
+                121.486758612,
+                31.244281818
+              ],
+              [
+                121.486763845,
+                31.244309215
+              ],
+              [
+                121.486778528,
+                31.244343218
+              ],
+              [
+                121.486801669,
+                31.244373532
+              ],
+              [
+                121.486832455,
+                31.244398613
+              ],
+              [
+                121.48686891,
+                31.244417085
+              ],
+              [
+                121.486909266,
+                31.244428025
+              ],
+              [
+                121.48695164,
+                31.244430959
+              ],
+              [
+                121.486993622,
+                31.244425499
+              ],
+              [
+                121.487032999,
+                31.24441225
+              ],
+              [
+                121.487067873,
+                31.244391641
+              ],
+              [
+                121.487078531,
+                31.244381752
+              ]
+            ]
+          },
+          "properties": {
+            "highway": "footway",
+            "foot": "yes",
+            "level": "0",
+            "display_level": "0",
+            "level_source": "sumo_hotspot_surface_scenario",
+            "sumo_edge_id": "178411801#1",
+            "sumo_lane_id": "178411801#1_0",
+            "sumo_function": "normal",
+            "sumo_length_m": 44.65,
+            "width": 2.0,
+            "width_source": "sumo_simulation_parameter",
+            "speed_mps": 2.78,
+            "name": "178411801#1",
+            "source_type": "sumo",
+            "scenario_id": "people_heroes_monument"
+          }
+        },
+        {
+          "type": "Feature",
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                121.487081807,
+                31.244354095
+              ],
+              [
+                121.487080249,
+                31.244352994
+              ]
+            ]
+          },
+          "properties": {
+            "highway": "footway",
+            "foot": "yes",
+            "level": "0",
+            "display_level": "0",
+            "level_source": "sumo_hotspot_surface_scenario",
+            "sumo_edge_id": "679361563",
+            "sumo_lane_id": "679361563_0",
+            "sumo_function": "normal",
+            "sumo_length_m": 0.2,
+            "width": 2.0,
+            "width_source": "sumo_simulation_parameter",
+            "speed_mps": 2.78,
+            "name": "679361563",
+            "source_type": "sumo",
+            "scenario_id": "people_heroes_monument"
+          }
+        },
+        {
+          "type": "Feature",
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                121.486828253,
+                31.244234103
+              ],
+              [
+                121.486824487,
+                31.244233246
+              ]
+            ]
+          },
+          "properties": {
+            "highway": "footway",
+            "foot": "yes",
+            "level": "0",
+            "display_level": "0",
+            "level_source": "sumo_hotspot_surface_scenario",
+            "sumo_edge_id": "679361564",
+            "sumo_lane_id": "679361564_0",
+            "sumo_function": "normal",
+            "sumo_length_m": 0.37,
+            "width": 2.0,
+            "width_source": "sumo_simulation_parameter",
+            "speed_mps": 2.78,
+            "name": "679361564",
+            "source_type": "sumo",
+            "scenario_id": "people_heroes_monument"
+          }
+        },
+        {
+          "type": "Feature",
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                121.486846183,
+                31.24426201
+              ],
+              [
+                121.486843853,
+                31.244283002
+              ],
+              [
+                121.486847358,
+                31.24430686
+              ],
+              [
+                121.486856973,
+                31.244329436
+              ],
+              [
+                121.486872405,
+                31.244349375
+              ],
+              [
+                121.48689272,
+                31.244366033
+              ],
+              [
+                121.486916886,
+                31.244378226
+              ],
+              [
+                121.48694365,
+                31.244385487
+              ],
+              [
+                121.486971654,
+                31.244387441
+              ],
+              [
+                121.486999328,
+                31.244383797
+              ],
+              [
+                121.487025403,
+                31.244374992
+              ],
+              [
+                121.487048509,
+                31.244361462
+              ],
+              [
+                121.487050002,
+                31.244360036
+              ]
+            ]
+          },
+          "properties": {
+            "highway": "footway",
+            "foot": "yes",
+            "level": "0",
+            "display_level": "0",
+            "level_source": "sumo_hotspot_surface_scenario",
+            "sumo_edge_id": "679361565#1",
+            "sumo_lane_id": "679361565#1_0",
+            "sumo_function": "normal",
+            "sumo_length_m": 29.23,
+            "width": 2.0,
+            "width_source": "sumo_simulation_parameter",
+            "speed_mps": 2.78,
+            "name": "679361565#1",
+            "source_type": "sumo",
+            "scenario_id": "people_heroes_monument"
+          }
+        },
+        {
+          "type": "Feature",
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                121.487079428,
+                31.244325469
+              ],
+              [
+                121.487081258,
+                31.244322694
+              ],
+              [
+                121.487088974,
+                31.24429969
+              ],
+              [
+                121.487090617,
+                31.244275712
+              ],
+              [
+                121.487085848,
+                31.24425211
+              ],
+              [
+                121.487074965,
+                31.24423006
+              ],
+              [
+                121.487058369,
+                31.244210649
+              ],
+              [
+                121.487037202,
+                31.244194793
+              ],
+              [
+                121.48701239,
+                31.244183585
+              ],
+              [
+                121.486985293,
+                31.244177402
+              ],
+              [
+                121.486957164,
+                31.24417671
+              ],
+              [
+                121.486929685,
+                31.244181349
+              ],
+              [
+                121.486904117,
+                31.244191242
+              ],
+              [
+                121.486883537,
+                31.244204442
+              ],
+              [
+                121.486866473,
+                31.24422093
+              ],
+              [
+                121.486865718,
+                31.244222184
+              ]
+            ]
+          },
+          "properties": {
+            "highway": "footway",
+            "foot": "yes",
+            "level": "0",
+            "display_level": "0",
+            "level_source": "sumo_hotspot_surface_scenario",
+            "sumo_edge_id": "679361565#2",
+            "sumo_lane_id": "679361565#2_0",
+            "sumo_function": "normal",
+            "sumo_length_m": 34.73,
+            "width": 2.0,
+            "width_source": "sumo_simulation_parameter",
+            "speed_mps": 2.78,
+            "name": "679361565#2",
+            "source_type": "sumo",
+            "scenario_id": "people_heroes_monument"
+          }
+        },
+        {
+          "type": "Feature",
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                121.487110536,
+                31.244343517
+              ],
+              [
+                121.487117315,
+                31.244333223
+              ],
+              [
+                121.487129105,
+                31.244298448
+              ],
+              [
+                121.487131467,
+                31.24426221
+              ],
+              [
+                121.487124268,
+                31.244226401
+              ],
+              [
+                121.487107686,
+                31.244193007
+              ],
+              [
+                121.487082847,
+                31.244163755
+              ],
+              [
+                121.487050782,
+                31.244139922
+              ],
+              [
+                121.487013358,
+                31.244122882
+              ],
+              [
+                121.486972345,
+                31.244113649
+              ],
+              [
+                121.486929944,
+                31.244112428
+              ],
+              [
+                121.486888356,
+                31.244119517
+              ],
+              [
+                121.486851168,
+                31.244133784
+              ]
+            ]
+          },
+          "properties": {
+            "highway": "footway",
+            "foot": "yes",
+            "level": "0",
+            "display_level": "0",
+            "level_source": "sumo_hotspot_surface_scenario",
+            "sumo_edge_id": "679361566#1",
+            "sumo_lane_id": "679361566#1_0",
+            "sumo_function": "normal",
+            "sumo_length_m": 45.49,
+            "width": 2.0,
+            "width_source": "sumo_simulation_parameter",
+            "speed_mps": 2.78,
+            "name": "679361566#1",
+            "source_type": "sumo",
+            "scenario_id": "people_heroes_monument"
+          }
+        }
+      ]
+    },
+    "access_portals": [
+      {
+        "id": "west_gate",
+        "edge": "178411801#0",
+        "outside_side": "auto",
+        "inside_side": "auto"
+      },
+      {
+        "id": "south_gate",
+        "edge": "177931018#0",
+        "outside_side": "auto",
+        "inside_side": "auto"
+      }
+    ],
+    "target_edges": [
+      "679361567#1",
+      "679361567#2"
+    ],
+    "park_entry_edges": [
+      "906417851#0",
+      "906417852#8"
+    ],
+    "policy": "继承 SUMO 行人权限、显式连接及当前热点禁行边；连接方向保存原值，双向步行由求解器解释。"
+  },
+  "walkable_areas": {
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.485875449,
+                31.244729255
+              ],
+              [
+                121.485868534,
+                31.244721776
+              ],
+              [
+                121.485864365,
+                31.244719832
+              ],
+              [
+                121.485859652,
+                31.244719055
+              ],
+              [
+                121.485854396,
+                31.244719444
+              ],
+              [
+                121.485848806,
+                31.244721002
+              ],
+              [
+                121.485856941,
+                31.244737607
+              ],
+              [
+                121.485875449,
+                31.244729255
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "highway": "footway",
+          "foot": "yes",
+          "level": "0",
+          "display_level": "0",
+          "level_source": "sumo_hotspot_surface_scenario",
+          "sumo_edge_id": ":1883306110_w0",
+          "sumo_lane_id": ":1883306110_w0_0",
+          "sumo_function": "walkingarea",
+          "sumo_length_m": 1.35,
+          "width": 4.0,
+          "width_source": "sumo_simulation_parameter",
+          "speed_mps": 2.78,
+          "name": ":1883306110_w0",
+          "source_type": "sumo",
+          "scenario_id": "people_heroes_monument",
+          "asset_kind": "sumo_walkingarea"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.485770546,
+                31.2447494
+              ],
+              [
+                121.485767801,
+                31.24475036
+              ],
+              [
+                121.48577583,
+                31.244767054
+              ],
+              [
+                121.485778682,
+                31.244766005
+              ],
+              [
+                121.485770546,
+                31.2447494
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "highway": "footway",
+          "foot": "yes",
+          "level": "0",
+          "display_level": "0",
+          "level_source": "sumo_hotspot_surface_scenario",
+          "sumo_edge_id": ":1883306436_w0",
+          "sumo_lane_id": ":1883306436_w0_0",
+          "sumo_function": "walkingarea",
+          "sumo_length_m": 0.23,
+          "width": 4.0,
+          "width_source": "sumo_simulation_parameter",
+          "speed_mps": 2.78,
+          "name": ":1883306436_w0",
+          "source_type": "sumo",
+          "scenario_id": "people_heroes_monument",
+          "asset_kind": "sumo_walkingarea"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.48602256,
+                31.243031172
+              ],
+              [
+                121.486011294,
+                31.243026529
+              ],
+              [
+                121.486007351,
+                31.243023595
+              ],
+              [
+                121.486004675,
+                31.243020226
+              ],
+              [
+                121.486003057,
+                31.243016328
+              ],
+              [
+                121.4860026,
+                31.243012082
+              ],
+              [
+                121.48599776397307,
+                31.2430119419188
+              ],
+              [
+                121.48599637358332,
+                31.24305760903065
+              ],
+              [
+                121.486000401,
+                31.243057795
+              ],
+              [
+                121.486002509,
+                31.243050693
+              ],
+              [
+                121.486004747,
+                31.243048644
+              ],
+              [
+                121.486007808,
+                31.243047598
+              ],
+              [
+                121.48601159,
+                31.243047462
+              ],
+              [
+                121.486016197,
+                31.243048328
+              ],
+              [
+                121.48602256,
+                31.243031172
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "highway": "footway",
+          "foot": "yes",
+          "level": "0",
+          "display_level": "0",
+          "level_source": "sumo_hotspot_surface_scenario",
+          "sumo_edge_id": ":1889012691_w0",
+          "sumo_lane_id": ":1889012691_w0_0",
+          "sumo_function": "walkingarea",
+          "sumo_length_m": 4.17,
+          "width": 2.0,
+          "width_source": "sumo_simulation_parameter",
+          "speed_mps": 2.78,
+          "name": ":1889012691_w0",
+          "source_type": "sumo",
+          "scenario_id": "people_heroes_monument",
+          "asset_kind": "sumo_walkingarea"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.485812563,
+                31.243952221
+              ],
+              [
+                121.485801349,
+                31.243937745
+              ],
+              [
+                121.48579372604804,
+                31.24393581537301
+              ],
+              [
+                121.48577784903597,
+                31.243979048211056
+              ],
+              [
+                121.48578648,
+                31.243981233
+              ],
+              [
+                121.485810072,
+                31.243970144
+              ],
+              [
+                121.485812563,
+                31.243952221
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "highway": "footway",
+          "foot": "yes",
+          "level": "0",
+          "display_level": "0",
+          "level_source": "sumo_hotspot_surface_scenario",
+          "sumo_edge_id": ":5330450398_w0",
+          "sumo_lane_id": ":5330450398_w0_0",
+          "sumo_function": "walkingarea",
+          "sumo_length_m": 3.96,
+          "width": 2.0,
+          "width_source": "sumo_simulation_parameter",
+          "speed_mps": 2.78,
+          "name": ":5330450398_w0",
+          "source_type": "sumo",
+          "scenario_id": "people_heroes_monument",
+          "asset_kind": "sumo_walkingarea"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.486534123,
+                31.244294782
+              ],
+              [
+                121.486535079,
+                31.244287486
+              ],
+              [
+                121.486537218,
+                31.244285075
+              ],
+              [
+                121.4865405,
+                31.2442834
+              ],
+              [
+                121.486545027,
+                31.244282641
+              ],
+              [
+                121.486550591,
+                31.244282707
+              ],
+              [
+                121.486552348,
+                31.244264685
+              ],
+              [
+                121.486544505,
+                31.244262698
+              ],
+              [
+                121.486542434,
+                31.244260869
+              ],
+              [
+                121.486541634,
+                31.244258334
+              ],
+              [
+                121.486542208,
+                31.244255273
+              ],
+              [
+                121.486543947,
+                31.244251595
+              ],
+              [
+                121.486525391,
+                31.244243167
+              ],
+              [
+                121.486514802,
+                31.244261897
+              ],
+              [
+                121.486512274,
+                31.244268994
+              ],
+              [
+                121.486511316,
+                31.244276381
+              ],
+              [
+                121.486511699,
+                31.244285316
+              ],
+              [
+                121.486513296,
+                31.244297063
+              ],
+              [
+                121.486534123,
+                31.244294782
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "highway": "footway",
+          "foot": "yes",
+          "level": "0",
+          "display_level": "0",
+          "level_source": "sumo_hotspot_surface_scenario",
+          "sumo_edge_id": ":595760221_w0",
+          "sumo_lane_id": ":595760221_w0_0",
+          "sumo_function": "walkingarea",
+          "sumo_length_m": 4.14,
+          "width": 4.0,
+          "width_source": "sumo_simulation_parameter",
+          "speed_mps": 2.78,
+          "name": ":595760221_w0",
+          "source_type": "sumo",
+          "scenario_id": "people_heroes_monument",
+          "asset_kind": "sumo_walkingarea"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.486746957,
+                31.243965751
+              ],
+              [
+                121.486741071,
+                31.243952961
+              ],
+              [
+                121.486740106,
+                31.243947627
+              ],
+              [
+                121.48674056503654,
+                31.243943207847842
+              ],
+              [
+                121.4867295344383,
+                31.243923599508083
+              ],
+              [
+                121.486714981,
+                31.243936325
+              ],
+              [
+                121.486710062,
+                31.243941951
+              ],
+              [
+                121.486705871,
+                31.243947946
+              ],
+              [
+                121.486701234,
+                31.24395556
+              ],
+              [
+                121.486695088,
+                31.243965681
+              ],
+              [
+                121.486713644,
+                31.243974109
+              ],
+              [
+                121.486718559,
+                31.243968754
+              ],
+              [
+                121.486720984,
+                31.243968151
+              ],
+              [
+                121.486723493,
+                31.243968813
+              ],
+              [
+                121.486725876,
+                31.243970825
+              ],
+              [
+                121.486728344,
+                31.243974102
+              ],
+              [
+                121.486746957,
+                31.243965751
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "highway": "footway",
+          "foot": "yes",
+          "level": "0",
+          "display_level": "0",
+          "level_source": "sumo_hotspot_surface_scenario",
+          "sumo_edge_id": ":599722293_w0",
+          "sumo_lane_id": ":599722293_w0_0",
+          "sumo_function": "walkingarea",
+          "sumo_length_m": 4.44,
+          "width": 4.0,
+          "width_source": "sumo_simulation_parameter",
+          "speed_mps": 2.78,
+          "name": ":599722293_w0",
+          "source_type": "sumo",
+          "scenario_id": "people_heroes_monument",
+          "asset_kind": "sumo_walkingarea"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.486706571,
+                31.244305653
+              ],
+              [
+                121.486706584,
+                31.244298256
+              ],
+              [
+                121.486708202,
+                31.244295569
+              ],
+              [
+                121.486710857,
+                31.244293705
+              ],
+              [
+                121.486714446,
+                31.244292485
+              ],
+              [
+                121.48671918,
+                31.244291909
+              ],
+              [
+                121.486718522,
+                31.244273949
+              ],
+              [
+                121.486709827,
+                31.244272673
+              ],
+              [
+                121.486706915,
+                31.244270925
+              ],
+              [
+                121.486704961,
+                31.244268376
+              ],
+              [
+                121.486704069,
+                31.244265028
+              ],
+              [
+                121.486704135,
+                31.244260879
+              ],
+              [
+                121.48668327,
+                31.244259009
+              ],
+              [
+                121.486680514,
+                31.244267186
+              ],
+              [
+                121.48667795,
+                31.244269953
+              ],
+              [
+                121.486674561,
+                31.244271807
+              ],
+              [
+                121.486670555,
+                31.244272752
+              ],
+              [
+                121.486665723,
+                31.244272876
+              ],
+              [
+                121.486663967,
+                31.244290808
+              ],
+              [
+                121.486674425,
+                31.244293457
+              ],
+              [
+                121.486678478,
+                31.244296121
+              ],
+              [
+                121.486681783,
+                31.244299588
+              ],
+              [
+                121.486684338,
+                31.244303948
+              ],
+              [
+                121.486686039,
+                31.244309201
+              ],
+              [
+                121.486706571,
+                31.244305653
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "highway": "footway",
+          "foot": "yes",
+          "level": "0",
+          "display_level": "0",
+          "level_source": "sumo_hotspot_surface_scenario",
+          "sumo_edge_id": ":6361541057_w0",
+          "sumo_lane_id": ":6361541057_w0_0",
+          "sumo_function": "walkingarea",
+          "sumo_length_m": 4.2,
+          "width": 5.0,
+          "width_source": "sumo_simulation_parameter",
+          "speed_mps": 2.78,
+          "name": ":6361541057_w0",
+          "source_type": "sumo",
+          "scenario_id": "people_heroes_monument",
+          "asset_kind": "sumo_walkingarea"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.486826722,
+                31.244112837
+              ],
+              [
+                121.486825546,
+                31.244101005
+              ],
+              [
+                121.486826778,
+                31.244096148
+              ],
+              [
+                121.486829152,
+                31.244092116
+              ],
+              [
+                121.48683267,
+                31.24408882
+              ],
+              [
+                121.486837329,
+                31.244086349
+              ],
+              [
+                121.48682835,
+                31.244070004
+              ],
+              [
+                121.486819605,
+                31.244071886
+              ],
+              [
+                121.486815833,
+                31.244071391
+              ],
+              [
+                121.486812496,
+                31.244069908
+              ],
+              [
+                121.486809387,
+                31.244067345
+              ],
+              [
+                121.486806817,
+                31.244063887
+              ],
+              [
+                121.486788204,
+                31.244072238
+              ],
+              [
+                121.486790484,
+                31.244080745
+              ],
+              [
+                121.486789471,
+                31.244084973
+              ],
+              [
+                121.48678699,
+                31.244089094
+              ],
+              [
+                121.48678304,
+                31.244093197
+              ],
+              [
+                121.486777515,
+                31.244097282
+              ],
+              [
+                121.486790305,
+                31.244111686
+              ],
+              [
+                121.486797601,
+                31.244108525
+              ],
+              [
+                121.486800536,
+                31.24410883
+              ],
+              [
+                121.486802929,
+                31.244110211
+              ],
+              [
+                121.486804777,
+                31.244112849
+              ],
+              [
+                121.486806186,
+                31.244116655
+              ],
+              [
+                121.486826722,
+                31.244112837
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "highway": "footway",
+          "foot": "yes",
+          "level": "0",
+          "display_level": "0",
+          "level_source": "sumo_hotspot_surface_scenario",
+          "sumo_edge_id": ":6361541058_w0",
+          "sumo_lane_id": ":6361541058_w0_0",
+          "sumo_function": "walkingarea",
+          "sumo_length_m": 4.4,
+          "width": 4.0,
+          "width_source": "sumo_simulation_parameter",
+          "speed_mps": 2.78,
+          "name": ":6361541058_w0",
+          "source_type": "sumo",
+          "scenario_id": "people_heroes_monument",
+          "asset_kind": "sumo_walkingarea"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.485658806,
+                31.244822961
+              ],
+              [
+                121.485657456,
+                31.244815457
+              ],
+              [
+                121.485658346,
+                31.24481231
+              ],
+              [
+                121.48566049,
+                31.244809539
+              ],
+              [
+                121.485663572,
+                31.24480723
+              ],
+              [
+                121.485667908,
+                31.244805296
+              ],
+              [
+                121.485663259,
+                31.244787379
+              ],
+              [
+                121.485653359,
+                31.244789247
+              ],
+              [
+                121.48565267081939,
+                31.244789126737153
+              ],
+              [
+                121.48565686230778,
+                31.244823590086206
+              ],
+              [
+                121.485658806,
+                31.244822961
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "highway": "footway",
+          "foot": "yes",
+          "level": "0",
+          "display_level": "0",
+          "level_source": "sumo_hotspot_surface_scenario",
+          "sumo_edge_id": ":8417005097_w0",
+          "sumo_lane_id": ":8417005097_w0_0",
+          "sumo_function": "walkingarea",
+          "sumo_length_m": 4.1,
+          "width": 4.0,
+          "width_source": "sumo_simulation_parameter",
+          "speed_mps": 2.78,
+          "name": ":8417005097_w0",
+          "source_type": "sumo",
+          "scenario_id": "people_heroes_monument",
+          "asset_kind": "sumo_walkingarea"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.486478082,
+                31.242996121
+              ],
+              [
+                121.48647952437881,
+                31.242993266173183
+              ],
+              [
+                121.48644825945462,
+                31.242883458894887
+              ],
+              [
+                121.486444169,
+                31.242884126
+              ],
+              [
+                121.486444111,
+                31.242887734
+              ],
+              [
+                121.486443153,
+                31.242888535
+              ],
+              [
+                121.486441471,
+                31.242888695
+              ],
+              [
+                121.486439275,
+                31.242888128
+              ],
+              [
+                121.48643677,
+                31.242887197
+              ],
+              [
+                121.486414569,
+                31.242896678
+              ],
+              [
+                121.486432864,
+                31.242908261
+              ],
+              [
+                121.486446717,
+                31.242921866
+              ],
+              [
+                121.486455916,
+                31.242937581
+              ],
+              [
+                121.486460567,
+                31.242955408
+              ],
+              [
+                121.486460564,
+                31.242975345
+              ],
+              [
+                121.486456012,
+                31.242997394
+              ],
+              [
+                121.486478082,
+                31.242996121
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "highway": "footway",
+          "foot": "yes",
+          "level": "0",
+          "display_level": "0",
+          "level_source": "sumo_hotspot_surface_scenario",
+          "sumo_edge_id": ":8417005102_w0",
+          "sumo_lane_id": ":8417005102_w0_0",
+          "sumo_function": "walkingarea",
+          "sumo_length_m": 9.44,
+          "width": 4.0,
+          "width_source": "sumo_simulation_parameter",
+          "speed_mps": 2.78,
+          "name": ":8417005102_w0",
+          "source_type": "sumo",
+          "scenario_id": "people_heroes_monument",
+          "asset_kind": "sumo_walkingarea"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.486365334,
+                31.242606421
+              ],
+              [
+                121.486370515,
+                31.242623893
+              ],
+              [
+                121.48637569251225,
+                31.242628592502538
+              ],
+              [
+                121.48636907682457,
+                31.242605357178032
+              ],
+              [
+                121.486365334,
+                31.242606421
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "highway": "footway",
+          "foot": "yes",
+          "level": "0",
+          "display_level": "0",
+          "level_source": "sumo_hotspot_surface_scenario",
+          "sumo_edge_id": ":8417005103_w0",
+          "sumo_lane_id": ":8417005103_w0_0",
+          "sumo_function": "walkingarea",
+          "sumo_length_m": 10.64,
+          "width": 4.0,
+          "width_source": "sumo_simulation_parameter",
+          "speed_mps": 2.78,
+          "name": ":8417005103_w0",
+          "source_type": "sumo",
+          "scenario_id": "people_heroes_monument",
+          "asset_kind": "sumo_walkingarea"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.486236169,
+                31.242666697
+              ],
+              [
+                121.486237659,
+                31.242658865
+              ],
+              [
+                121.486239703,
+                31.242655732
+              ],
+              [
+                121.486242578,
+                31.24265324
+              ],
+              [
+                121.486246389,
+                31.2426513
+              ],
+              [
+                121.486251031,
+                31.242649911
+              ],
+              [
+                121.486245851,
+                31.242632349
+              ],
+              [
+                121.486235759,
+                31.242633132
+              ],
+              [
+                121.486231363,
+                31.242632268
+              ],
+              [
+                121.486227295,
+                31.242630597
+              ],
+              [
+                121.486223659,
+                31.242628118
+              ],
+              [
+                121.486220457,
+                31.242624833
+              ],
+              [
+                121.486203283,
+                31.242635095
+              ],
+              [
+                121.486211197,
+                31.242645834
+              ],
+              [
+                121.48621323,
+                31.242650007
+              ],
+              [
+                121.486214314,
+                31.242654441
+              ],
+              [
+                121.486214856,
+                31.24265995
+              ],
+              [
+                121.486215161,
+                31.242667171
+              ],
+              [
+                121.486236169,
+                31.242666697
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "highway": "footway",
+          "foot": "yes",
+          "level": "0",
+          "display_level": "0",
+          "level_source": "sumo_hotspot_surface_scenario",
+          "sumo_edge_id": ":8417005104_w0",
+          "sumo_lane_id": ":8417005104_w0_0",
+          "sumo_function": "walkingarea",
+          "sumo_length_m": 3.86,
+          "width": 4.0,
+          "width_source": "sumo_simulation_parameter",
+          "speed_mps": 2.78,
+          "name": ":8417005104_w0",
+          "source_type": "sumo",
+          "scenario_id": "people_heroes_monument",
+          "asset_kind": "sumo_walkingarea"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.486260939,
+                31.243016117
+              ],
+              [
+                121.486250137,
+                31.242995602
+              ],
+              [
+                121.486244671,
+                31.242976231
+              ],
+              [
+                121.486244438,
+                31.242957915
+              ],
+              [
+                121.486249543,
+                31.242940654
+              ],
+              [
+                121.486259985,
+                31.242924539
+              ],
+              [
+                121.486275662,
+                31.242909387
+              ],
+              [
+                121.486251594,
+                31.242904232
+              ],
+              [
+                121.486247358,
+                31.242906527
+              ],
+              [
+                121.486245675,
+                31.242906688
+              ],
+              [
+                121.48624453,
+                31.242906043
+              ],
+              [
+                121.486243817,
+                31.242904681
+              ],
+              [
+                121.486243537,
+                31.242902513
+              ],
+              [
+                121.486222529,
+                31.242902987
+              ],
+              [
+                121.486223405,
+                31.242927085
+              ],
+              [
+                121.486223748,
+                31.242945041
+              ],
+              [
+                121.486222987,
+                31.242959828
+              ],
+              [
+                121.486220341,
+                31.242974321
+              ],
+              [
+                121.486215026,
+                31.242991579
+              ],
+              [
+                121.486206472,
+                31.243014393
+              ],
+              [
+                121.48622633,
+                31.24302013
+              ],
+              [
+                121.486229992,
+                31.243014399
+              ],
+              [
+                121.486232001,
+                31.243013521
+              ],
+              [
+                121.486234197,
+                31.243014088
+              ],
+              [
+                121.486236477,
+                31.243015919
+              ],
+              [
+                121.486238945,
+                31.243019196
+              ],
+              [
+                121.486260939,
+                31.243016117
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "highway": "footway",
+          "foot": "yes",
+          "level": "0",
+          "display_level": "0",
+          "level_source": "sumo_hotspot_surface_scenario",
+          "sumo_edge_id": ":8417005105_w0",
+          "sumo_lane_id": ":8417005105_w0_0",
+          "sumo_function": "walkingarea",
+          "sumo_length_m": 9.53,
+          "width": 4.0,
+          "width_source": "sumo_simulation_parameter",
+          "speed_mps": 2.78,
+          "name": ":8417005105_w0",
+          "source_type": "sumo",
+          "scenario_id": "people_heroes_monument",
+          "asset_kind": "sumo_walkingarea"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.485776037,
+                31.24474748
+              ],
+              [
+                121.485755997,
+                31.244739936
+              ],
+              [
+                121.485736367,
+                31.2447462
+              ],
+              [
+                121.48573792,
+                31.244754158
+              ],
+              [
+                121.485737027,
+                31.244757485
+              ],
+              [
+                121.485734986,
+                31.244760348
+              ],
+              [
+                121.485731798,
+                31.244762746
+              ],
+              [
+                121.485727462,
+                31.24476468
+              ],
+              [
+                121.485735491,
+                31.244781374
+              ],
+              [
+                121.485784066,
+                31.244764174
+              ],
+              [
+                121.485776037,
+                31.24474748
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "highway": "footway",
+          "foot": "yes",
+          "level": "0",
+          "display_level": "0",
+          "level_source": "sumo_hotspot_surface_scenario",
+          "sumo_edge_id": ":8417005110_w0",
+          "sumo_lane_id": ":8417005110_w0_0",
+          "sumo_function": "walkingarea",
+          "sumo_length_m": 3.75,
+          "width": 4.0,
+          "width_source": "sumo_simulation_parameter",
+          "speed_mps": 2.78,
+          "name": ":8417005110_w0",
+          "source_type": "sumo",
+          "scenario_id": "people_heroes_monument",
+          "asset_kind": "sumo_walkingarea"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.485976054,
+                31.24383344
+              ],
+              [
+                121.485967215,
+                31.243828104
+              ],
+              [
+                121.485964534,
+                31.243825005
+              ],
+              [
+                121.48596312,
+                31.24382147
+              ],
+              [
+                121.485962971,
+                31.243817679
+              ],
+              [
+                121.485963877,
+                31.24381354
+              ],
+              [
+                121.485943908,
+                31.243808163
+              ],
+              [
+                121.485927995,
+                31.243851278
+              ],
+              [
+                121.485948068,
+                31.243856747
+              ],
+              [
+                121.485952267,
+                31.243850211
+              ],
+              [
+                121.485955129,
+                31.24384853
+              ],
+              [
+                121.485958605,
+                31.243847849
+              ],
+              [
+                121.485962483,
+                31.243848256
+              ],
+              [
+                121.485966974,
+                31.243849752
+              ],
+              [
+                121.485976054,
+                31.24383344
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "highway": "footway",
+          "foot": "yes",
+          "level": "0",
+          "display_level": "0",
+          "level_source": "sumo_hotspot_surface_scenario",
+          "sumo_edge_id": ":8417005111_w0",
+          "sumo_lane_id": ":8417005111_w0_0",
+          "sumo_function": "walkingarea",
+          "sumo_length_m": 4.1,
+          "width": 4.0,
+          "width_source": "sumo_simulation_parameter",
+          "speed_mps": 2.78,
+          "name": ":8417005111_w0",
+          "source_type": "sumo",
+          "scenario_id": "people_heroes_monument",
+          "asset_kind": "sumo_walkingarea"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.486622205,
+                31.244084989
+              ],
+              [
+                121.486616441,
+                31.244090875
+              ],
+              [
+                121.486612952,
+                31.244092368
+              ],
+              [
+                121.486609059,
+                31.244092863
+              ],
+              [
+                121.486604657,
+                31.24409236
+              ],
+              [
+                121.486599957,
+                31.244090771
+              ],
+              [
+                121.486590877,
+                31.244107083
+              ],
+              [
+                121.486597944,
+                31.244111677
+              ],
+              [
+                121.486599685,
+                31.244114404
+              ],
+              [
+                121.486600265,
+                31.244117568
+              ],
+              [
+                121.486599579,
+                31.244121079
+              ],
+              [
+                121.486597734,
+                31.244124846
+              ],
+              [
+                121.48661629,
+                31.244133274
+              ],
+              [
+                121.486640762,
+                31.244093326
+              ],
+              [
+                121.486622205,
+                31.244084989
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "highway": "footway",
+          "foot": "yes",
+          "level": "0",
+          "display_level": "0",
+          "level_source": "sumo_hotspot_surface_scenario",
+          "sumo_edge_id": ":8417005112_w0",
+          "sumo_lane_id": ":8417005112_w0_0",
+          "sumo_function": "walkingarea",
+          "sumo_length_m": 4.04,
+          "width": 4.0,
+          "width_source": "sumo_simulation_parameter",
+          "speed_mps": 2.78,
+          "name": ":8417005112_w0",
+          "source_type": "sumo",
+          "scenario_id": "people_heroes_monument",
+          "asset_kind": "sumo_walkingarea"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.486320708,
+                31.243975617
+              ],
+              [
+                121.486313642,
+                31.243970933
+              ],
+              [
+                121.486311799,
+                31.243968025
+              ],
+              [
+                121.486311116,
+                31.243964769
+              ],
+              [
+                121.486311595,
+                31.243961076
+              ],
+              [
+                121.486313235,
+                31.243956945
+              ],
+              [
+                121.486294033,
+                31.243949592
+              ],
+              [
+                121.486288893,
+                31.243955847
+              ],
+              [
+                121.486285718,
+                31.243957433
+              ],
+              [
+                121.486282033,
+                31.243958021
+              ],
+              [
+                121.486277946,
+                31.243957522
+              ],
+              [
+                121.486273454,
+                31.243956116
+              ],
+              [
+                121.486264375,
+                31.243972338
+              ],
+              [
+                121.486311627,
+                31.243991929
+              ],
+              [
+                121.486320708,
+                31.243975617
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "highway": "footway",
+          "foot": "yes",
+          "level": "0",
+          "display_level": "0",
+          "level_source": "sumo_hotspot_surface_scenario",
+          "sumo_edge_id": ":8417005113_w0",
+          "sumo_lane_id": ":8417005113_w0_0",
+          "sumo_function": "walkingarea",
+          "sumo_length_m": 4.04,
+          "width": 4.0,
+          "width_source": "sumo_simulation_parameter",
+          "speed_mps": 2.78,
+          "name": ":8417005113_w0",
+          "source_type": "sumo",
+          "scenario_id": "people_heroes_monument",
+          "asset_kind": "sumo_walkingarea"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.48617987866984,
+                31.242589502447235
+              ],
+              [
+                121.48616713603606,
+                31.242591229622814
+              ],
+              [
+                121.486170744,
+                31.242594927
+              ],
+              [
+                121.48617987866984,
+                31.242589502447235
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "highway": "footway",
+          "foot": "yes",
+          "level": "0",
+          "display_level": "0",
+          "level_source": "sumo_hotspot_surface_scenario",
+          "sumo_edge_id": ":8440881662_w0",
+          "sumo_lane_id": ":8440881662_w0_0",
+          "sumo_function": "walkingarea",
+          "sumo_length_m": 6.1,
+          "width": 6.4,
+          "width_source": "sumo_simulation_parameter",
+          "speed_mps": 2.78,
+          "name": ":8440881662_w0",
+          "source_type": "sumo",
+          "scenario_id": "people_heroes_monument",
+          "asset_kind": "sumo_walkingarea"
+        }
+      }
+    ]
+  },
+  "builder_version": "sumo-pedestrian-1",
+  "temporal": {
+    "historical_verified": false,
+    "note": "来自当前 SUMO 仿真文件及热点配置，非历史现场测绘。"
+  },
+  "obstacles": {
+    "type": "FeatureCollection",
+    "features": []
+  },
+  "barriers": {
+    "type": "FeatureCollection",
+    "features": []
+  },
+  "entrances": {
+    "type": "FeatureCollection",
+    "features": []
+  },
+  "boundary": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          121.486,
+          31.2429385
+        ],
+        [
+          121.4859892,
+          31.2427801
+        ],
+        [
+          121.4859814,
+          31.2426652
+        ],
+        [
+          121.4859868,
+          31.2426423
+        ],
+        [
+          121.4859948,
+          31.242632
+        ],
+        [
+          121.4860198,
+          31.2426112
+        ],
+        [
+          121.4863577,
+          31.2425654
+        ],
+        [
+          121.4864811,
+          31.2429988
+        ],
+        [
+          121.4865187,
+          31.242985
+        ],
+        [
+          121.4866156,
+          31.2432922
+        ],
+        [
+          121.4867373,
+          31.2435441
+        ],
+        [
+          121.4868301,
+          31.2437599
+        ],
+        [
+          121.4866874,
+          31.2438487
+        ],
+        [
+          121.4867634,
+          31.2439838
+        ],
+        [
+          121.4868004,
+          31.2440399
+        ],
+        [
+          121.4868919,
+          31.2440236
+        ],
+        [
+          121.4869784,
+          31.2440175
+        ],
+        [
+          121.4870501,
+          31.2440316
+        ],
+        [
+          121.4871555,
+          31.2440983
+        ],
+        [
+          121.4871921,
+          31.2441404
+        ],
+        [
+          121.487218,
+          31.2441968
+        ],
+        [
+          121.4872326,
+          31.2442689
+        ],
+        [
+          121.4872245,
+          31.2443388
+        ],
+        [
+          121.4871891,
+          31.2444063
+        ],
+        [
+          121.4871396,
+          31.2444605
+        ],
+        [
+          121.4870753,
+          31.2445019
+        ],
+        [
+          121.4870105,
+          31.2445229
+        ],
+        [
+          121.4869334,
+          31.2445315
+        ],
+        [
+          121.4868563,
+          31.2445271
+        ],
+        [
+          121.4867855,
+          31.2444949
+        ],
+        [
+          121.4867186,
+          31.2444581
+        ],
+        [
+          121.48668,
+          31.2444101
+        ],
+        [
+          121.4866494,
+          31.2443601
+        ],
+        [
+          121.486638,
+          31.2443146
+        ],
+        [
+          121.4865696,
+          31.2443232
+        ],
+        [
+          121.486581,
+          31.2444052
+        ],
+        [
+          121.4865985,
+          31.244459
+        ],
+        [
+          121.486628,
+          31.2445387
+        ],
+        [
+          121.4865989,
+          31.2445482
+        ],
+        [
+          121.4864533,
+          31.2445994
+        ],
+        [
+          121.4864082,
+          31.2446161
+        ],
+        [
+          121.4858584,
+          31.2448199
+        ],
+        [
+          121.4858453,
+          31.2447667
+        ],
+        [
+          121.4856587,
+          31.2448387
+        ],
+        [
+          121.4856434,
+          31.2447129
+        ],
+        [
+          121.4856382,
+          31.2446702
+        ],
+        [
+          121.4856335,
+          31.2445123
+        ],
+        [
+          121.4856443,
+          31.2444298
+        ],
+        [
+          121.4856604,
+          31.2443747
+        ],
+        [
+          121.4857757,
+          31.2439849
+        ],
+        [
+          121.4859071,
+          31.2436271
+        ],
+        [
+          121.4859554,
+          31.2434804
+        ],
+        [
+          121.4859769,
+          31.2433634
+        ],
+        [
+          121.4859942,
+          31.243129
+        ],
+        [
+          121.486,
+          31.2429385
+        ]
+      ]
+    ]
+  },
+  "topology": {
+    "kind": "sumo_lane_connections",
+    "nodes": [
+      {
+        "id": "177931018#0_0",
+        "edge_id": "177931018#0",
+        "function": "normal",
+        "from_node": "599722293",
+        "to_node": "6361541058",
+        "width_m": 2.0,
+        "length_m": 12.28,
+        "shape": [
+          [
+            121.486737651,
+            31.243969881
+          ],
+          [
+            121.486797512,
+            31.244068017
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "177931046_0",
+        "edge_id": "177931046",
+        "function": "normal",
+        "from_node": "1883306436",
+        "to_node": "1883306110",
+        "width_m": 2.0,
+        "length_m": 8.08,
+        "shape": [
+          [
+            121.485774615,
+            31.244757657
+          ],
+          [
+            121.485852872,
+            31.24472935
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "178411801#0_0",
+        "edge_id": "178411801#0",
+        "function": "normal",
+        "from_node": "595760221",
+        "to_node": "6361541057",
+        "width_m": 2.0,
+        "length_m": 10.83,
+        "shape": [
+          [
+            121.486551469,
+            31.244273696
+          ],
+          [
+            121.486664845,
+            31.244281887
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "178564467_0",
+        "edge_id": "178564467",
+        "function": "normal",
+        "from_node": "1889012691",
+        "to_node": "1889012649",
+        "width_m": 2.0,
+        "length_m": 13.65,
+        "shape": [
+          [
+            121.486019378,
+            31.243039795
+          ],
+          [
+            121.486043005,
+            31.243046208
+          ],
+          [
+            121.486118166,
+            31.243073706
+          ],
+          [
+            121.486148538,
+            31.243091746
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "552032617_0",
+        "edge_id": "552032617",
+        "function": "normal",
+        "from_node": "5330450398",
+        "to_node": "5330450399",
+        "width_m": 2.0,
+        "length_m": 0.2,
+        "shape": [
+          [
+            121.485807806,
+            31.243960826
+          ],
+          [
+            121.485809903,
+            31.243961031
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "679361567#1_0",
+        "edge_id": "679361567#1",
+        "function": "normal",
+        "from_node": "6361541057",
+        "to_node": "6361541058",
+        "width_m": 2.0,
+        "length_m": 121.78,
+        "shape": [
+          [
+            121.486696358,
+            31.244307428
+          ],
+          [
+            121.486699894,
+            31.244322716
+          ],
+          [
+            121.486720044,
+            31.244369413
+          ],
+          [
+            121.486751931,
+            31.244411016
+          ],
+          [
+            121.486793909,
+            31.244445341
+          ],
+          [
+            121.48684401,
+            31.24447074
+          ],
+          [
+            121.486899421,
+            31.244485736
+          ],
+          [
+            121.486957425,
+            31.244489576
+          ],
+          [
+            121.487014872,
+            31.244482314
+          ],
+          [
+            121.487069029,
+            31.244464006
+          ],
+          [
+            121.487116835,
+            31.24443579
+          ],
+          [
+            121.487156062,
+            31.244398994
+          ],
+          [
+            121.487184471,
+            31.244355755
+          ],
+          [
+            121.487200669,
+            31.244307951
+          ],
+          [
+            121.487203981,
+            31.244258282
+          ],
+          [
+            121.487194051,
+            31.244209359
+          ],
+          [
+            121.487171366,
+            31.244163534
+          ],
+          [
+            121.487137251,
+            31.244123348
+          ],
+          [
+            121.487093356,
+            31.244090715
+          ],
+          [
+            121.487041963,
+            31.244067377
+          ],
+          [
+            121.486985676,
+            31.244054625
+          ],
+          [
+            121.486927636,
+            31.24405304
+          ],
+          [
+            121.486870571,
+            31.244062743
+          ],
+          [
+            121.48683284,
+            31.244078176
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "679361567#2_0",
+        "edge_id": "679361567#2",
+        "function": "normal",
+        "from_node": "6361541058",
+        "to_node": "6361541057",
+        "width_m": 2.0,
+        "length_m": 19.83,
+        "shape": [
+          [
+            121.48678391,
+            31.244104484
+          ],
+          [
+            121.486774785,
+            31.244110421
+          ],
+          [
+            121.486739588,
+            31.244144739
+          ],
+          [
+            121.486713543,
+            31.244184488
+          ],
+          [
+            121.486697729,
+            31.244228055
+          ],
+          [
+            121.486693755,
+            31.244259944
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417851#0_0",
+        "edge_id": "906417851#0",
+        "function": "normal",
+        "from_node": "8417005097",
+        "to_node": "8417005110",
+        "width_m": 2.0,
+        "length_m": 6.79,
+        "shape": [
+          [
+            121.485665636,
+            31.244796338
+          ],
+          [
+            121.485731529,
+            31.244773027
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417851#1_0",
+        "edge_id": "906417851#1",
+        "function": "normal",
+        "from_node": "8417005110",
+        "to_node": "1883306436",
+        "width_m": 2.0,
+        "length_m": 0.2,
+        "shape": [
+          [
+            121.485774931,
+            31.244757571
+          ],
+          [
+            121.485776936,
+            31.244756963
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417852#0_0",
+        "edge_id": "906417852#0",
+        "function": "normal",
+        "from_node": "1883306110",
+        "to_node": "595760221",
+        "width_m": 2.0,
+        "length_m": 99.03,
+        "shape": [
+          [
+            121.485866247,
+            31.244733477
+          ],
+          [
+            121.485887125,
+            31.244767463
+          ],
+          [
+            121.48655757,
+            31.24452321
+          ],
+          [
+            121.48652371,
+            31.244295923
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417852#10_0",
+        "edge_id": "906417852#10",
+        "function": "normal",
+        "from_node": "8417005111",
+        "to_node": "8417005110",
+        "width_m": 2.0,
+        "length_m": 102.92,
+        "shape": [
+          [
+            121.485938031,
+            31.243854012
+          ],
+          [
+            121.485872288,
+            31.244032494
+          ],
+          [
+            121.485687367,
+            31.244605791
+          ],
+          [
+            121.485746182,
+            31.244743068
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417852#1_0",
+        "edge_id": "906417852#1",
+        "function": "normal",
+        "from_node": "595760221",
+        "to_node": "8417005112",
+        "width_m": 2.0,
+        "length_m": 14.82,
+        "shape": [
+          [
+            121.486534668,
+            31.244247426
+          ],
+          [
+            121.486607011,
+            31.244129105
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417852#2_0",
+        "edge_id": "906417852#2",
+        "function": "normal",
+        "from_node": "8417005112",
+        "to_node": "599722293",
+        "width_m": 2.0,
+        "length_m": 14.93,
+        "shape": [
+          [
+            121.486631483,
+            31.244089158
+          ],
+          [
+            121.486704365,
+            31.243969941
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417852#5_0",
+        "edge_id": "906417852#5",
+        "function": "normal",
+        "from_node": "8417005101",
+        "to_node": "8417005102",
+        "width_m": 2.0,
+        "length_m": 16.01,
+        "shape": [
+          [
+            121.486588053,
+            31.243112348
+          ],
+          [
+            121.486499183,
+            31.242989783
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417852#7_0",
+        "edge_id": "906417852#7",
+        "function": "normal",
+        "from_node": "8417005103",
+        "to_node": "8417005104",
+        "width_m": 2.0,
+        "length_m": 11.74,
+        "shape": [
+          [
+            121.486367924,
+            31.242615202
+          ],
+          [
+            121.486248441,
+            31.24264113
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417852#8_0",
+        "edge_id": "906417852#8",
+        "function": "normal",
+        "from_node": "8417005104",
+        "to_node": "8417005105",
+        "width_m": 2.0,
+        "length_m": 26.15,
+        "shape": [
+          [
+            121.486225665,
+            31.242666934
+          ],
+          [
+            121.486233033,
+            31.24290275
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417852#9_0",
+        "edge_id": "906417852#9",
+        "function": "normal",
+        "from_node": "8417005105",
+        "to_node": "8417005111",
+        "width_m": 2.0,
+        "length_m": 91.51,
+        "shape": [
+          [
+            121.4862164,
+            31.243017307
+          ],
+          [
+            121.486159279,
+            31.24316224
+          ],
+          [
+            121.486029245,
+            31.243605915
+          ],
+          [
+            121.485953944,
+            31.243810897
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417853#0_0",
+        "edge_id": "906417853#0",
+        "function": "normal",
+        "from_node": "8417005111",
+        "to_node": "8417005113",
+        "width_m": 2.0,
+        "length_m": 31.42,
+        "shape": [
+          [
+            121.485971514,
+            31.243841596
+          ],
+          [
+            121.486268913,
+            31.243964272
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417853#1_0",
+        "edge_id": "906417853#1",
+        "function": "normal",
+        "from_node": "8417005113",
+        "to_node": "8417005112",
+        "width_m": 2.0,
+        "length_m": 29.5,
+        "shape": [
+          [
+            121.486316168,
+            31.243983773
+          ],
+          [
+            121.486595417,
+            31.244098927
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417854_0",
+        "edge_id": "906417854",
+        "function": "normal",
+        "from_node": "8417005113",
+        "to_node": "8417005115",
+        "width_m": 2.0,
+        "length_m": 78.56,
+        "shape": [
+          [
+            121.486303633,
+            31.243953314
+          ],
+          [
+            121.48646115,
+            31.243649523
+          ],
+          [
+            121.486672934,
+            31.243320389
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417855#1_0",
+        "edge_id": "906417855#1",
+        "function": "normal",
+        "from_node": "8417005105",
+        "to_node": "8417005102",
+        "width_m": 2.0,
+        "length_m": 27.05,
+        "shape": [
+          [
+            121.48624989,
+            31.243017611
+          ],
+          [
+            121.486261161,
+            31.243035155
+          ],
+          [
+            121.486291872,
+            31.243058251
+          ],
+          [
+            121.486329991,
+            31.243071149
+          ],
+          [
+            121.486371032,
+            31.243071993
+          ],
+          [
+            121.486409953,
+            31.243060994
+          ],
+          [
+            121.486442113,
+            31.243039361
+          ],
+          [
+            121.486462499,
+            31.243011995
+          ],
+          [
+            121.486467046,
+            31.242996803
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "906417855#2_0",
+        "edge_id": "906417855#2",
+        "function": "normal",
+        "from_node": "8417005102",
+        "to_node": "8417005105",
+        "width_m": 2.0,
+        "length_m": 17.16,
+        "shape": [
+          [
+            121.486425774,
+            31.242891939
+          ],
+          [
+            121.486397131,
+            31.242877438
+          ],
+          [
+            121.486360071,
+            31.242870506
+          ],
+          [
+            121.486322427,
+            31.242873942
+          ],
+          [
+            121.486287877,
+            31.242887428
+          ],
+          [
+            121.486263523,
+            31.242906808
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": "909084827#0_0",
+        "edge_id": "909084827#0",
+        "function": "normal",
+        "from_node": "8417005104",
+        "to_node": "8440881662",
+        "width_m": 2.0,
+        "length_m": 5.43,
+        "shape": [
+          [
+            121.48621187,
+            31.242629964
+          ],
+          [
+            121.486179331,
+            31.242589796
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":1883306110_w0_0",
+        "edge_id": ":1883306110_w0",
+        "function": "walkingarea",
+        "from_node": "1883306110",
+        "to_node": "1883306110",
+        "width_m": 4.0,
+        "length_m": 1.35,
+        "shape": [
+          [
+            121.485856941,
+            31.244737607
+          ],
+          [
+            121.485875449,
+            31.244729255
+          ],
+          [
+            121.485868534,
+            31.244721776
+          ],
+          [
+            121.485864365,
+            31.244719832
+          ],
+          [
+            121.485859652,
+            31.244719055
+          ],
+          [
+            121.485854396,
+            31.244719444
+          ],
+          [
+            121.485848806,
+            31.244721002
+          ],
+          [
+            121.485856941,
+            31.244737607
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":1883306436_w0_0",
+        "edge_id": ":1883306436_w0",
+        "function": "walkingarea",
+        "from_node": "1883306436",
+        "to_node": "1883306436",
+        "width_m": 4.0,
+        "length_m": 0.23,
+        "shape": [
+          [
+            121.485778682,
+            31.244766005
+          ],
+          [
+            121.485770546,
+            31.2447494
+          ],
+          [
+            121.485767801,
+            31.24475036
+          ],
+          [
+            121.48577583,
+            31.244767054
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":1889012691_w0_0",
+        "edge_id": ":1889012691_w0",
+        "function": "walkingarea",
+        "from_node": "1889012691",
+        "to_node": "1889012691",
+        "width_m": 2.0,
+        "length_m": 4.17,
+        "shape": [
+          [
+            121.486016197,
+            31.243048328
+          ],
+          [
+            121.48602256,
+            31.243031172
+          ],
+          [
+            121.486011294,
+            31.243026529
+          ],
+          [
+            121.486007351,
+            31.243023595
+          ],
+          [
+            121.486004675,
+            31.243020226
+          ],
+          [
+            121.486003057,
+            31.243016328
+          ],
+          [
+            121.4860026,
+            31.243012082
+          ],
+          [
+            121.48598161,
+            31.243011474
+          ],
+          [
+            121.485979416,
+            31.243056826
+          ],
+          [
+            121.486000401,
+            31.243057795
+          ],
+          [
+            121.486002509,
+            31.243050693
+          ],
+          [
+            121.486004747,
+            31.243048644
+          ],
+          [
+            121.486007808,
+            31.243047598
+          ],
+          [
+            121.48601159,
+            31.243047462
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":5330450398_w0_0",
+        "edge_id": ":5330450398_w0",
+        "function": "walkingarea",
+        "from_node": "5330450398",
+        "to_node": "5330450398",
+        "width_m": 2.0,
+        "length_m": 3.96,
+        "shape": [
+          [
+            121.485810072,
+            31.243970144
+          ],
+          [
+            121.485812563,
+            31.243952221
+          ],
+          [
+            121.485801349,
+            31.243937745
+          ],
+          [
+            121.485781166,
+            31.243932636
+          ],
+          [
+            121.485766297,
+            31.243976124
+          ],
+          [
+            121.48578648,
+            31.243981233
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":595760221_w0_0",
+        "edge_id": ":595760221_w0",
+        "function": "walkingarea",
+        "from_node": "595760221",
+        "to_node": "595760221",
+        "width_m": 4.0,
+        "length_m": 4.14,
+        "shape": [
+          [
+            121.486513296,
+            31.244297063
+          ],
+          [
+            121.486534123,
+            31.244294782
+          ],
+          [
+            121.486535079,
+            31.244287486
+          ],
+          [
+            121.486537218,
+            31.244285075
+          ],
+          [
+            121.4865405,
+            31.2442834
+          ],
+          [
+            121.486545027,
+            31.244282641
+          ],
+          [
+            121.486550591,
+            31.244282707
+          ],
+          [
+            121.486552348,
+            31.244264685
+          ],
+          [
+            121.486544505,
+            31.244262698
+          ],
+          [
+            121.486542434,
+            31.244260869
+          ],
+          [
+            121.486541634,
+            31.244258334
+          ],
+          [
+            121.486542208,
+            31.244255273
+          ],
+          [
+            121.486543947,
+            31.244251595
+          ],
+          [
+            121.486525391,
+            31.244243167
+          ],
+          [
+            121.486514802,
+            31.244261897
+          ],
+          [
+            121.486512274,
+            31.244268994
+          ],
+          [
+            121.486511316,
+            31.244276381
+          ],
+          [
+            121.486511699,
+            31.244285316
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":599722293_w0_0",
+        "edge_id": ":599722293_w0",
+        "function": "walkingarea",
+        "from_node": "599722293",
+        "to_node": "599722293",
+        "width_m": 4.0,
+        "length_m": 4.44,
+        "shape": [
+          [
+            121.486728344,
+            31.243974102
+          ],
+          [
+            121.486746957,
+            31.243965751
+          ],
+          [
+            121.486741071,
+            31.243952961
+          ],
+          [
+            121.486740106,
+            31.243947627
+          ],
+          [
+            121.486740602,
+            31.243942852
+          ],
+          [
+            121.486742347,
+            31.243938813
+          ],
+          [
+            121.486745551,
+            31.243935422
+          ],
+          [
+            121.486731167,
+            31.243922172
+          ],
+          [
+            121.486714981,
+            31.243936325
+          ],
+          [
+            121.486710062,
+            31.243941951
+          ],
+          [
+            121.486705871,
+            31.243947946
+          ],
+          [
+            121.486701234,
+            31.24395556
+          ],
+          [
+            121.486695088,
+            31.243965681
+          ],
+          [
+            121.486713644,
+            31.243974109
+          ],
+          [
+            121.486718559,
+            31.243968754
+          ],
+          [
+            121.486720984,
+            31.243968151
+          ],
+          [
+            121.486723493,
+            31.243968813
+          ],
+          [
+            121.486725876,
+            31.243970825
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":6361541057_w0_0",
+        "edge_id": ":6361541057_w0",
+        "function": "walkingarea",
+        "from_node": "6361541057",
+        "to_node": "6361541057",
+        "width_m": 5.0,
+        "length_m": 4.2,
+        "shape": [
+          [
+            121.486686039,
+            31.244309201
+          ],
+          [
+            121.486706571,
+            31.244305653
+          ],
+          [
+            121.486706584,
+            31.244298256
+          ],
+          [
+            121.486708202,
+            31.244295569
+          ],
+          [
+            121.486710857,
+            31.244293705
+          ],
+          [
+            121.486714446,
+            31.244292485
+          ],
+          [
+            121.48671918,
+            31.244291909
+          ],
+          [
+            121.486718522,
+            31.244273949
+          ],
+          [
+            121.486709827,
+            31.244272673
+          ],
+          [
+            121.486706915,
+            31.244270925
+          ],
+          [
+            121.486704961,
+            31.244268376
+          ],
+          [
+            121.486704069,
+            31.244265028
+          ],
+          [
+            121.486704135,
+            31.244260879
+          ],
+          [
+            121.48668327,
+            31.244259009
+          ],
+          [
+            121.486680514,
+            31.244267186
+          ],
+          [
+            121.48667795,
+            31.244269953
+          ],
+          [
+            121.486674561,
+            31.244271807
+          ],
+          [
+            121.486670555,
+            31.244272752
+          ],
+          [
+            121.486665723,
+            31.244272876
+          ],
+          [
+            121.486663967,
+            31.244290808
+          ],
+          [
+            121.486674425,
+            31.244293457
+          ],
+          [
+            121.486678478,
+            31.244296121
+          ],
+          [
+            121.486681783,
+            31.244299588
+          ],
+          [
+            121.486684338,
+            31.244303948
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":6361541058_w0_0",
+        "edge_id": ":6361541058_w0",
+        "function": "walkingarea",
+        "from_node": "6361541058",
+        "to_node": "6361541058",
+        "width_m": 4.0,
+        "length_m": 4.4,
+        "shape": [
+          [
+            121.486806186,
+            31.244116655
+          ],
+          [
+            121.486826722,
+            31.244112837
+          ],
+          [
+            121.486825546,
+            31.244101005
+          ],
+          [
+            121.486826778,
+            31.244096148
+          ],
+          [
+            121.486829152,
+            31.244092116
+          ],
+          [
+            121.48683267,
+            31.24408882
+          ],
+          [
+            121.486837329,
+            31.244086349
+          ],
+          [
+            121.48682835,
+            31.244070004
+          ],
+          [
+            121.486819605,
+            31.244071886
+          ],
+          [
+            121.486815833,
+            31.244071391
+          ],
+          [
+            121.486812496,
+            31.244069908
+          ],
+          [
+            121.486809387,
+            31.244067345
+          ],
+          [
+            121.486806817,
+            31.244063887
+          ],
+          [
+            121.486788204,
+            31.244072238
+          ],
+          [
+            121.486790484,
+            31.244080745
+          ],
+          [
+            121.486789471,
+            31.244084973
+          ],
+          [
+            121.48678699,
+            31.244089094
+          ],
+          [
+            121.48678304,
+            31.244093197
+          ],
+          [
+            121.486777515,
+            31.244097282
+          ],
+          [
+            121.486790305,
+            31.244111686
+          ],
+          [
+            121.486797601,
+            31.244108525
+          ],
+          [
+            121.486800536,
+            31.24410883
+          ],
+          [
+            121.486802929,
+            31.244110211
+          ],
+          [
+            121.486804777,
+            31.244112849
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":8417005097_w0_0",
+        "edge_id": ":8417005097_w0",
+        "function": "walkingarea",
+        "from_node": "8417005097",
+        "to_node": "8417005097",
+        "width_m": 4.0,
+        "length_m": 4.1,
+        "shape": [
+          [
+            121.485639174,
+            31.244829315
+          ],
+          [
+            121.485658806,
+            31.244822961
+          ],
+          [
+            121.485657456,
+            31.244815457
+          ],
+          [
+            121.485658346,
+            31.24481231
+          ],
+          [
+            121.48566049,
+            31.244809539
+          ],
+          [
+            121.485663572,
+            31.24480723
+          ],
+          [
+            121.485667908,
+            31.244805296
+          ],
+          [
+            121.485663259,
+            31.244787379
+          ],
+          [
+            121.485653359,
+            31.244789247
+          ],
+          [
+            121.485649485,
+            31.24478857
+          ],
+          [
+            121.485646151,
+            31.244786907
+          ],
+          [
+            121.485643571,
+            31.24478408
+          ],
+          [
+            121.485641637,
+            31.244780268
+          ],
+          [
+            121.485621601,
+            31.244785625
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":8417005102_w0_0",
+        "edge_id": ":8417005102_w0",
+        "function": "walkingarea",
+        "from_node": "8417005102",
+        "to_node": "8417005102",
+        "width_m": 4.0,
+        "length_m": 9.44,
+        "shape": [
+          [
+            121.486456012,
+            31.242997394
+          ],
+          [
+            121.486478082,
+            31.242996121
+          ],
+          [
+            121.486481118,
+            31.242990112
+          ],
+          [
+            121.486483022,
+            31.242989232
+          ],
+          [
+            121.486485221,
+            31.242989619
+          ],
+          [
+            121.486487608,
+            31.242991361
+          ],
+          [
+            121.486490287,
+            31.24299455
+          ],
+          [
+            121.486508079,
+            31.242985017
+          ],
+          [
+            121.486493913,
+            31.242964732
+          ],
+          [
+            121.486484396,
+            31.242949193
+          ],
+          [
+            121.486478208,
+            31.242935588
+          ],
+          [
+            121.486473813,
+            31.242921463
+          ],
+          [
+            121.48646989,
+            31.242904096
+          ],
+          [
+            121.486464802,
+            31.242880761
+          ],
+          [
+            121.486444169,
+            31.242884126
+          ],
+          [
+            121.486444111,
+            31.242887734
+          ],
+          [
+            121.486443153,
+            31.242888535
+          ],
+          [
+            121.486441471,
+            31.242888695
+          ],
+          [
+            121.486439275,
+            31.242888128
+          ],
+          [
+            121.48643677,
+            31.242887197
+          ],
+          [
+            121.486414569,
+            31.242896678
+          ],
+          [
+            121.486432864,
+            31.242908261
+          ],
+          [
+            121.486446717,
+            31.242921866
+          ],
+          [
+            121.486455916,
+            31.242937581
+          ],
+          [
+            121.486460567,
+            31.242955408
+          ],
+          [
+            121.486460564,
+            31.242975345
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":8417005103_w0_0",
+        "edge_id": ":8417005103_w0",
+        "function": "walkingarea",
+        "from_node": "8417005103",
+        "to_node": "8417005103",
+        "width_m": 4.0,
+        "length_m": 10.64,
+        "shape": [
+          [
+            121.486409594,
+            31.242728009
+          ],
+          [
+            121.486430228,
+            31.242724644
+          ],
+          [
+            121.486432757,
+            31.242724042
+          ],
+          [
+            121.486452493,
+            31.242717689
+          ],
+          [
+            121.486439378,
+            31.242690741
+          ],
+          [
+            121.486427933,
+            31.24267103
+          ],
+          [
+            121.486418532,
+            31.242654771
+          ],
+          [
+            121.486411133,
+            31.242638084
+          ],
+          [
+            121.486406215,
+            31.242617277
+          ],
+          [
+            121.486403943,
+            31.242588562
+          ],
+          [
+            121.486382936,
+            31.242589036
+          ],
+          [
+            121.48638113,
+            31.242596954
+          ],
+          [
+            121.486378768,
+            31.242600174
+          ],
+          [
+            121.486375262,
+            31.242602749
+          ],
+          [
+            121.486370819,
+            31.242604862
+          ],
+          [
+            121.486365334,
+            31.242606421
+          ],
+          [
+            121.486370515,
+            31.242623893
+          ],
+          [
+            121.486381693,
+            31.242634039
+          ],
+          [
+            121.486387871,
+            31.242648275
+          ],
+          [
+            121.486394685,
+            31.242668744
+          ],
+          [
+            121.486401927,
+            31.242695262
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":8417005104_w0_0",
+        "edge_id": ":8417005104_w0",
+        "function": "walkingarea",
+        "from_node": "8417005104",
+        "to_node": "8417005104",
+        "width_m": 4.0,
+        "length_m": 3.86,
+        "shape": [
+          [
+            121.486215161,
+            31.242667171
+          ],
+          [
+            121.486236169,
+            31.242666697
+          ],
+          [
+            121.486237659,
+            31.242658865
+          ],
+          [
+            121.486239703,
+            31.242655732
+          ],
+          [
+            121.486242578,
+            31.24265324
+          ],
+          [
+            121.486246389,
+            31.2426513
+          ],
+          [
+            121.486251031,
+            31.242649911
+          ],
+          [
+            121.486245851,
+            31.242632349
+          ],
+          [
+            121.486235759,
+            31.242633132
+          ],
+          [
+            121.486231363,
+            31.242632268
+          ],
+          [
+            121.486227295,
+            31.242630597
+          ],
+          [
+            121.486223659,
+            31.242628118
+          ],
+          [
+            121.486220457,
+            31.242624833
+          ],
+          [
+            121.486203283,
+            31.242635095
+          ],
+          [
+            121.486211197,
+            31.242645834
+          ],
+          [
+            121.48621323,
+            31.242650007
+          ],
+          [
+            121.486214314,
+            31.242654441
+          ],
+          [
+            121.486214856,
+            31.24265995
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":8417005105_w0_0",
+        "edge_id": ":8417005105_w0",
+        "function": "walkingarea",
+        "from_node": "8417005105",
+        "to_node": "8417005105",
+        "width_m": 4.0,
+        "length_m": 9.53,
+        "shape": [
+          [
+            121.486238945,
+            31.243019196
+          ],
+          [
+            121.486260939,
+            31.243016117
+          ],
+          [
+            121.486250137,
+            31.242995602
+          ],
+          [
+            121.486244671,
+            31.242976231
+          ],
+          [
+            121.486244438,
+            31.242957915
+          ],
+          [
+            121.486249543,
+            31.242940654
+          ],
+          [
+            121.486259985,
+            31.242924539
+          ],
+          [
+            121.486275662,
+            31.242909387
+          ],
+          [
+            121.486251594,
+            31.242904232
+          ],
+          [
+            121.486247358,
+            31.242906527
+          ],
+          [
+            121.486245675,
+            31.242906688
+          ],
+          [
+            121.48624453,
+            31.242906043
+          ],
+          [
+            121.486243817,
+            31.242904681
+          ],
+          [
+            121.486243537,
+            31.242902513
+          ],
+          [
+            121.486222529,
+            31.242902987
+          ],
+          [
+            121.486223405,
+            31.242927085
+          ],
+          [
+            121.486223748,
+            31.242945041
+          ],
+          [
+            121.486222987,
+            31.242959828
+          ],
+          [
+            121.486220341,
+            31.242974321
+          ],
+          [
+            121.486215026,
+            31.242991579
+          ],
+          [
+            121.486206472,
+            31.243014393
+          ],
+          [
+            121.48622633,
+            31.24302013
+          ],
+          [
+            121.486229992,
+            31.243014399
+          ],
+          [
+            121.486232001,
+            31.243013521
+          ],
+          [
+            121.486234197,
+            31.243014088
+          ],
+          [
+            121.486236477,
+            31.243015919
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":8417005110_w0_0",
+        "edge_id": ":8417005110_w0",
+        "function": "walkingarea",
+        "from_node": "8417005110",
+        "to_node": "8417005110",
+        "width_m": 4.0,
+        "length_m": 3.75,
+        "shape": [
+          [
+            121.485784066,
+            31.244764174
+          ],
+          [
+            121.485776037,
+            31.24474748
+          ],
+          [
+            121.485755997,
+            31.244739936
+          ],
+          [
+            121.485736367,
+            31.2447462
+          ],
+          [
+            121.48573792,
+            31.244754158
+          ],
+          [
+            121.485737027,
+            31.244757485
+          ],
+          [
+            121.485734986,
+            31.244760348
+          ],
+          [
+            121.485731798,
+            31.244762746
+          ],
+          [
+            121.485727462,
+            31.24476468
+          ],
+          [
+            121.485735491,
+            31.244781374
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":8417005111_w0_0",
+        "edge_id": ":8417005111_w0",
+        "function": "walkingarea",
+        "from_node": "8417005111",
+        "to_node": "8417005111",
+        "width_m": 4.0,
+        "length_m": 4.1,
+        "shape": [
+          [
+            121.485966974,
+            31.243849752
+          ],
+          [
+            121.485976054,
+            31.24383344
+          ],
+          [
+            121.485967215,
+            31.243828104
+          ],
+          [
+            121.485964534,
+            31.243825005
+          ],
+          [
+            121.48596312,
+            31.24382147
+          ],
+          [
+            121.485962971,
+            31.243817679
+          ],
+          [
+            121.485963877,
+            31.24381354
+          ],
+          [
+            121.485943908,
+            31.243808163
+          ],
+          [
+            121.485927995,
+            31.243851278
+          ],
+          [
+            121.485948068,
+            31.243856747
+          ],
+          [
+            121.485952267,
+            31.243850211
+          ],
+          [
+            121.485955129,
+            31.24384853
+          ],
+          [
+            121.485958605,
+            31.243847849
+          ],
+          [
+            121.485962483,
+            31.243848256
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":8417005112_w0_0",
+        "edge_id": ":8417005112_w0",
+        "function": "walkingarea",
+        "from_node": "8417005112",
+        "to_node": "8417005112",
+        "width_m": 4.0,
+        "length_m": 4.04,
+        "shape": [
+          [
+            121.486640762,
+            31.244093326
+          ],
+          [
+            121.486622205,
+            31.244084989
+          ],
+          [
+            121.486616441,
+            31.244090875
+          ],
+          [
+            121.486612952,
+            31.244092368
+          ],
+          [
+            121.486609059,
+            31.244092863
+          ],
+          [
+            121.486604657,
+            31.24409236
+          ],
+          [
+            121.486599957,
+            31.244090771
+          ],
+          [
+            121.486590877,
+            31.244107083
+          ],
+          [
+            121.486597944,
+            31.244111677
+          ],
+          [
+            121.486599685,
+            31.244114404
+          ],
+          [
+            121.486600265,
+            31.244117568
+          ],
+          [
+            121.486599579,
+            31.244121079
+          ],
+          [
+            121.486597734,
+            31.244124846
+          ],
+          [
+            121.48661629,
+            31.244133274
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":8417005113_w0_0",
+        "edge_id": ":8417005113_w0",
+        "function": "walkingarea",
+        "from_node": "8417005113",
+        "to_node": "8417005113",
+        "width_m": 4.0,
+        "length_m": 4.04,
+        "shape": [
+          [
+            121.486311627,
+            31.243991929
+          ],
+          [
+            121.486320708,
+            31.243975617
+          ],
+          [
+            121.486313642,
+            31.243970933
+          ],
+          [
+            121.486311799,
+            31.243968025
+          ],
+          [
+            121.486311116,
+            31.243964769
+          ],
+          [
+            121.486311595,
+            31.243961076
+          ],
+          [
+            121.486313235,
+            31.243956945
+          ],
+          [
+            121.486294033,
+            31.243949592
+          ],
+          [
+            121.486288893,
+            31.243955847
+          ],
+          [
+            121.486285718,
+            31.243957433
+          ],
+          [
+            121.486282033,
+            31.243958021
+          ],
+          [
+            121.486277946,
+            31.243957522
+          ],
+          [
+            121.486273454,
+            31.243956116
+          ],
+          [
+            121.486264375,
+            31.243972338
+          ]
+        ],
+        "pedestrian": true
+      },
+      {
+        "id": ":8440881662_w0_0",
+        "edge_id": ":8440881662_w0",
+        "function": "walkingarea",
+        "from_node": "8440881662",
+        "to_node": "8440881662",
+        "width_m": 6.4,
+        "length_m": 6.1,
+        "shape": [
+          [
+            121.486170744,
+            31.242594927
+          ],
+          [
+            121.486188023,
+            31.242584666
+          ],
+          [
+            121.486184662,
+            31.242578131
+          ],
+          [
+            121.486185122,
+            31.242575611
+          ],
+          [
+            121.486186835,
+            31.242573556
+          ],
+          [
+            121.48619001,
+            31.242571969
+          ],
+          [
+            121.486194437,
+            31.242570939
+          ],
+          [
+            121.486181482,
+            31.242514222
+          ],
+          [
+            121.486164134,
+            31.242515642
+          ],
+          [
+            121.486157742,
+            31.242514845
+          ],
+          [
+            121.486152837,
+            31.242512983
+          ],
+          [
+            121.486149628,
+            31.242510058
+          ],
+          [
+            121.486147801,
+            31.242506157
+          ],
+          [
+            121.486127167,
+            31.242509523
+          ],
+          [
+            121.486127148,
+            31.242517281
+          ],
+          [
+            121.486125526,
+            31.242520239
+          ],
+          [
+            121.486122758,
+            31.242522642
+          ],
+          [
+            121.486119055,
+            31.242524403
+          ],
+          [
+            121.486114732,
+            31.242525525
+          ],
+          [
+            121.486127688,
+            31.242582151
+          ],
+          [
+            121.486145129,
+            31.242581455
+          ],
+          [
+            121.486152771,
+            31.242582898
+          ],
+          [
+            121.486159552,
+            31.242585684
+          ],
+          [
+            121.486165579,
+            31.242589634
+          ]
+        ],
+        "pedestrian": true
+      }
+    ],
+    "edges": [
+      {
+        "source": ":1883306110_w0_0",
+        "target": "906417852#0_0",
+        "direction": "s"
+      },
+      {
+        "source": "177931046_0",
+        "target": ":1883306110_w0_0",
+        "direction": "s"
+      },
+      {
+        "source": ":1883306436_w0_0",
+        "target": "177931046_0",
+        "direction": "s"
+      },
+      {
+        "source": "906417851#1_0",
+        "target": ":1883306436_w0_0",
+        "direction": "s"
+      },
+      {
+        "source": ":1889012691_w0_0",
+        "target": "178564467_0",
+        "direction": "s"
+      },
+      {
+        "source": ":5330450398_w0_0",
+        "target": "552032617_0",
+        "direction": "s"
+      },
+      {
+        "source": ":595760221_w0_0",
+        "target": "178411801#0_0",
+        "direction": "s"
+      },
+      {
+        "source": ":595760221_w0_0",
+        "target": "906417852#1_0",
+        "direction": "s"
+      },
+      {
+        "source": "906417852#0_0",
+        "target": ":595760221_w0_0",
+        "direction": "s"
+      },
+      {
+        "source": ":599722293_w0_0",
+        "target": "177931018#0_0",
+        "direction": "s"
+      },
+      {
+        "source": "906417852#2_0",
+        "target": ":599722293_w0_0",
+        "direction": "s"
+      },
+      {
+        "source": ":6361541057_w0_0",
+        "target": "679361567#1_0",
+        "direction": "s"
+      },
+      {
+        "source": "679361567#2_0",
+        "target": ":6361541057_w0_0",
+        "direction": "s"
+      },
+      {
+        "source": "178411801#0_0",
+        "target": ":6361541057_w0_0",
+        "direction": "s"
+      },
+      {
+        "source": ":6361541058_w0_0",
+        "target": "679361567#2_0",
+        "direction": "s"
+      },
+      {
+        "source": "679361567#1_0",
+        "target": ":6361541058_w0_0",
+        "direction": "s"
+      },
+      {
+        "source": "177931018#0_0",
+        "target": ":6361541058_w0_0",
+        "direction": "s"
+      },
+      {
+        "source": ":8417005097_w0_0",
+        "target": "906417851#0_0",
+        "direction": "s"
+      },
+      {
+        "source": ":8417005102_w0_0",
+        "target": "906417855#2_0",
+        "direction": "s"
+      },
+      {
+        "source": "906417855#1_0",
+        "target": ":8417005102_w0_0",
+        "direction": "s"
+      },
+      {
+        "source": "906417852#5_0",
+        "target": ":8417005102_w0_0",
+        "direction": "s"
+      },
+      {
+        "source": ":8417005103_w0_0",
+        "target": "906417852#7_0",
+        "direction": "s"
+      },
+      {
+        "source": ":8417005104_w0_0",
+        "target": "906417852#8_0",
+        "direction": "s"
+      },
+      {
+        "source": ":8417005104_w0_0",
+        "target": "909084827#0_0",
+        "direction": "s"
+      },
+      {
+        "source": "906417852#7_0",
+        "target": ":8417005104_w0_0",
+        "direction": "s"
+      },
+      {
+        "source": ":8417005105_w0_0",
+        "target": "906417855#1_0",
+        "direction": "s"
+      },
+      {
+        "source": ":8417005105_w0_0",
+        "target": "906417852#9_0",
+        "direction": "s"
+      },
+      {
+        "source": "906417855#2_0",
+        "target": ":8417005105_w0_0",
+        "direction": "s"
+      },
+      {
+        "source": "906417852#8_0",
+        "target": ":8417005105_w0_0",
+        "direction": "s"
+      },
+      {
+        "source": ":8417005110_w0_0",
+        "target": "906417851#1_0",
+        "direction": "s"
+      },
+      {
+        "source": "906417852#10_0",
+        "target": ":8417005110_w0_0",
+        "direction": "s"
+      },
+      {
+        "source": "906417851#0_0",
+        "target": ":8417005110_w0_0",
+        "direction": "s"
+      },
+      {
+        "source": ":8417005111_w0_0",
+        "target": "906417853#0_0",
+        "direction": "s"
+      },
+      {
+        "source": ":8417005111_w0_0",
+        "target": "906417852#10_0",
+        "direction": "s"
+      },
+      {
+        "source": "906417852#9_0",
+        "target": ":8417005111_w0_0",
+        "direction": "s"
+      },
+      {
+        "source": ":8417005112_w0_0",
+        "target": "906417852#2_0",
+        "direction": "s"
+      },
+      {
+        "source": "906417853#1_0",
+        "target": ":8417005112_w0_0",
+        "direction": "s"
+      },
+      {
+        "source": "906417852#1_0",
+        "target": ":8417005112_w0_0",
+        "direction": "s"
+      },
+      {
+        "source": ":8417005113_w0_0",
+        "target": "906417853#1_0",
+        "direction": "s"
+      },
+      {
+        "source": ":8417005113_w0_0",
+        "target": "906417854_0",
+        "direction": "s"
+      },
+      {
+        "source": "906417853#0_0",
+        "target": ":8417005113_w0_0",
+        "direction": "s"
+      },
+      {
+        "source": "909084827#0_0",
+        "target": ":8440881662_w0_0",
+        "direction": "s"
+      }
+    ],
+    "component_sizes": [
+      37,
+      2,
+      2
+    ],
+    "dangling_node_count": 9,
+    "policy": "沿用 SUMO 显式车道/步行区域连接；交叉线不自动连接。连通分量按无向关系统计，原始连接方向另行保留。",
+    "scope": "源路网拓扑；边界裁剪后的通行空间由求解器进一步限制。"
+  },
+  "quality": {
+    "feature_count": 23,
+    "levels": {
+      "0": 23
+    },
+    "missing_width_count": 0,
+    "simulation_width_count": 23,
+    "surface_feature_count": 23,
+    "walkable_area_count": 18,
+    "obstacle_count": 0,
+    "barrier_count": 0,
+    "mapped_entrance_count": 0,
+    "topology_components": 3,
+    "warnings": [
+      "道路、路口步行区域和连接关系来自 SUMO 仿真路网；不是新测绘数据。",
+      "宽度沿用 SUMO 仿真参数（包含路口宽度调整），不表示现场实测宽度。",
+      "沿用当前纪念塔热点的禁行边设置；内侧环道和指定下沉通道不进入本版可通行路网。"
+    ],
+    "confidence": "sumo_simulation_parameters",
+    "generated_at": "2026-10-20T08:01:44.517408+00:00"
+  }
+}

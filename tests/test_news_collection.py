@@ -4,6 +4,7 @@ from datetime import timedelta
 import unittest
 
 import mongomock
+from mongomock.gridfs import enable_gridfs_integration
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
@@ -13,7 +14,7 @@ from data_service.crawlers.locations import article_locations
 from data_service.crawlers.worker import run_worker
 from data_service.repositories.news import NewsRepository, now
 from data_service.schemas.news import validate_task
-from data_service.connectors.llm import ModelError
+from data_service.connectors.llm import JsonModelClient, ModelError
 from data_service.services.news_keywords import recommend_keywords
 
 
@@ -26,6 +27,7 @@ def config(**changes):
 
 
 def news_database():
+    enable_gridfs_integration()
     database = mongomock.MongoClient().crowdsim
     database.environment_profiles.insert_many([
         {'_id': 'chengdu', 'locationLabel': '成都 · 中国', 'is_deleted': False},
@@ -97,6 +99,23 @@ class NewsSchemaTests(unittest.TestCase):
         self.assertEqual(canonical_url('https://EXAMPLE.com/a?utm_source=test&b=2#x'), 'https://example.com/a?b=2')
         with self.assertRaises(ValueError):
             search_links('<html><title>百度安全验证</title></html>', 'https://www.baidu.com')
+
+    def test_legacy_chinanews_date_and_body_exclude_sidebar_news(self):
+        task = validate_task(config(eventName='上海外滩跨年夜', regionId='shanghai', regionKeyword='上海',
+            keywords=['外滩'], timeRange=['2014-12-01 00:00', '2015-01-31 23:59']))
+        body = '上海外滩跨年夜的客流组织与人群安全报道。' * 12
+        raw = f'<h1>上海外滩跨年夜现场报道</h1><span id="pubtime_baidu">2015-01-02 05:22:31</span><div class="content"><div class="left_zw"><p>{body}</p></div><p>这是无关的侧栏推荐新闻内容，不应写入新闻正文。</p></div>'
+        item = extract_article(raw, 'https://www.chinanews.com/sh/2015/01-02/6929986.shtml', task)
+        self.assertEqual(item['publishedAt'], '2015-01-01T21:22:31+00:00')
+        self.assertEqual(item['content'], body)
+        self.assertNotIn('侧栏', item['content'])
+
+    def test_legacy_cntv_unset_script_date_uses_visible_publication_time(self):
+        task = validate_task(config(eventName='上海外滩跨年夜', regionKeyword='上海', keywords=['外滩'],
+            timeRange=['2014-12-01 00:00', '2015-01-31 23:59']))
+        raw = '<script>var publishDate="19700101080000 ";</script><span class="info">中国广播网 2015年01月02日 09:48</span><h1>上海外滩跨年夜</h1><article><p>' + '上海外滩跨年夜人群安全报道。' * 15 + '</p></article>'
+        item = extract_article(raw, 'https://news.cntv.cn/2015/01/02/ARTI1420163280740476.shtml', task)
+        self.assertEqual(item['publishedAt'], '2015-01-02T01:48:00+00:00')
 
     def test_mongo_naive_dates_are_returned_with_utc_offset(self):
         from datetime import datetime
@@ -393,6 +412,7 @@ class NewsApiTests(unittest.IsolatedAsyncioTestCase):
         context = json.loads(self.model.extract.call_args.args[1])
         self.assertEqual(context['region']['locationLabel'], '成都 · 中国')
         self.assertNotIn('location', context)
+        self.assertEqual(self.model.extract.call_args.kwargs, {'fast_json': True})
         self.assertEqual(self.repository.list()['total'], 0)
         self.model.extract.reset_mock()
         response = await self.client.post('/api/crowdSim/news-collection/recommend-keywords', json={**payload, 'regionId': 'missing'})
@@ -410,6 +430,26 @@ class NewsApiTests(unittest.IsolatedAsyncioTestCase):
                 self.model.extract.return_value = value
                 response = await self.client.post('/api/crowdSim/news-collection/recommend-keywords', json=config())
                 self.assertEqual(response.status, 502)
+
+    async def test_disconnected_recommendation_releases_model_work(self):
+        entered, cancelled = asyncio.Event(), asyncio.Event()
+
+        async def slow(*args, **kwargs):
+            entered.set()
+            try:
+                await asyncio.Future()
+            finally:
+                cancelled.set()
+
+        self.model.extract.side_effect = slow
+        pending = asyncio.create_task(self.client.post('/api/crowdSim/news-collection/recommend-keywords', json=config()))
+        await asyncio.wait_for(entered.wait(), 2)
+        pending.cancel()
+        await asyncio.gather(pending, return_exceptions=True)
+        await asyncio.wait_for(cancelled.wait(), 2)
+        self.model.extract.side_effect = None
+        response = await self.client.post('/api/crowdSim/news-collection/recommend-keywords', json=config())
+        self.assertEqual(response.status, 200)
 
     async def test_recommendation_context_validation_and_final_edited_tags(self):
         for changes in ({'eventName': ''}, {'timeRange': None}, {'excludedKeywords': ['x']}, {'timeRange': ['2022-01-02', '2022-01-01']}):
@@ -451,6 +491,56 @@ class NewsApiTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((await self.client.post(self.base, data='{')).status, 400)
         self.assertEqual((await self.client.post(self.base, json=config(maxRecords=0))).status, 400)
         self.assertEqual((await self.client.get(self.base + '?page_size=501')).status, 400)
+
+
+class KeywordModelAdapterTests(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        self.requests = []
+        self.answer = {'choices': [{'finish_reason': 'stop', 'message': {'content': '{"keywords":["暴雨"]}'}}]}
+
+        async def complete(request):
+            self.requests.append(await request.json())
+            return web.json_response(self.answer)
+
+        app = web.Application()
+        app.router.add_post('/chat/completions', complete)
+        self.server = TestServer(app)
+        await self.server.start_server()
+        self.model = object.__new__(JsonModelClient)
+        self.model.base_url = str(self.server.make_url('')).rstrip('/')
+        self.model.model = 'local-test-model'
+        self.model.api_key = ''
+        self.model.max_output_tokens = 3000
+        self.model.extra = {'chat_template_kwargs': {'enable_thinking': True}}
+        await self.model.open()
+
+    async def asyncTearDown(self):
+        await self.model.close()
+        await self.server.close()
+
+    async def test_tag_budget_stops_reasoning_without_changing_document_defaults(self):
+        await self.model.extract('tags', '{}', fast_json=True)
+        tags = self.requests[-1]
+        self.assertEqual(tags['max_tokens'], 1024)
+        self.assertEqual(tags['reasoning_budget_tokens'], 0)
+        self.assertFalse(tags['enable_thinking'])
+        self.assertFalse(tags['chat_template_kwargs']['enable_thinking'])
+        self.assertEqual(tags['response_format'], {'type': 'json_object'})
+        await self.model.extract('document', '{}')
+        document = self.requests[-1]
+        self.assertEqual(document['max_tokens'], 3000)
+        self.assertTrue(document['chat_template_kwargs']['enable_thinking'])
+        self.assertNotIn('reasoning_budget_tokens', document)
+
+    async def test_complete_tag_json_at_token_limit_is_usable_but_incomplete_answer_is_not(self):
+        self.answer['choices'][0]['finish_reason'] = 'length'
+        self.assertEqual(await self.model.extract('tags', '{}', fast_json=True), {'keywords': ['暴雨']})
+        with self.assertRaisesRegex(ModelError, '截断'):
+            await self.model.extract('document', '{}')
+        for content in (None, '{"keywords":['):
+            self.answer['choices'][0]['message'] = {'content': content, 'reasoning_content': 'unfinished reasoning'}
+            with self.assertRaisesRegex(ModelError, '截断'):
+                await self.model.extract('tags', '{}', fast_json=True)
 
 
 if __name__ == '__main__':

@@ -116,13 +116,45 @@ def validate_roads(value):
         geometry = feature.get('geometry', {})
         if geometry.get('type') != 'LineString' or len(geometry.get('coordinates', [])) < 2:
             raise ValueError('路网要素必须为包含至少两个顶点的 LineString')
-        properties = feature.get('properties', {})
+        properties = feature.get('properties') or {}
+        if not isinstance(properties, dict):
+            raise ValueError('道路属性必须为对象')
         finite_json(properties)
         features.append({'type': 'Feature', 'geometry': {'type': 'LineString', 'coordinates': [coordinate(p) for p in geometry['coordinates']]}, 'properties': properties})
     result = {'type': 'FeatureCollection', 'features': features}
     if isinstance(value.get('source'), dict):
         finite_json(value['source'])
         result['source'] = copy.deepcopy(value['source'])
+    for key in ('walkable_areas', 'obstacles', 'barriers', 'entrances'):
+        if key not in value:
+            continue
+        assets = value[key]
+        if not isinstance(assets, dict) or assets.get('type') != 'FeatureCollection' or not isinstance(assets.get('features'), list) or len(assets['features']) > 15000:
+            raise ValueError(f'{key} 必须是有效的设施 FeatureCollection')
+        selected = []
+        for feature in assets['features']:
+            geometry = feature.get('geometry') or {}
+            kind = geometry.get('type')
+            if kind in ('Polygon', 'MultiPolygon') and key in ('walkable_areas', 'obstacles'):
+                geometry = validate_geometry(geometry)
+            elif kind == 'Point' and key == 'entrances':
+                geometry = {'type': 'Point', 'coordinates': coordinate(geometry.get('coordinates'))}
+            elif kind == 'LineString' and key == 'barriers':
+                if len(geometry.get('coordinates', [])) < 2:
+                    raise ValueError('围栏至少需要两个顶点')
+                geometry = {'type': kind, 'coordinates': [coordinate(p) for p in geometry['coordinates']]}
+            else:
+                raise ValueError(f'{key} 包含不支持的几何类型')
+            properties = feature.get('properties') or {}
+            if not isinstance(properties, dict):
+                raise ValueError('设施属性须为对象')
+            finite_json(properties)
+            selected.append({'type': 'Feature', 'geometry': geometry, 'properties': copy.deepcopy(properties)})
+        result[key] = {'type': 'FeatureCollection', 'features': selected}
+    for key in ('quality', 'topology', 'temporal', 'boundary', 'builder_version', 'evidence', 'warnings', 'access_audit', 'simulation_network'):
+        if key in value:
+            finite_json(value[key])
+            result[key] = copy.deepcopy(value[key])
     return result
 
 

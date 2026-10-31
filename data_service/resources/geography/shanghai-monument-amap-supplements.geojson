@@ -1,0 +1,255 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.48636481799998,
+            31.243843071999994
+          ],
+          [
+            121.486430044,
+            31.24387225
+          ],
+          [
+            121.486489251,
+            31.243890415
+          ],
+          [
+            121.486548458,
+            31.243895586
+          ],
+          [
+            121.48658559,
+            31.243881701
+          ],
+          [
+            121.48666688,
+            31.243830963
+          ],
+          [
+            121.486747167,
+            31.243781221
+          ],
+          [
+            121.486844512,
+            31.243744523
+          ]
+        ]
+      },
+      "properties": {
+        "name": "园内东侧弧形连接步道",
+        "highway": "footway",
+        "foot": "yes",
+        "source_type": "amap_basemap_digitized",
+        "geometry_source": "manual_basemap_digitization",
+        "source_url": "https://lbs.amap.com/api/javascript-api-v2/guide/layers/official-layers",
+        "width_source": "missing",
+        "level_source": "unmapped_assumed_surface",
+        "display_level": "0",
+        "verification_status": "basemap_only_not_field_verified",
+        "note": "高德底图人工补绘，按可通行假设用于建模；未核实现场层级、开放状态与宽度。",
+        "captured_gcj02": [
+          [
+            121.490852,
+            31.241868
+          ],
+          [
+            121.490911,
+            31.2419
+          ],
+          [
+            121.49097,
+            31.241918
+          ],
+          [
+            121.491029,
+            31.241923
+          ],
+          [
+            121.491066,
+            31.241909
+          ],
+          [
+            121.491147,
+            31.241858
+          ],
+          [
+            121.491227,
+            31.241808
+          ],
+          [
+            121.491324,
+            31.241771
+          ]
+        ],
+        "endpoint_adjustments": [
+          {
+            "endpoint": 0,
+            "distance_m": 0.66
+          }
+        ],
+        "captured_at": "2026-10-29"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.48684491944461,
+            31.24382054885065
+          ],
+          [
+            121.486844512,
+            31.243744523
+          ],
+          [
+            121.486833478,
+            31.243694513
+          ],
+          [
+            121.486795352,
+            31.243593446
+          ],
+          [
+            121.486731141,
+            31.243423335
+          ],
+          [
+            121.48666091,
+            31.243235213
+          ],
+          [
+            121.486574625,
+            31.243024055
+          ],
+          [
+            121.486489344,
+            31.242808902
+          ],
+          [
+            121.4864082528788,
+            31.242587275382817
+          ]
+        ]
+      },
+      "properties": {
+        "name": "东侧滨江步道",
+        "highway": "footway",
+        "foot": "yes",
+        "source_type": "amap_basemap_digitized",
+        "geometry_source": "manual_basemap_digitization",
+        "source_url": "https://lbs.amap.com/api/javascript-api-v2/guide/layers/official-layers",
+        "width_source": "missing",
+        "level_source": "unmapped_assumed_surface",
+        "display_level": "0",
+        "verification_status": "basemap_only_not_field_verified",
+        "note": "高德底图人工补绘，按可通行假设用于建模；未核实现场层级、开放状态与宽度。",
+        "captured_gcj02": [
+          [
+            121.491302,
+            31.241822
+          ],
+          [
+            121.491324,
+            31.241771
+          ],
+          [
+            121.491313,
+            31.241721
+          ],
+          [
+            121.491275,
+            31.24162
+          ],
+          [
+            121.491211,
+            31.24145
+          ],
+          [
+            121.491141,
+            31.241262
+          ],
+          [
+            121.491055,
+            31.241051
+          ],
+          [
+            121.49097,
+            31.240836
+          ],
+          [
+            121.490894,
+            31.240634
+          ]
+        ],
+        "endpoint_adjustments": [
+          {
+            "endpoint": 0,
+            "distance_m": 3.51
+          },
+          {
+            "endpoint": -1,
+            "distance_m": 2.21
+          }
+        ],
+        "captured_at": "2026-10-29"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.48562914960566,
+            31.243990111676645
+          ],
+          [
+            121.48583702701383,
+            31.243988231865448
+          ]
+        ]
+      },
+      "properties": {
+        "name": "西侧中部入口连接",
+        "highway": "footway",
+        "foot": "yes",
+        "source_type": "amap_basemap_digitized",
+        "geometry_source": "manual_basemap_digitization",
+        "source_url": "https://lbs.amap.com/api/javascript-api-v2/guide/layers/official-layers",
+        "width_source": "missing",
+        "level_source": "unmapped_assumed_surface",
+        "display_level": "0",
+        "verification_status": "basemap_only_not_field_verified",
+        "note": "高德底图人工补绘，按可通行假设用于建模；未核实现场层级、开放状态与宽度。",
+        "captured_gcj02": [
+          [
+            121.49009,
+            31.24201
+          ],
+          [
+            121.490283,
+            31.24201
+          ]
+        ],
+        "endpoint_adjustments": [
+          {
+            "endpoint": 0,
+            "distance_m": 2.47
+          },
+          {
+            "endpoint": -1,
+            "distance_m": 3.65
+          }
+        ],
+        "captured_at": "2026-10-29"
+      }
+    }
+  ]
+}

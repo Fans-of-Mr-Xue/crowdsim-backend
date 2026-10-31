@@ -138,7 +138,7 @@ def register_document_routes(app, database, profile, *, model=None):
                     page, size = int(request.query.get("page", 1)), int(request.query.get("page_size", 20))
                     if not 1 <= page <= 100000 or not 1 <= size <= 100:
                         raise ValueError("page 或 page_size 超出范围")
-                    data = await asyncio.to_thread(repository.list, page, size, request.query.get("search", "")[:200], request.query.get("topic", "")[:80])
+                    data = await asyncio.to_thread(repository.list, page, size, request.query.get("search", "")[:200], request.query.get("topic", "")[:80], request.query.get("type", "")[:80])
             elif request.method == "POST" and not identifier:
                 return web.json_response({"data": await upload(request)}, status=201)
             else:

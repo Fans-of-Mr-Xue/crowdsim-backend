@@ -1,0 +1,1880 @@
+[
+  {
+    "id": "subject-Pedestrian_EastAsia_Young_Male",
+    "name": "东亚青年男性行人",
+    "type": "人群画像",
+    "topic": "人群主体",
+    "status": "事中已对齐",
+    "summary": "东亚青年男人群，重点刻画其社交距离、移动速度、风险感知和群体互动特点。",
+    "details": [
+      [
+        "国籍 / 地区",
+        "东亚"
+      ],
+      [
+        "年龄",
+        "青年"
+      ],
+      [
+        "性别",
+        "男"
+      ],
+      [
+        "应用场景",
+        "上海外滩人群聚集"
+      ]
+    ],
+    "tags": [],
+    "updated": "2026-08",
+    "agentClass": {
+      "classId": "Pedestrian_EastAsia_Young_Male",
+      "model": "gpt-4o",
+      "defaultCount": 120,
+      "classFields": [
+        "人群画像",
+        "行为规则",
+        "互动偏好"
+      ],
+      "stateFields": [
+        "位置",
+        "速度",
+        "风险状态",
+        "当前行动"
+      ],
+      "instanceFields": [
+        "起点",
+        "目的地",
+        "同伴关系",
+        "疏散路线"
+      ],
+      "instanceExamples": [
+        {
+          "objectId": "g_eastasia_young_male_1",
+          "name": "东亚青年男性观景游客",
+          "state": "上海外滩",
+          "task": "在人群中会保持约 0.8 米 的心理安全距离，并根据广播、标识和周围人群调整路线。"
+        },
+        {
+          "objectId": "g_eastasia_young_male_2",
+          "name": "东亚青年男性散场行人",
+          "state": "集中散场",
+          "task": "密度升高后优先寻找较宽通道和地铁方向，并对安保人员、志愿者的分流引导作出响应。"
+        }
+      ]
+    },
+    "agentPortrait": {
+      "role": "东亚青年男性行人",
+      "avatar": "👨🏻",
+      "tone": "#2563eb",
+      "tags": [
+        "东亚",
+        "青年",
+        "男"
+      ],
+      "facts": [
+        [
+          "国籍 / 地区",
+          "东亚"
+        ],
+        [
+          "年龄与性别",
+          "青年 · 男"
+        ],
+        [
+          "主要出行目的",
+          "通勤与换乘"
+        ],
+        [
+          "路线熟悉程度",
+          "较熟悉城市路线"
+        ]
+      ],
+      "metrics": [
+        [
+          "可接受社交距离",
+          42,
+          "0.8 米"
+        ],
+        [
+          "正常步行速度",
+          78,
+          "1.35 m/s"
+        ],
+        [
+          "风险敏感度",
+          66,
+          "较高"
+        ],
+        [
+          "从众倾向",
+          58,
+          "中等"
+        ],
+        [
+          "互助意愿",
+          72,
+          "较高"
+        ],
+        [
+          "现场引导依赖",
+          77,
+          "中等"
+        ]
+      ],
+      "personas": [
+        {
+          "name": "东亚青年男性观景游客",
+          "meta": "东亚 · 青年 · 男",
+          "badges": [
+            "上海外滩",
+            "通勤与换乘"
+          ],
+          "action": "在人群中会保持约 0.8 米 的心理安全距离，并根据广播、标识和周围人群调整路线。"
+        },
+        {
+          "name": "东亚青年男性散场行人",
+          "meta": "东亚 · 青年 · 男",
+          "badges": [
+            "集中散场",
+            "较熟悉城市路线"
+          ],
+          "action": "密度升高后优先寻找较宽通道和地铁方向，并对安保人员、志愿者的分流引导作出响应。"
+        }
+      ],
+      "sources": [
+        {
+          "title": "Social Force Model for Pedestrian Dynamics",
+          "publisher": "Physical Review E · 1995",
+          "supports": "步行速度、期望方向、人与人保持距离及避碰规则",
+          "url": "https://journals.aps.org/pre/abstract/10.1103/PhysRevE.51.4282"
+        },
+        {
+          "title": "Social LSTM: Human Trajectory Prediction in Crowded Spaces",
+          "publisher": "CVPR · 2016",
+          "supports": "邻近行人相互影响、个人空间与群体轨迹预测",
+          "url": "https://openaccess.thecvf.com/content_cvpr_2016/html/Alahi_Social_LSTM_Human_CVPR_2016_paper.html"
+        },
+        {
+          "title": "Comparison of Pedestrian Fundamental Diagram Across Cultures",
+          "publisher": "Pedestrian Dynamics / arXiv",
+          "supports": "不同文化背景下的人群速度—密度关系差异",
+          "url": "https://arxiv.org/abs/0903.0149"
+        },
+        {
+          "title": "MADRAS：大型户外活动行人观测开放数据",
+          "publisher": "PedestrianDynamics · GitHub",
+          "supports": "大型活动中的行人轨迹、密度、速度与流量实测数据",
+          "url": "https://github.com/PedestrianDynamics/madras-data-app"
+        },
+        {
+          "title": "How close is too close? Influence of culture on interpersonal distance",
+          "publisher": "Perceptual and Motor Skills · PubMed",
+          "supports": "文化与族群背景对人际距离偏好的影响",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/11693674/"
+        }
+      ],
+      "sourceNote": "国籍、年龄和性别来自当前主体类型设定；距离、速度及倾向值为演示校准值。论文与开放数据用于确定参数含义、合理范围和主体间影响关系，后续可替换为上海本地实测数据。"
+    }
+  },
+  {
+    "id": "subject-Pedestrian_EastAsia_Young_Female",
+    "name": "东亚青年女性行人",
+    "type": "人群画像",
+    "topic": "人群主体",
+    "status": "事中已对齐",
+    "summary": "东亚青年女人群，重点刻画其社交距离、移动速度、风险感知和群体互动特点。",
+    "details": [
+      [
+        "国籍 / 地区",
+        "东亚"
+      ],
+      [
+        "年龄",
+        "青年"
+      ],
+      [
+        "性别",
+        "女"
+      ],
+      [
+        "应用场景",
+        "上海外滩人群聚集"
+      ]
+    ],
+    "tags": [],
+    "updated": "2026-08",
+    "agentClass": {
+      "classId": "Pedestrian_EastAsia_Young_Female",
+      "model": "gpt-4o",
+      "defaultCount": 110,
+      "classFields": [
+        "人群画像",
+        "行为规则",
+        "互动偏好"
+      ],
+      "stateFields": [
+        "位置",
+        "速度",
+        "风险状态",
+        "当前行动"
+      ],
+      "instanceFields": [
+        "起点",
+        "目的地",
+        "同伴关系",
+        "疏散路线"
+      ],
+      "instanceExamples": [
+        {
+          "objectId": "g_eastasia_young_female_1",
+          "name": "东亚青年女性观景游客",
+          "state": "上海外滩",
+          "task": "在人群中会保持约 0.9 米 的心理安全距离，并根据广播、标识和周围人群调整路线。"
+        },
+        {
+          "objectId": "g_eastasia_young_female_2",
+          "name": "东亚青年女性散场行人",
+          "state": "集中散场",
+          "task": "密度升高后优先寻找较宽通道和地铁方向，并对安保人员、志愿者的分流引导作出响应。"
+        }
+      ]
+    },
+    "agentPortrait": {
+      "role": "东亚青年女性行人",
+      "avatar": "👩🏻",
+      "tone": "#0ea5e9",
+      "tags": [
+        "东亚",
+        "青年",
+        "女"
+      ],
+      "facts": [
+        [
+          "国籍 / 地区",
+          "东亚"
+        ],
+        [
+          "年龄与性别",
+          "青年 · 女"
+        ],
+        [
+          "主要出行目的",
+          "通勤与日常出行"
+        ],
+        [
+          "路线熟悉程度",
+          "较熟悉城市路线"
+        ]
+      ],
+      "metrics": [
+        [
+          "可接受社交距离",
+          47,
+          "0.9 米"
+        ],
+        [
+          "正常步行速度",
+          71,
+          "1.25 m/s"
+        ],
+        [
+          "风险敏感度",
+          78,
+          "较高"
+        ],
+        [
+          "从众倾向",
+          64,
+          "中等"
+        ],
+        [
+          "互助意愿",
+          79,
+          "高"
+        ],
+        [
+          "现场引导依赖",
+          71,
+          "中等"
+        ]
+      ],
+      "personas": [
+        {
+          "name": "东亚青年女性观景游客",
+          "meta": "东亚 · 青年 · 女",
+          "badges": [
+            "上海外滩",
+            "通勤与日常出行"
+          ],
+          "action": "在人群中会保持约 0.9 米 的心理安全距离，并根据广播、标识和周围人群调整路线。"
+        },
+        {
+          "name": "东亚青年女性散场行人",
+          "meta": "东亚 · 青年 · 女",
+          "badges": [
+            "集中散场",
+            "较熟悉城市路线"
+          ],
+          "action": "密度升高后优先寻找较宽通道和地铁方向，并对安保人员、志愿者的分流引导作出响应。"
+        }
+      ],
+      "sources": [
+        {
+          "title": "Social Force Model for Pedestrian Dynamics",
+          "publisher": "Physical Review E · 1995",
+          "supports": "步行速度、期望方向、人与人保持距离及避碰规则",
+          "url": "https://journals.aps.org/pre/abstract/10.1103/PhysRevE.51.4282"
+        },
+        {
+          "title": "Social LSTM: Human Trajectory Prediction in Crowded Spaces",
+          "publisher": "CVPR · 2016",
+          "supports": "邻近行人相互影响、个人空间与群体轨迹预测",
+          "url": "https://openaccess.thecvf.com/content_cvpr_2016/html/Alahi_Social_LSTM_Human_CVPR_2016_paper.html"
+        },
+        {
+          "title": "Comparison of Pedestrian Fundamental Diagram Across Cultures",
+          "publisher": "Pedestrian Dynamics / arXiv",
+          "supports": "不同文化背景下的人群速度—密度关系差异",
+          "url": "https://arxiv.org/abs/0903.0149"
+        },
+        {
+          "title": "MADRAS：大型户外活动行人观测开放数据",
+          "publisher": "PedestrianDynamics · GitHub",
+          "supports": "大型活动中的行人轨迹、密度、速度与流量实测数据",
+          "url": "https://github.com/PedestrianDynamics/madras-data-app"
+        },
+        {
+          "title": "How close is too close? Influence of culture on interpersonal distance",
+          "publisher": "Perceptual and Motor Skills · PubMed",
+          "supports": "文化与族群背景对人际距离偏好的影响",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/11693674/"
+        }
+      ],
+      "sourceNote": "国籍、年龄和性别来自当前主体类型设定；距离、速度及倾向值为演示校准值。论文与开放数据用于确定参数含义、合理范围和主体间影响关系，后续可替换为上海本地实测数据。"
+    }
+  },
+  {
+    "id": "subject-Pedestrian_SoutheastAsia_Middle_Male",
+    "name": "东南亚中年男性行人",
+    "type": "人群画像",
+    "topic": "人群主体",
+    "status": "事中已对齐",
+    "summary": "东南亚中年男人群，重点刻画其社交距离、移动速度、风险感知和群体互动特点。",
+    "details": [
+      [
+        "国籍 / 地区",
+        "东南亚"
+      ],
+      [
+        "年龄",
+        "中年"
+      ],
+      [
+        "性别",
+        "男"
+      ],
+      [
+        "应用场景",
+        "上海外滩人群聚集"
+      ]
+    ],
+    "tags": [],
+    "updated": "2026-08",
+    "agentClass": {
+      "classId": "Pedestrian_SoutheastAsia_Middle_Male",
+      "model": "gpt-4",
+      "defaultCount": 80,
+      "classFields": [
+        "人群画像",
+        "行为规则",
+        "互动偏好"
+      ],
+      "stateFields": [
+        "位置",
+        "速度",
+        "风险状态",
+        "当前行动"
+      ],
+      "instanceFields": [
+        "起点",
+        "目的地",
+        "同伴关系",
+        "疏散路线"
+      ],
+      "instanceExamples": [
+        {
+          "objectId": "g_southeast_middle_male_1",
+          "name": "东南亚中年男性观景游客",
+          "state": "上海外滩",
+          "task": "在人群中会保持约 1.1 米 的心理安全距离，并根据广播、标识和周围人群调整路线。"
+        },
+        {
+          "objectId": "g_southeast_middle_male_2",
+          "name": "东南亚中年男性散场行人",
+          "state": "集中散场",
+          "task": "密度升高后优先寻找较宽通道和地铁方向，并对安保人员、志愿者的分流引导作出响应。"
+        }
+      ]
+    },
+    "agentPortrait": {
+      "role": "东南亚中年男性行人",
+      "avatar": "👨🏽",
+      "tone": "#14b8a6",
+      "tags": [
+        "东南亚",
+        "中年",
+        "男"
+      ],
+      "facts": [
+        [
+          "国籍 / 地区",
+          "东南亚"
+        ],
+        [
+          "年龄与性别",
+          "中年 · 男"
+        ],
+        [
+          "主要出行目的",
+          "务工与商务出行"
+        ],
+        [
+          "路线熟悉程度",
+          "依赖导航与标识"
+        ]
+      ],
+      "metrics": [
+        [
+          "可接受社交距离",
+          58,
+          "1.1 米"
+        ],
+        [
+          "正常步行速度",
+          64,
+          "1.15 m/s"
+        ],
+        [
+          "风险敏感度",
+          73,
+          "较高"
+        ],
+        [
+          "从众倾向",
+          69,
+          "中等"
+        ],
+        [
+          "互助意愿",
+          68,
+          "较高"
+        ],
+        [
+          "现场引导依赖",
+          66,
+          "中等"
+        ]
+      ],
+      "personas": [
+        {
+          "name": "东南亚中年男性观景游客",
+          "meta": "东南亚 · 中年 · 男",
+          "badges": [
+            "上海外滩",
+            "务工与商务出行"
+          ],
+          "action": "在人群中会保持约 1.1 米 的心理安全距离，并根据广播、标识和周围人群调整路线。"
+        },
+        {
+          "name": "东南亚中年男性散场行人",
+          "meta": "东南亚 · 中年 · 男",
+          "badges": [
+            "集中散场",
+            "依赖导航与标识"
+          ],
+          "action": "密度升高后优先寻找较宽通道和地铁方向，并对安保人员、志愿者的分流引导作出响应。"
+        }
+      ],
+      "sources": [
+        {
+          "title": "Social Force Model for Pedestrian Dynamics",
+          "publisher": "Physical Review E · 1995",
+          "supports": "步行速度、期望方向、人与人保持距离及避碰规则",
+          "url": "https://journals.aps.org/pre/abstract/10.1103/PhysRevE.51.4282"
+        },
+        {
+          "title": "Social LSTM: Human Trajectory Prediction in Crowded Spaces",
+          "publisher": "CVPR · 2016",
+          "supports": "邻近行人相互影响、个人空间与群体轨迹预测",
+          "url": "https://openaccess.thecvf.com/content_cvpr_2016/html/Alahi_Social_LSTM_Human_CVPR_2016_paper.html"
+        },
+        {
+          "title": "Comparison of Pedestrian Fundamental Diagram Across Cultures",
+          "publisher": "Pedestrian Dynamics / arXiv",
+          "supports": "不同文化背景下的人群速度—密度关系差异",
+          "url": "https://arxiv.org/abs/0903.0149"
+        },
+        {
+          "title": "MADRAS：大型户外活动行人观测开放数据",
+          "publisher": "PedestrianDynamics · GitHub",
+          "supports": "大型活动中的行人轨迹、密度、速度与流量实测数据",
+          "url": "https://github.com/PedestrianDynamics/madras-data-app"
+        },
+        {
+          "title": "How close is too close? Influence of culture on interpersonal distance",
+          "publisher": "Perceptual and Motor Skills · PubMed",
+          "supports": "文化与族群背景对人际距离偏好的影响",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/11693674/"
+        }
+      ],
+      "sourceNote": "国籍、年龄和性别来自当前主体类型设定；距离、速度及倾向值为演示校准值。论文与开放数据用于确定参数含义、合理范围和主体间影响关系，后续可替换为上海本地实测数据。"
+    }
+  },
+  {
+    "id": "subject-Pedestrian_SouthAsia_Young",
+    "name": "南亚青年行人",
+    "type": "人群画像",
+    "topic": "人群主体",
+    "status": "事中已对齐",
+    "summary": "南亚青年人群，重点刻画其社交距离、移动速度、风险感知和群体互动特点。",
+    "details": [
+      [
+        "国籍 / 地区",
+        "南亚"
+      ],
+      [
+        "年龄",
+        "青年"
+      ],
+      [
+        "性别",
+        "未限定"
+      ],
+      [
+        "应用场景",
+        "上海外滩人群聚集"
+      ]
+    ],
+    "tags": [],
+    "updated": "2026-08",
+    "agentClass": {
+      "classId": "Pedestrian_SouthAsia_Young",
+      "model": "gpt-4",
+      "defaultCount": 95,
+      "classFields": [
+        "人群画像",
+        "行为规则",
+        "互动偏好"
+      ],
+      "stateFields": [
+        "位置",
+        "速度",
+        "风险状态",
+        "当前行动"
+      ],
+      "instanceFields": [
+        "起点",
+        "目的地",
+        "同伴关系",
+        "疏散路线"
+      ],
+      "instanceExamples": [
+        {
+          "objectId": "g_southasia_young_1",
+          "name": "南亚青年观景游客",
+          "state": "上海外滩",
+          "task": "在人群中会保持约 1.0 米 的心理安全距离，并根据广播、标识和周围人群调整路线。"
+        },
+        {
+          "objectId": "g_southasia_young_2",
+          "name": "南亚青年散场行人",
+          "state": "集中散场",
+          "task": "密度升高后优先寻找较宽通道和地铁方向，并对安保人员、志愿者的分流引导作出响应。"
+        }
+      ]
+    },
+    "agentPortrait": {
+      "role": "南亚青年行人",
+      "avatar": "🧑🏾",
+      "tone": "#f59e0b",
+      "tags": [
+        "南亚",
+        "青年",
+        "男女混合"
+      ],
+      "facts": [
+        [
+          "国籍 / 地区",
+          "南亚"
+        ],
+        [
+          "年龄与性别",
+          "青年 · 未限定"
+        ],
+        [
+          "主要出行目的",
+          "学习、务工与旅游"
+        ],
+        [
+          "路线熟悉程度",
+          "部分熟悉"
+        ]
+      ],
+      "metrics": [
+        [
+          "可接受社交距离",
+          53,
+          "1.0 米"
+        ],
+        [
+          "正常步行速度",
+          75,
+          "1.30 m/s"
+        ],
+        [
+          "风险敏感度",
+          70,
+          "较高"
+        ],
+        [
+          "从众倾向",
+          72,
+          "较明显"
+        ],
+        [
+          "互助意愿",
+          74,
+          "较高"
+        ],
+        [
+          "现场引导依赖",
+          63,
+          "中等"
+        ]
+      ],
+      "personas": [
+        {
+          "name": "南亚青年观景游客",
+          "meta": "南亚 · 青年 · 未限定",
+          "badges": [
+            "上海外滩",
+            "学习、务工与旅游"
+          ],
+          "action": "在人群中会保持约 1.0 米 的心理安全距离，并根据广播、标识和周围人群调整路线。"
+        },
+        {
+          "name": "南亚青年散场行人",
+          "meta": "南亚 · 青年 · 未限定",
+          "badges": [
+            "集中散场",
+            "部分熟悉"
+          ],
+          "action": "密度升高后优先寻找较宽通道和地铁方向，并对安保人员、志愿者的分流引导作出响应。"
+        }
+      ],
+      "sources": [
+        {
+          "title": "Social Force Model for Pedestrian Dynamics",
+          "publisher": "Physical Review E · 1995",
+          "supports": "步行速度、期望方向、人与人保持距离及避碰规则",
+          "url": "https://journals.aps.org/pre/abstract/10.1103/PhysRevE.51.4282"
+        },
+        {
+          "title": "Social LSTM: Human Trajectory Prediction in Crowded Spaces",
+          "publisher": "CVPR · 2016",
+          "supports": "邻近行人相互影响、个人空间与群体轨迹预测",
+          "url": "https://openaccess.thecvf.com/content_cvpr_2016/html/Alahi_Social_LSTM_Human_CVPR_2016_paper.html"
+        },
+        {
+          "title": "Comparison of Pedestrian Fundamental Diagram Across Cultures",
+          "publisher": "Pedestrian Dynamics / arXiv",
+          "supports": "不同文化背景下的人群速度—密度关系差异",
+          "url": "https://arxiv.org/abs/0903.0149"
+        },
+        {
+          "title": "MADRAS：大型户外活动行人观测开放数据",
+          "publisher": "PedestrianDynamics · GitHub",
+          "supports": "大型活动中的行人轨迹、密度、速度与流量实测数据",
+          "url": "https://github.com/PedestrianDynamics/madras-data-app"
+        },
+        {
+          "title": "How close is too close? Influence of culture on interpersonal distance",
+          "publisher": "Perceptual and Motor Skills · PubMed",
+          "supports": "文化与族群背景对人际距离偏好的影响",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/11693674/"
+        }
+      ],
+      "sourceNote": "国籍、年龄和性别来自当前主体类型设定；距离、速度及倾向值为演示校准值。论文与开放数据用于确定参数含义、合理范围和主体间影响关系，后续可替换为上海本地实测数据。"
+    }
+  },
+  {
+    "id": "subject-Pedestrian_Europe_Senior_Female",
+    "name": "欧洲老年女性行人",
+    "type": "人群画像",
+    "topic": "人群主体",
+    "status": "事中已对齐",
+    "summary": "欧洲老年女人群，重点刻画其社交距离、移动速度、风险感知和群体互动特点。",
+    "details": [
+      [
+        "国籍 / 地区",
+        "欧洲"
+      ],
+      [
+        "年龄",
+        "老年"
+      ],
+      [
+        "性别",
+        "女"
+      ],
+      [
+        "应用场景",
+        "上海外滩人群聚集"
+      ]
+    ],
+    "tags": [],
+    "updated": "2026-08",
+    "agentClass": {
+      "classId": "Pedestrian_Europe_Senior_Female",
+      "model": "gpt-4o",
+      "defaultCount": 60,
+      "classFields": [
+        "人群画像",
+        "行为规则",
+        "互动偏好"
+      ],
+      "stateFields": [
+        "位置",
+        "速度",
+        "风险状态",
+        "当前行动"
+      ],
+      "instanceFields": [
+        "起点",
+        "目的地",
+        "同伴关系",
+        "疏散路线"
+      ],
+      "instanceExamples": [
+        {
+          "objectId": "g_europe_senior_female_1",
+          "name": "欧洲老年女性观景游客",
+          "state": "上海外滩",
+          "task": "在人群中会保持约 1.4 米 的心理安全距离，并根据广播、标识和周围人群调整路线。"
+        },
+        {
+          "objectId": "g_europe_senior_female_2",
+          "name": "欧洲老年女性散场行人",
+          "state": "集中散场",
+          "task": "密度升高后优先寻找较宽通道和地铁方向，并对安保人员、志愿者的分流引导作出响应。"
+        }
+      ]
+    },
+    "agentPortrait": {
+      "role": "欧洲老年女性行人",
+      "avatar": "👵🏻",
+      "tone": "#8b5cf6",
+      "tags": [
+        "欧洲",
+        "老年",
+        "女"
+      ],
+      "facts": [
+        [
+          "国籍 / 地区",
+          "欧洲"
+        ],
+        [
+          "年龄与性别",
+          "老年 · 女"
+        ],
+        [
+          "主要出行目的",
+          "旅游与探亲"
+        ],
+        [
+          "路线熟悉程度",
+          "路线较陌生"
+        ]
+      ],
+      "metrics": [
+        [
+          "可接受社交距离",
+          74,
+          "1.4 米"
+        ],
+        [
+          "正常步行速度",
+          43,
+          "0.85 m/s"
+        ],
+        [
+          "风险敏感度",
+          88,
+          "高"
+        ],
+        [
+          "从众倾向",
+          61,
+          "中等"
+        ],
+        [
+          "互助意愿",
+          82,
+          "高"
+        ],
+        [
+          "现场引导依赖",
+          74,
+          "高"
+        ]
+      ],
+      "personas": [
+        {
+          "name": "欧洲老年女性观景游客",
+          "meta": "欧洲 · 老年 · 女",
+          "badges": [
+            "上海外滩",
+            "旅游与探亲"
+          ],
+          "action": "在人群中会保持约 1.4 米 的心理安全距离，并根据广播、标识和周围人群调整路线。"
+        },
+        {
+          "name": "欧洲老年女性散场行人",
+          "meta": "欧洲 · 老年 · 女",
+          "badges": [
+            "集中散场",
+            "路线较陌生"
+          ],
+          "action": "密度升高后优先寻找较宽通道和地铁方向，并对安保人员、志愿者的分流引导作出响应。"
+        }
+      ],
+      "sources": [
+        {
+          "title": "Social Force Model for Pedestrian Dynamics",
+          "publisher": "Physical Review E · 1995",
+          "supports": "步行速度、期望方向、人与人保持距离及避碰规则",
+          "url": "https://journals.aps.org/pre/abstract/10.1103/PhysRevE.51.4282"
+        },
+        {
+          "title": "Social LSTM: Human Trajectory Prediction in Crowded Spaces",
+          "publisher": "CVPR · 2016",
+          "supports": "邻近行人相互影响、个人空间与群体轨迹预测",
+          "url": "https://openaccess.thecvf.com/content_cvpr_2016/html/Alahi_Social_LSTM_Human_CVPR_2016_paper.html"
+        },
+        {
+          "title": "Comparison of Pedestrian Fundamental Diagram Across Cultures",
+          "publisher": "Pedestrian Dynamics / arXiv",
+          "supports": "不同文化背景下的人群速度—密度关系差异",
+          "url": "https://arxiv.org/abs/0903.0149"
+        },
+        {
+          "title": "MADRAS：大型户外活动行人观测开放数据",
+          "publisher": "PedestrianDynamics · GitHub",
+          "supports": "大型活动中的行人轨迹、密度、速度与流量实测数据",
+          "url": "https://github.com/PedestrianDynamics/madras-data-app"
+        },
+        {
+          "title": "How close is too close? Influence of culture on interpersonal distance",
+          "publisher": "Perceptual and Motor Skills · PubMed",
+          "supports": "文化与族群背景对人际距离偏好的影响",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/11693674/"
+        }
+      ],
+      "sourceNote": "国籍、年龄和性别来自当前主体类型设定；距离、速度及倾向值为演示校准值。论文与开放数据用于确定参数含义、合理范围和主体间影响关系，后续可替换为上海本地实测数据。"
+    }
+  },
+  {
+    "id": "subject-Pedestrian_Africa_Middle",
+    "name": "非洲中年行人行人",
+    "type": "人群画像",
+    "topic": "人群主体",
+    "status": "事中已对齐",
+    "summary": "非洲中年人群，重点刻画其社交距离、移动速度、风险感知和群体互动特点。",
+    "details": [
+      [
+        "国籍 / 地区",
+        "非洲"
+      ],
+      [
+        "年龄",
+        "中年"
+      ],
+      [
+        "性别",
+        "未限定"
+      ],
+      [
+        "应用场景",
+        "上海外滩人群聚集"
+      ]
+    ],
+    "tags": [],
+    "updated": "2026-08",
+    "agentClass": {
+      "classId": "Pedestrian_Africa_Middle",
+      "model": "gpt-4",
+      "defaultCount": 70,
+      "classFields": [
+        "人群画像",
+        "行为规则",
+        "互动偏好"
+      ],
+      "stateFields": [
+        "位置",
+        "速度",
+        "风险状态",
+        "当前行动"
+      ],
+      "instanceFields": [
+        "起点",
+        "目的地",
+        "同伴关系",
+        "疏散路线"
+      ],
+      "instanceExamples": [
+        {
+          "objectId": "g_africa_middle_1",
+          "name": "非洲中年行人观景游客",
+          "state": "上海外滩",
+          "task": "在人群中会保持约 1.2 米 的心理安全距离，并根据广播、标识和周围人群调整路线。"
+        },
+        {
+          "objectId": "g_africa_middle_2",
+          "name": "非洲中年行人散场行人",
+          "state": "集中散场",
+          "task": "密度升高后优先寻找较宽通道和地铁方向，并对安保人员、志愿者的分流引导作出响应。"
+        }
+      ]
+    },
+    "agentPortrait": {
+      "role": "非洲中年行人行人",
+      "avatar": "🧑🏿",
+      "tone": "#ef4444",
+      "tags": [
+        "非洲",
+        "中年",
+        "男女混合"
+      ],
+      "facts": [
+        [
+          "国籍 / 地区",
+          "非洲"
+        ],
+        [
+          "年龄与性别",
+          "中年 · 未限定"
+        ],
+        [
+          "主要出行目的",
+          "务工、商务与生活出行"
+        ],
+        [
+          "路线熟悉程度",
+          "依赖导航与现场引导"
+        ]
+      ],
+      "metrics": [
+        [
+          "可接受社交距离",
+          63,
+          "1.2 米"
+        ],
+        [
+          "正常步行速度",
+          66,
+          "1.18 m/s"
+        ],
+        [
+          "风险敏感度",
+          75,
+          "较高"
+        ],
+        [
+          "从众倾向",
+          67,
+          "中等"
+        ],
+        [
+          "互助意愿",
+          76,
+          "较高"
+        ],
+        [
+          "现场引导依赖",
+          68,
+          "中等"
+        ]
+      ],
+      "personas": [
+        {
+          "name": "非洲中年行人观景游客",
+          "meta": "非洲 · 中年 · 未限定",
+          "badges": [
+            "上海外滩",
+            "务工、商务与生活出行"
+          ],
+          "action": "在人群中会保持约 1.2 米 的心理安全距离，并根据广播、标识和周围人群调整路线。"
+        },
+        {
+          "name": "非洲中年行人散场行人",
+          "meta": "非洲 · 中年 · 未限定",
+          "badges": [
+            "集中散场",
+            "依赖导航与现场引导"
+          ],
+          "action": "密度升高后优先寻找较宽通道和地铁方向，并对安保人员、志愿者的分流引导作出响应。"
+        }
+      ],
+      "sources": [
+        {
+          "title": "Social Force Model for Pedestrian Dynamics",
+          "publisher": "Physical Review E · 1995",
+          "supports": "步行速度、期望方向、人与人保持距离及避碰规则",
+          "url": "https://journals.aps.org/pre/abstract/10.1103/PhysRevE.51.4282"
+        },
+        {
+          "title": "Social LSTM: Human Trajectory Prediction in Crowded Spaces",
+          "publisher": "CVPR · 2016",
+          "supports": "邻近行人相互影响、个人空间与群体轨迹预测",
+          "url": "https://openaccess.thecvf.com/content_cvpr_2016/html/Alahi_Social_LSTM_Human_CVPR_2016_paper.html"
+        },
+        {
+          "title": "Comparison of Pedestrian Fundamental Diagram Across Cultures",
+          "publisher": "Pedestrian Dynamics / arXiv",
+          "supports": "不同文化背景下的人群速度—密度关系差异",
+          "url": "https://arxiv.org/abs/0903.0149"
+        },
+        {
+          "title": "MADRAS：大型户外活动行人观测开放数据",
+          "publisher": "PedestrianDynamics · GitHub",
+          "supports": "大型活动中的行人轨迹、密度、速度与流量实测数据",
+          "url": "https://github.com/PedestrianDynamics/madras-data-app"
+        },
+        {
+          "title": "How close is too close? Influence of culture on interpersonal distance",
+          "publisher": "Perceptual and Motor Skills · PubMed",
+          "supports": "文化与族群背景对人际距离偏好的影响",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/11693674/"
+        }
+      ],
+      "sourceNote": "国籍、年龄和性别来自当前主体类型设定；距离、速度及倾向值为演示校准值。论文与开放数据用于确定参数含义、合理范围和主体间影响关系，后续可替换为上海本地实测数据。"
+    }
+  },
+  {
+    "id": "subject-PolicyPublisher",
+    "name": "应急指挥中心 Agent",
+    "type": "协同主体",
+    "topic": "协同角色",
+    "status": "事中已对齐",
+    "summary": "汇总客流、密度、交通和现场巡查态势，按区域形成限流、分流与协同调度策略。",
+    "details": [
+      [
+        "角色定位",
+        "全市应急决策者"
+      ],
+      [
+        "应用阶段",
+        "事中协同推演"
+      ]
+    ],
+    "tags": [],
+    "updated": "2026-08",
+    "agentClass": {
+      "classId": "PolicyPublisher",
+      "name": "政策决策 Agent",
+      "layer": "指挥决策",
+      "defaultCount": 1,
+      "color": "#ef4444",
+      "model": "gpt-4",
+      "description": "汇总客流、密度、交通和现场巡查态势，按区域形成限流、分流与协同调度策略。",
+      "capabilities": [
+        "态势汇总",
+        "分区决策",
+        "协同调度",
+        "策略调整"
+      ],
+      "stateFields": [
+        "position",
+        "status",
+        "currentTask",
+        "riskLevel"
+      ],
+      "classFields": [
+        "decisionPolicy",
+        "commandScope",
+        "priorityRules",
+        "llmConfig"
+      ],
+      "instanceFields": [
+        "organizationName",
+        "jurisdiction",
+        "activePlan",
+        "commandQueue"
+      ],
+      "instanceExamples": [
+        {
+          "objectId": "policy_sh_001",
+          "name": "上海外滩联合指挥实例",
+          "scene": "上海外滩跨年人群聚集",
+          "state": "分区响应",
+          "task": "统筹限流、分流、交通与现场保障"
+        }
+      ]
+    },
+    "agentPortrait": {
+      "role": "全市应急决策者",
+      "avatar": "🧑‍💼",
+      "tone": "#ef4444",
+      "tags": [
+        "统筹全局",
+        "分区决策",
+        "跨部门协同"
+      ],
+      "facts": [
+        [
+          "身份",
+          "大型活动联合指挥中心"
+        ],
+        [
+          "负责区域",
+          "上海外滩滨水带"
+        ],
+        [
+          "信息来源",
+          "客流、视频、交通与现场巡查"
+        ],
+        [
+          "主要行动",
+          "限流、分流与协同调度"
+        ]
+      ],
+      "metrics": [
+        [
+          "信息可信度要求",
+          92,
+          "高"
+        ],
+        [
+          "决策果断度",
+          86,
+          "较高"
+        ],
+        [
+          "部门协同意愿",
+          95,
+          "高"
+        ],
+        [
+          "风险容忍度",
+          28,
+          "低"
+        ]
+      ],
+      "personas": [
+        {
+          "name": "外滩联合指挥员",
+          "meta": "上海 · 外滩",
+          "badges": [
+            "全局客流",
+            "分区响应"
+          ],
+          "action": "统筹陈毅广场、南京东路口、观景平台和亲水台阶的客流组织。"
+        },
+        {
+          "name": "重点区域现场指挥员",
+          "meta": "上海 · 外滩重点片区",
+          "badges": [
+            "属地处置",
+            "快速反馈"
+          ],
+          "action": "根据密度和人流方向变化，细化限流、分流和现场疏导任务。"
+        }
+      ],
+      "sources": [
+        {
+          "title": "大型群众性活动安全管理条例",
+          "publisher": "国家行政法规库 · 国务院令第 505 号",
+          "supports": "指挥、安保、人员容量、缓冲区域和安全工作方案等职责设定",
+          "url": "https://xzfg.moj.gov.cn/law/detail?LawID=204"
+        },
+        {
+          "title": "进一步加强外滩大客流管理的建议答复",
+          "publisher": "上海市公安局黄浦分局 · 2024",
+          "supports": "外滩客流预警、宣传引导、交通组织和多部门现场协同",
+          "url": "https://gaj.sh.gov.cn/hpga/list/toGjDetail?lmName=%E5%BB%BA%E8%AE%AE%E6%8F%90%E6%A1%88%E7%BB%93%E6%9E%9C%E5%85%AC%E5%BC%80&lmUrl=list%2FtoGjIndex%3Fpa%3D31a44426d19f0303f05acc709fe72a65e711d31c8204ccc8&pa=c756679f93e8708f9b9afaa9107bc004c056b8d24c4c126ad85b17b55b8470a2"
+        },
+        {
+          "title": "上海公安机关强化社会面整体防控",
+          "publisher": "上海市人民政府 / 上海市公安局 · 2025",
+          "supports": "外滩人流密度监测、分区方案、大客流疏导和交通组织",
+          "url": "https://www.shanghai.gov.cn/nw31406/20250508/5727e1eca99849279748d700defaae12.html"
+        },
+        {
+          "title": "MADRAS：大型户外活动行人观测开放数据",
+          "publisher": "PedestrianDynamics · GitHub",
+          "supports": "大型活动中的行人轨迹、密度、速度与流量实测数据",
+          "url": "https://github.com/PedestrianDynamics/madras-data-app"
+        }
+      ],
+      "sourceNote": "角色信息由事中设计台的职责配置与公开研究共同整理；行为数值是当前上海外滩演示案例的可调校准值。"
+    }
+  },
+  {
+    "id": "subject-TrafficControl",
+    "name": "现场安保与交通管制 Agent",
+    "type": "协同主体",
+    "topic": "协同角色",
+    "status": "事中已对齐",
+    "summary": "监测外滩周边道路与出入口通行能力，执行封路、限流、信号控制与保障车辆优先通行。",
+    "details": [
+      [
+        "角色定位",
+        "道路与路口秩序维护者"
+      ],
+      [
+        "应用阶段",
+        "事中协同推演"
+      ]
+    ],
+    "tags": [],
+    "updated": "2026-08",
+    "agentClass": {
+      "classId": "TrafficControl",
+      "name": "交通管制 Agent",
+      "layer": "执行调度",
+      "defaultCount": 5,
+      "color": "#3b82f6",
+      "model": "gpt-4",
+      "description": "监测外滩周边道路与出入口通行能力，执行封路、限流、信号控制与保障车辆优先通行。",
+      "capabilities": [
+        "道路封控",
+        "信号调整",
+        "绕行引导",
+        "应急优先"
+      ],
+      "stateFields": [
+        "position",
+        "status",
+        "currentTask",
+        "riskLevel"
+      ],
+      "classFields": [
+        "controlPolicy",
+        "crowdDensityThreshold",
+        "signalPlan",
+        "llmConfig"
+      ],
+      "instanceFields": [
+        "roadId",
+        "crowdDensity",
+        "laneState",
+        "controlAction"
+      ],
+      "instanceExamples": [
+        {
+          "objectId": "traffic_bund_001",
+          "name": "南京东路口管制实例",
+          "scene": "上海外滩跨年人群聚集",
+          "state": "动态限流",
+          "task": "保护步行通道并控制车辆进入"
+        },
+        {
+          "objectId": "traffic_zhongshan_002",
+          "name": "中山东一路管制实例",
+          "scene": "上海外滩跨年人群聚集",
+          "state": "车辆绕行",
+          "task": "调整交通并保障散场通道"
+        }
+      ]
+    },
+    "agentPortrait": {
+      "role": "道路与路口秩序维护者",
+      "avatar": "👮",
+      "tone": "#3b82f6",
+      "tags": [
+        "道路封控",
+        "信号调整",
+        "现场引导"
+      ],
+      "facts": [
+        [
+          "身份",
+          "交警与现场安保人员"
+        ],
+        [
+          "负责区域",
+          "外滩周边道路、入口与路口"
+        ],
+        [
+          "观察重点",
+          "车流、人流与方向冲突"
+        ],
+        [
+          "主要行动",
+          "封路、限流与绕行"
+        ]
+      ],
+      "metrics": [
+        [
+          "响应速度",
+          90,
+          "快"
+        ],
+        [
+          "现场感知范围",
+          76,
+          "较广"
+        ],
+        [
+          "规则服从度",
+          96,
+          "高"
+        ],
+        [
+          "临机调整能力",
+          82,
+          "较高"
+        ]
+      ],
+      "personas": [
+        {
+          "name": "南京东路口管制员",
+          "meta": "中国 · 上海",
+          "badges": [
+            "路口限流",
+            "保障通道"
+          ],
+          "action": "根据人群密度控制车辆进入，并保护南京东路至外滩的步行通道。"
+        },
+        {
+          "name": "中山东一路交通引导员",
+          "meta": "中国 · 上海",
+          "badges": [
+            "路口疏导",
+            "动态绕行"
+          ],
+          "action": "根据客流和拥堵情况调整交通，指引车辆避开外滩核心聚集区域。"
+        }
+      ],
+      "sources": [
+        {
+          "title": "大型群众性活动安全管理条例",
+          "publisher": "国家行政法规库 · 国务院令第 505 号",
+          "supports": "指挥、安保、人员容量、缓冲区域和安全工作方案等职责设定",
+          "url": "https://xzfg.moj.gov.cn/law/detail?LawID=204"
+        },
+        {
+          "title": "进一步加强外滩大客流管理的建议答复",
+          "publisher": "上海市公安局黄浦分局 · 2024",
+          "supports": "外滩客流预警、宣传引导、交通组织和多部门现场协同",
+          "url": "https://gaj.sh.gov.cn/hpga/list/toGjDetail?lmName=%E5%BB%BA%E8%AE%AE%E6%8F%90%E6%A1%88%E7%BB%93%E6%9E%9C%E5%85%AC%E5%BC%80&lmUrl=list%2FtoGjIndex%3Fpa%3D31a44426d19f0303f05acc709fe72a65e711d31c8204ccc8&pa=c756679f93e8708f9b9afaa9107bc004c056b8d24c4c126ad85b17b55b8470a2"
+        },
+        {
+          "title": "上海公安机关强化社会面整体防控",
+          "publisher": "上海市人民政府 / 上海市公安局 · 2025",
+          "supports": "外滩人流密度监测、分区方案、大客流疏导和交通组织",
+          "url": "https://www.shanghai.gov.cn/nw31406/20250508/5727e1eca99849279748d700defaae12.html"
+        },
+        {
+          "title": "MADRAS：大型户外活动行人观测开放数据",
+          "publisher": "PedestrianDynamics · GitHub",
+          "supports": "大型活动中的行人轨迹、密度、速度与流量实测数据",
+          "url": "https://github.com/PedestrianDynamics/madras-data-app"
+        }
+      ],
+      "sourceNote": "角色信息由事中设计台的职责配置与公开研究共同整理；行为数值是当前上海外滩演示案例的可调校准值。"
+    }
+  },
+  {
+    "id": "subject-BusDispatcher",
+    "name": "公交与交通设施调度 Agent",
+    "type": "协同主体",
+    "topic": "协同角色",
+    "status": "事中已对齐",
+    "summary": "依据活动交通管制和散场客流调整公交线路、站点与备用运力，并与现场管制协同。",
+    "details": [
+      [
+        "角色定位",
+        "公共交通运力组织者"
+      ],
+      [
+        "应用阶段",
+        "事中协同推演"
+      ]
+    ],
+    "tags": [],
+    "updated": "2026-08",
+    "agentClass": {
+      "classId": "BusDispatcher",
+      "name": "公交调度 Agent",
+      "layer": "执行调度",
+      "defaultCount": 2,
+      "color": "#f59e0b",
+      "model": "gpt-4",
+      "description": "依据活动交通管制和散场客流调整公交线路、站点与备用运力，并与现场管制协同。",
+      "capabilities": [
+        "线路调整",
+        "站点跳停",
+        "运力增援",
+        "协同绕行"
+      ],
+      "stateFields": [
+        "position",
+        "status",
+        "currentTask",
+        "riskLevel"
+      ],
+      "classFields": [
+        "dispatchPolicy",
+        "fleetCapacity",
+        "routeConstraints",
+        "llmConfig"
+      ],
+      "instanceFields": [
+        "routeId",
+        "availableVehicles",
+        "suspendedStops",
+        "detourPlan"
+      ],
+      "instanceExamples": [
+        {
+          "objectId": "bus_sh_001",
+          "name": "外滩公交调度实例",
+          "scene": "上海外滩跨年人群聚集",
+          "state": "线路调整",
+          "task": "外围绕行并增加散场接驳运力"
+        }
+      ]
+    },
+    "agentPortrait": {
+      "role": "公共交通运力组织者",
+      "avatar": "🚌",
+      "tone": "#f59e0b",
+      "tags": [
+        "线路调整",
+        "运力增援",
+        "保障散场"
+      ],
+      "facts": [
+        [
+          "身份",
+          "公交调度中心人员"
+        ],
+        [
+          "负责对象",
+          "公交线路、站点与车辆"
+        ],
+        [
+          "观察重点",
+          "道路通行与乘客滞留"
+        ],
+        [
+          "主要行动",
+          "绕行、跳站与应急转运"
+        ]
+      ],
+      "metrics": [
+        [
+          "调度响应速度",
+          84,
+          "较快"
+        ],
+        [
+          "路网熟悉度",
+          94,
+          "高"
+        ],
+        [
+          "运力协调能力",
+          88,
+          "高"
+        ],
+        [
+          "风险容忍度",
+          34,
+          "低"
+        ]
+      ],
+      "personas": [
+        {
+          "name": "外滩公交调度员",
+          "meta": "中国 · 上海",
+          "badges": [
+            "线路重排",
+            "备用运力"
+          ],
+          "action": "根据跨年交通管制调整线路，并在外围站点增加散场运力。"
+        },
+        {
+          "name": "应急接驳负责人",
+          "meta": "中国 · 上海",
+          "badges": [
+            "接驳疏散",
+            "站点协调"
+          ],
+          "action": "在外滩外围布置临时接驳点，分担地铁口集中散场压力。"
+        }
+      ],
+      "sources": [
+        {
+          "title": "大型群众性活动安全管理条例",
+          "publisher": "国家行政法规库 · 国务院令第 505 号",
+          "supports": "指挥、安保、人员容量、缓冲区域和安全工作方案等职责设定",
+          "url": "https://xzfg.moj.gov.cn/law/detail?LawID=204"
+        },
+        {
+          "title": "进一步加强外滩大客流管理的建议答复",
+          "publisher": "上海市公安局黄浦分局 · 2024",
+          "supports": "外滩客流预警、宣传引导、交通组织和多部门现场协同",
+          "url": "https://gaj.sh.gov.cn/hpga/list/toGjDetail?lmName=%E5%BB%BA%E8%AE%AE%E6%8F%90%E6%A1%88%E7%BB%93%E6%9E%9C%E5%85%AC%E5%BC%80&lmUrl=list%2FtoGjIndex%3Fpa%3D31a44426d19f0303f05acc709fe72a65e711d31c8204ccc8&pa=c756679f93e8708f9b9afaa9107bc004c056b8d24c4c126ad85b17b55b8470a2"
+        },
+        {
+          "title": "上海公安机关强化社会面整体防控",
+          "publisher": "上海市人民政府 / 上海市公安局 · 2025",
+          "supports": "外滩人流密度监测、分区方案、大客流疏导和交通组织",
+          "url": "https://www.shanghai.gov.cn/nw31406/20250508/5727e1eca99849279748d700defaae12.html"
+        },
+        {
+          "title": "MADRAS：大型户外活动行人观测开放数据",
+          "publisher": "PedestrianDynamics · GitHub",
+          "supports": "大型活动中的行人轨迹、密度、速度与流量实测数据",
+          "url": "https://github.com/PedestrianDynamics/madras-data-app"
+        }
+      ],
+      "sourceNote": "角色信息由事中设计台的职责配置与公开研究共同整理；行为数值是当前上海外滩演示案例的可调校准值。"
+    }
+  },
+  {
+    "id": "subject-InfoPublisher",
+    "name": "现场监测与信息发布 Agent",
+    "type": "协同主体",
+    "topic": "协同角色",
+    "status": "事中已对齐",
+    "summary": "向公众发布限流、绕行、公交调整与散场信息，影响行人和车辆的实时决策。",
+    "details": [
+      [
+        "角色定位",
+        "风险信息传播者"
+      ],
+      [
+        "应用阶段",
+        "事中协同推演"
+      ]
+    ],
+    "tags": [],
+    "updated": "2026-08",
+    "agentClass": {
+      "classId": "InfoPublisher",
+      "name": "信息发布 Agent",
+      "layer": "信息协同",
+      "defaultCount": 3,
+      "color": "#8b5cf6",
+      "model": "gpt-3.5-turbo",
+      "description": "向公众发布限流、绕行、公交调整与散场信息，影响行人和车辆的实时决策。",
+      "capabilities": [
+        "风险播报",
+        "渠道编排",
+        "路线提示",
+        "反馈收集"
+      ],
+      "stateFields": [
+        "position",
+        "status",
+        "currentTask",
+        "riskLevel"
+      ],
+      "classFields": [
+        "publishPolicy",
+        "channelSet",
+        "audienceRules",
+        "llmConfig"
+      ],
+      "instanceFields": [
+        "channel",
+        "audience",
+        "message",
+        "publishTime"
+      ],
+      "instanceExamples": [
+        {
+          "objectId": "info_sh_001",
+          "name": "外滩现场广播实例",
+          "scene": "上海外滩跨年人群聚集",
+          "state": "持续发布",
+          "task": "发布分区限流与单向通行信息"
+        },
+        {
+          "objectId": "info_sms_002",
+          "name": "外滩散场提示实例",
+          "scene": "上海外滩跨年人群聚集",
+          "state": "定向触达",
+          "task": "提醒核心区域人群错峰离场"
+        }
+      ]
+    },
+    "agentPortrait": {
+      "role": "风险信息传播者",
+      "avatar": "📡",
+      "tone": "#8b5cf6",
+      "tags": [
+        "风险播报",
+        "路线提示",
+        "公众沟通"
+      ],
+      "facts": [
+        [
+          "身份",
+          "应急信息发布人员"
+        ],
+        [
+          "传播渠道",
+          "短信、广播、平台与路牌"
+        ],
+        [
+          "服务对象",
+          "受影响市民与驾驶员"
+        ],
+        [
+          "主要行动",
+          "预警、辟谣与避险提示"
+        ]
+      ],
+      "metrics": [
+        [
+          "发布及时性",
+          91,
+          "快"
+        ],
+        [
+          "信息覆盖率",
+          87,
+          "较高"
+        ],
+        [
+          "表达清晰度",
+          94,
+          "高"
+        ],
+        [
+          "公众反馈敏感度",
+          80,
+          "较高"
+        ]
+      ],
+      "personas": [
+        {
+          "name": "外滩现场广播员",
+          "meta": "中国 · 上海",
+          "badges": [
+            "权威发布",
+            "持续更新"
+          ],
+          "action": "持续播报分区限流、单向通行和地铁口客流信息。"
+        },
+        {
+          "name": "重点区域信息发布员",
+          "meta": "中国 · 上海",
+          "badges": [
+            "定向触达",
+            "散场提示"
+          ],
+          "action": "针对外滩核心区域人群发布错峰离场和推荐路线提示。"
+        }
+      ],
+      "sources": [
+        {
+          "title": "大型群众性活动安全管理条例",
+          "publisher": "国家行政法规库 · 国务院令第 505 号",
+          "supports": "指挥、安保、人员容量、缓冲区域和安全工作方案等职责设定",
+          "url": "https://xzfg.moj.gov.cn/law/detail?LawID=204"
+        },
+        {
+          "title": "进一步加强外滩大客流管理的建议答复",
+          "publisher": "上海市公安局黄浦分局 · 2024",
+          "supports": "外滩客流预警、宣传引导、交通组织和多部门现场协同",
+          "url": "https://gaj.sh.gov.cn/hpga/list/toGjDetail?lmName=%E5%BB%BA%E8%AE%AE%E6%8F%90%E6%A1%88%E7%BB%93%E6%9E%9C%E5%85%AC%E5%BC%80&lmUrl=list%2FtoGjIndex%3Fpa%3D31a44426d19f0303f05acc709fe72a65e711d31c8204ccc8&pa=c756679f93e8708f9b9afaa9107bc004c056b8d24c4c126ad85b17b55b8470a2"
+        },
+        {
+          "title": "上海公安机关强化社会面整体防控",
+          "publisher": "上海市人民政府 / 上海市公安局 · 2025",
+          "supports": "外滩人流密度监测、分区方案、大客流疏导和交通组织",
+          "url": "https://www.shanghai.gov.cn/nw31406/20250508/5727e1eca99849279748d700defaae12.html"
+        },
+        {
+          "title": "MADRAS：大型户外活动行人观测开放数据",
+          "publisher": "PedestrianDynamics · GitHub",
+          "supports": "大型活动中的行人轨迹、密度、速度与流量实测数据",
+          "url": "https://github.com/PedestrianDynamics/madras-data-app"
+        }
+      ],
+      "sourceNote": "角色信息由事中设计台的职责配置与公开研究共同整理；行为数值是当前上海外滩演示案例的可调校准值。"
+    }
+  },
+  {
+    "id": "subject-Vehicle",
+    "name": "车辆 Agent",
+    "type": "协同主体",
+    "topic": "车辆主体",
+    "status": "事中已对齐",
+    "summary": "表示事中仿真中的车辆个体，根据活动封控、交通信号和广播信息动态调整路线。",
+    "details": [
+      [
+        "角色定位",
+        "道路中的车辆与驾驶者"
+      ],
+      [
+        "应用阶段",
+        "事中协同推演"
+      ]
+    ],
+    "tags": [],
+    "updated": "2026-08",
+    "agentClass": {
+      "classId": "Vehicle",
+      "name": "车辆 Agent",
+      "layer": "仿真主体",
+      "defaultCount": 50,
+      "color": "#6366f1",
+      "model": "gpt-4",
+      "description": "表示事中仿真中的车辆个体，根据活动封控、交通信号和广播信息动态调整路线。",
+      "capabilities": [
+        "动态路径",
+        "活动绕行",
+        "信号响应",
+        "车辆交互"
+      ],
+      "stateFields": [
+        "position",
+        "status",
+        "currentTask",
+        "riskLevel"
+      ],
+      "classFields": [
+        "routingModel",
+        "drivingPolicy",
+        "vehicleConstraints",
+        "llmConfig"
+      ],
+      "instanceFields": [
+        "vehicleId",
+        "vehicleType",
+        "route",
+        "accessLevel"
+      ],
+      "instanceExamples": [
+        {
+          "objectId": "vehicle_bund_001",
+          "name": "外滩周边车辆实例组",
+          "scene": "上海外滩跨年人群聚集",
+          "state": "外围绕行",
+          "task": "避开核心聚集区域并服从交通管制"
+        },
+        {
+          "objectId": "vehicle_support_002",
+          "name": "现场保障车辆实例组",
+          "scene": "上海外滩跨年人群聚集",
+          "state": "优先通行",
+          "task": "沿保障通道抵达指定区域"
+        }
+      ]
+    },
+    "agentPortrait": {
+      "role": "道路中的车辆与驾驶者",
+      "avatar": "🚗",
+      "tone": "#6366f1",
+      "tags": [
+        "动态绕行",
+        "避开核心区",
+        "信号响应"
+      ],
+      "facts": [
+        [
+          "主体构成",
+          "私家车、公交车与保障车辆"
+        ],
+        [
+          "驾驶习惯",
+          "遵循活动交通管制"
+        ],
+        [
+          "路线依据",
+          "路况、广播与导航"
+        ],
+        [
+          "主要行动",
+          "减速、停车、绕行或保障"
+        ]
+      ],
+      "metrics": [
+        [
+          "前车安全距离",
+          58,
+          "6 米"
+        ],
+        [
+          "人车冲突敏感度",
+          84,
+          "高"
+        ],
+        [
+          "绕行意愿",
+          81,
+          "较高"
+        ],
+        [
+          "管制服从度",
+          93,
+          "高"
+        ]
+      ],
+      "personas": [
+        {
+          "name": "外滩周边车辆驾驶者",
+          "meta": "上海 · 外滩周边",
+          "badges": [
+            "导航依赖",
+            "主动绕行"
+          ],
+          "action": "接到活动交通管制信息后重新规划路线，避开核心人群聚集区域。"
+        },
+        {
+          "name": "现场保障车辆驾驶者",
+          "meta": "上海 · 活动保障",
+          "badges": [
+            "优先通行",
+            "任务导向"
+          ],
+          "action": "在交通管制协助下沿保障通道抵达指定区域。"
+        }
+      ],
+      "sources": [
+        {
+          "title": "大型群众性活动安全管理条例",
+          "publisher": "国家行政法规库 · 国务院令第 505 号",
+          "supports": "指挥、安保、人员容量、缓冲区域和安全工作方案等职责设定",
+          "url": "https://xzfg.moj.gov.cn/law/detail?LawID=204"
+        },
+        {
+          "title": "进一步加强外滩大客流管理的建议答复",
+          "publisher": "上海市公安局黄浦分局 · 2024",
+          "supports": "外滩客流预警、宣传引导、交通组织和多部门现场协同",
+          "url": "https://gaj.sh.gov.cn/hpga/list/toGjDetail?lmName=%E5%BB%BA%E8%AE%AE%E6%8F%90%E6%A1%88%E7%BB%93%E6%9E%9C%E5%85%AC%E5%BC%80&lmUrl=list%2FtoGjIndex%3Fpa%3D31a44426d19f0303f05acc709fe72a65e711d31c8204ccc8&pa=c756679f93e8708f9b9afaa9107bc004c056b8d24c4c126ad85b17b55b8470a2"
+        },
+        {
+          "title": "上海公安机关强化社会面整体防控",
+          "publisher": "上海市人民政府 / 上海市公安局 · 2025",
+          "supports": "外滩人流密度监测、分区方案、大客流疏导和交通组织",
+          "url": "https://www.shanghai.gov.cn/nw31406/20250508/5727e1eca99849279748d700defaae12.html"
+        },
+        {
+          "title": "MADRAS：大型户外活动行人观测开放数据",
+          "publisher": "PedestrianDynamics · GitHub",
+          "supports": "大型活动中的行人轨迹、密度、速度与流量实测数据",
+          "url": "https://github.com/PedestrianDynamics/madras-data-app"
+        }
+      ],
+      "sourceNote": "角色信息由事中设计台的职责配置与公开研究共同整理；行为数值是当前上海外滩演示案例的可调校准值。"
+    }
+  }
+]

@@ -1,0 +1,736 @@
+{
+  "retrieved_at": "2026-10-23",
+  "overview": {
+    "label": "历史、空间与公告线索",
+    "judgment": "这里兼有纪念游览、摄影停留和团队经过的线索；外部节假日来流与交通管理值得一并研究。",
+    "note": "已补充官方场地介绍、历史客流、摄影推荐、活动与管制记录。它们仍不足以确定本次跨年的人数与行为比例。"
+  },
+  "evidence": [
+    {
+      "id": "official_monument",
+      "title": "纪念塔的官方地点与功能介绍",
+      "kind": "官方资料",
+      "source": "上海市政府国际服务门户 · Revolutionary heritage sites in Shanghai",
+      "date": "页面更新于 2025-11-21",
+      "retrieved_at": "2026-10-23",
+      "scope": "人民英雄纪念塔 / 黄浦公园",
+      "url": "https://english.shanghai.gov.cn/en-ScenicSpots/20231222/3c838927c4f047498c47a9c0943caf45.html",
+      "content": "官方介绍将人民英雄纪念塔列为革命纪念地，位于外滩黄浦公园、黄浦江与苏州河交汇处，地址为中山东一路 500 号。",
+      "applicability": "可以支撑场所定位与纪念游览功能；未提供日常客流、停留时长或活动当日开放情况。",
+      "dimensions": [
+        "demand",
+        "space",
+        "people"
+      ]
+    },
+    {
+      "id": "bund_may_2026",
+      "title": "2026 年五一外滩历史客流",
+      "kind": "历史统计",
+      "source": "上海市文化和旅游局 · 全域火热、亮点纷呈！上海“五一”文旅市场交出亮眼答卷",
+      "date": "统计日期 2026-05-01；发布于 2026-05-07",
+      "retrieved_at": "2026-10-23",
+      "scope": "外滩；原文未给出与本任务完全对应的统计边界",
+      "url": "https://www.shanghai.gov.cn/nw31406/20260507/0c06ed3c598d4ad297a3b6bba0d9dab5.html",
+      "content": "官方报道记录 2026 年 5 月 1 日外滩单日客流为 58.5 万人次。可作为外部节假日到访背景的历史参照。",
+      "applicability": "是单日累计人次，不是同时在场人数；范围大于纪念塔研究区，且节日不同，不可直接作为本次跨年的输入。",
+      "observations": [
+        {
+          "name": "外滩单日客流",
+          "value": 585000,
+          "unit": "人次/日",
+          "date": "2026-05-01",
+          "aggregation": "daily_visits",
+          "target_task_applicability": "historical_context_only"
+        }
+      ],
+      "dimensions": [
+        "demand",
+        "access"
+      ]
+    },
+    {
+      "id": "photo_guide",
+      "title": "纪念塔亲水平台的摄影推荐",
+      "kind": "官方推荐 · 侧写线索",
+      "source": "上海市政府日文门户，来源标注为“上海黄浦”",
+      "date": "页面路径标注 2026-10-08；内容为秋季观霞推荐",
+      "retrieved_at": "2026-10-23",
+      "scope": "人民英雄纪念塔亲水平台；并介绍其他外滩摄影点",
+      "url": "https://japanese.shanghai.gov.cn/ja-EditorsPick-travelinshanghai/20261008/f684907d6d0e4125be171a7192ddce68.html",
+      "content": "页面推荐人民英雄纪念塔亲水平台作为朝霞摄影点，描述其开阔视野与陆家嘴天际线景观。这为“可能吸引摄影停留”提供了具体线索。",
+      "applicability": "推荐说明吸引因素，不能证明游客占比或驻留时长；秋季晨间观霞建议不能直接套用到冬季跨年夜。",
+      "dimensions": [
+        "demand",
+        "people",
+        "space"
+      ]
+    },
+    {
+      "id": "walking_event",
+      "title": "2026 年途经纪念塔的健步走活动",
+      "kind": "历史活动记录",
+      "source": "虹口区人民政府 · 金融可悦读·党建同心行公益主题活动在虹口启动",
+      "date": "活动日期 2026-09-08 上午；发布于 2026-09-09",
+      "retrieved_at": "2026-10-23",
+      "scope": "虹口滨江至黄浦公园人民英雄纪念塔附近的活动路线",
+      "url": "https://www.shanghai.gov.cn/nw15343/20260909/09faa35f2bb84bfebfdf4aa3a31a09ae.html",
+      "content": "官方记录一次近 200 名参与者的公益活动，健步走路线约 2.7 公里，从虹口滨江行至纪念塔附近。它支持将团队行走、途经活动作为候选活动方式。",
+      "applicability": "近 200 人是该次活动参与规模，不是纪念塔某时刻人数；一次活动不足以推算日常人群构成或跨年团队比例。",
+      "observations": [
+        {
+          "name": "活动参与规模",
+          "value": 200,
+          "qualifier": "近",
+          "unit": "人",
+          "date": "2026-09-08"
+        },
+        {
+          "name": "活动路线长度",
+          "value": 2.7,
+          "qualifier": "约",
+          "unit": "km"
+        }
+      ],
+      "dimensions": [
+        "people",
+        "access",
+        "demand"
+      ]
+    },
+    {
+      "id": "traffic_nye_2025",
+      "title": "2025—2026 跨年交通管制记录",
+      "kind": "历史管理资料",
+      "source": "上海市政府国际服务门户，来源为上海市公安局",
+      "date": "发布于 2025-12-29；措施适用 2025-12-31 至 2026-01-01",
+      "retrieved_at": "2026-10-23",
+      "scope": "公告划定的外滩及中心城区交通管制区；不是纪念塔园内通道规则",
+      "url": "https://english.shanghai.gov.cn/en-LatestNews/20251229/4f9ea8a84bba4b3788bb60b982726d47.html",
+      "content": "上一年度跨年公告安排 2025-12-31 20:00 至次日 01:00 的临时车辆管制，范围边界提及外白渡桥、北苏州路等道路。管制边界道路保持通行，并设执行公务车辆例外。",
+      "applicability": "这是车辆管制，不等于行人禁行或园门关闭；不能视为 2026—2027 跨年已确定措施。它提示需获取研究当日的外部集散条件。",
+      "observations": [
+        {
+          "name": "历史管制时段",
+          "start": "2025-12-31T20:00:00+08:00",
+          "end": "2026-01-01T01:00:00+08:00",
+          "target": "vehicles"
+        }
+      ],
+      "dimensions": [
+        "access",
+        "management"
+      ]
+    },
+    {
+      "id": "police_monitoring",
+      "title": "外滩与南京路的历史客流监测措施",
+      "kind": "历史管理资料",
+      "source": "上海市公安局 · 万家灯火点亮团圆，灯火璀璨有我守护",
+      "date": "2025 年春节、元宵节安保资料；门户路径日期 2025-02-08",
+      "retrieved_at": "2026-10-23",
+      "scope": "外滩、南京路步行街等黄浦区热门区域",
+      "url": "https://www.shanghai.gov.cn/nw31406/20250208/18aafb3749aa44ab93a3247603937d34.html",
+      "content": "资料说明历史节日期间采用视频巡逻、客流监测和现场管控引导，并协调安保执勤与街面巡控力量。",
+      "applicability": "可证明这些管理手段曾被部署，但未提供本场地的人员数量、监测覆盖率或干预效果，不能据此给出风险下降比例。",
+      "dimensions": [
+        "management"
+      ]
+    },
+    {
+      "id": "rail_transfer_reference",
+      "title": "交通客流转化率的官方应用线索",
+      "kind": "方法参考 · 待获取数据",
+      "source": "上海市公安局 · 上海公安细化部署春节安保工作 全力守护2025新春平安",
+      "date": "发布于 2025-02-07；涉及 2025 年春运与春节",
+      "retrieved_at": "2026-10-23",
+      "scope": "上海南站、上海松江站等门户车站，不是本场地周边站点",
+      "url": "https://www.shanghai.gov.cn/nw31406/20250208/9cd36911e253488d8de063193d9d731a.html",
+      "content": "官方介绍在门户车站互通铁路、民航到发客流，研判铁路到达客流与地铁进站客流的转化率。这提供了利用上下游交通数据估计客流的实际应用线索。",
+      "applicability": "只支撑寻找交通流转化关系这一研究方向；报道没有公开本任务所需的站点客流或转化比例。",
+      "dimensions": [
+        "access",
+        "demand"
+      ]
+    },
+    {
+      "id": "bund_oct_2025",
+      "kind": "历史统计",
+      "title": "2025 国庆前四日 · 外滩滨水区客流",
+      "source": "澎湃新闻记者朱伟辉；数据来自上海市公安局黄浦分局",
+      "date": "统计：2025-10-01—10-04；发布：2025-10-05",
+      "retrieved_at": "2026-10-23",
+      "url": "https://www.thepaper.cn/newsDetail_forward_31727920",
+      "scope": "外滩滨水区，范围大于纪念塔研究边界",
+      "dimensions": [
+        "demand",
+        "access",
+        "management"
+      ],
+      "content": "四日日累计分别为 56.3、57、56、53.5 万人次；瞬时峰值分别为 5.7、5.7、5.5、5.1 万人次（沿用报道口径），发生于 19:03、17:58、17:57、17:56。报道还记载了视客流实行单向循环、分批放行与远端控制等管理措施。",
+      "applicability": "采用原始报道当前页面数值。部分转载中 10 月 3 日数值不同；保留原始来源供复核。这是国庆外滩背景数据，不是纪念塔局部实测，也不是跨年预测；不可按面积比例折算，不插值生成小时曲线。"
+    },
+    {
+      "id": "lighting_nye_2025",
+      "kind": "官方历史公告",
+      "title": "跨年景观照明：核心区至次日 00:15",
+      "source": "绿色上海 · 上海市绿化和市容管理局官方澎湃号",
+      "date": "发布：2025-12-30；适用：2025-12-31—2026-01-03",
+      "retrieved_at": "2026-10-23",
+      "url": "https://m.thepaper.cn/newsDetail_forward_32286201",
+      "scope": "外滩、北外滩、小陆家嘴等核心区域",
+      "dimensions": [
+        "demand",
+        "people",
+        "management"
+      ],
+      "content": "2025 年 12 月 31 日，核心区域景观照明开放时段为 18:00 至次日 00:15。公告同时明确，外滩、北外滩、小陆家嘴不展演跨区光影秀，不通过景观照明组织零点倒计时。",
+      "applicability": "这是上一年度公告，不确认本任务 2026—2027 跨年的安排；所列时刻是照明启闭，不能当作人群离场峰值。不组织灯光倒计时，也不等于无人到访。"
+    },
+    {
+      "id": "metro_nye_2025",
+      "kind": "运营方历史公告",
+      "title": "跨年地铁：南京东路等站 20:00 起封站",
+      "source": "上海地铁 shmetro 公告，上观新闻转载",
+      "date": "发布及适用：2025-12-31",
+      "retrieved_at": "2026-10-23",
+      "url": "https://www.jfdaily.com/sgh/detail?id=1689396",
+      "scope": "2、10 号线南京东路站；14 号线豫园站",
+      "dimensions": [
+        "access",
+        "management"
+      ],
+      "content": "2025 年 12 月 31 日 20:00 至运营结束，2、10 号线南京东路站及 14 号线豫园站计划封站，不能上下车或进出站。公告特别说明 10 号线豫园站仍正常运营。",
+      "applicability": "历史安排不自动延用至 2026 年跨年。该资料没有纪念塔到访者的出发站、路线分配或人数，不能据此绘制实测来流。"
+    }
+  ],
+  "dimension_updates": {
+    "demand": {
+      "status": "已有历史参考",
+      "judgment": "官方场所介绍与摄影推荐支持纪念游览、观景摄影等吸引因素；外滩历史节假日存在较大到访量。纪念塔本次跨年的规模与峰值仍待局部数据支持。",
+      "metrics": [
+        {
+          "label": "外滩历史单日客流",
+          "value": "58.5 万人次",
+          "detail": "2026-05-01 · 外滩累计口径，非纪念塔瞬时人数。",
+          "evidence_id": "bund_may_2026"
+        },
+        {
+          "label": "摄影吸引线索",
+          "value": "官方推荐点",
+          "detail": "亲水平台被推荐为朝霞摄影点；不能直接推算跨年摄影人数。",
+          "evidence_id": "photo_guide"
+        },
+        {
+          "label": "本研究时段到访量",
+          "value": "尚无局部观测",
+          "detail": "需要对应范围的分时人数；未按面积比例分摊外滩总客流。"
+        }
+      ],
+      "evidence": [
+        "official_monument",
+        "bund_may_2026",
+        "photo_guide",
+        "scope",
+        "bund_oct_2025"
+      ],
+      "caveat": "历史背景、官方推荐与未来情景分别标注。较大区域的累计人次不自动转成本场地人数。"
+    },
+    "space": {
+      "status": "已有场地资料",
+      "judgment": "官方资料确认纪念塔位于黄浦公园两江交汇处，已有研究边界与 23 条步行通道资料。范围面积约 1.96 万平方米；净可用面积、宽度与现场障碍仍需核对。",
+      "evidence": [
+        "boundary",
+        "roads",
+        "official_monument",
+        "photo_guide",
+        "method"
+      ]
+    },
+    "people": {
+      "status": "已有行为线索",
+      "judgment": "摄影推荐与一次途经纪念塔的健步走记录，支持将观景摄影、团队游览和通行经过列为候选活动方式；它们不能确定本次人群的比例与停留时长。",
+      "metrics": [
+        {
+          "label": "历史团队活动规模",
+          "value": "近 200 人",
+          "detail": "2026-09-08 公益活动参加规模；不是纪念塔日常或瞬时人数。",
+          "evidence_id": "walking_event"
+        },
+        {
+          "label": "历史活动路线",
+          "value": "约 2.7 km",
+          "detail": "由虹口滨江行至纪念塔附近，说明存在跨区域团队行走案例。",
+          "evidence_id": "walking_event"
+        },
+        {
+          "label": "行为比例与停留时长",
+          "value": "待观察",
+          "detail": "已有行为线索，尚未取得能够量化比例的抽样数据。"
+        }
+      ],
+      "evidence": [
+        "photo_guide",
+        "walking_event",
+        "official_monument",
+        "scope"
+      ],
+      "caveat": "活动记录与推荐可支持候选行为，但不能替代本次活动的行为调查。"
+    },
+    "access": {
+      "status": "已有集散参考",
+      "judgment": "已有场内路网、跨区域步行活动记录和上一年度外部车辆管制公告，说明集散条件需要结合周边环境研究。本次到访来源、去向及公共交通比例仍未知。",
+      "metrics": [
+        {
+          "label": "历史跨年车辆管制",
+          "value": "20:00—次日 01:00",
+          "detail": "仅适用 2025-12-31 至 2026-01-01 的公告范围，不是本次安排。",
+          "evidence_id": "traffic_nye_2025"
+        },
+        {
+          "label": "交通转化关系",
+          "value": "找到应用线索",
+          "detail": "官方报道有铁路客流转化为地铁进站客流的研判方法，具体数据未取得。",
+          "evidence_id": "rail_transfer_reference"
+        },
+        {
+          "label": "本场地来源去向比例",
+          "value": "待获取",
+          "detail": "未用全市或其他站点客流替代本研究区的进出数据。"
+        }
+      ],
+      "evidence": [
+        "roads",
+        "walking_event",
+        "traffic_nye_2025",
+        "rail_transfer_reference"
+      ]
+    },
+    "management": {
+      "status": "已有管理参考",
+      "judgment": "官方历史资料记录了客流监测、视频巡逻、现场引导及跨年车辆管制。可据此组织本次需要核实的措施清单；研究当日的执行方案尚未取得。",
+      "metrics": [
+        {
+          "label": "历史客流管理方式",
+          "value": "监测 / 巡逻 / 引导",
+          "detail": "2025 年春节相关官方资料；具体布点、人数和效果未公开。",
+          "evidence_id": "police_monitoring"
+        },
+        {
+          "label": "上一年度跨年公告",
+          "value": "已找到",
+          "detail": "可追溯车辆管制时段与范围，不等于行人禁行或园门关闭。",
+          "evidence_id": "traffic_nye_2025"
+        },
+        {
+          "label": "2026—2027 跨年方案",
+          "value": "尚未取得",
+          "detail": "保留为资料缺口，不把旧公告自动延续一年。"
+        }
+      ],
+      "evidence": [
+        "police_monitoring",
+        "traffic_nye_2025",
+        "scope"
+      ],
+      "caveat": "已找到历史资料，尚未确认未来研究当日的措施；没有假定措施带来固定风险降幅。"
+    }
+  },
+  "candidates": [
+    {
+      "id": "photo_proxy",
+      "title": "摄影推荐 → 停留动机",
+      "dimension": "people",
+      "related": [
+        "demand",
+        "space"
+      ],
+      "status": "找到具体线索",
+      "retained": true,
+      "idea": "官方指南推荐纪念塔亲水平台，可作为研究摄影停留行为的入口。",
+      "available": "已找到明确指向该平台的摄影推荐及景观描述。",
+      "missing": "还没有摄影者占比、驻留时间或跨年夜观测；推荐不等于实际人数。",
+      "url": "https://japanese.shanghai.gov.cn/ja-EditorsPick-travelinshanghai/20261008/f684907d6d0e4125be171a7192ddce68.html"
+    },
+    {
+      "id": "bund_visits",
+      "title": "外滩历史客流 → 到访背景",
+      "dimension": "demand",
+      "related": [
+        "access"
+      ],
+      "status": "已有历史统计",
+      "retained": true,
+      "idea": "2026 年五一单日外滩客流 58.5 万人次，可提供节假日外部需求背景。",
+      "available": "已有市文旅局公开记录、统计日期与原始链接。",
+      "missing": "纪念塔范围更小，且研究节日不同；还需本场地分时数据，不能直接分摊。",
+      "url": "https://www.shanghai.gov.cn/nw31406/20260507/0c06ed3c598d4ad297a3b6bba0d9dab5.html"
+    },
+    {
+      "id": "metro",
+      "title": "上游交通量 → 潜在到访来源",
+      "dimension": "access",
+      "related": [
+        "demand"
+      ],
+      "status": "找到方法 · 缺数据",
+      "retained": false,
+      "idea": "先找到上下游客流转化的实际应用，再寻找本场地周边站点数据。",
+      "available": "上海公安资料介绍了门户站铁路到达与地铁进站客流转化率的研判。",
+      "missing": "尚未取得周边站点分时数据、到访比例和步行时延。",
+      "url": "https://www.shanghai.gov.cn/nw31406/20250208/9cd36911e253488d8de063193d9d731a.html"
+    },
+    {
+      "id": "notice",
+      "title": "历史公告 → 集散与管理约束",
+      "dimension": "management",
+      "related": [
+        "access"
+      ],
+      "status": "找到历史公告",
+      "retained": true,
+      "idea": "从往年交通公告识别需要关注的外部道路与时段。",
+      "available": "已找到 2025—2026 跨年车辆管制公告，含时间、边界与例外。",
+      "missing": "本次 2026—2027 跨年公告尚未取得；不能把车辆限制当作步行禁行。",
+      "url": "https://english.shanghai.gov.cn/en-LatestNews/20251229/4f9ea8a84bba4b3788bb60b982726d47.html"
+    },
+    {
+      "id": "clue_lights",
+      "title": "关灯时刻，会不会成为离场拐点？",
+      "dimension": "demand",
+      "status": "已有公告 · 待验证",
+      "idea": "观景吸引结束可能改变离场节奏。值得对照闭灯前后的实际离场人数，观察是否出现集中离场。",
+      "available": "往年核心区域在 18:00 亮灯，至次日 00:15 关闭；具体安排覆盖外滩等区域。",
+      "missing": "本次启闭公告；对应时段的纪念塔离场计数。现在无法确定变化幅度。",
+      "url": "https://m.thepaper.cn/newsDetail_forward_32286201",
+      "retained": false
+    },
+    {
+      "id": "clue_metro",
+      "title": "离得近的地铁站，当晚还能用吗？",
+      "dimension": "access",
+      "status": "已有公告 · 待验证",
+      "idea": "静态距离会遗漏时段限制。可用车站改变后，抵达与返程方向可能变化，南北接入点应分别观察。",
+      "available": "往年 20:00 起南京东路站 2、10 号线封站；豫园站仅 14 号线封站，10 号线仍运营。",
+      "missing": "本次封站及末班车公告；乘客去向调查和接入流量。暂时不分配路线比例。",
+      "url": "https://www.jfdaily.com/sgh/detail?id=1689396",
+      "retained": false
+    },
+    {
+      "id": "clue_expectation",
+      "title": "没有灯光倒计时，大家还会来等什么？",
+      "dimension": "people",
+      "status": "已有公告 · 待验证",
+      "idea": "“到零点等节目”只是可能的到访动机。自发跨年、观景和经过等动机应分别核对，不能由没有官方节目推断没有聚集。",
+      "available": "往年官方明确不在外滩等核心区域通过景观照明组织零点倒计时。",
+      "missing": "本次节目公告与活动地点；游客到访目的的现场抽样或公开资料。尚无各类动机比例。",
+      "url": "https://m.thepaper.cn/newsDetail_forward_32286201",
+      "retained": false
+    }
+  ],
+  "visualizations": {
+    "history": {
+      "title": "外滩滨水区 · 历史客流",
+      "period": "2025 年国庆 · 10 月 1—4 日",
+      "scope": "外滩滨水区 · 非纪念塔局部",
+      "evidence_id": "bund_oct_2025",
+      "daily_unit": "人次/日",
+      "peak_unit": "人次（瞬时峰值，沿用原报道口径）",
+      "records": [
+        {
+          "date": "2025-10-01",
+          "daily_visits": 563000,
+          "peak_visits": 57000,
+          "peak_time": "19:03"
+        },
+        {
+          "date": "2025-10-02",
+          "daily_visits": 570000,
+          "peak_visits": 57000,
+          "peak_time": "17:58"
+        },
+        {
+          "date": "2025-10-03",
+          "daily_visits": 560000,
+          "peak_visits": 55000,
+          "peak_time": "17:57"
+        },
+        {
+          "date": "2025-10-04",
+          "daily_visits": 535000,
+          "peak_visits": 51000,
+          "peak_time": "17:56"
+        }
+      ],
+      "interpretation": "四天峰值均落在傍晚至晚间，可作为后续选择观测时段的线索；跨年活动仍需单独核查。",
+      "limitation": "未取得纪念塔局部的分时客流，暂不由外滩总量推算场内人数。"
+    },
+    "spatial_points": [
+      {
+        "id": "viewing",
+        "number": "1",
+        "title": "纪念塔观景区域",
+        "category": "attraction",
+        "category_label": "停留吸引",
+        "dimensions": [
+          "demand",
+          "people",
+          "space",
+          "management"
+        ],
+        "anchor": {
+          "edge_id": "679361567#1",
+          "method": "eastmost"
+        },
+        "road_ids": [
+          "679361567#1",
+          "679361567#2"
+        ],
+        "location_note": "标注落在库内纪念塔外环东侧，代表观景区域；摄影点精确边界待核对。",
+        "evidence_ids": [
+          "photo_guide",
+          "official_monument",
+          "roads"
+        ],
+        "fact": "官方摄影推荐提及纪念塔亲水平台；库内有与之相邻的外环步道。",
+        "inference": "摄影停留可能占用通行空间；团体停靠时，应关注外环步道的通行余量。",
+        "chain": [
+          "观景与摄影吸引",
+          "停留人群与经过人流叠加",
+          "核查停留面积和通行余量"
+        ],
+        "needed": [
+          "观景区域停留人数 / 每 5 分钟",
+          "停留时长与净可用面积"
+        ],
+        "status": "位置有据 · 拥挤程度待测"
+      },
+      {
+        "id": "west_link",
+        "number": "2",
+        "title": "纪念塔西侧连接通道",
+        "category": "passage",
+        "category_label": "通道衔接",
+        "dimensions": [
+          "space",
+          "people",
+          "access",
+          "management"
+        ],
+        "anchor": {
+          "edge_id": "178411801#0",
+          "method": "midpoint"
+        },
+        "road_ids": [
+          "178411801#0"
+        ],
+        "location_note": "定位来自环境第 6 版的连接路段；名称描述其相对位置。",
+        "evidence_ids": [
+          "roads",
+          "bund_oct_2025"
+        ],
+        "fact": "库内路段将园内步道与纪念塔外环相连，建模长度 10.83 m，宽度参数 2 m。",
+        "inference": "进入观景区域与离开的人流可能在这里交会；需要核实是否单向组织，以及实际有效宽度。",
+        "chain": [
+          "园内来流接入外环",
+          "进出方向可能交会",
+          "核查双向流量和组织方式"
+        ],
+        "needed": [
+          "双向人数 / 每 5 分钟",
+          "现场有效宽度、单向或双向规则"
+        ],
+        "status": "结构推断 · 宽度为建模参数"
+      },
+      {
+        "id": "south_link",
+        "number": "3",
+        "title": "纪念塔南侧连接通道",
+        "category": "passage",
+        "category_label": "通道衔接",
+        "dimensions": [
+          "space",
+          "access",
+          "management"
+        ],
+        "anchor": {
+          "edge_id": "177931018#0",
+          "method": "midpoint"
+        },
+        "road_ids": [
+          "177931018#0"
+        ],
+        "location_note": "定位来自环境第 6 版的连接路段；不能据此认定为已开放的官方出口。",
+        "evidence_ids": [
+          "roads",
+          "bund_oct_2025"
+        ],
+        "fact": "这是库内另一条连接纪念塔外环的通道，建模长度 12.28 m，宽度参数 2 m。",
+        "inference": "若与西侧通道承担不同进出方向，可能形成分流；实际分工与开闭情况尚不明确。",
+        "chain": [
+          "外环与园路之间转换",
+          "分流效果依赖通道规则",
+          "核查开闭状态和实际去向"
+        ],
+        "needed": [
+          "通道开放时段与进出规则",
+          "通道流量、排队长度"
+        ],
+        "status": "结构推断 · 出口用途待核"
+      },
+      {
+        "id": "north_access",
+        "number": "4",
+        "title": "园区北侧接入位置",
+        "category": "access",
+        "category_label": "外部接入",
+        "dimensions": [
+          "demand",
+          "access",
+          "management"
+        ],
+        "anchor": {
+          "edge_id": "906417851#0",
+          "method": "midpoint"
+        },
+        "road_ids": [
+          "906417851#0"
+        ],
+        "location_note": "库内公园接入路段，未取得现场出入口名称与开放确认。",
+        "evidence_ids": [
+          "roads",
+          "traffic_nye_2025"
+        ],
+        "fact": "当前场景将北侧路段设为公园接入通道。往年跨年车辆管制涉及外白渡桥及周边道路。",
+        "inference": "北侧来流值得单独观测；车辆管制可能改变抵达路径，但不能据此推断行人入口关闭。",
+        "chain": [
+          "外部抵达路径变化",
+          "北侧接入来流可能变化",
+          "核查接入流量与步行去向"
+        ],
+        "needed": [
+          "北侧接入流量与来源方向",
+          "本次跨年行人组织公告"
+        ],
+        "status": "场景接入点 · 现场用途待核"
+      },
+      {
+        "id": "south_access",
+        "number": "5",
+        "title": "园区南侧接入位置",
+        "category": "access",
+        "category_label": "外部接入",
+        "dimensions": [
+          "demand",
+          "people",
+          "access",
+          "management"
+        ],
+        "anchor": {
+          "edge_id": "906417852#8",
+          "method": "midpoint"
+        },
+        "road_ids": [
+          "906417852#8"
+        ],
+        "location_note": "库内南侧公园接入路段，未取得现场出入口名称与开放确认。",
+        "evidence_ids": [
+          "roads",
+          "walking_event",
+          "bund_oct_2025"
+        ],
+        "fact": "当前场景设置南侧接入通道；历史报道说明纪念塔附近存在团队步行到访，但未指明使用此入口。",
+        "inference": "南侧可作为到访和离场的分方向观测点；团队经过时是否形成短时脉冲仍需记录。",
+        "chain": [
+          "南侧接入与离场",
+          "团队经过可能产生短时波动",
+          "分方向记录人数和成团情况"
+        ],
+        "needed": [
+          "南侧双向流量 / 每 5 分钟",
+          "团队规模与停留、经过方式"
+        ],
+        "status": "场景接入点 · 流量待测"
+      }
+    ],
+    "spatial_note": "颜色表示关注机制，不表示已测风险等级。全部点位目前缺少局部密度与流量观测。",
+    "influence_clues": {
+      "basis": "2025-12-31 → 2026-01-01",
+      "label": "往年跨年公告",
+      "note": "公告提供时间与约束；对人群的影响仍是待验证推测。",
+      "items": [
+        {
+          "id": "clue_lights",
+          "short": "亮灯与离场",
+          "title": "关灯时刻，会不会成为离场拐点？",
+          "time_label": "00:15",
+          "time_caption": "往年次日闭灯",
+          "kind": "照明公告 → 行为线索",
+          "fact": "往年核心区域在 18:00 亮灯，至次日 00:15 关闭；具体安排覆盖外滩等区域。",
+          "inference": "观景吸引结束可能改变离场节奏。值得对照闭灯前后的实际离场人数，观察是否出现集中离场。",
+          "candidate": "观景吸引的持续时段、闭灯前后离场变化",
+          "missing": "本次启闭公告；对应时段的纪念塔离场计数。现在无法确定变化幅度。",
+          "source_ids": [
+            "lighting_nye_2025",
+            "photo_guide"
+          ],
+          "point_ids": [
+            "viewing",
+            "west_link",
+            "south_link"
+          ],
+          "question": "本次景观灯何时关闭，关灯前后是否增加离场？",
+          "dimension": "demand",
+          "summary": "往年外滩等核心区亮灯：18:00—次日 00:15。",
+          "model_use": "观景阶段边界；离场观察时段"
+        },
+        {
+          "id": "clue_metro",
+          "short": "封站与来路",
+          "title": "离得近的地铁站，当晚还能用吗？",
+          "time_label": "20:00",
+          "time_caption": "往年起封站",
+          "kind": "运营公告 → 可达性线索",
+          "fact": "往年 20:00 起南京东路站 2、10 号线封站；豫园站仅 14 号线封站，10 号线仍运营。",
+          "inference": "静态距离会遗漏时段限制。可用车站改变后，抵达与返程方向可能变化，南北接入点应分别观察。",
+          "candidate": "分时可用车站、潜在抵达与离场方向",
+          "missing": "本次封站及末班车公告；乘客去向调查和接入流量。暂时不分配路线比例。",
+          "source_ids": [
+            "metro_nye_2025"
+          ],
+          "point_ids": [
+            "north_access",
+            "south_access"
+          ],
+          "question": "本次哪些车站、哪些线路可用？人流会从哪一侧接入？",
+          "dimension": "access",
+          "summary": "往年 20:00 起南京东路站封站；豫园 14 号线封站、10 号线照常。",
+          "model_use": "分时可用车站；抵达与返程方向"
+        },
+        {
+          "id": "clue_expectation",
+          "short": "公告与预期",
+          "title": "没有灯光倒计时，大家还会来等什么？",
+          "time_label": "00:00",
+          "time_caption": "核对活动预期",
+          "kind": "活动公告 → 假设核对",
+          "fact": "往年官方明确不在外滩等核心区域通过景观照明组织零点倒计时。",
+          "inference": "“到零点等节目”只是可能的到访动机。自发跨年、观景和经过等动机应分别核对，不能由没有官方节目推断没有聚集。",
+          "candidate": "到访目的、预期等待时长、零点前后的行为变化",
+          "missing": "本次节目公告与活动地点；游客到访目的的现场抽样或公开资料。尚无各类动机比例。",
+          "source_ids": [
+            "lighting_nye_2025",
+            "official_monument"
+          ],
+          "point_ids": [
+            "viewing"
+          ],
+          "question": "人们等的是正式节目、观景，还是自发跨年？",
+          "dimension": "people",
+          "summary": "往年公告明确：外滩等核心区不以景观照明组织零点倒计时。",
+          "model_use": "核对到访目的与零点等待假设"
+        }
+      ]
+    }
+  }
+}

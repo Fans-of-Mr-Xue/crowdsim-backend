@@ -15,7 +15,7 @@ crowdsim/
 
 arde_emergency/     ARDE 状态、双层决策、奖励、动作映射与兼容接口
 
-data_service/       独立 MongoDB、知识库接口与新闻采集服务；crawlers/ 提供并行任务队列
+data_service/       独立 MongoDB、知识库（含案例及 HTML 附件）与新闻采集服务；crawlers/ 提供并行任务队列
 
 config/             参数、属性注册表和POI
 scenarios/          正式外滩SUMO场景
@@ -97,6 +97,8 @@ python -m data_service --port 8768
 
 `8768` 是数据服务的 HTTP 监听端口；后端通过本机 `27018` 连接数据库，SSH 隧道再将连接转发到服务器的 `27018`。启动数据服务时须保持SSH端口映射隧道运行。
 SUMO 的 8765 进程不加载数据服务。新闻采集可单独执行 `./run_crawlers.sh`，提供 8769 接口并并行处理任务，不需要启动 SUMO 或模型；采集服务失败不会停止其他服务。配置、新闻去重、共享集合和独立启动方式见[新闻采集说明](docs/news_collection.md)。
+
+知识库主体库通过 8768 数据服务读写 MongoDB `subject_profiles`：首次迁入原前端 11 个完整主体，新增、画像修改及删除均持久化。集合字段、索引与接口见[主体库数据库结构](docs/subject_profiles.md)。
 同一事件只有一个采集任务，再次提交追加采集；支持删除任务并保留新闻，重新创建时继续追加。
 
 ```powershell
@@ -215,3 +217,5 @@ D:\Anaconda\python.exe scripts\run_experiment.py --steps 3600
 热点规模和时间窗见 `config/crowd_hotspots.json`。`runs/hotspot/people_heroes_monument_report.json` 记录环道人数、密度、入口低速行人、外围速度及后期消散。当前数值是涌现机制演示参数，未经过外滩实测标定。
 
 在线帧把观测区拆成 `core`（外圈两条地面环道边）、`entries`（纪念塔两个入口）、`park`（黄浦公园内部道路）、`park_entries`（公园南北入口）和 `external_approach`（园外接近道路）。内侧地面环道和更深层环道不参与访客目标、路线或核心区测量。当前访客从 `park` 区域开始，`park_entries` 仍用于网络观测和离场过程，不再作为到访必经点。`core_process_state` 描述环道自身的 `normal → building → congested → dispersing → cleared`；安全口径的 `process_state` 还会检查园内、园外未完成访客与低速积压，必要时进入 `residual_congestion`，避免环道清空后误报整体消散。`visit_lifecycle` 给出未出发、园外接近/排队、园内接近/排队、进入环道、聚集停留、离场、完成和未完成人数。其中 `stopped_count` 表示计划停留，`slow_walking_count` 才表示步行阶段的低速人数。
+
+案例库数据库结构、初始迁移、HTML 详情页上传和预留预案 / 模型挂载接口见 [案例库持久化](docs/case_profiles.md)。

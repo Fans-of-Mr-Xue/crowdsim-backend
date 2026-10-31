@@ -8,6 +8,7 @@ from .datasets import parse_json
 from ..repositories.datasets import DatasetConflictError
 from ..repositories.environments import EnvironmentRepository
 from ..connectors.geography import GeographyConnector, GeographyError
+from ..connectors.region_catalog import city_catalog
 
 
 def register_environment_routes(app, database):
@@ -40,8 +41,10 @@ def register_environment_routes(app, database):
                 payload = await request.json(loads=parse_json)
                 if not isinstance(payload, dict):
                     raise ValueError('请求体必须为 JSON 对象')
-            if action == 'search':
-                data = await geography.search(request.query.get('q', ''))
+            if action == 'divisions':
+                data = city_catalog()
+            elif action == 'search':
+                data = await geography.search(request.query.get('q', ''), city_code=request.query.get('city_code'), scope=request.query.get('scope', 'place'))
             elif action == 'boundary':
                 if set(payload) != {'osm_type', 'osm_id'}:
                     raise ValueError('边界查询仅接受 osm_type 和 osm_id')
@@ -64,7 +67,10 @@ def register_environment_routes(app, database):
                     await asyncio.to_thread(stream.close)
                 return response
             elif action == 'roads':
-                data = await asyncio.to_thread(repository.open_roads, identifier)
+                revision = request.query.get('revision')
+                data = await asyncio.to_thread(repository.open_roads, identifier, revision=int(revision) if revision else None)
+            elif action == 'road-versions':
+                data = await asyncio.to_thread(repository.road_versions.list, identifier)
             elif request.method == 'GET':
                 data = await asyncio.to_thread(repository.get, identifier) if identifier else await asyncio.to_thread(repository.list, request.query.get('search', '')[:200])
                 if data is None:
@@ -96,12 +102,12 @@ def register_environment_routes(app, database):
 
     for prefix in ('/api/crowdSim', '/crowdSim'):
         root = prefix + '/environment-profiles'
-        app.router.add_get(root + '/geography/{action:search}', handle)
+        app.router.add_get(root + '/geography/{action:search|divisions}', handle)
         app.router.add_post(root + '/geography/{action:boundary|road-network}', handle)
         app.router.add_get(root, handle)
         app.router.add_post(root, handle)
         app.router.add_get(root + '/{identifier}/media/{action:density-animation}', handle)
-        app.router.add_get(root + '/{identifier}/{action:roads}', handle)
+        app.router.add_get(root + '/{identifier}/{action:roads|road-versions}', handle)
         app.router.add_get(root + '/{identifier}', handle)
         app.router.add_put(root + '/{identifier}', handle)
         app.router.add_delete(root + '/{identifier}', handle)

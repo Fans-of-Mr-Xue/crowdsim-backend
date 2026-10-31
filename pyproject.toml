@@ -21,6 +21,10 @@ dependencies = [
 where = ["."]
 include = ["arde_emergency*", "crowdsim*", "postanalysis_api*", "data_service*"]
 
+[project.optional-dependencies]
+prediction = ["jupedsim==1.4.2", "numpy>=2.2,<3", "shapely>=2,<3", "pyproj>=3.6,<4"]
+
 [tool.setuptools.package-data]
 arde_emergency = ["README.md", "examples/*.json"]
 "data_service.crawlers" = ["*.json"]
+"data_service" = ["resources/domain_portrait/*.json"]

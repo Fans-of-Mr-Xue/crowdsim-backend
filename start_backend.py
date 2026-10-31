@@ -101,6 +101,8 @@ class Supervisor:
             if not valid:
                 raise StartupError(f"{service.port} 已被占用，但不是可用的 {service.name}；请检查该端口")
             report(f"复用已有 {service.name}（{service.port}），退出时不会关闭它")
+            if service.port == 8768:
+                report("注意：复用的数据服务不会加载本次 Python 代码修改；如刚更新了助手或接口，请先停止原数据服务，再运行 ./run.sh")
             return
         child = self.spawn(service.name, service.command, critical=service.critical)
         self.wait_ready(service.name, service.probe, child=child)
@@ -187,6 +189,7 @@ def ensure_tunnels(supervisor, *, enabled=True):
             pending.append(("DB", 27018, database_probe, settings, remote_host, remote_port))
 
         providers = model_configs()
+        scheduled_ports = {}
         for identifier, label, prefix, default_port, _ in MODEL_SPECS:
             provider = providers[identifier]
             target = urlsplit(provider["base_url"])
@@ -205,9 +208,15 @@ def ensure_tunnels(supervisor, *, enabled=True):
                 report(f"{label} 未配置模型 SSH，其他服务继续启动")
                 continue
             remote_host = os.environ.get(f"CROWDSIM_{prefix}_REMOTE_HOST", common_host)
-            remote_port = os.environ.get(f"CROWDSIM_{prefix}_REMOTE_PORT", common_port if prefix == "QWEN" else str(default_port))
+            remote_port = os.environ.get(f"CROWDSIM_{prefix}_REMOTE_PORT", common_port if prefix in ("QWEN", "GLM_MAIN") else str(default_port))
             if not 1 <= port <= 65535 or not 1 <= int(remote_port) <= 65535 or remote_host.startswith("-") or any(c.isspace() for c in remote_host):
                 raise StartupError(f"{label} 端口映射配置无效")
+            destination = (settings['HOST'], settings['PORT'], settings['USER'], remote_host, remote_port)
+            if port in scheduled_ports:
+                if scheduled_ports[port] != destination:
+                    raise StartupError(f'本机 {port} 配置了不同的模型映射目标，请检查 .env')
+                continue  # Multiple model names may share one OpenAI-compatible service.
+            scheduled_ports[port] = destination
             pending.append((label, port, lambda port=port: port_bound(port), settings, remote_host, remote_port))
 
         groups = {}
@@ -270,7 +279,11 @@ def main(argv=None):
         if not re.search(r"Version (?:1\.24\.0(?:\s|\+|$)|v1_24_0(?:\s|\+|$))", version.stdout):
             raise StartupError("项目需要 SUMO 1.24.0，请检查 SUMO_BINARY 与 TraCI 版本")
         resolve_service_scenario(options)
-        import aiohttp, pymongo  # Verify service dependencies before opening tunnels.
+        import aiohttp, pymongo, numpy, shapely  # Service and independent forecasting dependencies.
+        try:
+            import socksio  # Required by HTTPX for the configured geography SOCKS proxy.
+        except ImportError:
+            raise StartupError("缺少地理代理依赖，请使用当前 Python 执行 pip install -r requirements.txt") from None
         report("Python、服务依赖和 SUMO 场景检查通过")
         if args.check:
             report("检查结束，未启动进程；模型隧道配置可在 .env 中填写")

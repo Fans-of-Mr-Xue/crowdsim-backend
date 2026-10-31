@@ -140,13 +140,15 @@ class KnowledgeDocumentRepository:
     def get(self, identifier):
         return self.public(self.collection.find_one({"_id": identifier, "is_deleted": {"$ne": True}}))
 
-    def list(self, page=1, page_size=20, search="", topic=""):
+    def list(self, page=1, page_size=20, search="", topic="", document_type=""):
         query = {"is_deleted": {"$ne": True}}
         if search:
             expression = {"$regex": re.escape(search), "$options": "i"}
             query["$or"] = [{key: expression} for key in ("name", "type", "summary", "tags")]
         if topic:
             query["topic"] = topic
+        if document_type:
+            query["type"] = document_type
         cursor = self.collection.aggregate([{ "$match": query },
             {"$addFields": {"_parse_order": {"$cond": [{"$eq": ["$parse_status", "parsed"]}, 0, 1]}}},
             {"$sort": {"_parse_order": 1, "updated_at": -1, "_id": 1}},
@@ -156,7 +158,8 @@ class KnowledgeDocumentRepository:
         stats = {"total": self.collection.count_documents(active)}
         for state in ("queued", "parsing", "parsed", "failed"):
             stats[state] = self.collection.count_documents({**active, "parse_status": state})
-        return {"items": items, "total": self.collection.count_documents(query), "page": page, "page_size": page_size, "stats": stats}
+        types = sorted(value for value in self.collection.distinct("type", active) if isinstance(value, str) and value.strip())
+        return {"items": items, "total": self.collection.count_documents(query), "page": page, "page_size": page_size, "stats": stats, "types": types}
 
     def update(self, identifier, payload, revision):
         metadata = self.profile.validate(payload)

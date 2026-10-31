@@ -41,8 +41,8 @@ async def recommend_keywords(payload, environments, model):
     region = await asyncio.to_thread(environments.find_one, {'_id': context.pop('regionId'), 'is_deleted': {'$ne': True}})
     if region is None:
         raise ValueError('采集地区不存在，请先在环境库新建并保存地区')
-    context['region'] = {key: str(region.get(key, ''))[:1500] for key in ('title', 'locationLabel', 'description')}
-    value = await model.extract(PROMPT, json.dumps(context, ensure_ascii=False))
+    context['region'] = {key: str(region.get(key, ''))[:300] for key in ('title', 'locationLabel', 'description')}
+    value = await model.extract(PROMPT, json.dumps(context, ensure_ascii=False), fast_json=True)
     tags = value.get('keywords') if isinstance(value, dict) else None
     if not isinstance(tags, list) or not 1 <= len(tags) <= 20 or any(not isinstance(tag, str) or not 2 <= len(tag.strip()) <= 30 for tag in tags):
         raise ModelError('大模型返回的推荐标签无效，请重新推荐或自行新增')

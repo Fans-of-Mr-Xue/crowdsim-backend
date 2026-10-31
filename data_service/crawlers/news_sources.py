@@ -91,6 +91,10 @@ def extract_article(html, url, task, candidate=None):
         raise ValueError("页面不是可读取的新闻正文")
     published = parse_published(meta("article:published_time", "datePublished", "pubdate", "publishdate", "publishTime", "PubDate", "date", "DC.date.issued"))
     source = meta("source", "og:site_name", "publisher")
+    if not source:
+        publisher = soup.select_one('#source_baidu')
+        if publisher:
+            source = re.sub(r'^来源\s*[:：]\s*', '', publisher.get_text(' ', strip=True)).strip()
     for script in soup.select('script[type="application/ld+json"]'):
         try:
             data = json.loads(script.string or script.get_text())
@@ -112,8 +116,12 @@ def extract_article(html, url, task, candidate=None):
         match = re.search(r'(?:publishDate|pubtime|publishTime)\s*[:=]\s*[\'"]([^\'"]+)', html, re.I)
         if match:
             published = parse_published(match[1])
+            # Old CNTV templates use Unix epoch as an unset script timestamp.
+            # Read the actual visible publication time instead of rejecting it.
+            if published and published.timestamp() == 0:
+                published = None
     if not published:
-        for node in soup.select("time, .info, .time, .pubtime, .pub_time, .publish-time, #pubtime, .source, .source-time"):
+        for node in soup.select("time, .info, .time, .pubtime, .pub_time, .publish-time, #pubtime, #pubtime_baidu, .left-time, .source, .source-time"):
             published = parse_published(node.get("datetime") or node.get_text(" ", strip=True))
             if published:
                 break
@@ -124,7 +132,7 @@ def extract_article(html, url, task, candidate=None):
         raise ValueError("新闻发布时间不在任务时间窗内")
     for node in soup.select("script, style, nav, header, footer, aside, .related, .recommend, .advertisement"):
         node.decompose()
-    body = soup.select_one("article, #content_area, #p-detail, .article-content, .article_content, #articleContent, #article_content, .TRS_Editor, .article, #content, .content")
+    body = soup.select_one(".left_zw") or soup.select_one("article, #content_area, #p-detail, .article-content, .article_content, #articleContent, #article_content, .TRS_Editor, .article, #content, .content")
     paragraphs = (body or soup).find_all("p")
     content = "\n".join(p.get_text(" ", strip=True) for p in paragraphs if len(p.get_text(strip=True)) >= 20)
     if len(content) < 120:

@@ -1,0 +1,4 @@
+# Optional real microscopic engines. Install after requirements.txt.
+# The upstream JuPedSim distribution also installs its desktop visualizer.
+# See docs/prediction-prototype.md for a smaller headless installation.
+jupedsim==1.4.2

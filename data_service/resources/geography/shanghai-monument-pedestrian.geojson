@@ -1,0 +1,5079 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.486721,
+            31.2439427
+          ],
+          [
+            121.4868095,
+            31.2440877
+          ],
+          [
+            121.4868252,
+            31.2441491
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "osm_id": 177931018,
+        "osm_type": "way",
+        "osm_nodes": [
+          599722293,
+          6361541058,
+          6361541028
+        ],
+        "osm_version": 4,
+        "osm_timestamp": "2019-03-26T01:37:17Z",
+        "source_url": "https://www.openstreetmap.org/way/177931018",
+        "width_source": "missing",
+        "level_source": "unmapped_assumed_surface",
+        "display_level": "0",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.4857732,
+            31.2447582
+          ],
+          [
+            121.4858617,
+            31.2447261
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "steps",
+        "incline": "up",
+        "ramp": "yes",
+        "ramp:wheelchair": "yes",
+        "osm_id": 177931046,
+        "osm_type": "way",
+        "osm_nodes": [
+          1883306436,
+          1883306110
+        ],
+        "osm_version": 2,
+        "osm_timestamp": "2021-02-12T04:13:26Z",
+        "source_url": "https://www.openstreetmap.org/way/177931046",
+        "width_source": "missing",
+        "level_source": "unmapped_assumed_surface",
+        "display_level": "0",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.48652,
+            31.2442714
+          ],
+          [
+            121.4866907,
+            31.2442837
+          ],
+          [
+            121.4867586,
+            31.2442818
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "osm_id": 178411801,
+        "osm_type": "way",
+        "osm_nodes": [
+          595760221,
+          6361541057,
+          6361541027
+        ],
+        "osm_version": 4,
+        "osm_timestamp": "2019-03-26T01:37:17Z",
+        "source_url": "https://www.openstreetmap.org/way/178411801",
+        "width_source": "missing",
+        "level_source": "unmapped_assumed_surface",
+        "display_level": "0",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.48599710279127,
+            31.243033658320872
+          ],
+          [
+            121.486043,
+            31.2430462
+          ],
+          [
+            121.4861181,
+            31.2430737
+          ],
+          [
+            121.4861485,
+            31.2430917
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "osm_id": 178564467,
+        "osm_type": "way",
+        "osm_nodes": [
+          1889012691,
+          1889012642,
+          1889012663,
+          1889012649
+        ],
+        "osm_version": 2,
+        "osm_timestamp": "2020-11-20T12:53:01Z",
+        "source_url": "https://www.openstreetmap.org/way/178564467",
+        "width_source": "missing",
+        "level_source": "unmapped_assumed_surface",
+        "display_level": "0",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.48578535645119,
+            31.24395860564512
+          ],
+          [
+            121.4858063,
+            31.2439607
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "osm_id": 552032617,
+        "osm_type": "way",
+        "osm_nodes": [
+          5330450398,
+          5330450399
+        ],
+        "osm_version": 1,
+        "osm_timestamp": "2018-01-10T05:06:47Z",
+        "source_url": "https://www.openstreetmap.org/way/552032617",
+        "width_source": "missing",
+        "level_source": "unmapped_assumed_surface",
+        "display_level": "0",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.4870965,
+            31.2443648
+          ],
+          [
+            121.4870675,
+            31.2443437
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "level": "-1",
+        "osm_id": 679361563,
+        "osm_type": "way",
+        "osm_nodes": [
+          6361541016,
+          6361540988
+        ],
+        "osm_version": 1,
+        "osm_timestamp": "2019-03-26T01:37:12Z",
+        "source_url": "https://www.openstreetmap.org/way/679361563",
+        "width_source": "missing",
+        "level_source": "osm_tag",
+        "display_level": "-1",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.4868539,
+            31.2442401
+          ],
+          [
+            121.4868245,
+            31.2442332
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "level": "-1",
+        "osm_id": 679361564,
+        "osm_type": "way",
+        "osm_nodes": [
+          6361541001,
+          6361541059
+        ],
+        "osm_version": 1,
+        "osm_timestamp": "2019-03-26T01:37:12Z",
+        "source_url": "https://www.openstreetmap.org/way/679361564",
+        "width_source": "missing",
+        "level_source": "osm_tag",
+        "display_level": "-1",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.4868835,
+            31.2442044
+          ],
+          [
+            121.4868665,
+            31.2442209
+          ],
+          [
+            121.4868539,
+            31.2442401
+          ],
+          [
+            121.4868463,
+            31.2442611
+          ],
+          [
+            121.4868438,
+            31.244283
+          ],
+          [
+            121.4868473,
+            31.2443068
+          ],
+          [
+            121.486857,
+            31.2443294
+          ],
+          [
+            121.4868724,
+            31.2443494
+          ],
+          [
+            121.4868927,
+            31.244366
+          ],
+          [
+            121.4869169,
+            31.2443782
+          ],
+          [
+            121.4869436,
+            31.2443855
+          ],
+          [
+            121.4869716,
+            31.2443874
+          ],
+          [
+            121.4869993,
+            31.2443838
+          ],
+          [
+            121.4870254,
+            31.244375
+          ],
+          [
+            121.4870485,
+            31.2443614
+          ],
+          [
+            121.4870675,
+            31.2443437
+          ],
+          [
+            121.4870812,
+            31.2443227
+          ],
+          [
+            121.487089,
+            31.2442997
+          ],
+          [
+            121.4870906,
+            31.2442757
+          ],
+          [
+            121.4870858,
+            31.2442521
+          ],
+          [
+            121.4870749,
+            31.24423
+          ],
+          [
+            121.4870584,
+            31.2442106
+          ],
+          [
+            121.4870372,
+            31.2441948
+          ],
+          [
+            121.4870124,
+            31.2441836
+          ],
+          [
+            121.4869853,
+            31.2441774
+          ],
+          [
+            121.4869572,
+            31.2441767
+          ],
+          [
+            121.4869297,
+            31.2441813
+          ],
+          [
+            121.4869041,
+            31.2441912
+          ],
+          [
+            121.4868835,
+            31.2442044
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "level": "-1",
+        "osm_id": 679361565,
+        "osm_type": "way",
+        "osm_nodes": [
+          6361541003,
+          6361541002,
+          6361541001,
+          6361541000,
+          6361540999,
+          6361540998,
+          6361540997,
+          6361540996,
+          6361540995,
+          6361540994,
+          6361540993,
+          6361540992,
+          6361540991,
+          6361540990,
+          6361540989,
+          6361540988,
+          6361540987,
+          6361540986,
+          6361540985,
+          6361540484,
+          6361540483,
+          6361540482,
+          6361540481,
+          6361540480,
+          6361540479,
+          6361540478,
+          6361540477,
+          6361540476,
+          6361541003
+        ],
+        "osm_version": 1,
+        "osm_timestamp": "2019-03-26T01:37:12Z",
+        "source_url": "https://www.openstreetmap.org/way/679361565",
+        "width_source": "missing",
+        "level_source": "osm_tag",
+        "display_level": "-1",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.4867586,
+            31.2442818
+          ],
+          [
+            121.4867638,
+            31.2443092
+          ],
+          [
+            121.4867785,
+            31.2443432
+          ],
+          [
+            121.4868017,
+            31.2443735
+          ],
+          [
+            121.4868324,
+            31.2443986
+          ],
+          [
+            121.4868689,
+            31.2444171
+          ],
+          [
+            121.4869093,
+            31.244428
+          ],
+          [
+            121.4869516,
+            31.2444309
+          ],
+          [
+            121.4869936,
+            31.2444255
+          ],
+          [
+            121.487033,
+            31.2444122
+          ],
+          [
+            121.4870679,
+            31.2443916
+          ],
+          [
+            121.4870965,
+            31.2443648
+          ],
+          [
+            121.4871173,
+            31.2443332
+          ],
+          [
+            121.4871291,
+            31.2442984
+          ],
+          [
+            121.4871315,
+            31.2442622
+          ],
+          [
+            121.4871242,
+            31.2442264
+          ],
+          [
+            121.4871077,
+            31.244193
+          ],
+          [
+            121.4870828,
+            31.2441637
+          ],
+          [
+            121.4870508,
+            31.2441399
+          ],
+          [
+            121.4870133,
+            31.2441229
+          ],
+          [
+            121.4869723,
+            31.2441136
+          ],
+          [
+            121.4869299,
+            31.2441124
+          ],
+          [
+            121.4868883,
+            31.2441195
+          ],
+          [
+            121.4868496,
+            31.2441344
+          ],
+          [
+            121.4868252,
+            31.2441491
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "osm_id": 679361566,
+        "osm_type": "way",
+        "osm_nodes": [
+          6361541027,
+          6361541026,
+          6361541025,
+          6361541024,
+          6361541023,
+          6361541022,
+          6361541021,
+          6361541020,
+          6361541019,
+          6361541018,
+          6361541017,
+          6361541016,
+          6361541015,
+          6361541014,
+          6361541013,
+          6361541012,
+          6361541011,
+          6361541010,
+          6361541009,
+          6361541008,
+          6361541007,
+          6361541006,
+          6361541005,
+          6361541004,
+          6361541028
+        ],
+        "osm_version": 1,
+        "osm_timestamp": "2019-03-26T01:37:12Z",
+        "source_url": "https://www.openstreetmap.org/way/679361566",
+        "width_source": "missing",
+        "level_source": "unmapped_assumed_surface",
+        "display_level": "0",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.4867748,
+            31.2441104
+          ],
+          [
+            121.4867396,
+            31.2441447
+          ],
+          [
+            121.4867135,
+            31.2441845
+          ],
+          [
+            121.4866977,
+            31.244228
+          ],
+          [
+            121.4866907,
+            31.2442837
+          ],
+          [
+            121.4866999,
+            31.2443227
+          ],
+          [
+            121.48672,
+            31.2443694
+          ],
+          [
+            121.4867519,
+            31.244411
+          ],
+          [
+            121.4867939,
+            31.2444453
+          ],
+          [
+            121.486844,
+            31.2444707
+          ],
+          [
+            121.4868994,
+            31.2444857
+          ],
+          [
+            121.4869574,
+            31.2444896
+          ],
+          [
+            121.4870149,
+            31.2444823
+          ],
+          [
+            121.487069,
+            31.244464
+          ],
+          [
+            121.4871168,
+            31.2444358
+          ],
+          [
+            121.487156,
+            31.244399
+          ],
+          [
+            121.4871845,
+            31.2443557
+          ],
+          [
+            121.4872007,
+            31.2443079
+          ],
+          [
+            121.487204,
+            31.2442583
+          ],
+          [
+            121.487194,
+            31.2442093
+          ],
+          [
+            121.4871714,
+            31.2441635
+          ],
+          [
+            121.4871372,
+            31.2441233
+          ],
+          [
+            121.4870933,
+            31.2440907
+          ],
+          [
+            121.4870419,
+            31.2440674
+          ],
+          [
+            121.4869857,
+            31.2440546
+          ],
+          [
+            121.4869276,
+            31.244053
+          ],
+          [
+            121.4868706,
+            31.2440627
+          ],
+          [
+            121.4868095,
+            31.2440877
+          ],
+          [
+            121.4867748,
+            31.2441104
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "osm_id": 679361567,
+        "osm_type": "way",
+        "osm_nodes": [
+          6361541054,
+          6361541053,
+          6361541052,
+          6361541051,
+          6361541057,
+          6361541050,
+          6361541049,
+          6361541048,
+          6361541047,
+          6361541046,
+          6361541045,
+          6361541044,
+          6361541043,
+          6361541042,
+          6361541041,
+          6361541040,
+          6361541039,
+          6361541038,
+          6361541037,
+          6361541036,
+          6361541035,
+          6361541034,
+          6361541033,
+          6361541032,
+          6361541031,
+          6361541030,
+          6361541029,
+          6361541058,
+          6361541054
+        ],
+        "osm_version": 1,
+        "osm_timestamp": "2019-03-26T01:37:12Z",
+        "source_url": "https://www.openstreetmap.org/way/679361567",
+        "width_source": "missing",
+        "level_source": "unmapped_assumed_surface",
+        "display_level": "0",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.48565404516707,
+            31.24480042692925
+          ],
+          [
+            121.4857554,
+            31.2447645
+          ],
+          [
+            121.4857732,
+            31.2447582
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "osm_id": 906417851,
+        "osm_type": "way",
+        "osm_nodes": [
+          8417005097,
+          4309548512,
+          8417005110,
+          1883306436
+        ],
+        "osm_version": 1,
+        "osm_timestamp": "2021-02-12T04:13:26Z",
+        "source_url": "https://www.openstreetmap.org/way/906417851",
+        "width_source": "missing",
+        "level_source": "unmapped_assumed_surface",
+        "display_level": "0",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.4858617,
+            31.2447261
+          ],
+          [
+            121.4858871,
+            31.2447674
+          ],
+          [
+            121.4865576,
+            31.2445232
+          ],
+          [
+            121.48652,
+            31.2442714
+          ],
+          [
+            121.4866194,
+            31.2441088
+          ],
+          [
+            121.486721,
+            31.2439427
+          ],
+          [
+            121.4867342829706,
+            31.243932040649064
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "surface": "paving_stones",
+        "osm_id": 906417852,
+        "osm_type": "way",
+        "osm_nodes": [
+          1883306110,
+          8417005098,
+          8417005099,
+          595760221,
+          8417005112,
+          599722293,
+          8417005100,
+          8417005115,
+          8417005101,
+          8417005102,
+          8417005103,
+          8417005104,
+          8417005105,
+          8417005106,
+          8417005107,
+          8417005111,
+          8417005108,
+          8417005109,
+          8417005110
+        ],
+        "osm_version": 2,
+        "osm_timestamp": "2025-06-28T10:31:12Z",
+        "source_url": "https://www.openstreetmap.org/way/906417852",
+        "width_source": "missing",
+        "level_source": "unmapped_assumed_surface",
+        "display_level": "0",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.48653637649667,
+            31.24304103941977
+          ],
+          [
+            121.4865005546901,
+            31.242991659714807
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "surface": "paving_stones",
+        "osm_id": 906417852,
+        "osm_type": "way",
+        "osm_nodes": [
+          1883306110,
+          8417005098,
+          8417005099,
+          595760221,
+          8417005112,
+          599722293,
+          8417005100,
+          8417005115,
+          8417005101,
+          8417005102,
+          8417005103,
+          8417005104,
+          8417005105,
+          8417005106,
+          8417005107,
+          8417005111,
+          8417005108,
+          8417005109,
+          8417005110
+        ],
+        "osm_version": 2,
+        "osm_timestamp": "2025-06-28T10:31:12Z",
+        "source_url": "https://www.openstreetmap.org/way/906417852",
+        "width_source": "missing",
+        "level_source": "unmapped_assumed_surface",
+        "display_level": "0",
+        "clip_part": 1
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.48637163899268,
+            31.24261435591106
+          ],
+          [
+            121.486225,
+            31.2426462
+          ],
+          [
+            121.4862351,
+            31.2429697
+          ],
+          [
+            121.4861593,
+            31.2431622
+          ],
+          [
+            121.4860292,
+            31.2436059
+          ],
+          [
+            121.4859464,
+            31.2438312
+          ],
+          [
+            121.4858723,
+            31.2440325
+          ],
+          [
+            121.4856873,
+            31.2446058
+          ],
+          [
+            121.4857554,
+            31.2447645
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "surface": "paving_stones",
+        "osm_id": 906417852,
+        "osm_type": "way",
+        "osm_nodes": [
+          1883306110,
+          8417005098,
+          8417005099,
+          595760221,
+          8417005112,
+          599722293,
+          8417005100,
+          8417005115,
+          8417005101,
+          8417005102,
+          8417005103,
+          8417005104,
+          8417005105,
+          8417005106,
+          8417005107,
+          8417005111,
+          8417005108,
+          8417005109,
+          8417005110
+        ],
+        "osm_version": 2,
+        "osm_timestamp": "2025-06-28T10:31:12Z",
+        "source_url": "https://www.openstreetmap.org/way/906417852",
+        "width_source": "missing",
+        "level_source": "unmapped_assumed_surface",
+        "display_level": "0",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.4859464,
+            31.2438312
+          ],
+          [
+            121.4862928,
+            31.2439741
+          ],
+          [
+            121.4866194,
+            31.2441088
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "osm_id": 906417853,
+        "osm_type": "way",
+        "osm_nodes": [
+          8417005111,
+          8417005113,
+          8417005112
+        ],
+        "osm_version": 1,
+        "osm_timestamp": "2021-02-12T04:13:26Z",
+        "source_url": "https://www.openstreetmap.org/way/906417853",
+        "width_source": "missing",
+        "level_source": "unmapped_assumed_surface",
+        "display_level": "0",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.4862928,
+            31.2439741
+          ],
+          [
+            121.4864611,
+            31.2436495
+          ],
+          [
+            121.48664795499751,
+            31.243359169793543
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "osm_id": 906417854,
+        "osm_type": "way",
+        "osm_nodes": [
+          8417005113,
+          8417005114,
+          8417005115
+        ],
+        "osm_version": 1,
+        "osm_timestamp": "2021-02-12T04:13:26Z",
+        "source_url": "https://www.openstreetmap.org/way/906417854",
+        "width_source": "missing",
+        "level_source": "unmapped_assumed_surface",
+        "display_level": "0",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.4864297,
+            31.2428939
+          ],
+          [
+            121.4863971,
+            31.2428774
+          ],
+          [
+            121.4863601,
+            31.2428705
+          ],
+          [
+            121.4863224,
+            31.2428739
+          ],
+          [
+            121.4862879,
+            31.2428874
+          ],
+          [
+            121.4862602,
+            31.2429094
+          ],
+          [
+            121.4862419,
+            31.2429378
+          ],
+          [
+            121.4862351,
+            31.2429697
+          ],
+          [
+            121.4862414,
+            31.2430043
+          ],
+          [
+            121.4862611,
+            31.2430351
+          ],
+          [
+            121.4862919,
+            31.2430582
+          ],
+          [
+            121.48633,
+            31.2430711
+          ],
+          [
+            121.486371,
+            31.243072
+          ],
+          [
+            121.4864099,
+            31.243061
+          ],
+          [
+            121.4864421,
+            31.2430393
+          ],
+          [
+            121.4864625,
+            31.243012
+          ],
+          [
+            121.4864718,
+            31.2429806
+          ],
+          [
+            121.48647008856032,
+            31.242960126110553
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "surface": "paving_stones",
+        "osm_id": 906417855,
+        "osm_type": "way",
+        "osm_nodes": [
+          8417005426,
+          8417005427,
+          8417005428,
+          8417005429,
+          8417005430,
+          8417005431,
+          8417005432,
+          8417005105,
+          8417005116,
+          8417005417,
+          8417005418,
+          8417005423,
+          8417005424,
+          8417005425,
+          8417005419,
+          8417005420,
+          8417005421,
+          8417005102,
+          8417005422,
+          8417005426
+        ],
+        "osm_version": 2,
+        "osm_timestamp": "2025-06-28T10:43:55Z",
+        "source_url": "https://www.openstreetmap.org/way/906417855",
+        "width_source": "missing",
+        "level_source": "unmapped_assumed_surface",
+        "display_level": "0",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.48646339444501,
+            31.24293661533603
+          ],
+          [
+            121.4864545,
+            31.2429184
+          ],
+          [
+            121.4864297,
+            31.2428939
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "surface": "paving_stones",
+        "osm_id": 906417855,
+        "osm_type": "way",
+        "osm_nodes": [
+          8417005426,
+          8417005427,
+          8417005428,
+          8417005429,
+          8417005430,
+          8417005431,
+          8417005432,
+          8417005105,
+          8417005116,
+          8417005417,
+          8417005418,
+          8417005423,
+          8417005424,
+          8417005425,
+          8417005419,
+          8417005420,
+          8417005421,
+          8417005102,
+          8417005422,
+          8417005426
+        ],
+        "osm_version": 2,
+        "osm_timestamp": "2025-06-28T10:43:55Z",
+        "source_url": "https://www.openstreetmap.org/way/906417855",
+        "width_source": "missing",
+        "level_source": "unmapped_assumed_surface",
+        "display_level": "0",
+        "clip_part": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.486225,
+            31.2426462
+          ],
+          [
+            121.48617922148112,
+            31.242589591524606
+          ]
+        ]
+      },
+      "properties": {
+        "highway": "footway",
+        "surface": "paving_stones",
+        "osm_id": 909084827,
+        "osm_type": "way",
+        "osm_nodes": [
+          8417005104,
+          8440881662,
+          8440881663,
+          8440881664,
+          13114720500,
+          8440881665,
+          13114720499,
+          13114720498,
+          8440881666,
+          8440881667,
+          8440881668,
+          8440881669,
+          8440881670,
+          8440881671,
+          8440881672,
+          8440881673,
+          8440881674,
+          8440881675,
+          8440881676,
+          8440881677,
+          8440881678,
+          8440881679,
+          8440881680,
+          10050169347,
+          10050169346,
+          8440881681,
+          9291984713,
+          8440881682
+        ],
+        "osm_version": 5,
+        "osm_timestamp": "2025-09-02T14:41:48Z",
+        "source_url": "https://www.openstreetmap.org/way/909084827",
+        "width_source": "missing",
+        "level_source": "unmapped_assumed_surface",
+        "display_level": "0",
+        "clip_part": 0
+      }
+    }
+  ],
+  "source": {
+    "provider": "OpenStreetMap",
+    "label": "黄浦公园—人民英雄纪念塔公开步行空间",
+    "url": "https://www.openstreetmap.org/copyright",
+    "coordinateSystem": "WGS84",
+    "retrievedAt": "2026-10-15",
+    "scope": "boundary_clipped",
+    "bbox": [
+      121.4848,
+      31.2417,
+      121.488,
+      31.2456
+    ],
+    "builder_version": "pedestrian-assets-2"
+  },
+  "walkable_areas": {
+    "type": "FeatureCollection",
+    "features": []
+  },
+  "obstacles": {
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.4863889,
+                31.2430548
+              ],
+              [
+                121.4864174,
+                31.2430413
+              ],
+              [
+                121.4864389,
+                31.24302
+              ],
+              [
+                121.4864504,
+                31.242994
+              ],
+              [
+                121.4864507,
+                31.2429652
+              ],
+              [
+                121.4864395,
+                31.242939
+              ],
+              [
+                121.4864264,
+                31.242924
+              ],
+              [
+                121.4864003,
+                31.2429074
+              ],
+              [
+                121.4863691,
+                31.2428995
+              ],
+              [
+                121.486323,
+                31.2429048
+              ],
+              [
+                121.4862898,
+                31.2429244
+              ],
+              [
+                121.4862721,
+                31.2429478
+              ],
+              [
+                121.4862649,
+                31.2429853
+              ],
+              [
+                121.4862731,
+                31.2430123
+              ],
+              [
+                121.4862844,
+                31.2430283
+              ],
+              [
+                121.4863085,
+                31.2430469
+              ],
+              [
+                121.4863387,
+                31.2430574
+              ],
+              [
+                121.4863568,
+                31.2430592
+              ],
+              [
+                121.4863889,
+                31.2430548
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "landuse": "grass",
+          "osm_id": 160033726,
+          "osm_type": "way",
+          "osm_nodes": [
+            1720951104,
+            1720951469,
+            1720951392,
+            1720951421,
+            1720951523,
+            1720951466,
+            1720951465,
+            1720951212,
+            1720951568,
+            1720951007,
+            1720950793,
+            1720951291,
+            1720950921,
+            1720951288,
+            1720950995,
+            1720951285,
+            1720951020,
+            1720951181,
+            1720951104
+          ],
+          "osm_version": 2,
+          "osm_timestamp": "2014-07-20T06:29:54Z",
+          "source_url": "https://www.openstreetmap.org/way/160033726",
+          "width_source": "missing",
+          "level_source": "unmapped_assumed_surface",
+          "display_level": "0",
+          "geometry_source": "osm_polygon",
+          "asset_kind": "planting"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.4859197,
+                31.2447239
+              ],
+              [
+                121.4863939,
+                31.2445556
+              ],
+              [
+                121.4863605,
+                31.244517
+              ],
+              [
+                121.4864544,
+                31.2444781
+              ],
+              [
+                121.4863954,
+                31.2442808
+              ],
+              [
+                121.4864399,
+                31.2441799
+              ],
+              [
+                121.4859072,
+                31.2440217
+              ],
+              [
+                121.4857569,
+                31.2444917
+              ],
+              [
+                121.4857194,
+                31.2446088
+              ],
+              [
+                121.485882,
+                31.2446638
+              ],
+              [
+                121.4859197,
+                31.2447239
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "landuse": "grass",
+          "osm_id": 160033737,
+          "osm_type": "way",
+          "osm_nodes": [
+            1720950773,
+            6968000030,
+            1720951316,
+            1720951215,
+            1720951253,
+            1720951127,
+            1720951068,
+            1720951065,
+            1720951204,
+            1720951004,
+            1720950773
+          ],
+          "osm_version": 3,
+          "osm_timestamp": "2019-11-12T03:25:47Z",
+          "source_url": "https://www.openstreetmap.org/way/160033737",
+          "width_source": "missing",
+          "level_source": "unmapped_assumed_surface",
+          "display_level": "0",
+          "geometry_source": "osm_polygon",
+          "asset_kind": "planting"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.4867567,
+                31.2440686
+              ],
+              [
+                121.4867152,
+                31.2440274
+              ],
+              [
+                121.4866649,
+                31.2440795
+              ],
+              [
+                121.4867098,
+                31.2441088
+              ],
+              [
+                121.4867567,
+                31.2440686
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "natural": "water",
+          "water": "river",
+          "osm_id": 178411798,
+          "osm_type": "way",
+          "osm_nodes": [
+            1887591450,
+            1887591395,
+            1887591326,
+            1887591446,
+            1887591450
+          ],
+          "osm_version": 3,
+          "osm_timestamp": "2021-07-22T12:43:42Z",
+          "source_url": "https://www.openstreetmap.org/way/178411798",
+          "width_source": "missing",
+          "level_source": "unmapped_assumed_surface",
+          "display_level": "0",
+          "geometry_source": "osm_polygon",
+          "asset_kind": "water"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.4866568,
+                31.2442085
+              ],
+              [
+                121.4865978,
+                31.2441999
+              ],
+              [
+                121.4865797,
+                31.2442618
+              ],
+              [
+                121.4866447,
+                31.2442739
+              ],
+              [
+                121.4866568,
+                31.2442085
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "natural": "water",
+          "water": "river",
+          "osm_id": 178411803,
+          "osm_type": "way",
+          "osm_nodes": [
+            1887591415,
+            1887591359,
+            1887591402,
+            1887591452,
+            1887591415
+          ],
+          "osm_version": 3,
+          "osm_timestamp": "2021-07-22T12:43:42Z",
+          "source_url": "https://www.openstreetmap.org/way/178411803",
+          "width_source": "missing",
+          "level_source": "unmapped_assumed_surface",
+          "display_level": "0",
+          "geometry_source": "osm_polygon",
+          "asset_kind": "water"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.4865214,
+                31.2437684
+              ],
+              [
+                121.4866197,
+                31.2438351
+              ],
+              [
+                121.4867914,
+                31.2437296
+              ],
+              [
+                121.4867389,
+                31.2436073
+              ],
+              [
+                121.4866546,
+                31.2434108
+              ],
+              [
+                121.4865017,
+                31.2436929
+              ],
+              [
+                121.4865072,
+                31.2437138
+              ],
+              [
+                121.4865214,
+                31.2437684
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "landuse": "grass",
+          "osm_id": 178564463,
+          "osm_type": "way",
+          "osm_nodes": [
+            1889012703,
+            1889012646,
+            6968000021,
+            1889012639,
+            1889012640,
+            2971114157,
+            6968000014,
+            1889012703
+          ],
+          "osm_version": 3,
+          "osm_timestamp": "2019-11-12T03:25:47Z",
+          "source_url": "https://www.openstreetmap.org/way/178564463",
+          "width_source": "missing",
+          "level_source": "unmapped_assumed_surface",
+          "display_level": "0",
+          "geometry_source": "osm_polygon",
+          "asset_kind": "planting"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.4862466,
+                31.2445097
+              ],
+              [
+                121.4861101,
+                31.2445561
+              ],
+              [
+                121.486139,
+                31.2446182
+              ],
+              [
+                121.4862755,
+                31.2445719
+              ],
+              [
+                121.4862466,
+                31.2445097
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "building": "yes",
+          "osm_id": 178564468,
+          "osm_type": "way",
+          "osm_nodes": [
+            1889012641,
+            1889012670,
+            1889012643,
+            1889012679,
+            1889012641
+          ],
+          "osm_version": 1,
+          "osm_timestamp": "2012-08-29T21:50:45Z",
+          "source_url": "https://www.openstreetmap.org/way/178564468",
+          "width_source": "missing",
+          "level_source": "unmapped_assumed_surface",
+          "display_level": "0",
+          "geometry_source": "osm_polygon",
+          "asset_kind": "building"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.4863212,
+                31.2437996
+              ],
+              [
+                121.4866074,
+                31.2432932
+              ],
+              [
+                121.486554,
+                31.243116
+              ],
+              [
+                121.4865429,
+                31.2430792
+              ],
+              [
+                121.4865123,
+                31.243031
+              ],
+              [
+                121.4864544,
+                31.2430425
+              ],
+              [
+                121.4864141,
+                31.2431044
+              ],
+              [
+                121.4863712,
+                31.2431021
+              ],
+              [
+                121.4863162,
+                31.2430826
+              ],
+              [
+                121.4862697,
+                31.2430578
+              ],
+              [
+                121.4862327,
+                31.2430227
+              ],
+              [
+                121.4861706,
+                31.2431797
+              ],
+              [
+                121.4861196,
+                31.2433335
+              ],
+              [
+                121.4860484,
+                31.2436149
+              ],
+              [
+                121.4862784,
+                31.2437706
+              ],
+              [
+                121.4863212,
+                31.2437996
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "landuse": "grass",
+          "osm_id": 178564472,
+          "osm_type": "way",
+          "osm_nodes": [
+            1889012681,
+            1889012671,
+            1889012687,
+            1889012673,
+            8417005433,
+            1720951297,
+            1720950875,
+            1720950985,
+            1720950789,
+            1720951372,
+            1720951061,
+            6968000002,
+            1720951350,
+            1720951379,
+            6967999992,
+            1889012681
+          ],
+          "osm_version": 4,
+          "osm_timestamp": "2021-02-12T04:13:26Z",
+          "source_url": "https://www.openstreetmap.org/way/178564472",
+          "width_source": "missing",
+          "level_source": "unmapped_assumed_surface",
+          "display_level": "0",
+          "geometry_source": "osm_polygon",
+          "asset_kind": "planting"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.4865634,
+                31.2439245
+              ],
+              [
+                121.4865714,
+                31.243913
+              ],
+              [
+                121.486432,
+                31.2438053
+              ],
+              [
+                121.4864051,
+                31.2438534
+              ],
+              [
+                121.4865017,
+                31.2439222
+              ],
+              [
+                121.4865634,
+                31.2439245
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "landuse": "grass",
+          "osm_id": 178564474,
+          "osm_type": "way",
+          "osm_nodes": [
+            1889012683,
+            1889012689,
+            1889012645,
+            1889012676,
+            1889012677,
+            1889012683
+          ],
+          "osm_version": 2,
+          "osm_timestamp": "2014-07-20T06:29:54Z",
+          "source_url": "https://www.openstreetmap.org/way/178564474",
+          "width_source": "missing",
+          "level_source": "unmapped_assumed_surface",
+          "display_level": "0",
+          "geometry_source": "osm_polygon",
+          "asset_kind": "planting"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.4868729,
+                31.2443177
+              ],
+              [
+                121.4868949,
+                31.2443436
+              ],
+              [
+                121.4869428,
+                31.244305
+              ],
+              [
+                121.4869293,
+                31.2442892
+              ],
+              [
+                121.4868729,
+                31.2443177
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "building:colour": "white",
+          "building:material": "concrete",
+          "building:part": "yes",
+          "height": "24",
+          "roof:colour": "white",
+          "roof:direction": "301.9",
+          "roof:height": "24",
+          "roof:material": "concrete",
+          "roof:orientation": "across",
+          "roof:shape": "skillion",
+          "osm_id": 524424596,
+          "osm_type": "way",
+          "osm_nodes": [
+            5103455727,
+            5103455728,
+            5103455726,
+            5103455725,
+            5103455727
+          ],
+          "osm_version": 2,
+          "osm_timestamp": "2017-09-13T22:26:33Z",
+          "source_url": "https://www.openstreetmap.org/way/524424596",
+          "width_source": "missing",
+          "level_source": "unmapped_assumed_surface",
+          "display_level": "0",
+          "geometry_source": "osm_polygon",
+          "asset_kind": "building"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.4869293,
+                31.2442892
+              ],
+              [
+                121.4868729,
+                31.2443177
+              ],
+              [
+                121.4868949,
+                31.2443436
+              ],
+              [
+                121.4869428,
+                31.244305
+              ],
+              [
+                121.4869603,
+                31.2442908
+              ],
+              [
+                121.4869499,
+                31.2442788
+              ],
+              [
+                121.4869293,
+                31.2442892
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "building": "yes",
+          "height": "24",
+          "osm_id": 524424597,
+          "osm_type": "way",
+          "osm_nodes": [
+            5103455730,
+            5103455729,
+            5103455728,
+            5103455726,
+            5103455725,
+            5103455727,
+            5103455730
+          ],
+          "osm_version": 1,
+          "osm_timestamp": "2017-09-13T14:55:28Z",
+          "source_url": "https://www.openstreetmap.org/way/524424597",
+          "width_source": "missing",
+          "level_source": "unmapped_assumed_surface",
+          "display_level": "0",
+          "geometry_source": "osm_polygon",
+          "asset_kind": "building"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.4869293,
+                31.2442892
+              ],
+              [
+                121.4869428,
+                31.244305
+              ],
+              [
+                121.4869603,
+                31.2442908
+              ],
+              [
+                121.4869499,
+                31.2442788
+              ],
+              [
+                121.4869293,
+                31.2442892
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "building:colour": "white",
+          "building:material": "concrete",
+          "building:part": "yes",
+          "height": "24",
+          "roof:colour": "white",
+          "roof:material": "concrete",
+          "roof:shape": "flat",
+          "osm_id": 524424598,
+          "osm_type": "way",
+          "osm_nodes": [
+            5103455730,
+            5103455729,
+            5103455728,
+            5103455727,
+            5103455730
+          ],
+          "osm_version": 1,
+          "osm_timestamp": "2017-09-13T14:55:28Z",
+          "source_url": "https://www.openstreetmap.org/way/524424598",
+          "width_source": "missing",
+          "level_source": "unmapped_assumed_surface",
+          "display_level": "0",
+          "geometry_source": "osm_polygon",
+          "asset_kind": "building"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.4870383,
+                31.2443319
+              ],
+              [
+                121.4870552,
+                31.2443033
+              ],
+              [
+                121.4869932,
+                31.2442846
+              ],
+              [
+                121.486983,
+                31.2443021
+              ],
+              [
+                121.4870383,
+                31.2443319
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "building:colour": "white",
+          "building:material": "concrete",
+          "building:part": "yes",
+          "height": "24",
+          "roof:colour": "white",
+          "roof:direction": "61.9",
+          "roof:height": "24",
+          "roof:material": "concrete",
+          "roof:orientation": "across",
+          "roof:shape": "skillion",
+          "osm_id": 524424599,
+          "osm_type": "way",
+          "osm_nodes": [
+            5103455733,
+            5103455734,
+            5103455732,
+            5103455731,
+            5103455733
+          ],
+          "osm_version": 2,
+          "osm_timestamp": "2017-09-13T22:26:33Z",
+          "source_url": "https://www.openstreetmap.org/way/524424599",
+          "width_source": "missing",
+          "level_source": "unmapped_assumed_surface",
+          "display_level": "0",
+          "geometry_source": "osm_polygon",
+          "asset_kind": "building"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.486983,
+                31.2443021
+              ],
+              [
+                121.4870383,
+                31.2443319
+              ],
+              [
+                121.4870552,
+                31.2443033
+              ],
+              [
+                121.4869932,
+                31.2442846
+              ],
+              [
+                121.4869704,
+                31.2442777
+              ],
+              [
+                121.4869627,
+                31.2442912
+              ],
+              [
+                121.486983,
+                31.2443021
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "building": "yes",
+          "height": "24",
+          "osm_id": 524424600,
+          "osm_type": "way",
+          "osm_nodes": [
+            5103455736,
+            5103455735,
+            5103455734,
+            5103455732,
+            5103455731,
+            5103455733,
+            5103455736
+          ],
+          "osm_version": 1,
+          "osm_timestamp": "2017-09-13T14:55:29Z",
+          "source_url": "https://www.openstreetmap.org/way/524424600",
+          "width_source": "missing",
+          "level_source": "unmapped_assumed_surface",
+          "display_level": "0",
+          "geometry_source": "osm_polygon",
+          "asset_kind": "building"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.486983,
+                31.2443021
+              ],
+              [
+                121.4869932,
+                31.2442846
+              ],
+              [
+                121.4869704,
+                31.2442777
+              ],
+              [
+                121.4869627,
+                31.2442912
+              ],
+              [
+                121.486983,
+                31.2443021
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "building:colour": "white",
+          "building:material": "concrete",
+          "building:part": "yes",
+          "height": "24",
+          "roof:shape": "flat",
+          "osm_id": 524424601,
+          "osm_type": "way",
+          "osm_nodes": [
+            5103455736,
+            5103455735,
+            5103455734,
+            5103455733,
+            5103455736
+          ],
+          "osm_version": 1,
+          "osm_timestamp": "2017-09-13T14:55:29Z",
+          "source_url": "https://www.openstreetmap.org/way/524424601",
+          "width_source": "missing",
+          "level_source": "unmapped_assumed_surface",
+          "display_level": "0",
+          "geometry_source": "osm_polygon",
+          "asset_kind": "building"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.4869709,
+                31.2442557
+              ],
+              [
+                121.4869481,
+                31.2442562
+              ],
+              [
+                121.4869517,
+                31.2442766
+              ],
+              [
+                121.4869692,
+                31.2442761
+              ],
+              [
+                121.4869709,
+                31.2442557
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "building:colour": "white",
+          "building:material": "concrete",
+          "building:part": "yes",
+          "height": "24",
+          "roof:shape": "flat",
+          "osm_id": 524424602,
+          "osm_type": "way",
+          "osm_nodes": [
+            5103455741,
+            5103455739,
+            5103455737,
+            5103455738,
+            5103455741
+          ],
+          "osm_version": 1,
+          "osm_timestamp": "2017-09-13T14:55:29Z",
+          "source_url": "https://www.openstreetmap.org/way/524424602",
+          "width_source": "missing",
+          "level_source": "unmapped_assumed_surface",
+          "display_level": "0",
+          "geometry_source": "osm_polygon",
+          "asset_kind": "building"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.4869757,
+                31.2441999
+              ],
+              [
+                121.4869383,
+                31.2442006
+              ],
+              [
+                121.4869481,
+                31.2442562
+              ],
+              [
+                121.4869709,
+                31.2442557
+              ],
+              [
+                121.4869757,
+                31.2441999
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "building:colour": "white",
+          "building:material": "concrete",
+          "building:part": "yes",
+          "height": "24",
+          "roof:colour": "white",
+          "roof:direction": "181.9",
+          "roof:height": "24",
+          "roof:material": "concrete",
+          "roof:orientation": "across",
+          "roof:shape": "skillion",
+          "osm_id": 524424603,
+          "osm_type": "way",
+          "osm_nodes": [
+            5103455738,
+            5103455737,
+            5103455740,
+            5103455742,
+            5103455738
+          ],
+          "osm_version": 2,
+          "osm_timestamp": "2017-09-13T22:26:33Z",
+          "source_url": "https://www.openstreetmap.org/way/524424603",
+          "width_source": "missing",
+          "level_source": "unmapped_assumed_surface",
+          "display_level": "0",
+          "geometry_source": "osm_polygon",
+          "asset_kind": "building"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                121.4869709,
+                31.2442557
+              ],
+              [
+                121.4869757,
+                31.2441999
+              ],
+              [
+                121.4869383,
+                31.2442006
+              ],
+              [
+                121.4869481,
+                31.2442562
+              ],
+              [
+                121.4869517,
+                31.2442766
+              ],
+              [
+                121.4869692,
+                31.2442761
+              ],
+              [
+                121.4869709,
+                31.2442557
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "building": "yes",
+          "height": "24",
+          "osm_id": 524424604,
+          "osm_type": "way",
+          "osm_nodes": [
+            5103455741,
+            5103455739,
+            5103455737,
+            5103455740,
+            5103455742,
+            5103455738,
+            5103455741
+          ],
+          "osm_version": 1,
+          "osm_timestamp": "2017-09-13T14:55:29Z",
+          "source_url": "https://www.openstreetmap.org/way/524424604",
+          "width_source": "missing",
+          "level_source": "unmapped_assumed_surface",
+          "display_level": "0",
+          "geometry_source": "osm_polygon",
+          "asset_kind": "building"
+        }
+      }
+    ]
+  },
+  "barriers": {
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [
+              121.4867755,
+              31.2442664
+            ],
+            [
+              121.4867802,
+              31.244306
+            ],
+            [
+              121.4868063,
+              31.2443461
+            ],
+            [
+              121.4868352,
+              31.2443771
+            ],
+            [
+              121.4868774,
+              31.2443994
+            ],
+            [
+              121.4869351,
+              31.2444092
+            ]
+          ]
+        },
+        "properties": {
+          "barrier": "wall",
+          "osm_id": 679362262,
+          "osm_type": "way",
+          "osm_nodes": [
+            6361541061,
+            6361545570,
+            6361545569,
+            6361545568,
+            6361545567,
+            6361545566
+          ],
+          "osm_version": 1,
+          "osm_timestamp": "2019-03-26T01:44:36Z",
+          "source_url": "https://www.openstreetmap.org/way/679362262",
+          "width_source": "missing",
+          "level_source": "unmapped_assumed_surface",
+          "display_level": "0",
+          "asset_kind": "barrier"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [
+              121.4868211,
+              31.2441793
+            ],
+            [
+              121.4868459,
+              31.2441604
+            ],
+            [
+              121.4868982,
+              31.2441403
+            ],
+            [
+              121.4869639,
+              31.2441357
+            ],
+            [
+              121.4870229,
+              31.2441535
+            ],
+            [
+              121.4870578,
+              31.2441787
+            ]
+          ]
+        },
+        "properties": {
+          "barrier": "wall",
+          "osm_id": 679362263,
+          "osm_type": "way",
+          "osm_nodes": [
+            1883306104,
+            6361545575,
+            6361545574,
+            6361545573,
+            6361545572,
+            6361545571
+          ],
+          "osm_version": 1,
+          "osm_timestamp": "2019-03-26T01:44:36Z",
+          "source_url": "https://www.openstreetmap.org/way/679362263",
+          "width_source": "missing",
+          "level_source": "unmapped_assumed_surface",
+          "display_level": "0",
+          "asset_kind": "barrier"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [
+              121.4867301,
+              31.2443082
+            ],
+            [
+              121.4867472,
+              31.2443527
+            ],
+            [
+              121.4867778,
+              31.2443939
+            ],
+            [
+              121.4868217,
+              31.2444283
+            ],
+            [
+              121.4868884,
+              31.2444554
+            ],
+            [
+              121.4869381,
+              31.2444624
+            ],
+            [
+              121.4869779,
+              31.2444611
+            ],
+            [
+              121.4870369,
+              31.2444474
+            ],
+            [
+              121.4870966,
+              31.2444154
+            ],
+            [
+              121.4871361,
+              31.2443768
+            ],
+            [
+              121.4871577,
+              31.2443411
+            ],
+            [
+              121.4871666,
+              31.2443172
+            ],
+            [
+              121.4871725,
+              31.2442846
+            ],
+            [
+              121.4871699,
+              31.2442398
+            ],
+            [
+              121.4871585,
+              31.2442038
+            ],
+            [
+              121.4871226,
+              31.2441506
+            ],
+            [
+              121.4870716,
+              31.2441115
+            ],
+            [
+              121.4869838,
+              31.2440827
+            ],
+            [
+              121.4869343,
+              31.2440809
+            ],
+            [
+              121.4868603,
+              31.2440963
+            ],
+            [
+              121.4868283,
+              31.244111
+            ]
+          ]
+        },
+        "properties": {
+          "barrier": "wall",
+          "osm_id": 679362264,
+          "osm_type": "way",
+          "osm_nodes": [
+            6361541066,
+            599722273,
+            599722274,
+            599722275,
+            1573781796,
+            6361541062,
+            599722276,
+            6361541063,
+            599722277,
+            599722278,
+            599722279,
+            6361541064,
+            599722280,
+            6361541065,
+            599722281,
+            599722282,
+            599722283,
+            1573781799,
+            599722284,
+            6361541067,
+            1883306107
+          ],
+          "osm_version": 1,
+          "osm_timestamp": "2019-03-26T01:44:36Z",
+          "source_url": "https://www.openstreetmap.org/way/679362264",
+          "width_source": "missing",
+          "level_source": "unmapped_assumed_surface",
+          "display_level": "0",
+          "asset_kind": "barrier"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [
+              121.4867889,
+              31.2441523
+            ],
+            [
+              121.4868211,
+              31.2441793
+            ],
+            [
+              121.4868285,
+              31.2442011
+            ],
+            [
+              121.4868245,
+              31.2442332
+            ],
+            [
+              121.4868037,
+              31.2442578
+            ],
+            [
+              121.4867755,
+              31.2442664
+            ],
+            [
+              121.4867306,
+              31.2442624
+            ]
+          ]
+        },
+        "properties": {
+          "barrier": "wall",
+          "osm_id": 679362265,
+          "osm_type": "way",
+          "osm_nodes": [
+            599722285,
+            1883306104,
+            599722286,
+            6361541059,
+            6361541060,
+            6361541061,
+            1573781800
+          ],
+          "osm_version": 1,
+          "osm_timestamp": "2019-03-26T01:44:36Z",
+          "source_url": "https://www.openstreetmap.org/way/679362265",
+          "width_source": "missing",
+          "level_source": "unmapped_assumed_surface",
+          "display_level": "0",
+          "asset_kind": "barrier"
+        }
+      }
+    ]
+  },
+  "entrances": {
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Point",
+          "coordinates": [
+            121.4868245,
+            31.2442332
+          ]
+        },
+        "properties": {
+          "description": "Entrance of the Bund History Museum",
+          "entrance": "main",
+          "level": "-1",
+          "osm_id": 6361541059,
+          "osm_type": "node",
+          "display_level": "-1",
+          "source_url": "https://www.openstreetmap.org/node/6361541059",
+          "status": "mapped_not_field_verified",
+          "asset_kind": "building_entrance"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Point",
+          "coordinates": [
+            121.48596744335981,
+            31.24360801376491
+          ]
+        },
+        "properties": {
+          "name": "黄浦公园西南门（高德 POI）",
+          "asset_kind": "park_gate",
+          "display_level": "0",
+          "level_source": "unmapped_assumed_surface",
+          "source_url": "https://www.amap.com/place/B00155KKW1",
+          "position_source": "amap_poi_gcj02_to_wgs84",
+          "width_source": "missing",
+          "opening_status": "unknown"
+        }
+      }
+    ]
+  },
+  "quality": {
+    "feature_count": 19,
+    "levels": {
+      "0": 16,
+      "-1": 3
+    },
+    "missing_width_count": 19,
+    "surface_feature_count": 16,
+    "walkable_area_count": 0,
+    "obstacle_count": 17,
+    "barrier_count": 4,
+    "mapped_entrance_count": 1,
+    "topology_components": 5,
+    "warnings": [
+      "未绘出的步道、草地、围栏及广场仍可能缺失；地图收录不代表现场核验。",
+      "当前数值求解器使用地面二维空间；下沉层和隧道单独显示，不与地面直接拼接。",
+      "没有层级标签的要素按地面假设展示；真实标高及建筑通行情况仍需核对。",
+      "19条道路缺少公开宽度数据，计算时使用任务假设宽度，不标作实测。",
+      "存在多个高程层；未确认的楼梯/坡道连接需现场或图纸核对。"
+    ],
+    "confidence": "public_mapping_unverified_widths",
+    "generated_at": "2026-10-15T12:25:39.149710+00:00"
+  },
+  "topology": {
+    "nodes": [
+      {
+        "id": "89192ddb7f5a2844",
+        "coordinates": [
+          121.486721,
+          31.2439427
+        ],
+        "level": "0"
+      },
+      {
+        "id": "52cdfe0002cedab7",
+        "coordinates": [
+          121.4868095,
+          31.2440877
+        ],
+        "level": "0"
+      },
+      {
+        "id": "bc380642fb47b2e3",
+        "coordinates": [
+          121.4868252,
+          31.2441491
+        ],
+        "level": "0"
+      },
+      {
+        "id": "612606360848c155",
+        "coordinates": [
+          121.4857732,
+          31.2447582
+        ],
+        "level": "0"
+      },
+      {
+        "id": "5b99661623276bc7",
+        "coordinates": [
+          121.4858617,
+          31.2447261
+        ],
+        "level": "0"
+      },
+      {
+        "id": "8d8a60d544ef3851",
+        "coordinates": [
+          121.48652,
+          31.2442714
+        ],
+        "level": "0"
+      },
+      {
+        "id": "d452c91ee37d8f8f",
+        "coordinates": [
+          121.4866907,
+          31.2442837
+        ],
+        "level": "0"
+      },
+      {
+        "id": "35acd8f1783cc9b1",
+        "coordinates": [
+          121.4867586,
+          31.2442818
+        ],
+        "level": "0"
+      },
+      {
+        "id": "0a7a85582bee0bfa",
+        "coordinates": [
+          121.48599710279127,
+          31.243033658320872
+        ],
+        "level": "0"
+      },
+      {
+        "id": "624eb487413e3ace",
+        "coordinates": [
+          121.486043,
+          31.2430462
+        ],
+        "level": "0"
+      },
+      {
+        "id": "ac7511dd76299f90",
+        "coordinates": [
+          121.4861181,
+          31.2430737
+        ],
+        "level": "0"
+      },
+      {
+        "id": "6c77631d6203d892",
+        "coordinates": [
+          121.4861485,
+          31.2430917
+        ],
+        "level": "0"
+      },
+      {
+        "id": "c596a68a9bc0b2b7",
+        "coordinates": [
+          121.48578535645119,
+          31.24395860564512
+        ],
+        "level": "0"
+      },
+      {
+        "id": "d3df39633fd722c7",
+        "coordinates": [
+          121.4858063,
+          31.2439607
+        ],
+        "level": "0"
+      },
+      {
+        "id": "30e0a32f76d43904",
+        "coordinates": [
+          121.4870965,
+          31.2443648
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "cf5e400044346f88",
+        "coordinates": [
+          121.4870675,
+          31.2443437
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "1caa4f96aae78417",
+        "coordinates": [
+          121.4868539,
+          31.2442401
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "c17117296cb63f14",
+        "coordinates": [
+          121.4868245,
+          31.2442332
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "e4c700b41934152f",
+        "coordinates": [
+          121.4868835,
+          31.2442044
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "d390e4135a17b649",
+        "coordinates": [
+          121.4868665,
+          31.2442209
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "4a68111f91b34673",
+        "coordinates": [
+          121.4868463,
+          31.2442611
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "a29334eee8802a7a",
+        "coordinates": [
+          121.4868438,
+          31.244283
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "8bc9116f9f40943e",
+        "coordinates": [
+          121.4868473,
+          31.2443068
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "4249bc0d21e1250e",
+        "coordinates": [
+          121.486857,
+          31.2443294
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "354f1214b33c1a29",
+        "coordinates": [
+          121.4868724,
+          31.2443494
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "87ce26ed1a391563",
+        "coordinates": [
+          121.4868927,
+          31.244366
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "b8b66ae8a07c1c40",
+        "coordinates": [
+          121.4869169,
+          31.2443782
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "9278fb1d7fdb8d94",
+        "coordinates": [
+          121.4869436,
+          31.2443855
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "9a5d66e3c238a4a0",
+        "coordinates": [
+          121.4869716,
+          31.2443874
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "b1544cc97e45ac71",
+        "coordinates": [
+          121.4869993,
+          31.2443838
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "55b6a75d73d10219",
+        "coordinates": [
+          121.4870254,
+          31.244375
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "552f2243b1f1514a",
+        "coordinates": [
+          121.4870485,
+          31.2443614
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "aa40f88e11765185",
+        "coordinates": [
+          121.4870812,
+          31.2443227
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "ed7b9aba85b6fc31",
+        "coordinates": [
+          121.487089,
+          31.2442997
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "a7a8e75686b869a9",
+        "coordinates": [
+          121.4870906,
+          31.2442757
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "1c15b9200c26af0d",
+        "coordinates": [
+          121.4870858,
+          31.2442521
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "9bf798c3c4bb90c6",
+        "coordinates": [
+          121.4870749,
+          31.24423
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "16033f2683141170",
+        "coordinates": [
+          121.4870584,
+          31.2442106
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "b6891c0d6564d1d2",
+        "coordinates": [
+          121.4870372,
+          31.2441948
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "5996bc866204b40e",
+        "coordinates": [
+          121.4870124,
+          31.2441836
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "3749a6bf37635f35",
+        "coordinates": [
+          121.4869853,
+          31.2441774
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "f3cdb123beaf299e",
+        "coordinates": [
+          121.4869572,
+          31.2441767
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "15a91a69fd14aa92",
+        "coordinates": [
+          121.4869297,
+          31.2441813
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "016afc6944114e62",
+        "coordinates": [
+          121.4869041,
+          31.2441912
+        ],
+        "level": "-1"
+      },
+      {
+        "id": "b7d574098e40cb39",
+        "coordinates": [
+          121.4867638,
+          31.2443092
+        ],
+        "level": "0"
+      },
+      {
+        "id": "41e565c1bbf3ed8b",
+        "coordinates": [
+          121.4867785,
+          31.2443432
+        ],
+        "level": "0"
+      },
+      {
+        "id": "7a6beca1268193af",
+        "coordinates": [
+          121.4868017,
+          31.2443735
+        ],
+        "level": "0"
+      },
+      {
+        "id": "1f146dccb76c39fd",
+        "coordinates": [
+          121.4868324,
+          31.2443986
+        ],
+        "level": "0"
+      },
+      {
+        "id": "0e841a687c396a4a",
+        "coordinates": [
+          121.4868689,
+          31.2444171
+        ],
+        "level": "0"
+      },
+      {
+        "id": "84098b1c344bd5e4",
+        "coordinates": [
+          121.4869093,
+          31.244428
+        ],
+        "level": "0"
+      },
+      {
+        "id": "8ffa3dccc153b263",
+        "coordinates": [
+          121.4869516,
+          31.2444309
+        ],
+        "level": "0"
+      },
+      {
+        "id": "b33f4a00d0b7e2ef",
+        "coordinates": [
+          121.4869936,
+          31.2444255
+        ],
+        "level": "0"
+      },
+      {
+        "id": "30f9cd76b7085d56",
+        "coordinates": [
+          121.487033,
+          31.2444122
+        ],
+        "level": "0"
+      },
+      {
+        "id": "21d3883d10f69a24",
+        "coordinates": [
+          121.4870679,
+          31.2443916
+        ],
+        "level": "0"
+      },
+      {
+        "id": "dcda1412301faaca",
+        "coordinates": [
+          121.4870965,
+          31.2443648
+        ],
+        "level": "0"
+      },
+      {
+        "id": "ed336cea1e6e5bae",
+        "coordinates": [
+          121.4871173,
+          31.2443332
+        ],
+        "level": "0"
+      },
+      {
+        "id": "9bab845da6d95c1d",
+        "coordinates": [
+          121.4871291,
+          31.2442984
+        ],
+        "level": "0"
+      },
+      {
+        "id": "ddc200a8cf4c3ee6",
+        "coordinates": [
+          121.4871315,
+          31.2442622
+        ],
+        "level": "0"
+      },
+      {
+        "id": "d7757a329b654a83",
+        "coordinates": [
+          121.4871242,
+          31.2442264
+        ],
+        "level": "0"
+      },
+      {
+        "id": "9114db8eb53f891c",
+        "coordinates": [
+          121.4871077,
+          31.244193
+        ],
+        "level": "0"
+      },
+      {
+        "id": "2d85a05a5ca2591f",
+        "coordinates": [
+          121.4870828,
+          31.2441637
+        ],
+        "level": "0"
+      },
+      {
+        "id": "c4fccc51aa387a40",
+        "coordinates": [
+          121.4870508,
+          31.2441399
+        ],
+        "level": "0"
+      },
+      {
+        "id": "09de6166fa9e8033",
+        "coordinates": [
+          121.4870133,
+          31.2441229
+        ],
+        "level": "0"
+      },
+      {
+        "id": "a12064dcb4990a2a",
+        "coordinates": [
+          121.4869723,
+          31.2441136
+        ],
+        "level": "0"
+      },
+      {
+        "id": "6ee0175a315006ed",
+        "coordinates": [
+          121.4869299,
+          31.2441124
+        ],
+        "level": "0"
+      },
+      {
+        "id": "c2c6aabb42f4598d",
+        "coordinates": [
+          121.4868883,
+          31.2441195
+        ],
+        "level": "0"
+      },
+      {
+        "id": "0cc0f1fff60644d5",
+        "coordinates": [
+          121.4868496,
+          31.2441344
+        ],
+        "level": "0"
+      },
+      {
+        "id": "c84b2ccfdb885b6e",
+        "coordinates": [
+          121.4867748,
+          31.2441104
+        ],
+        "level": "0"
+      },
+      {
+        "id": "b253062a2a5cba0c",
+        "coordinates": [
+          121.4867396,
+          31.2441447
+        ],
+        "level": "0"
+      },
+      {
+        "id": "ad4b4783c555745d",
+        "coordinates": [
+          121.4867135,
+          31.2441845
+        ],
+        "level": "0"
+      },
+      {
+        "id": "c519c677a65b308b",
+        "coordinates": [
+          121.4866977,
+          31.244228
+        ],
+        "level": "0"
+      },
+      {
+        "id": "8f89066f3a2d6797",
+        "coordinates": [
+          121.4866999,
+          31.2443227
+        ],
+        "level": "0"
+      },
+      {
+        "id": "764ac38259aa2284",
+        "coordinates": [
+          121.48672,
+          31.2443694
+        ],
+        "level": "0"
+      },
+      {
+        "id": "0bad4b0d2336f233",
+        "coordinates": [
+          121.4867519,
+          31.244411
+        ],
+        "level": "0"
+      },
+      {
+        "id": "b8b099563878770b",
+        "coordinates": [
+          121.4867939,
+          31.2444453
+        ],
+        "level": "0"
+      },
+      {
+        "id": "a5ca34e3bdcbd8fe",
+        "coordinates": [
+          121.486844,
+          31.2444707
+        ],
+        "level": "0"
+      },
+      {
+        "id": "a0d832f24931cce9",
+        "coordinates": [
+          121.4868994,
+          31.2444857
+        ],
+        "level": "0"
+      },
+      {
+        "id": "6a6162649abe2c2b",
+        "coordinates": [
+          121.4869574,
+          31.2444896
+        ],
+        "level": "0"
+      },
+      {
+        "id": "8bf5030997db667b",
+        "coordinates": [
+          121.4870149,
+          31.2444823
+        ],
+        "level": "0"
+      },
+      {
+        "id": "a0c068aeb2a934cd",
+        "coordinates": [
+          121.487069,
+          31.244464
+        ],
+        "level": "0"
+      },
+      {
+        "id": "4944f505de225c52",
+        "coordinates": [
+          121.4871168,
+          31.2444358
+        ],
+        "level": "0"
+      },
+      {
+        "id": "14650894317d15e5",
+        "coordinates": [
+          121.487156,
+          31.244399
+        ],
+        "level": "0"
+      },
+      {
+        "id": "4523ac5e0e976caf",
+        "coordinates": [
+          121.4871845,
+          31.2443557
+        ],
+        "level": "0"
+      },
+      {
+        "id": "be88da04b957f2d2",
+        "coordinates": [
+          121.4872007,
+          31.2443079
+        ],
+        "level": "0"
+      },
+      {
+        "id": "ab73db301346b1be",
+        "coordinates": [
+          121.487204,
+          31.2442583
+        ],
+        "level": "0"
+      },
+      {
+        "id": "d68e3ffe5fe8736a",
+        "coordinates": [
+          121.487194,
+          31.2442093
+        ],
+        "level": "0"
+      },
+      {
+        "id": "080632b693359f7e",
+        "coordinates": [
+          121.4871714,
+          31.2441635
+        ],
+        "level": "0"
+      },
+      {
+        "id": "1cdc2fd314662192",
+        "coordinates": [
+          121.4871372,
+          31.2441233
+        ],
+        "level": "0"
+      },
+      {
+        "id": "f8156f591234398d",
+        "coordinates": [
+          121.4870933,
+          31.2440907
+        ],
+        "level": "0"
+      },
+      {
+        "id": "962c3523f18e2929",
+        "coordinates": [
+          121.4870419,
+          31.2440674
+        ],
+        "level": "0"
+      },
+      {
+        "id": "9ee807038c706f8c",
+        "coordinates": [
+          121.4869857,
+          31.2440546
+        ],
+        "level": "0"
+      },
+      {
+        "id": "1b3bf639c0814d32",
+        "coordinates": [
+          121.4869276,
+          31.244053
+        ],
+        "level": "0"
+      },
+      {
+        "id": "01074abd9f50db01",
+        "coordinates": [
+          121.4868706,
+          31.2440627
+        ],
+        "level": "0"
+      },
+      {
+        "id": "acd0e383798dd80f",
+        "coordinates": [
+          121.48565404516707,
+          31.24480042692925
+        ],
+        "level": "0"
+      },
+      {
+        "id": "78484577ff289983",
+        "coordinates": [
+          121.4857554,
+          31.2447645
+        ],
+        "level": "0"
+      },
+      {
+        "id": "4af47b71f129028c",
+        "coordinates": [
+          121.4858871,
+          31.2447674
+        ],
+        "level": "0"
+      },
+      {
+        "id": "20b86dbc1b04e2e1",
+        "coordinates": [
+          121.4865576,
+          31.2445232
+        ],
+        "level": "0"
+      },
+      {
+        "id": "b81568f1295e6015",
+        "coordinates": [
+          121.4866194,
+          31.2441088
+        ],
+        "level": "0"
+      },
+      {
+        "id": "48b0854d224e334f",
+        "coordinates": [
+          121.4867342829706,
+          31.243932040649064
+        ],
+        "level": "0"
+      },
+      {
+        "id": "ab4666cca2d1e03c",
+        "coordinates": [
+          121.48653637649667,
+          31.24304103941977
+        ],
+        "level": "0"
+      },
+      {
+        "id": "925cb569ae14b30e",
+        "coordinates": [
+          121.4865005546901,
+          31.242991659714807
+        ],
+        "level": "0"
+      },
+      {
+        "id": "2919d8883c53b609",
+        "coordinates": [
+          121.48637163899268,
+          31.24261435591106
+        ],
+        "level": "0"
+      },
+      {
+        "id": "13998c267ec27104",
+        "coordinates": [
+          121.486225,
+          31.2426462
+        ],
+        "level": "0"
+      },
+      {
+        "id": "bba24ded6c9cb2bb",
+        "coordinates": [
+          121.4862351,
+          31.2429697
+        ],
+        "level": "0"
+      },
+      {
+        "id": "161a7f519b0ec22e",
+        "coordinates": [
+          121.4861593,
+          31.2431622
+        ],
+        "level": "0"
+      },
+      {
+        "id": "c99dc0521a5ce585",
+        "coordinates": [
+          121.4860292,
+          31.2436059
+        ],
+        "level": "0"
+      },
+      {
+        "id": "2b3ffc5d66c4ec68",
+        "coordinates": [
+          121.4859464,
+          31.2438312
+        ],
+        "level": "0"
+      },
+      {
+        "id": "529e85b28b85b534",
+        "coordinates": [
+          121.4858723,
+          31.2440325
+        ],
+        "level": "0"
+      },
+      {
+        "id": "75a357ec5dab1e3d",
+        "coordinates": [
+          121.4856873,
+          31.2446058
+        ],
+        "level": "0"
+      },
+      {
+        "id": "39849b905efcebc1",
+        "coordinates": [
+          121.4862928,
+          31.2439741
+        ],
+        "level": "0"
+      },
+      {
+        "id": "37a1edef344292a3",
+        "coordinates": [
+          121.4864611,
+          31.2436495
+        ],
+        "level": "0"
+      },
+      {
+        "id": "182667598a68d860",
+        "coordinates": [
+          121.48664795499751,
+          31.243359169793543
+        ],
+        "level": "0"
+      },
+      {
+        "id": "58d1767a347ed12b",
+        "coordinates": [
+          121.4864297,
+          31.2428939
+        ],
+        "level": "0"
+      },
+      {
+        "id": "9083a6a605a1e746",
+        "coordinates": [
+          121.4863971,
+          31.2428774
+        ],
+        "level": "0"
+      },
+      {
+        "id": "bd6b4df724c55a7d",
+        "coordinates": [
+          121.4863601,
+          31.2428705
+        ],
+        "level": "0"
+      },
+      {
+        "id": "3c655ee0714e89cb",
+        "coordinates": [
+          121.4863224,
+          31.2428739
+        ],
+        "level": "0"
+      },
+      {
+        "id": "e22dfde14670894b",
+        "coordinates": [
+          121.4862879,
+          31.2428874
+        ],
+        "level": "0"
+      },
+      {
+        "id": "fea635287b1dd407",
+        "coordinates": [
+          121.4862602,
+          31.2429094
+        ],
+        "level": "0"
+      },
+      {
+        "id": "d81fe23c3607a3f0",
+        "coordinates": [
+          121.4862419,
+          31.2429378
+        ],
+        "level": "0"
+      },
+      {
+        "id": "84e5a3a5e3acf938",
+        "coordinates": [
+          121.4862414,
+          31.2430043
+        ],
+        "level": "0"
+      },
+      {
+        "id": "b8dc93e3b09baae7",
+        "coordinates": [
+          121.4862611,
+          31.2430351
+        ],
+        "level": "0"
+      },
+      {
+        "id": "dbed745a2aef9332",
+        "coordinates": [
+          121.4862919,
+          31.2430582
+        ],
+        "level": "0"
+      },
+      {
+        "id": "49ee3b06e629a4a7",
+        "coordinates": [
+          121.48633,
+          31.2430711
+        ],
+        "level": "0"
+      },
+      {
+        "id": "259a9c5955152141",
+        "coordinates": [
+          121.486371,
+          31.243072
+        ],
+        "level": "0"
+      },
+      {
+        "id": "5fb89d30ce32b1c0",
+        "coordinates": [
+          121.4864099,
+          31.243061
+        ],
+        "level": "0"
+      },
+      {
+        "id": "515a1ff8afe22207",
+        "coordinates": [
+          121.4864421,
+          31.2430393
+        ],
+        "level": "0"
+      },
+      {
+        "id": "57df6b06d2f86742",
+        "coordinates": [
+          121.4864625,
+          31.243012
+        ],
+        "level": "0"
+      },
+      {
+        "id": "b96a07f5e45b9c00",
+        "coordinates": [
+          121.4864718,
+          31.2429806
+        ],
+        "level": "0"
+      },
+      {
+        "id": "e69eeb451ef9345c",
+        "coordinates": [
+          121.48647008856032,
+          31.242960126110553
+        ],
+        "level": "0"
+      },
+      {
+        "id": "0419b2f5c569428f",
+        "coordinates": [
+          121.48646339444501,
+          31.24293661533603
+        ],
+        "level": "0"
+      },
+      {
+        "id": "6483cef2835be327",
+        "coordinates": [
+          121.4864545,
+          31.2429184
+        ],
+        "level": "0"
+      },
+      {
+        "id": "07ae2283d8101fc5",
+        "coordinates": [
+          121.48617922148112,
+          31.242589591524606
+        ],
+        "level": "0"
+      }
+    ],
+    "edges": [
+      {
+        "source": "89192ddb7f5a2844",
+        "target": "52cdfe0002cedab7",
+        "length_m": 18.15,
+        "feature_index": 0,
+        "level": "0"
+      },
+      {
+        "source": "52cdfe0002cedab7",
+        "target": "bc380642fb47b2e3",
+        "length_m": 6.97,
+        "feature_index": 0,
+        "level": "0"
+      },
+      {
+        "source": "612606360848c155",
+        "target": "5b99661623276bc7",
+        "length_m": 9.15,
+        "feature_index": 1,
+        "level": "0"
+      },
+      {
+        "source": "8d8a60d544ef3851",
+        "target": "d452c91ee37d8f8f",
+        "length_m": 16.32,
+        "feature_index": 2,
+        "level": "0"
+      },
+      {
+        "source": "d452c91ee37d8f8f",
+        "target": "35acd8f1783cc9b1",
+        "length_m": 6.47,
+        "feature_index": 2,
+        "level": "0"
+      },
+      {
+        "source": "0a7a85582bee0bfa",
+        "target": "624eb487413e3ace",
+        "length_m": 4.59,
+        "feature_index": 3,
+        "level": "0"
+      },
+      {
+        "source": "624eb487413e3ace",
+        "target": "ac7511dd76299f90",
+        "length_m": 7.78,
+        "feature_index": 3,
+        "level": "0"
+      },
+      {
+        "source": "ac7511dd76299f90",
+        "target": "6c77631d6203d892",
+        "length_m": 3.52,
+        "feature_index": 3,
+        "level": "0"
+      },
+      {
+        "source": "c596a68a9bc0b2b7",
+        "target": "d3df39633fd722c7",
+        "length_m": 2.01,
+        "feature_index": 4,
+        "level": "0"
+      },
+      {
+        "source": "30e0a32f76d43904",
+        "target": "cf5e400044346f88",
+        "length_m": 3.62,
+        "feature_index": 5,
+        "level": "-1"
+      },
+      {
+        "source": "1caa4f96aae78417",
+        "target": "c17117296cb63f14",
+        "length_m": 2.9,
+        "feature_index": 6,
+        "level": "-1"
+      },
+      {
+        "source": "e4c700b41934152f",
+        "target": "d390e4135a17b649",
+        "length_m": 2.44,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "d390e4135a17b649",
+        "target": "1caa4f96aae78417",
+        "length_m": 2.44,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "1caa4f96aae78417",
+        "target": "4a68111f91b34673",
+        "length_m": 2.44,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "4a68111f91b34673",
+        "target": "a29334eee8802a7a",
+        "length_m": 2.44,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "a29334eee8802a7a",
+        "target": "8bc9116f9f40943e",
+        "length_m": 2.66,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "8bc9116f9f40943e",
+        "target": "4249bc0d21e1250e",
+        "length_m": 2.67,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "4249bc0d21e1250e",
+        "target": "354f1214b33c1a29",
+        "length_m": 2.66,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "354f1214b33c1a29",
+        "target": "87ce26ed1a391563",
+        "length_m": 2.67,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "87ce26ed1a391563",
+        "target": "b8b66ae8a07c1c40",
+        "length_m": 2.67,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "b8b66ae8a07c1c40",
+        "target": "9278fb1d7fdb8d94",
+        "length_m": 2.67,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "9278fb1d7fdb8d94",
+        "target": "9a5d66e3c238a4a0",
+        "length_m": 2.68,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "9a5d66e3c238a4a0",
+        "target": "b1544cc97e45ac71",
+        "length_m": 2.67,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "b1544cc97e45ac71",
+        "target": "55b6a75d73d10219",
+        "length_m": 2.67,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "55b6a75d73d10219",
+        "target": "552f2243b1f1514a",
+        "length_m": 2.67,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "552f2243b1f1514a",
+        "target": "cf5e400044346f88",
+        "length_m": 2.67,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "cf5e400044346f88",
+        "target": "aa40f88e11765185",
+        "length_m": 2.67,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "aa40f88e11765185",
+        "target": "ed7b9aba85b6fc31",
+        "length_m": 2.66,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "ed7b9aba85b6fc31",
+        "target": "a7a8e75686b869a9",
+        "length_m": 2.67,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "a7a8e75686b869a9",
+        "target": "1c15b9200c26af0d",
+        "length_m": 2.66,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "1c15b9200c26af0d",
+        "target": "9bf798c3c4bb90c6",
+        "length_m": 2.66,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "9bf798c3c4bb90c6",
+        "target": "16033f2683141170",
+        "length_m": 2.66,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "16033f2683141170",
+        "target": "b6891c0d6564d1d2",
+        "length_m": 2.67,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "b6891c0d6564d1d2",
+        "target": "5996bc866204b40e",
+        "length_m": 2.67,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "5996bc866204b40e",
+        "target": "3749a6bf37635f35",
+        "length_m": 2.67,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "3749a6bf37635f35",
+        "target": "f3cdb123beaf299e",
+        "length_m": 2.68,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "f3cdb123beaf299e",
+        "target": "15a91a69fd14aa92",
+        "length_m": 2.67,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "15a91a69fd14aa92",
+        "target": "016afc6944114e62",
+        "length_m": 2.67,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "016afc6944114e62",
+        "target": "e4c700b41934152f",
+        "length_m": 2.45,
+        "feature_index": 7,
+        "level": "-1"
+      },
+      {
+        "source": "35acd8f1783cc9b1",
+        "target": "b7d574098e40cb39",
+        "length_m": 3.08,
+        "feature_index": 8,
+        "level": "0"
+      },
+      {
+        "source": "b7d574098e40cb39",
+        "target": "41e565c1bbf3ed8b",
+        "length_m": 4.02,
+        "feature_index": 8,
+        "level": "0"
+      },
+      {
+        "source": "41e565c1bbf3ed8b",
+        "target": "7a6beca1268193af",
+        "length_m": 4.02,
+        "feature_index": 8,
+        "level": "0"
+      },
+      {
+        "source": "7a6beca1268193af",
+        "target": "1f146dccb76c39fd",
+        "length_m": 4.04,
+        "feature_index": 8,
+        "level": "0"
+      },
+      {
+        "source": "1f146dccb76c39fd",
+        "target": "0e841a687c396a4a",
+        "length_m": 4.04,
+        "feature_index": 8,
+        "level": "0"
+      },
+      {
+        "source": "0e841a687c396a4a",
+        "target": "84098b1c344bd5e4",
+        "length_m": 4.03,
+        "feature_index": 8,
+        "level": "0"
+      },
+      {
+        "source": "84098b1c344bd5e4",
+        "target": "8ffa3dccc153b263",
+        "length_m": 4.04,
+        "feature_index": 8,
+        "level": "0"
+      },
+      {
+        "source": "8ffa3dccc153b263",
+        "target": "b33f4a00d0b7e2ef",
+        "length_m": 4.05,
+        "feature_index": 8,
+        "level": "0"
+      },
+      {
+        "source": "b33f4a00d0b7e2ef",
+        "target": "30f9cd76b7085d56",
+        "length_m": 4.03,
+        "feature_index": 8,
+        "level": "0"
+      },
+      {
+        "source": "30f9cd76b7085d56",
+        "target": "21d3883d10f69a24",
+        "length_m": 4.03,
+        "feature_index": 8,
+        "level": "0"
+      },
+      {
+        "source": "21d3883d10f69a24",
+        "target": "dcda1412301faaca",
+        "length_m": 4.03,
+        "feature_index": 8,
+        "level": "0"
+      },
+      {
+        "source": "dcda1412301faaca",
+        "target": "ed336cea1e6e5bae",
+        "length_m": 4.03,
+        "feature_index": 8,
+        "level": "0"
+      },
+      {
+        "source": "ed336cea1e6e5bae",
+        "target": "9bab845da6d95c1d",
+        "length_m": 4.02,
+        "feature_index": 8,
+        "level": "0"
+      },
+      {
+        "source": "9bab845da6d95c1d",
+        "target": "ddc200a8cf4c3ee6",
+        "length_m": 4.02,
+        "feature_index": 8,
+        "level": "0"
+      },
+      {
+        "source": "ddc200a8cf4c3ee6",
+        "target": "d7757a329b654a83",
+        "length_m": 4.03,
+        "feature_index": 8,
+        "level": "0"
+      },
+      {
+        "source": "d7757a329b654a83",
+        "target": "9114db8eb53f891c",
+        "length_m": 4.02,
+        "feature_index": 8,
+        "level": "0"
+      },
+      {
+        "source": "9114db8eb53f891c",
+        "target": "2d85a05a5ca2591f",
+        "length_m": 4.02,
+        "feature_index": 8,
+        "level": "0"
+      },
+      {
+        "source": "2d85a05a5ca2591f",
+        "target": "c4fccc51aa387a40",
+        "length_m": 4.03,
+        "feature_index": 8,
+        "level": "0"
+      },
+      {
+        "source": "c4fccc51aa387a40",
+        "target": "09de6166fa9e8033",
+        "length_m": 4.04,
+        "feature_index": 8,
+        "level": "0"
+      },
+      {
+        "source": "09de6166fa9e8033",
+        "target": "a12064dcb4990a2a",
+        "length_m": 4.04,
+        "feature_index": 8,
+        "level": "0"
+      },
+      {
+        "source": "a12064dcb4990a2a",
+        "target": "6ee0175a315006ed",
+        "length_m": 4.04,
+        "feature_index": 8,
+        "level": "0"
+      },
+      {
+        "source": "6ee0175a315006ed",
+        "target": "c2c6aabb42f4598d",
+        "length_m": 4.04,
+        "feature_index": 8,
+        "level": "0"
+      },
+      {
+        "source": "c2c6aabb42f4598d",
+        "target": "0cc0f1fff60644d5",
+        "length_m": 4.04,
+        "feature_index": 8,
+        "level": "0"
+      },
+      {
+        "source": "0cc0f1fff60644d5",
+        "target": "bc380642fb47b2e3",
+        "length_m": 2.84,
+        "feature_index": 8,
+        "level": "0"
+      },
+      {
+        "source": "c84b2ccfdb885b6e",
+        "target": "b253062a2a5cba0c",
+        "length_m": 5.07,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "b253062a2a5cba0c",
+        "target": "ad4b4783c555745d",
+        "length_m": 5.06,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "ad4b4783c555745d",
+        "target": "c519c677a65b308b",
+        "length_m": 5.05,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "c519c677a65b308b",
+        "target": "d452c91ee37d8f8f",
+        "length_m": 6.21,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "d452c91ee37d8f8f",
+        "target": "8f89066f3a2d6797",
+        "length_m": 4.41,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "8f89066f3a2d6797",
+        "target": "764ac38259aa2284",
+        "length_m": 5.52,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "764ac38259aa2284",
+        "target": "0bad4b0d2336f233",
+        "length_m": 5.52,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "0bad4b0d2336f233",
+        "target": "b8b099563878770b",
+        "length_m": 5.52,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "b8b099563878770b",
+        "target": "a5ca34e3bdcbd8fe",
+        "length_m": 5.54,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "a5ca34e3bdcbd8fe",
+        "target": "a0d832f24931cce9",
+        "length_m": 5.53,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "a0d832f24931cce9",
+        "target": "6a6162649abe2c2b",
+        "length_m": 5.54,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "6a6162649abe2c2b",
+        "target": "8bf5030997db667b",
+        "length_m": 5.54,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "8bf5030997db667b",
+        "target": "a0c068aeb2a934cd",
+        "length_m": 5.54,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "a0c068aeb2a934cd",
+        "target": "4944f505de225c52",
+        "length_m": 5.52,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "4944f505de225c52",
+        "target": "14650894317d15e5",
+        "length_m": 5.53,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "14650894317d15e5",
+        "target": "4523ac5e0e976caf",
+        "length_m": 5.52,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "4523ac5e0e976caf",
+        "target": "be88da04b957f2d2",
+        "length_m": 5.52,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "be88da04b957f2d2",
+        "target": "ab73db301346b1be",
+        "length_m": 5.51,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "ab73db301346b1be",
+        "target": "d68e3ffe5fe8736a",
+        "length_m": 5.52,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "d68e3ffe5fe8736a",
+        "target": "080632b693359f7e",
+        "length_m": 5.52,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "080632b693359f7e",
+        "target": "1cdc2fd314662192",
+        "length_m": 5.52,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "1cdc2fd314662192",
+        "target": "f8156f591234398d",
+        "length_m": 5.53,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "f8156f591234398d",
+        "target": "962c3523f18e2929",
+        "length_m": 5.54,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "962c3523f18e2929",
+        "target": "9ee807038c706f8c",
+        "length_m": 5.54,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "9ee807038c706f8c",
+        "target": "1b3bf639c0814d32",
+        "length_m": 5.54,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "1b3bf639c0814d32",
+        "target": "01074abd9f50db01",
+        "length_m": 5.54,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "01074abd9f50db01",
+        "target": "52cdfe0002cedab7",
+        "length_m": 6.45,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "52cdfe0002cedab7",
+        "target": "c84b2ccfdb885b6e",
+        "length_m": 4.15,
+        "feature_index": 9,
+        "level": "0"
+      },
+      {
+        "source": "acd0e383798dd80f",
+        "target": "78484577ff289983",
+        "length_m": 10.44,
+        "feature_index": 10,
+        "level": "0"
+      },
+      {
+        "source": "78484577ff289983",
+        "target": "612606360848c155",
+        "length_m": 1.83,
+        "feature_index": 10,
+        "level": "0"
+      },
+      {
+        "source": "5b99661623276bc7",
+        "target": "4af47b71f129028c",
+        "length_m": 5.18,
+        "feature_index": 11,
+        "level": "0"
+      },
+      {
+        "source": "4af47b71f129028c",
+        "target": "20b86dbc1b04e2e1",
+        "length_m": 69.37,
+        "feature_index": 11,
+        "level": "0"
+      },
+      {
+        "source": "20b86dbc1b04e2e1",
+        "target": "8d8a60d544ef3851",
+        "length_m": 28.15,
+        "feature_index": 11,
+        "level": "0"
+      },
+      {
+        "source": "8d8a60d544ef3851",
+        "target": "b81568f1295e6015",
+        "length_m": 20.36,
+        "feature_index": 11,
+        "level": "0"
+      },
+      {
+        "source": "b81568f1295e6015",
+        "target": "89192ddb7f5a2844",
+        "length_m": 20.8,
+        "feature_index": 11,
+        "level": "0"
+      },
+      {
+        "source": "89192ddb7f5a2844",
+        "target": "48b0854d224e334f",
+        "length_m": 1.73,
+        "feature_index": 11,
+        "level": "0"
+      },
+      {
+        "source": "ab4666cca2d1e03c",
+        "target": "925cb569ae14b30e",
+        "length_m": 6.45,
+        "feature_index": 12,
+        "level": "0"
+      },
+      {
+        "source": "2919d8883c53b609",
+        "target": "13998c267ec27104",
+        "length_m": 14.41,
+        "feature_index": 13,
+        "level": "0"
+      },
+      {
+        "source": "13998c267ec27104",
+        "target": "bba24ded6c9cb2bb",
+        "length_m": 35.88,
+        "feature_index": 13,
+        "level": "0"
+      },
+      {
+        "source": "bba24ded6c9cb2bb",
+        "target": "161a7f519b0ec22e",
+        "length_m": 22.53,
+        "feature_index": 13,
+        "level": "0"
+      },
+      {
+        "source": "161a7f519b0ec22e",
+        "target": "c99dc0521a5ce585",
+        "length_m": 50.73,
+        "feature_index": 13,
+        "level": "0"
+      },
+      {
+        "source": "c99dc0521a5ce585",
+        "target": "2b3ffc5d66c4ec68",
+        "length_m": 26.2,
+        "feature_index": 13,
+        "level": "0"
+      },
+      {
+        "source": "2b3ffc5d66c4ec68",
+        "target": "529e85b28b85b534",
+        "length_m": 23.41,
+        "feature_index": 13,
+        "level": "0"
+      },
+      {
+        "source": "529e85b28b85b534",
+        "target": "75a357ec5dab1e3d",
+        "length_m": 65.96,
+        "feature_index": 13,
+        "level": "0"
+      },
+      {
+        "source": "75a357ec5dab1e3d",
+        "target": "78484577ff289983",
+        "length_m": 18.75,
+        "feature_index": 13,
+        "level": "0"
+      },
+      {
+        "source": "2b3ffc5d66c4ec68",
+        "target": "39849b905efcebc1",
+        "length_m": 36.6,
+        "feature_index": 14,
+        "level": "0"
+      },
+      {
+        "source": "39849b905efcebc1",
+        "target": "b81568f1295e6015",
+        "length_m": 34.51,
+        "feature_index": 14,
+        "level": "0"
+      },
+      {
+        "source": "39849b905efcebc1",
+        "target": "37a1edef344292a3",
+        "length_m": 39.4,
+        "feature_index": 15,
+        "level": "0"
+      },
+      {
+        "source": "37a1edef344292a3",
+        "target": "182667598a68d860",
+        "length_m": 36.78,
+        "feature_index": 15,
+        "level": "0"
+      },
+      {
+        "source": "58d1767a347ed12b",
+        "target": "9083a6a605a1e746",
+        "length_m": 3.6,
+        "feature_index": 16,
+        "level": "0"
+      },
+      {
+        "source": "9083a6a605a1e746",
+        "target": "bd6b4df724c55a7d",
+        "length_m": 3.61,
+        "feature_index": 16,
+        "level": "0"
+      },
+      {
+        "source": "bd6b4df724c55a7d",
+        "target": "3c655ee0714e89cb",
+        "length_m": 3.61,
+        "feature_index": 16,
+        "level": "0"
+      },
+      {
+        "source": "3c655ee0714e89cb",
+        "target": "e22dfde14670894b",
+        "length_m": 3.61,
+        "feature_index": 16,
+        "level": "0"
+      },
+      {
+        "source": "e22dfde14670894b",
+        "target": "fea635287b1dd407",
+        "length_m": 3.59,
+        "feature_index": 16,
+        "level": "0"
+      },
+      {
+        "source": "fea635287b1dd407",
+        "target": "d81fe23c3607a3f0",
+        "length_m": 3.6,
+        "feature_index": 16,
+        "level": "0"
+      },
+      {
+        "source": "d81fe23c3607a3f0",
+        "target": "bba24ded6c9cb2bb",
+        "length_m": 3.6,
+        "feature_index": 16,
+        "level": "0"
+      },
+      {
+        "source": "bba24ded6c9cb2bb",
+        "target": "84e5a3a5e3acf938",
+        "length_m": 3.88,
+        "feature_index": 16,
+        "level": "0"
+      },
+      {
+        "source": "84e5a3a5e3acf938",
+        "target": "b8dc93e3b09baae7",
+        "length_m": 3.9,
+        "feature_index": 16,
+        "level": "0"
+      },
+      {
+        "source": "b8dc93e3b09baae7",
+        "target": "dbed745a2aef9332",
+        "length_m": 3.89,
+        "feature_index": 16,
+        "level": "0"
+      },
+      {
+        "source": "dbed745a2aef9332",
+        "target": "49ee3b06e629a4a7",
+        "length_m": 3.9,
+        "feature_index": 16,
+        "level": "0"
+      },
+      {
+        "source": "49ee3b06e629a4a7",
+        "target": "259a9c5955152141",
+        "length_m": 3.91,
+        "feature_index": 16,
+        "level": "0"
+      },
+      {
+        "source": "259a9c5955152141",
+        "target": "5fb89d30ce32b1c0",
+        "length_m": 3.9,
+        "feature_index": 16,
+        "level": "0"
+      },
+      {
+        "source": "5fb89d30ce32b1c0",
+        "target": "515a1ff8afe22207",
+        "length_m": 3.9,
+        "feature_index": 16,
+        "level": "0"
+      },
+      {
+        "source": "515a1ff8afe22207",
+        "target": "57df6b06d2f86742",
+        "length_m": 3.6,
+        "feature_index": 16,
+        "level": "0"
+      },
+      {
+        "source": "57df6b06d2f86742",
+        "target": "b96a07f5e45b9c00",
+        "length_m": 3.59,
+        "feature_index": 16,
+        "level": "0"
+      },
+      {
+        "source": "b96a07f5e45b9c00",
+        "target": "e69eeb451ef9345c",
+        "length_m": 2.28,
+        "feature_index": 16,
+        "level": "0"
+      },
+      {
+        "source": "0419b2f5c569428f",
+        "target": "6483cef2835be327",
+        "length_m": 2.19,
+        "feature_index": 17,
+        "level": "0"
+      },
+      {
+        "source": "6483cef2835be327",
+        "target": "58d1767a347ed12b",
+        "length_m": 3.6,
+        "feature_index": 17,
+        "level": "0"
+      },
+      {
+        "source": "13998c267ec27104",
+        "target": "07ae2283d8101fc5",
+        "length_m": 7.64,
+        "feature_index": 18,
+        "level": "0"
+      }
+    ],
+    "component_sizes": [
+      94,
+      30,
+      4,
+      2,
+      2
+    ],
+    "dangling_node_count": 15,
+    "policy": "仅同层共享几何顶点连接；几何交叉不自动连通，未知层间连接不推断。"
+  },
+  "temporal": {
+    "observed_at": "2026-10-15",
+    "valid_from": null,
+    "valid_to": null,
+    "historical_verified": false,
+    "note": "公开地图现状快照；不能据此确认2014年或其他历史时点的通道布局。"
+  },
+  "boundary": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          121.486,
+          31.2429385
+        ],
+        [
+          121.4859892,
+          31.2427801
+        ],
+        [
+          121.4859814,
+          31.2426652
+        ],
+        [
+          121.4859868,
+          31.2426423
+        ],
+        [
+          121.4859948,
+          31.242632
+        ],
+        [
+          121.4860198,
+          31.2426112
+        ],
+        [
+          121.4863577,
+          31.2425654
+        ],
+        [
+          121.4864811,
+          31.2429988
+        ],
+        [
+          121.4865187,
+          31.242985
+        ],
+        [
+          121.4866156,
+          31.2432922
+        ],
+        [
+          121.4867373,
+          31.2435441
+        ],
+        [
+          121.4868301,
+          31.2437599
+        ],
+        [
+          121.4866874,
+          31.2438487
+        ],
+        [
+          121.4867634,
+          31.2439838
+        ],
+        [
+          121.4868004,
+          31.2440399
+        ],
+        [
+          121.4868919,
+          31.2440236
+        ],
+        [
+          121.4869784,
+          31.2440175
+        ],
+        [
+          121.4870501,
+          31.2440316
+        ],
+        [
+          121.4871555,
+          31.2440983
+        ],
+        [
+          121.4871921,
+          31.2441404
+        ],
+        [
+          121.487218,
+          31.2441968
+        ],
+        [
+          121.4872326,
+          31.2442689
+        ],
+        [
+          121.4872245,
+          31.2443388
+        ],
+        [
+          121.4871891,
+          31.2444063
+        ],
+        [
+          121.4871396,
+          31.2444605
+        ],
+        [
+          121.4870753,
+          31.2445019
+        ],
+        [
+          121.4870105,
+          31.2445229
+        ],
+        [
+          121.4869334,
+          31.2445315
+        ],
+        [
+          121.4868563,
+          31.2445271
+        ],
+        [
+          121.4867855,
+          31.2444949
+        ],
+        [
+          121.4867186,
+          31.2444581
+        ],
+        [
+          121.48668,
+          31.2444101
+        ],
+        [
+          121.4866494,
+          31.2443601
+        ],
+        [
+          121.486638,
+          31.2443146
+        ],
+        [
+          121.4865696,
+          31.2443232
+        ],
+        [
+          121.486581,
+          31.2444052
+        ],
+        [
+          121.4865985,
+          31.244459
+        ],
+        [
+          121.486628,
+          31.2445387
+        ],
+        [
+          121.4865989,
+          31.2445482
+        ],
+        [
+          121.4864533,
+          31.2445994
+        ],
+        [
+          121.4864082,
+          31.2446161
+        ],
+        [
+          121.4858584,
+          31.2448199
+        ],
+        [
+          121.4858453,
+          31.2447667
+        ],
+        [
+          121.4856587,
+          31.2448387
+        ],
+        [
+          121.4856434,
+          31.2447129
+        ],
+        [
+          121.4856382,
+          31.2446702
+        ],
+        [
+          121.4856335,
+          31.2445123
+        ],
+        [
+          121.4856443,
+          31.2444298
+        ],
+        [
+          121.4856604,
+          31.2443747
+        ],
+        [
+          121.4857757,
+          31.2439849
+        ],
+        [
+          121.4859071,
+          31.2436271
+        ],
+        [
+          121.4859554,
+          31.2434804
+        ],
+        [
+          121.4859769,
+          31.2433634
+        ],
+        [
+          121.4859942,
+          31.243129
+        ],
+        [
+          121.486,
+          31.2429385
+        ]
+      ]
+    ]
+  },
+  "builder_version": "pedestrian-assets-2",
+  "evidence": [
+    {
+      "title": "OpenStreetMap 原始几何与设施标签",
+      "publisher": "OpenStreetMap contributors",
+      "url": "https://www.openstreetmap.org/#map=19/31.2438/121.4865",
+      "retrievedAt": "2026-10-15",
+      "usage": "步道、台阶、下沉层、材质和入口几何；缺失宽度不推定为实测。"
+    },
+    {
+      "title": "外滩滨水区城市设计",
+      "publisher": "上海市规划和自然资源局",
+      "url": "https://ghzyj.sh.gov.cn/ghgs/20191231/0032-174998.html",
+      "retrievedAt": "2026-10-15",
+      "usage": "核对滨水步行空间与地道组织背景；规划描述不直接作为现状竣工几何。"
+    },
+    {
+      "title": "上海市人民英雄纪念塔背后的故事",
+      "publisher": "方志上海（官方澎湃号）",
+      "url": "https://m.thepaper.cn/newsDetail_forward_12861470",
+      "retrievedAt": "2026-10-15",
+      "usage": "确认下沉式广场、上下平台、平桥、大台阶和坡道的存在；不据文字资料虚构轮廓或通道宽度。"
+    },
+    {
+      "title": "黄浦公园",
+      "publisher": "复旦大学上海红色文化资源网",
+      "url": "https://shhongse.fudan.edu.cn/info/1019/1454.htm",
+      "retrievedAt": "2026-10-15",
+      "usage": "核对纪念设施及外滩历史纪念馆的场地背景，不作为通道尺寸来源。"
+    },
+    {
+      "title": "黄浦公园（西南门）",
+      "publisher": "高德地图",
+      "url": "https://www.amap.com/place/B00155KKW1",
+      "retrievedAt": "2026-10-16",
+      "usage": "确认西南园门 POI；GCJ-02 转 WGS84。POI 不是门洞测绘，不证明全部出口数量或历史开放状态。"
+    }
+  ],
+  "access_audit": {
+    "checked_at": "2026-10-16",
+    "official_gate_count": null,
+    "complete_inventory": false,
+    "historical_verified": false,
+    "summary": "公开资料不能证实恰好有 A/B/C 三个官方出口。A/B/C 仅为三个模拟边界通道编号，分别对应北侧台阶、西南门 POI 和南侧滨江步道边界连接；不代表真实出口总数。",
+    "channels": [
+      {
+        "id": "A",
+        "name": "北侧台阶连接（OSM）",
+        "coordinates": [
+          121.4857732,
+          31.2447582
+        ],
+        "kind": "mapped_path_connection",
+        "source_url": "https://www.openstreetmap.org/way/177931046",
+        "note": "台阶与外围步道连接；不是已核验园门。"
+      },
+      {
+        "id": "B",
+        "name": "黄浦公园西南门（高德 POI）",
+        "coordinates": [
+          121.48596744335981,
+          31.24360801376491
+        ],
+        "kind": "mapped_park_gate",
+        "source_url": "https://www.amap.com/place/B00155KKW1",
+        "original_coordinates": {
+          "system": "GCJ02",
+          "coordinates": [
+            121.49045,
+            31.241637
+          ]
+        },
+        "note": "位置精度为地图 POI，门洞宽度与开放状态待核对。"
+      },
+      {
+        "id": "C",
+        "name": "南侧滨江步道边界连接（OSM）",
+        "coordinates": [
+          121.48617922148112,
+          31.242589591524606
+        ],
+        "kind": "boundary_connection",
+        "source_url": "https://www.openstreetmap.org/way/909084827",
+        "note": "既有步道与任务边界交点，不是独立园门。"
+      }
+    ],
+    "operational_note": "通道开放时间、来流比例和宽度是任务情景参数，不由地图 POI 证明。"
+  }
+}

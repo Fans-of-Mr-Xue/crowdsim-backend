@@ -52,6 +52,7 @@ class NewsRepository:
     @staticmethod
     def merge_config(existing, incoming):
         return {**{key: incoming[key] for key in ("eventName", "regionId", "location", "regionKeyword", "configSource")},
+                'analysisTaskLink': incoming.get('analysisTaskLink'),
                 "timeRange": [min(existing["timeRange"][0], incoming["timeRange"][0]),
                               max(existing["timeRange"][1], incoming["timeRange"][1])],
                 "keywords": list(dict.fromkeys([*incoming["keywords"], *existing["keywords"]]))[:20],
