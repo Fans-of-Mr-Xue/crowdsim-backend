@@ -9,6 +9,7 @@ from __future__ import annotations
 import math
 from statistics import mean, median, pstdev
 from typing import Any, Iterable
+from copy import deepcopy
 
 
 def _number(value: Any, default: float | None = None) -> float | None:
@@ -91,7 +92,7 @@ def summarize_observations(
             exit_loads.extend(float(value) for value in loads.values() if _number(value) is not None)
 
     region_means = [mean(values) for values in region_series.values() if values]
-    return {
+    summary = {
         "sampleCount": len(payloads),
         "durationSeconds": float(final.get("simTimeSeconds") or 0.0),
         "observedWindowSeconds": duration,
@@ -113,6 +114,55 @@ def summarize_observations(
         "regionRiskGini": _gini(region_means),
         "exitLoadCoefficientVariation": _coefficient_of_variation(exit_loads),
         "riskReboundRate": rebound_transitions / max(1, len(risks) - 1),
+    }
+    during = final.get("during")
+    if during is not None:
+        phenomenon = during["phenomenon"]
+        summary.update({
+            "during": deepcopy(during), "crowdingOccurred": phenomenon["occurred"],
+            "crowdingCoverage": phenomenon["coverage"],
+            "firstCrowdingConfirmedAtSeconds": phenomenon["first_confirmed_at_seconds"],
+            "crowdingDurationSeconds": phenomenon["confirmed_duration_seconds"],
+            "peakCrowdedCount": phenomenon["peak_crowded_count"],
+            "peakHighRiskCount": phenomenon["peak_high_risk_count"],
+            "peakCoreDensity": during["peaks"]["core_density_person_per_m2"],
+            "peakBlockedLowSpeedCount": during["peaks"]["blocked_low_speed_count"],
+            "peakControlHeldCount": during["peaks"]["control_held_count"],
+            "finalCompletionRate": during["completion_rate"],
+            "t95Seconds": during["t95_from_start_seconds"],
+            "duringRunComplete": during["run_complete"],
+        })
+    return summary
+
+
+def summarize_during_runs(rows, scenario):
+    """Only completed, complete-coverage rounds enter the occurrence denominator."""
+    valid = []
+    incomplete = 0
+    for row in rows:
+        if row.get("status") != "completed":
+            continue
+        during = row.get("during") or {}
+        phenomenon = during.get("phenomenon") or {}
+        if (during.get("run_complete") and during.get("population_valid")
+                and during.get("preset_fingerprint") == scenario["presetFingerprint"]
+                and phenomenon.get("coverage") == "complete"
+                and type(phenomenon.get("occurred")) is bool):
+            valid.append(phenomenon["occurred"])
+        else:
+            incomplete += 1
+    return {
+        "presetId": scenario["presetId"], "presetVersion": scenario["presetVersion"],
+        "presetFingerprint": scenario["presetFingerprint"],
+        "phenomenonDefinition": deepcopy(scenario["duringPreset"]["phenomenon"]),
+        "plannedRunCount": len(scenario["seedSet"]), "createdRunCount": len(rows),
+        "validRunCount": len(valid), "occurredRunCount": sum(valid),
+        "noEventRunCount": len(valid) - sum(valid), "incompleteRunCount": incomplete,
+        "failedRunCount": sum(row.get("status") == "failed" for row in rows),
+        "cancelledRunCount": sum(row.get("status") == "cancelled" for row in rows),
+        "pendingRunCount": sum(row.get("status") not in {"completed", "failed", "cancelled"} for row in rows),
+        "occurrenceFrequency": sum(valid) / len(valid) if valid else None,
+        "scope": "preset_simulation_sample_frequency",
     }
 
 

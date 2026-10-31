@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- J29: P15 midpoint; J30: 20% of full P17 centerline from J15; J31: shared endpoint.
+     P17 reference direction is its first straight segment near J15, as confirmed by the user. -->
+<nodes>
+    <node id="huangpu_park_p22_start" x="18538.025" y="5820.825" type="dead_end"/>
+    <node id="huangpu_park_p23_start" x="18561.319" y="5812.939" type="dead_end"/>
+    <node id="huangpu_park_p22_p23_join" x="18544.714" y="5805.244" type="dead_end"/>
+</nodes>

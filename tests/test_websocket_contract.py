@@ -110,8 +110,9 @@ class WebSocketContractTests(unittest.IsolatedAsyncioTestCase):
             run_id = runtime.run_id
             await server._handle_message(json.dumps({"action": "configure", "count": 9000, "request_id": "fixed-again"}))
             self.assertEqual(run_id, runtime.run_id)
-            self.assertEqual("fixed-again", client.messages[-1]["request_id"])
-            self.assertEqual(9000, client.messages[-1]["demand"]["requested_count_ignored"])
+            repeated = next(row for row in reversed(client.messages) if row["type"] == "init")
+            self.assertEqual("fixed-again", repeated["request_id"])
+            self.assertEqual(9000, repeated["demand"]["requested_count_ignored"])
         finally:
             runtime.close()
 
@@ -120,8 +121,9 @@ class WebSocketContractTests(unittest.IsolatedAsyncioTestCase):
         run_id = self.runtime.run_id
         await self.server._handle_message(json.dumps({"action": "configure", "request_id": "init-2"}))
         self.assertEqual(run_id, self.runtime.run_id)
-        self.assertEqual("init-2", self.client.messages[-1]["request_id"])
-        self.assertFalse(self.client.messages[-1]["demand"]["count_configurable"])
+        repeated = next(row for row in reversed(self.client.messages) if row["type"] == "init")
+        self.assertEqual("init-2", repeated["request_id"])
+        self.assertFalse(repeated["demand"]["count_configurable"])
         await self.server._handle_message(json.dumps({"action": "configure", "request_id": "init-2"}))
         self.assertEqual("duplicate_request", self.client.messages[-1]["code"])
 
@@ -149,7 +151,7 @@ class WebSocketContractTests(unittest.IsolatedAsyncioTestCase):
 
         async def old_loop():
             try:
-                await asyncio.Event().wait()
+                await self.server._loop_stop.wait()
             finally:
                 stopped.append(True)
 
@@ -168,7 +170,7 @@ class WebSocketContractTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotEqual(old.directory, self.runtime.recorder.directory)
         self.assertEqual("reset-1", self.client.messages[-1]["request_id"])
 
-    async def test_cleanup_failure_still_releases_client_and_requests(self):
+    async def test_detach_failure_still_releases_client_and_retains_requests(self):
         class EmptyClient(CapturingClient):
             def __aiter__(self):
                 return self
@@ -178,24 +180,29 @@ class WebSocketContractTests(unittest.IsolatedAsyncioTestCase):
 
         self.server.client = None
         self.server.processed_request_ids.add("old")
-        with patch.object(self.runtime, "close", side_effect=OSError("forced close failure")):
+        with patch.object(self.runtime.performance, "flush", side_effect=OSError("forced flush failure")):
             with self.assertRaises(OSError):
                 await self.server._handler(EmptyClient())
         self.assertIsNone(self.server.client)
-        self.assertEqual(set(), self.server.processed_request_ids)
+        self.assertEqual({"old"}, self.server.processed_request_ids)
 
-    async def test_real_socket_reconnect_creates_one_new_run_and_reuses_request_id(self):
+    async def test_real_socket_reconnect_attaches_same_run_and_keeps_writer(self):
         self.server.client = None
+        async def receive_init(socket):
+            while True:
+                message = json.loads(await socket.recv())
+                if message["type"] == "init":
+                    return message
         async with websockets.serve(self.server._handler, "127.0.0.1", 0) as listener:
             port = listener.sockets[0].getsockname()[1]
             url = f"ws://127.0.0.1:{port}"
             async with websockets.connect(url) as socket:
                 await socket.send(json.dumps({"action": "configure", "request_id": "connection-init"}))
-                first = json.loads(await socket.recv())
+                first = await receive_init(socket)
                 self.assertEqual("init", first["type"])
                 old_writer = self.runtime.recorder.decision_writer
                 await socket.send(json.dumps({"action": "configure", "request_id": "second-init"}))
-                repeated = json.loads(await socket.recv())
+                repeated = await receive_init(socket)
                 self.assertEqual(first["run_id"], repeated["run_id"])
 
             async def wait_release():
@@ -203,12 +210,14 @@ class WebSocketContractTests(unittest.IsolatedAsyncioTestCase):
                     await asyncio.sleep(0.01)
 
             await asyncio.wait_for(wait_release(), 3)
-            self.assertTrue(old_writer.closed)
+            self.assertFalse(old_writer.closed)
             async with websockets.connect(url) as socket:
-                await socket.send(json.dumps({"action": "configure", "request_id": "connection-init"}))
-                second = json.loads(await socket.recv())
+                await socket.send(json.dumps({"action": "attach_run", "request_id": "connection-attach",
+                                              "run_id": first["run_id"], "requirement_id": None}))
+                second = await receive_init(socket)
                 self.assertEqual("init", second["type"], second)
-                self.assertNotEqual(first["run_id"], second["run_id"])
+                self.assertEqual(first["run_id"], second["run_id"])
+                self.assertTrue(second["resumed"])
                 self.assertEqual(0, self.runtime.snapshot_index)
 
     async def test_non_object_message_returns_error(self):

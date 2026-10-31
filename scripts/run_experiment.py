@@ -12,10 +12,11 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from crowdsim.core.simulation_runtime import RuntimeState, SimulationRuntime
+from crowdsim.infrastructure.performance_probe import add_performance_arguments, performance_options
 from pedestrian_decision_skill import PedestrianDecisionSkill
 
 
-def parse_args():
+def parse_args(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--sumo-config", type=Path, default=ROOT / "scenarios" / "shanghai_bund" / "bund.hotspot.sumocfg")
     parser.add_argument("--ped-routes", type=Path, default=ROOT / "scenarios" / "shanghai_bund" / "bund_hotspot.rou.xml")
@@ -27,12 +28,18 @@ def parse_args():
     parser.add_argument("--deepseek-config", type=Path)
     parser.add_argument("--pair-id")
     parser.add_argument("--variant", default="baseline")
-    return parser.parse_args()
+    add_performance_arguments(parser)
+    args = parser.parse_args(argv)
+    try:
+        performance_options(args)
+    except ValueError as exc:
+        parser.error(str(exc))
+    return args
 
 
 async def run(args):
     decision_engine = PedestrianDecisionSkill(config_path=args.deepseek_config) if args.mode == "llm" else None
-    runtime = SimulationRuntime(args.sumo_config, pedestrian_route_files=[args.ped_routes], decision_engine=decision_engine, use_llm=args.mode == "llm")
+    runtime = SimulationRuntime(args.sumo_config, pedestrian_route_files=[args.ped_routes], decision_engine=decision_engine, use_llm=args.mode == "llm", performance_options=performance_options(args))
     if args.count is not None:
         runtime.configure_demand(args.count)
     try:
@@ -43,7 +50,8 @@ async def run(args):
         for _ in range(step_limit):
             if runtime.state != RuntimeState.RUNNING:
                 break
-            await runtime.tick_async()
+            with runtime.performance.offline_cycle(runtime):
+                await runtime.tick_async()
         if args.until_finished and runtime.state == RuntimeState.RUNNING:
             raise RuntimeError(f"simulation did not finish within {args.max_steps} steps")
     finally:

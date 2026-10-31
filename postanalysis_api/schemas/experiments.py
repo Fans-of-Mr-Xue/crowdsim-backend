@@ -37,10 +37,8 @@ def validate_simulation(payload: dict) -> dict:
             "metricIds": _metric_ids(data.get("metricIds"), "metricIds")}
 
 
-def validate_experiment(payload: dict) -> dict:
-    data = object_(payload, "body", keys={"name", "datasetId", "scenario", "seedStart", "parallelism", "groups", "metricIds", "pcFeatures"})
-    scenario = _scenario(data)
-    raw_features = array(data.get("pcFeatures"), "pcFeatures", 2, 20)
+def _pc_features(raw, duration):
+    raw_features = array(raw, "pcFeatures", 2, 20)
     features = []
     feature_ids = set()
     for index, raw_feature in enumerate(raw_features):
@@ -51,19 +49,27 @@ def validate_experiment(payload: dict) -> dict:
         if feature_id in feature_ids:
             fail(f"{field}.id", "PC 特征 ID 不得重复")
         feature_ids.add(feature_id)
-        start = integer(feature.get("windowStartSeconds"), f"{field}.windowStartSeconds", 0, scenario["durationSeconds"] - 1)
-        end = integer(feature.get("windowEndSeconds"), f"{field}.windowEndSeconds", start + 1, scenario["durationSeconds"])
+        start = integer(feature.get("windowStartSeconds"), f"{field}.windowStartSeconds", 0, duration - 1)
+        end = integer(feature.get("windowEndSeconds"), f"{field}.windowEndSeconds", start + 1, duration)
         features.append({"id": feature_id,
                          "metricId": choice(feature.get("metricId"), f"{field}.metricId", set(METRICS)),
                          "regionId": text_(feature.get("regionId"), f"{field}.regionId", max_len=64, pattern=IDENTIFIER),
                          "windowStartSeconds": start, "windowEndSeconds": end,
                          "aggregation": choice(feature.get("aggregation"), f"{field}.aggregation", {"peak", "mean", "end"})})
+    return features
+
+
+def validate_experiment(payload: dict) -> dict:
+    data = object_(payload, "body", keys={"name", "datasetId", "scenario", "seedStart", "parallelism", "groups", "metricIds", "pcFeatures", "reviewPlanId", "reviewPlanVersion"})
+    scenario = _scenario(data)
+    features = _pc_features(data.get("pcFeatures"), scenario["durationSeconds"])
+    feature_ids = {feature["id"] for feature in features}
     groups = array(data.get("groups"), "groups", 1, 12)
     result = []
     used_ids = set()
     for index, raw in enumerate(groups):
         field = f"groups[{index}]"
-        group = object_(raw, field, keys={"id", "name", "repeatCount", "hypothesis", "manipulatedFeatureId", "interventions"})
+        group = object_(raw, field, keys={"id", "name", "repeatCount", "hypothesis", "manipulatedFeatureId", "interventions", "experimentType", "referenceGroupId", "sourceGroupId"})
         group_id = text_(group.get("id"), f"{field}.id", max_len=32, pattern=r"CF-[0-9]{2}")
         if group_id in used_ids:
             fail(f"{field}.id", "实验组 ID 不得重复")
@@ -102,6 +108,9 @@ def validate_experiment(payload: dict) -> dict:
                        "repeatCount": integer(group.get("repeatCount"), f"{field}.repeatCount", 1, 50),
                        "hypothesis": text_(group.get("hypothesis"), f"{field}.hypothesis", max_len=500),
                        "manipulatedFeatureId": choice(group.get("manipulatedFeatureId"), f"{field}.manipulatedFeatureId", feature_ids),
+                       "experimentType": choice(group.get("experimentType", "observation"), f"{field}.experimentType", {"observation", "intervention", "mechanism"}),
+                       "referenceGroupId": text_(group.get("referenceGroupId", "F-00"), f"{field}.referenceGroupId", max_len=32, pattern=r"F-00|CF-[0-9]{2}"),
+                       "sourceGroupId": text_(group["sourceGroupId"], f"{field}.sourceGroupId", max_len=64, pattern=IDENTIFIER) if group.get("sourceGroupId") else None,
                        "interventions": actions})
     seed = integer(data.get("seedStart"), "seedStart", 0, MAX_SEED)
     if seed + max(group["repeatCount"] for group in result) - 1 > MAX_SEED:
@@ -109,9 +118,14 @@ def validate_experiment(payload: dict) -> dict:
     metric_ids = _metric_ids(data.get("metricIds"), "metricIds")
     if any(feature["metricId"] not in metric_ids for feature in features):
         fail("pcFeatures", "PC 特征引用的指标必须包含在 metricIds 中", "METRIC_CAPABILITY_MISMATCH")
+    group_ids = {group["id"] for group in result}
+    if any(group["referenceGroupId"] != "F-00" and group["referenceGroupId"] not in group_ids or group["referenceGroupId"] == group["id"] for group in result):
+        fail("groups.referenceGroupId", "参照组必须是 F-00 或本批次其他组")
     return {"name": text_(data.get("name"), "name", max_len=120),
             "datasetId": text_(data.get("datasetId"), "datasetId", max_len=80, pattern=IDENTIFIER),
             "scenario": scenario, "seedStart": seed,
             "parallelism": integer(data.get("parallelism"), "parallelism", 1, 8),
             "metricIds": metric_ids,
-            "pcFeatures": features, "groups": result}
+            "pcFeatures": features, "groups": result,
+            "reviewPlanId": text_(data["reviewPlanId"], "reviewPlanId", max_len=80, pattern=IDENTIFIER) if data.get("reviewPlanId") else None,
+            "reviewPlanVersion": text_(data["reviewPlanVersion"], "reviewPlanVersion", min_len=64, max_len=64, pattern=r"[a-f0-9]{64}") if data.get("reviewPlanVersion") else None}

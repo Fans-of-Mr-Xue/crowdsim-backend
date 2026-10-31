@@ -36,5 +36,3 @@ def validate_dataset(payload):
     result["records"] = records
     result["record_count"] = len(records)
     return result
-
-

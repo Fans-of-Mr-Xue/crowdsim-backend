@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from statistics import mean
 
-from algorithm._inference import paired_summary
+from algorithms._inference import paired_summary
 from postanalysis_api.schemas.common import ApiError, metric_value
 from postanalysis_api.schemas.metrics import METRICS, METRIC_VERSION
 from .causal_analysis import analyze_completed_batch, _finite
@@ -64,8 +64,8 @@ def build_result(task: dict, runs: list[dict]) -> dict:
                     "interventionSupportedDirections": analysis["interventionSupportedDirections"]}
     result = {"datasetVersion": task["datasetVersion"], "definitionVersion": METRIC_VERSION,
               "metrics": aggregates, "comparison": comparison, "causalGraph": causal_graph,
-              "observation": {"candidateGraph": analysis["pc"], "baselineRunCount": len(baseline_seeds)},
-              "intervention": {"groups": analysis["groups"],
+              "observation": {"baselineRunCount": len(baseline_seeds)},
+              "intervention": {"candidateGraph": analysis["pc"], "groups": analysis["groups"],
                                "supportedDirections": analysis["interventionSupportedDirections"]},
               "analysisStatus": analysis["analysisStatus"]}
     # Mechanism analysis needs actual switch/decision/message event evidence.

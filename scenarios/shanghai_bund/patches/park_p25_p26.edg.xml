@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Two straight 2m pedestrian roads. Split only P20b and P17b;
+     retain the original P17 bend and both outer endpoint cuts. -->
+<edges>
+    <edge id="huangpu_park_j05_j15_p21_south" from="huangpu_park_p21_east" to="huangpu_park_p25_p20" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18530.684,5878.872 18542.657,5853.696"/>
+    <edge id="huangpu_park_j05_j15_p21_south_p25_south" from="huangpu_park_p25_p20" to="8417005113" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18542.657,5853.696 18554.630,5828.520"/>
+    <edge id="906417854_p23_south" from="huangpu_park_p23_start" to="huangpu_park_p26_p17" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18561.319,5812.939 18570.170,5792.320 18580.915,5772.235"/>
+    <edge id="906417854_p23_south_p26_south" from="huangpu_park_p26_p17" to="8417005115" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18580.915,5772.235 18591.580,5752.300"/>
+    <edge id="huangpu_park_p25" from="huangpu_park_p22_start" to="huangpu_park_p25_p20" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18538.025,5820.825 18542.657,5853.696"/>
+    <edge id="huangpu_park_p26" from="8417005102" to="huangpu_park_p26_p17" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18569.860,5714.580 18580.915,5772.235"/>
+</edges>

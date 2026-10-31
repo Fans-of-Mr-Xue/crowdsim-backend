@@ -1,0 +1,208 @@
+<?xml version='1.0' encoding='utf-8'?>
+<routes>
+    <vType id="network_test_pedestrian" vClass="pedestrian" maxSpeed="1.30" speedFactor="1.0" speedDev="0.1" />
+    <person id="edge-R01-forward" type="network_test_pedestrian" depart="0.00" departPos="21.07948603">
+        <walk edges="R01" arrivalPos="189.71537429" />
+    </person>
+    <person id="edge-R01-reverse" type="network_test_pedestrian" depart="1.00" departPos="189.71537429">
+        <walk edges="R01" arrivalPos="21.07948603" />
+    </person>
+    <person id="edge-R02-forward" type="network_test_pedestrian" depart="2.00" departPos="19.97099574">
+        <walk edges="R02" arrivalPos="179.73896165" />
+    </person>
+    <person id="edge-R02-reverse" type="network_test_pedestrian" depart="3.00" departPos="179.73896165">
+        <walk edges="R02" arrivalPos="19.97099574" />
+    </person>
+    <person id="edge-R03-forward" type="network_test_pedestrian" depart="4.00" departPos="16.40988893">
+        <walk edges="R03" arrivalPos="147.68900035" />
+    </person>
+    <person id="edge-R03-reverse" type="network_test_pedestrian" depart="5.00" departPos="147.68900035">
+        <walk edges="R03" arrivalPos="16.40988893" />
+    </person>
+    <person id="edge-R04-forward" type="network_test_pedestrian" depart="6.00" departPos="3.70201431">
+        <walk edges="R04" arrivalPos="33.31812880" />
+    </person>
+    <person id="edge-R04-reverse" type="network_test_pedestrian" depart="7.00" departPos="33.31812880">
+        <walk edges="R04" arrivalPos="3.70201431" />
+    </person>
+    <person id="edge-R05-forward" type="network_test_pedestrian" depart="8.00" departPos="0.64012879">
+        <walk edges="R05" arrivalPos="5.76115913" />
+    </person>
+    <person id="edge-R05-reverse" type="network_test_pedestrian" depart="9.00" departPos="5.76115913">
+        <walk edges="R05" arrivalPos="0.64012879" />
+    </person>
+    <person id="edge-R06-forward" type="network_test_pedestrian" depart="10.00" departPos="1.28585359">
+        <walk edges="R06" arrivalPos="11.57268228" />
+    </person>
+    <person id="edge-R06-reverse" type="network_test_pedestrian" depart="11.00" departPos="11.57268228">
+        <walk edges="R06" arrivalPos="1.28585359" />
+    </person>
+    <person id="edge-R07-forward" type="network_test_pedestrian" depart="12.00" departPos="0.02000000">
+        <walk edges="R07" arrivalPos="0.18000000" />
+    </person>
+    <person id="edge-R07-reverse" type="network_test_pedestrian" depart="13.00" departPos="0.18000000">
+        <walk edges="R07" arrivalPos="0.02000000" />
+    </person>
+    <person id="edge-R08a-forward" type="network_test_pedestrian" depart="14.00" departPos="0.64654815">
+        <walk edges="R08a" arrivalPos="5.81893332" />
+    </person>
+    <person id="edge-R08a-reverse" type="network_test_pedestrian" depart="15.00" departPos="5.81893332">
+        <walk edges="R08a" arrivalPos="0.64654815" />
+    </person>
+    <person id="edge-R08b-forward" type="network_test_pedestrian" depart="16.00" departPos="0.72187203">
+        <walk edges="R08b" arrivalPos="6.49684823" />
+    </person>
+    <person id="edge-R08b-reverse" type="network_test_pedestrian" depart="17.00" departPos="6.49684823">
+        <walk edges="R08b" arrivalPos="0.72187203" />
+    </person>
+    <person id="edge-R09a-forward" type="network_test_pedestrian" depart="18.00" departPos="1.27315710">
+        <walk edges="R09a" arrivalPos="11.45841391" />
+    </person>
+    <person id="edge-R09a-reverse" type="network_test_pedestrian" depart="19.00" departPos="11.45841391">
+        <walk edges="R09a" arrivalPos="1.27315710" />
+    </person>
+    <person id="edge-R09b-forward" type="network_test_pedestrian" depart="20.00" departPos="1.02127800">
+        <walk edges="R09b" arrivalPos="9.19150204" />
+    </person>
+    <person id="edge-R09b-reverse" type="network_test_pedestrian" depart="21.00" departPos="9.19150204">
+        <walk edges="R09b" arrivalPos="1.02127800" />
+    </person>
+    <person id="edge-R10-forward" type="network_test_pedestrian" depart="22.00" departPos="0.89756467">
+        <walk edges="R10" arrivalPos="8.07808201" />
+    </person>
+    <person id="edge-R10-reverse" type="network_test_pedestrian" depart="23.00" departPos="8.07808201">
+        <walk edges="R10" arrivalPos="0.89756467" />
+    </person>
+    <person id="edge-R12-forward" type="network_test_pedestrian" depart="24.00" departPos="0.17003874">
+        <walk edges="R12" arrivalPos="1.53034870" />
+    </person>
+    <person id="edge-R12-reverse" type="network_test_pedestrian" depart="25.00" departPos="1.53034870">
+        <walk edges="R12" arrivalPos="0.17003874" />
+    </person>
+    <person id="edge-R13-forward" type="network_test_pedestrian" depart="26.00" departPos="1.44932936">
+        <walk edges="R13" arrivalPos="13.04396426" />
+    </person>
+    <person id="edge-R13-reverse" type="network_test_pedestrian" depart="27.00" departPos="13.04396426">
+        <walk edges="R13" arrivalPos="1.44932936" />
+    </person>
+    <person id="edge-R14-forward" type="network_test_pedestrian" depart="28.00" departPos="3.48304702">
+        <walk edges="R14" arrivalPos="31.34742322" />
+    </person>
+    <person id="edge-R14-reverse" type="network_test_pedestrian" depart="29.00" departPos="31.34742322">
+        <walk edges="R14" arrivalPos="3.48304702" />
+    </person>
+    <person id="edge-R15-forward" type="network_test_pedestrian" depart="30.00" departPos="3.37884058">
+        <walk edges="R15" arrivalPos="30.40956526" />
+    </person>
+    <person id="edge-R15-reverse" type="network_test_pedestrian" depart="31.00" departPos="30.40956526">
+        <walk edges="R15" arrivalPos="3.37884058" />
+    </person>
+    <person id="edge-R16-forward" type="network_test_pedestrian" depart="32.00" departPos="1.24086125">
+        <walk edges="R16" arrivalPos="11.16775129" />
+    </person>
+    <person id="edge-R16-reverse" type="network_test_pedestrian" depart="33.00" departPos="11.16775129">
+        <walk edges="R16" arrivalPos="1.24086125" />
+    </person>
+    <person id="edge-R17-forward" type="network_test_pedestrian" depart="34.00" departPos="0.14822962">
+        <walk edges="R17" arrivalPos="1.33406654" />
+    </person>
+    <person id="edge-R17-reverse" type="network_test_pedestrian" depart="35.00" departPos="1.33406654">
+        <walk edges="R17" arrivalPos="0.14822962" />
+    </person>
+    <person id="edge-R18-forward" type="network_test_pedestrian" depart="36.00" departPos="1.47855401">
+        <walk edges="R18" arrivalPos="13.30698606" />
+    </person>
+    <person id="edge-R18-reverse" type="network_test_pedestrian" depart="37.00" departPos="13.30698606">
+        <walk edges="R18" arrivalPos="1.47855401" />
+    </person>
+    <person id="edge-R22-forward" type="network_test_pedestrian" depart="38.00" departPos="1.36115604">
+        <walk edges="R22" arrivalPos="12.25040438" />
+    </person>
+    <person id="edge-R22-reverse" type="network_test_pedestrian" depart="39.00" departPos="12.25040438">
+        <walk edges="R22" arrivalPos="1.36115604" />
+    </person>
+    <person id="edge-R23-forward" type="network_test_pedestrian" depart="40.00" departPos="0.75642750">
+        <walk edges="R23" arrivalPos="6.80784747" />
+    </person>
+    <person id="edge-R23-reverse" type="network_test_pedestrian" depart="41.00" departPos="6.80784747">
+        <walk edges="R23" arrivalPos="0.75642750" />
+    </person>
+    <person id="edge-R24-forward" type="network_test_pedestrian" depart="42.00" departPos="0.30035999">
+        <walk edges="R24" arrivalPos="2.70323991" />
+    </person>
+    <person id="edge-R24-reverse" type="network_test_pedestrian" depart="43.00" departPos="2.70323991">
+        <walk edges="R24" arrivalPos="0.30035999" />
+    </person>
+    <person id="edge-R25a-forward" type="network_test_pedestrian" depart="44.00" departPos="16.54932363">
+        <walk edges="R25a" arrivalPos="148.94391265" />
+    </person>
+    <person id="edge-R25a-reverse" type="network_test_pedestrian" depart="45.00" departPos="148.94391265">
+        <walk edges="R25a" arrivalPos="16.54932363" />
+    </person>
+    <person id="edge-R25b-forward" type="network_test_pedestrian" depart="46.00" departPos="3.22601968">
+        <walk edges="R25b" arrivalPos="29.03417708" />
+    </person>
+    <person id="edge-R25b-reverse" type="network_test_pedestrian" depart="47.00" departPos="29.03417708">
+        <walk edges="R25b" arrivalPos="3.22601968" />
+    </person>
+    <person id="edge-R25c-forward" type="network_test_pedestrian" depart="48.00" departPos="19.40717876">
+        <walk edges="R25c" arrivalPos="174.66460882" />
+    </person>
+    <person id="edge-R25c-reverse" type="network_test_pedestrian" depart="49.00" departPos="174.66460882">
+        <walk edges="R25c" arrivalPos="19.40717876" />
+    </person>
+    <person id="edge-R26a-forward" type="network_test_pedestrian" depart="50.00" departPos="16.52770557">
+        <walk edges="R26a" arrivalPos="148.74935010" />
+    </person>
+    <person id="edge-R26a-reverse" type="network_test_pedestrian" depart="51.00" departPos="148.74935010">
+        <walk edges="R26a" arrivalPos="16.52770557" />
+    </person>
+    <person id="edge-R26b-forward" type="network_test_pedestrian" depart="52.00" departPos="2.96694347">
+        <walk edges="R26b" arrivalPos="26.70249126" />
+    </person>
+    <person id="edge-R26b-reverse" type="network_test_pedestrian" depart="53.00" departPos="26.70249126">
+        <walk edges="R26b" arrivalPos="2.96694347" />
+    </person>
+    <person id="edge-R26c-forward" type="network_test_pedestrian" depart="54.00" departPos="18.66645805">
+        <walk edges="R26c" arrivalPos="167.99812242" />
+    </person>
+    <person id="edge-R26c-reverse" type="network_test_pedestrian" depart="55.00" departPos="167.99812242">
+        <walk edges="R26c" arrivalPos="18.66645805" />
+    </person>
+    <person id="edge-R29-forward" type="network_test_pedestrian" depart="56.00" departPos="3.59497383">
+        <walk edges="R29" arrivalPos="32.35476447" />
+    </person>
+    <person id="edge-R29-reverse" type="network_test_pedestrian" depart="57.00" departPos="32.35476447">
+        <walk edges="R29" arrivalPos="3.59497383" />
+    </person>
+    <person id="edge-R30-forward" type="network_test_pedestrian" depart="58.00" departPos="3.41829390">
+        <walk edges="R30" arrivalPos="30.76464514" />
+    </person>
+    <person id="edge-R30-reverse" type="network_test_pedestrian" depart="59.00" departPos="30.76464514">
+        <walk edges="R30" arrivalPos="3.41829390" />
+    </person>
+    <person id="edge-R31-forward" type="network_test_pedestrian" depart="60.00" departPos="1.59250341">
+        <walk edges="R31" arrivalPos="14.33253069" />
+    </person>
+    <person id="edge-R31-reverse" type="network_test_pedestrian" depart="61.00" departPos="14.33253069">
+        <walk edges="R31" arrivalPos="1.59250341" />
+    </person>
+    <person id="south-0" type="network_test_pedestrian" depart="62.00" departPos="19.40717876">
+        <walk edges="R25c R31 R26c" arrivalPos="18.66645805" />
+    </person>
+    <person id="south-1" type="network_test_pedestrian" depart="63.00" departPos="18.66645805">
+        <walk edges="R26c R31 R25c" arrivalPos="19.40717876" />
+    </person>
+    <person id="middle-to-R08b" type="network_test_pedestrian" depart="64.00" departPos="99.85497869">
+        <walk edges="R02 R07 R08b" arrivalPos="3.60936013" />
+    </person>
+    <person id="R08b-to-middle" type="network_test_pedestrian" depart="65.00" departPos="3.60936013">
+        <walk edges="R08b R07 R02" arrivalPos="99.85497869" />
+    </person>
+    <person id="middle-to-R09a" type="network_test_pedestrian" depart="66.00" departPos="99.85497869">
+        <walk edges="R02 R07 R09a" arrivalPos="6.36578550" />
+    </person>
+    <person id="R09a-to-middle" type="network_test_pedestrian" depart="67.00" departPos="6.36578550">
+        <walk edges="R09a R07 R02" arrivalPos="99.85497869" />
+    </person>
+</routes>

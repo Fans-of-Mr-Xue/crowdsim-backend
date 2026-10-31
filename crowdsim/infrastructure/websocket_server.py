@@ -9,7 +9,7 @@ import json
 import os
 from pathlib import Path
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 from aiohttp import WSMsgType, web
 import websockets
@@ -17,8 +17,17 @@ import websockets
 from postanalysis_api.main import handle_http
 from postanalysis_api.services.application import PostAnalysisApp
 
-from crowdsim.core.simulation_runtime import RuntimeState
+from crowdsim.core.simulation_runtime import RuntimeState, SimulationRuntime
+from crowdsim.domain.during_preset import load_during_preset
+from crowdsim.domain.artificial_society_spec import (
+    ArtificialSocietySpec,
+    ArtificialSocietyValidationError,
+)
 from crowdsim.domain.requirement_spec import RequirementSpec, RequirementValidationError
+from crowdsim.infrastructure.artificial_society_repository import (
+    ArtificialSocietyNotFoundError,
+    ArtificialSocietyRepository,
+)
 from crowdsim.infrastructure.requirement_repository import (
     RequirementNotFoundError,
     RequirementRepository,
@@ -33,6 +42,8 @@ class OverlayServer:
         port: int,
         *,
         requirement_repository: RequirementRepository | None = None,
+        runtime_factory: Callable[[dict], Any] | None = None,
+        artificial_society_repository: ArtificialSocietyRepository | None = None,
     ) -> None:
         self.simulator = simulator
         self.host = host
@@ -40,17 +51,29 @@ class OverlayServer:
         self.client: Any = None
         self.task: Optional[asyncio.Task] = None
         self.processed_request_ids: set[str] = set()
+        self.request_results: dict[str, dict] = {}
+        self._request_run_id = getattr(simulator, "run_id", None)
+        self._loop_stop = asyncio.Event()
         self.requirements = requirement_repository or RequirementRepository()
+        self.runtime_factory = runtime_factory
+        self.artificial_societies = artificial_society_repository or ArtificialSocietyRepository(
+            requirements=self.requirements
+        )
         self.post_app: PostAnalysisApp | None = None
+
+    def create_app(self) -> web.Application:
+        app = web.Application()
+        app.router.add_get("/", self._aio_websocket_handler)
+        app.router.add_get("/api/v1/performance/config", self._performance_config)
+        app.router.add_post("/api/v1/requirements", self._requirement_http_handler)
+        app.router.add_route("*", "/api/v1/post", self._post_http_handler)
+        app.router.add_route("*", "/api/v1/post/{tail:.*}", self._post_http_handler)
+        return app
 
     async def start(self) -> None:
         data_dir = os.environ.get("CROWDSIM_POST_DATA_DIR") or Path(__file__).resolve().parents[2] / "runs" / "postanalysis"
         self.post_app = PostAnalysisApp(data_dir)
-        app = web.Application()
-        app.router.add_get("/", self._aio_websocket_handler)
-        app.router.add_route("*", "/api/v1/post", self._post_http_handler)
-        app.router.add_route("*", "/api/v1/post/{tail:.*}", self._post_http_handler)
-        runner = web.AppRunner(app)
+        runner = web.AppRunner(self.create_app())
         await runner.setup()
         try:
             site = web.TCPSite(runner, self.host, self.port)
@@ -58,14 +81,42 @@ class OverlayServer:
             print(f"[CrowdSim] WebSocket and post API listening at {self.host}:{self.port}")
             await asyncio.Future()
         finally:
-            await runner.cleanup()
-            if self.post_app is not None:
-                self.post_app.close()
+            try:
+                await runner.cleanup()
+            finally:
+                try:
+                    await self._stop_runtime()
+                finally:
+                    if self.post_app is not None:
+                        self.post_app.close()
+
+    async def _performance_config(self, request: web.Request) -> web.Response:
+        options = self.simulator.performance_options
+        return web.json_response({'enabled': options.enabled,
+                                  'system_enabled': options.enabled and options.system_enabled,
+                                  'interval_wall_seconds': options.interval})
 
     async def _post_http_handler(self, request: web.Request) -> web.Response:
         if self.post_app is None:
             raise web.HTTPServiceUnavailable(text="post analysis API is not initialized")
         return await handle_http(request, self.post_app)
+
+    async def _requirement_http_handler(self, request: web.Request) -> web.Response:
+        # Saving a snapshot must not claim the sole simulation WebSocket or
+        # detach/pause a run already owned by a browser or experiment service.
+        try:
+            data = await request.json()
+            if not isinstance(data, dict):
+                return web.json_response(self._error("invalid_requirement", "request body must be an object"), status=400)
+            result = await asyncio.to_thread(
+                self._accept_requirement, data.get("requirement"), data.get("request_id"),
+            )
+            return web.json_response(result, status=201)
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return web.json_response(self._error("invalid_json", "Message must be valid JSON."), status=400)
+        except CommandError as exc:
+            status = 500 if exc.code == "requirement_storage_failed" else 400
+            return web.json_response(self._error(exc.code, str(exc)), status=status)
 
     async def _aio_websocket_handler(self, request: web.Request) -> web.WebSocketResponse:
         websocket = web.WebSocketResponse()
@@ -79,7 +130,6 @@ class OverlayServer:
             await websocket.close()
             return
         self.client = websocket
-        self.processed_request_ids.clear()
         try:
             async for message in websocket:
                 if isinstance(message, str):
@@ -92,22 +142,30 @@ class OverlayServer:
             pass
         finally:
             try:
-                await self._stop_runtime()
+                await self._detach_runtime()
             finally:
                 self.client = None
-                self.processed_request_ids.clear()
 
     async def _stop_loop(self) -> None:
+        # Finish the in-flight decision/tick boundary. Cancelling here could
+        # leave scheduler clocks advanced without applying the resolved plans.
+        self._loop_stop.set()
         task = self.task
         if task is not None:
             try:
-                task.cancel()
-                try:
-                    await task
-                except asyncio.CancelledError:
-                    pass
+                await asyncio.shield(task)
+            except websockets.ConnectionClosed:
+                pass
             finally:
                 self.task = None
+
+    async def _detach_runtime(self) -> None:
+        try:
+            await self._stop_loop()
+        finally:
+            if self.simulator.state == RuntimeState.RUNNING:
+                self.simulator.pause()
+            self.simulator.performance.flush(self.simulator, force=True)
 
     async def _stop_runtime(self) -> None:
         try:
@@ -115,30 +173,83 @@ class OverlayServer:
         finally:
             self.simulator.close()
 
-    def _validate_count(self, count) -> None:
+    def _validate_count(self, count, simulator=None) -> None:
+        simulator = simulator or self.simulator
         if count is None:
             return
         if type(count) is not int or count < 0:
             raise CommandError("invalid_count", "count must be a non-negative integer")
-        if self.simulator.demand_mode == "generated_hotspot":
+        if simulator.demand_mode in {"generated_hotspot", "generated_network"}:
             try:
-                self.simulator.hotspot_demand_spec.validate_count(count)
+                simulator.generated_demand_spec.validate_count(count)
             except ValueError as exc:
                 raise CommandError("invalid_count", str(exc)) from exc
-        if self.simulator.demand_mode != "fixed" and not self.simulator.demand_count_configurable:
+        if simulator.demand_mode != "fixed" and not simulator.demand_count_configurable:
             raise CommandError("unsupported_demand_count", "count requires explicit <person> demand")
 
-    async def _send_init(self, request_id) -> None:
-        await self._send({**self.simulator.init_frame(), "request_id": request_id})
+    async def _send_init(self, request_id, *, resumed=False) -> None:
+        await self._send({**self.simulator.init_frame(), "request_id": request_id,
+                          "session_protocol_version": 1, "resumed": resumed})
+        if (resumed and getattr(self.simulator, "current", None) is not None) or (getattr(self.simulator, "demand_generation_report", None) or {}).get("initial_population"):
+            # Publish the frozen READY snapshot so the map can show the initial
+            # crowd before Start, using its existing update-frame renderer.
+            await self._send(self.simulator.frame())
+
+    def _sync_request_scope(self) -> None:
+        run_id = getattr(self.simulator, "run_id", None)
+        if self._request_run_id != run_id:
+            self._request_run_id = run_id
+            self.processed_request_ids.clear()
+            self.request_results.clear()
+
+    def _check_run(self, data, *, required=False) -> None:
+        run_id = data.get("run_id")
+        if (required and not run_id) or (run_id is not None and run_id != self.simulator.run_id):
+            raise CommandError("run_not_found", "the requested simulation run is no longer available")
+
+    @staticmethod
+    def _artificial_society_binding(simulator) -> tuple[str, str]:
+        record = getattr(simulator, "artificial_society_record", None)
+        if not isinstance(record, dict):
+            return "", ""
+        return str(record.get("model_id") or ""), str(record.get("fingerprint") or "")
+
+    @classmethod
+    def _check_artificial_society_binding(cls, simulator, data, *, required=False) -> None:
+        expected_id = data.get("artificial_society_id")
+        expected_fingerprint = data.get("artificial_society_fingerprint")
+        if expected_id is None and expected_fingerprint is None and not required:
+            return
+        active_id, active_fingerprint = cls._artificial_society_binding(simulator)
+        if str(expected_id or "") != active_id or str(expected_fingerprint or "") != active_fingerprint:
+            raise CommandError(
+                "run_artificial_society_mismatch",
+                "the retained run belongs to a different artificial society version",
+            )
+
+    async def _attach_run(self, data, request_id) -> None:
+        self._check_run(data, required=True)
+        if self.simulator.state not in {RuntimeState.READY, RuntimeState.RUNNING, RuntimeState.PAUSED, RuntimeState.FINISHED}:
+            raise CommandError("run_unavailable", "the retained simulation cannot be resumed; explicitly reset to start a new run")
+        if data.get("requirement_id") != getattr(self.simulator, "requirement_id", None):
+            raise CommandError("run_requirement_mismatch", "the retained run belongs to a different requirement")
+        for field in ("location_id", "network_sha256"):
+            if data.get(field) is not None and data[field] != getattr(self.simulator, field, None):
+                raise CommandError("run_scenario_mismatch", "the retained run belongs to a different scenario or network")
+        self._check_artificial_society_binding(self.simulator, data)
+        await self._stop_loop()
+        if self.simulator.state == RuntimeState.RUNNING:
+            self.simulator.pause()
+        await self._send_init(request_id, resumed=True)
 
     async def _prepare(self, request_id, count, *, reset=False, seed=None):
-        if self.simulator.demand_mode == "generated_hotspot":
+        if self.simulator.demand_mode in {"generated_hotspot", "generated_network"}:
             await self._send({"type": "preparing", "request_id": request_id,
                               "message": "正在生成本轮需求并初始化 SUMO，请稍候。"})
         # The message handler awaits this work: no tick/reset can overlap it.
         # A worker keeps WebSocket ping/pong responsive during larger generation.
         if reset:
-            if self.simulator.demand_mode == "generated_hotspot" and count is None:
+            if self.simulator.demand_mode in {"generated_hotspot", "generated_network"} and count is None:
                 operation = asyncio.to_thread(
                     self.simulator.reset, use_default_count=True, **({"seed": seed} if seed is not None else {})
                 )
@@ -153,15 +264,80 @@ class OverlayServer:
             await asyncio.shield(worker)
         except asyncio.CancelledError:
             # Cancelling a to_thread await does not stop its worker. Finish it
-            # before the handler's finally closes SUMO and its recorder.
+            # before the handler detaches and retains the completed runtime.
             try:
                 await worker
             finally:
                 raise
 
-    async def _configure(self, data, request_id) -> None:
+    async def _reset_during_preset(self, data, request_id, seed) -> None:
+        if data.get("artificial_society_id") not in (None, ""):
+            raise CommandError("preset_model_conflict", "during presets use their frozen decision configuration")
+        if data.get("during_preset_version") is None or not data.get("during_preset_fingerprint"):
+            raise CommandError("invalid_preset", "preset version and fingerprint are required")
+        preset = load_during_preset(data["during_preset_id"], version=data["during_preset_version"],
+                                   fingerprint=data["during_preset_fingerprint"])
+        record = self.requirements.load(data.get("requirement_id"))
+        count = preset["requirement"]["population"]["total"]
+        if type(data.get("count")) is not int or data["count"] != count:
+            raise CommandError("requirement_count_mismatch", "count must match the during preset")
+        candidate = SimulationRuntime.for_during_preset(
+            preset, record, seed, sumo_binary=getattr(self.simulator, "_sumo_binary", None),
+            performance_options=getattr(self.simulator, "performance_options", None),
+        )
+        await self._stop_runtime()
+        self.simulator = candidate
+        await self._prepare(request_id, count)
+        await self._send_init(request_id)
+
+    async def _configure(self, data, request_id, *, replace_run=False, seed=None) -> None:
+        if data.get("during_preset_id") is not None:
+            if not replace_run:
+                raise CommandError("preset_requires_reset", "a during preset must be selected by reset")
+            await self._reset_during_preset(data, request_id, seed)
+            return
         requirement_record = None
+        candidate = self.simulator
+        count = data.get("count")
+        if count is not None and (type(count) is not int or count < 0):
+            raise CommandError("invalid_count", "count must be a non-negative integer")
+        artificial_society_record = None
+        artificial_society_id = data.get("artificial_society_id")
+        if artificial_society_id == "":
+            artificial_society_id = None
+        current_model_id, current_model_fingerprint = self._artificial_society_binding(self.simulator)
+        if (not replace_run and artificial_society_id is not None
+                and self.simulator.state in {RuntimeState.READY, RuntimeState.RUNNING, RuntimeState.PAUSED, RuntimeState.FINISHED}
+                and (str(artificial_society_id) != current_model_id
+                     or (data.get("artificial_society_fingerprint") is not None
+                         and str(data.get("artificial_society_fingerprint") or "") != current_model_fingerprint))):
+            raise CommandError(
+                "artificial_society_requires_reset",
+                "changing artificial society version requires an explicit reset",
+            )
+        if artificial_society_id is not None:
+            try:
+                artificial_society_record = self.artificial_societies.load(artificial_society_id)
+            except ArtificialSocietyNotFoundError as exc:
+                raise CommandError("unknown_artificial_society", str(exc)) from exc
+            except (OSError, ValueError) as exc:
+                raise CommandError("invalid_artificial_society_record", str(exc)) from exc
+            expected_fingerprint = data.get("artificial_society_fingerprint")
+            if expected_fingerprint is not None and str(expected_fingerprint or "") != str(artificial_society_record.get("fingerprint") or ""):
+                raise CommandError(
+                    "artificial_society_version_mismatch",
+                    "artificial society model fingerprint does not match the requested version",
+                )
+
         requirement_id = data.get("requirement_id")
+        if artificial_society_record is not None:
+            model_requirement_id = artificial_society_record["requirement_id"]
+            if requirement_id is not None and requirement_id != model_requirement_id:
+                raise CommandError(
+                    "artificial_society_requirement_mismatch",
+                    "artificial society model and requirement must reference the same version",
+                )
+            requirement_id = model_requirement_id
         if requirement_id is not None:
             try:
                 requirement_record = self.requirements.load(requirement_id)
@@ -176,24 +352,21 @@ class OverlayServer:
                     "unsupported_requirement_location",
                     f"location {location_id} is stored but cannot initialize the current SUMO scenario",
                 )
-            if not self.simulator.supports_requirement(requirement_record):
-                raise CommandError(
-                    "unsupported_runtime_scenario",
-                    "this requirement needs the hotspot backend preset; start the server with --scenario hotspot",
-                )
             current_requirement_id = getattr(self.simulator, "requirement_id", None)
             if (
-                current_requirement_id
-                and current_requirement_id != requirement_id
+                current_requirement_id != requirement_id
+                and not replace_run
                 and self.simulator.state not in {RuntimeState.CREATED, RuntimeState.CLOSED, RuntimeState.ERROR}
             ):
                 raise CommandError(
                     "requirement_requires_reset",
                     "changing requirement requires a closed runtime or explicit reset",
                 )
-            self.simulator.configure_requirement(requirement_record)
+        else:
+            # An omitted ID keeps the already-bound requirement. Its recorded
+            # population must not silently diverge from the rebuilt demand.
+            requirement_record = getattr(self.simulator, "requirement_record", None)
 
-        count = data.get("count")
         if requirement_record is not None:
             requirement_count = int(requirement_record["requirement"]["population"]["total"])
             if count is not None and count != requirement_count:
@@ -202,18 +375,52 @@ class OverlayServer:
                     "count must match requirement.population.total",
                 )
             count = requirement_count
-        if count is not None and (type(count) is not int or count < 0):
-            raise CommandError("invalid_count", "count must be a non-negative integer")
-        if (self.simulator.state in {RuntimeState.RUNNING, RuntimeState.PAUSED}
+        leaves_during_preset = bool(getattr(self.simulator, "during_preset", None)) and (
+            requirement_record is not None
+            and requirement_record["requirement"] != self.simulator.requirement_record["requirement"]
+        )
+        if requirement_record is not None and (leaves_during_preset or not self.simulator.supports_requirement(requirement_record)):
+            if self.runtime_factory is None:
+                raise CommandError("unsupported_runtime_scenario", "the current backend configuration does not support this location")
+            candidate = self.runtime_factory(requirement_record)
+            if not candidate.supports_requirement(requirement_record):
+                candidate.close()
+                raise CommandError("unsupported_runtime_scenario", "selected SUMO runtime does not match the submitted location")
+        if (not replace_run and self.simulator.state in {RuntimeState.RUNNING, RuntimeState.PAUSED}
                 and self.simulator.demand_mode != "fixed" and count is not None):
             effective_count = self.simulator.demand_count
             if effective_count is None:
                 effective_count = len(self.simulator.population.ledger.planned_ids)
             if count != effective_count:
                 raise CommandError("count_requires_reset", "changing demand requires explicit reset")
-        self._validate_count(count)
+        self._validate_count(count, candidate)
+        if replace_run and candidate is self.simulator:
+            await self._stop_runtime()
+        if candidate is not self.simulator:
+            await self._stop_runtime()
+            self.simulator = candidate
+        # Bind only after validation and after the old tick/engine have stopped.
+        if requirement_record is not None:
+            previous_model = getattr(self.simulator, "artificial_society_record", None)
+            if (replace_run and artificial_society_record is None
+                    and isinstance(previous_model, dict)
+                    and previous_model.get("requirement_id") != requirement_record["requirement_id"]):
+                # reset() re-applies its saved model: never carry a model from a
+                # different requirement into the newly requested run.
+                clear_model = getattr(self.simulator, "clear_artificial_society", None)
+                if clear_model is not None:
+                    clear_model()
+                else:
+                    self.simulator.artificial_society_record = None
+                    self.simulator.artificial_society_id = None
+            self.simulator.configure_requirement(requirement_record)
+        if artificial_society_record is not None:
+            self.simulator.configure_artificial_society(artificial_society_record)
         state = self.simulator.state
-        if state in {RuntimeState.CLOSED, RuntimeState.ERROR}:
+        if replace_run and seed is not None:
+            await self._stop_loop()
+            await self._prepare(request_id, count, reset=True, seed=seed)
+        elif state in {RuntimeState.CLOSED, RuntimeState.ERROR}:
             await self._stop_loop()
             await self._prepare(request_id, count, reset=True)
         elif state == RuntimeState.CREATED:
@@ -230,17 +437,21 @@ class OverlayServer:
                 if count != effective_count:
                     raise CommandError("count_requires_reset", "changing demand requires explicit reset")
         self.simulator.set_playback(speed_factor=data.get("speedFactor"), push_fps=data.get("pushFps"))
-        await self._send_init(request_id)
+        await self._send_init(request_id, resumed=not replace_run and state in {
+            RuntimeState.READY, RuntimeState.RUNNING, RuntimeState.PAUSED, RuntimeState.FINISHED})
 
-    async def _submit_requirement(self, data, request_id) -> None:
+    def _accept_requirement(self, requirement, request_id=None, *, for_experiment=False) -> dict:
         try:
-            spec = RequirementSpec.parse(data.get("requirement"))
-            record = self.requirements.create(spec)
+            spec = RequirementSpec.parse(
+                requirement, allow_empty_population=for_experiment,
+            )
+            record = (self.requirements.create(spec, purpose="experiment") if for_experiment
+                      else self.requirements.create(spec))
         except RequirementValidationError as exc:
             raise CommandError("invalid_requirement", str(exc)) from exc
         except OSError as exc:
             raise CommandError("requirement_storage_failed", str(exc)) from exc
-        await self._send({
+        return {
             "type": "requirement_accepted",
             "request_id": request_id,
             "requirement_id": record["requirement_id"],
@@ -249,6 +460,29 @@ class OverlayServer:
             "status": record["status"],
             "capabilities": record["capabilities"],
             "warnings": record["capabilities"].get("warnings", []),
+        }
+
+    async def _submit_requirement(self, data, request_id, *, for_experiment=False) -> None:
+        await self._send(self._accept_requirement(
+            data.get("requirement"), request_id, for_experiment=for_experiment,
+        ))
+
+    async def _submit_artificial_society(self, data, request_id) -> None:
+        try:
+            spec = ArtificialSocietySpec.parse(data.get("artificial_society"))
+            record = self.artificial_societies.create(spec)
+        except ArtificialSocietyValidationError as exc:
+            raise CommandError("invalid_artificial_society", str(exc)) from exc
+        except (OSError, ValueError) as exc:
+            raise CommandError("artificial_society_storage_failed", str(exc)) from exc
+        await self._send({
+            "type": "artificial_society_accepted",
+            "request_id": request_id,
+            "model_id": record["model_id"],
+            "schema_version": record["schema_version"],
+            "fingerprint": record["fingerprint"],
+            "status": record["status"],
+            "capabilities": record["capabilities"],
         })
 
     async def _handle_message(self, raw: str) -> None:
@@ -267,14 +501,25 @@ class OverlayServer:
             self.simulator.performance.frontend(data.get("report"))
             return
         request_id = data.get("request_id")
-        if request_id is not None and str(request_id) in self.processed_request_ids:
-            await self._send(self._error("duplicate_request", "request_id was already processed", request_id))
-            return
+        self._sync_request_scope()
         try:
+            if action not in {"submit_requirement", "submit_experiment_requirement", "configure"}:
+                self._check_run(data)
+            if request_id is not None and (str(request_id) in self.processed_request_ids
+                                           or str(request_id) in self.request_results):
+                await self._send(self.request_results.get(str(request_id)) or
+                                 self._error("duplicate_request", "request_id was already processed", request_id))
+                return
             if action == "submit_requirement":
                 await self._submit_requirement(data, request_id)
+            elif action == "submit_experiment_requirement":
+                await self._submit_requirement(data, request_id, for_experiment=True)
+            elif action == "submit_artificial_society":
+                await self._submit_artificial_society(data, request_id)
             elif action == "configure":
                 await self._configure(data, request_id)
+            elif action == "attach_run":
+                await self._attach_run(data, request_id)
             elif action == "set_speed":
                 self.simulator.set_playback(speed_factor=data.get("speedFactor"))
                 await self._send({"type": "speed", "request_id": request_id, "speedFactor": self.simulator.sim_speed_factor, "step_length": self.simulator.step_length, "real_step_interval": self.simulator.real_step_interval})
@@ -286,12 +531,21 @@ class OverlayServer:
                 self.simulator.start()
                 await self._command_result(action, request_id, "applied")
                 if self.task is None or self.task.done():
+                    self._loop_stop.clear()
                     self.task = asyncio.create_task(self._run_loop())
             elif action == "pause":
+                await self._stop_loop()
                 self.simulator.pause()
                 await self._command_result(action, request_id, "applied")
+                await self._send(self.simulator.frame())
+            elif action == "close_run":
+                await self._stop_runtime()
+                await self._send({"type": "run_closed", "request_id": request_id,
+                                  "run_id": self.simulator.run_id, "runtime_state": self.simulator.state.value})
             elif action == "get_status":
                 await self._send({"type": "status", "request_id": request_id, **self.simulator.diagnostics()})
+            elif action == "get_state":
+                await self._send(self.simulator.frame())
             elif action == "get_agent_state":
                 person_id = str(data.get("id", ""))
                 state = self.simulator.population.state_for(person_id)
@@ -319,17 +573,33 @@ class OverlayServer:
                 queued = self.simulator.queue_command(action, data, request_id)
                 if self.simulator.state != RuntimeState.RUNNING:
                     self.simulator.process_pending_commands()
-                    for result in self.simulator.take_command_results():
-                        await self._send(result)
+                    await self._send_command_results()
+                    await self._send(self.simulator.frame())
                 else:
                     await self._send(queued)
             elif action == "reset":
-                self._validate_count(data.get("count"))
                 seed = data.get("seed")
                 if seed is not None and type(seed) is not int:
                     raise CommandError("invalid_seed", "seed must be an integer")
+                self._check_run(data)
+                if (data.get("requirement_id") is not None or data.get("during_preset_id") is not None
+                        or data.get("artificial_society_id") is not None):
+                    await self._configure(data, request_id, replace_run=True, seed=seed)
+                    if request_id is not None:
+                        self.processed_request_ids.add(str(request_id))
+                    return
+                count = data.get("count")
+                if count is not None and (type(count) is not int or count < 0):
+                    raise CommandError("invalid_count", "count must be a non-negative integer")
+                record = getattr(self.simulator, "requirement_record", None)
+                if record is not None:
+                    required_count = record["requirement"]["population"]["total"]
+                    if count is not None and count != required_count:
+                        raise CommandError("requirement_count_mismatch", "count must match requirement.population.total")
+                    count = required_count
+                self._validate_count(count)
                 await self._stop_loop()
-                await self._prepare(request_id, data.get("count"), reset=True, seed=seed)
+                await self._prepare(request_id, count, reset=True, seed=seed)
                 await self._send_init(request_id)
             else:
                 raise CommandError("unknown_action", f"Unknown action: {action}")
@@ -337,6 +607,10 @@ class OverlayServer:
                 self.processed_request_ids.add(str(request_id))
         except CommandError as exc:
             error = self._error(exc.code, str(exc), request_id)
+            if exc.code in {"run_not_found", "run_unavailable", "run_requirement_mismatch", "run_scenario_mismatch", "requirement_requires_reset"}:
+                error["active_run"] = {"run_id": getattr(self.simulator, "run_id", None),
+                                       "requirement_id": getattr(self.simulator, "requirement_id", None),
+                                       "runtime_state": self.simulator.state.value}
             if exc.code == "unsupported_demand_count":
                 error["demand"] = self.simulator.demand_diagnostics()
             await self._send(error)
@@ -346,17 +620,18 @@ class OverlayServer:
             await self._send(self._error("operation_failed", f"{type(exc).__name__}: {exc}", request_id))
 
     async def _run_loop(self) -> None:
-        while self.client is not None:
+        while self.client is not None and not self._loop_stop.is_set():
             running = self.simulator.state == RuntimeState.RUNNING
             probe = self.simulator.performance
-            started, cpu_started, simulated = time.perf_counter(), time.process_time(), self.simulator.time_seconds
+            started = time.perf_counter()  # Required for simulation pacing, even without diagnostics.
+            cpu_started = time.process_time() if probe.enabled else None
+            simulated = self.simulator.time_seconds
             terminal = False
             try:
                 if running:
                     with probe.measure('tick_total'):
                         await self.simulator.tick_async()
-                    for result in self.simulator.take_command_results():
-                        await self._send(result)
+                    await self._send_command_results()
                     await self._send(self.simulator.frame())
                 terminal = self.simulator.state in {RuntimeState.FINISHED, RuntimeState.ERROR, RuntimeState.CLOSED}
                 if not terminal:
@@ -373,9 +648,26 @@ class OverlayServer:
                     # sleep(0) deliberately yields even when over budget, so
                     # pause/reset/connection tasks still get an opportunity.
                     with probe.measure('pacing_sleep') if running else nullcontext():
-                        await asyncio.sleep(sleep_seconds)
+                        if sleep_seconds <= 0:
+                            await asyncio.sleep(0)
+                        else:
+                            try:
+                                await asyncio.wait_for(self._loop_stop.wait(), sleep_seconds)
+                            except asyncio.TimeoutError:
+                                pass
+            except Exception as exc:
+                # A failed tick (including a recorder I/O error) must reach the
+                # experiment owner even when no final update frame can be built.
+                # Otherwise the background task ends while the run stays active.
+                try:
+                    await self._send({"type": "runtime_error", "run_id": self.simulator.run_id,
+                                      "message": f"{type(exc).__name__}: {exc}"})
+                except Exception:
+                    # A lost transport is reported separately by the gateway.
+                    pass
+                return
             finally:
-                if running:
+                if running and probe.enabled and cpu_started is not None:
                     elapsed = time.perf_counter() - started
                     probe.sample('cycle_total', elapsed * 1000)
                     probe.cycle(self.simulator.time_seconds - simulated, elapsed, time.process_time() - cpu_started)
@@ -384,14 +676,29 @@ class OverlayServer:
                 return
 
     async def _command_result(self, action: str, request_id: Any, status: str) -> None:
-        result = {"type": "command_result", "request_id": request_id, "action": action, "status": status, "applied_at": self.simulator.time_seconds}
+        result = {"type": "command_result", "request_id": request_id, "run_id": self.simulator.run_id,
+                  "action": action, "status": status, "applied_at": self.simulator.time_seconds}
         if self.simulator.recorder is not None:
             self.simulator.recorder.record_command({"action": action, "request_id": request_id}, result)
         await self._send(result)
 
+    async def _send_command_results(self) -> None:
+        results = self.simulator.take_command_results()
+        # Cache every applied result before a closed transport can interrupt
+        # delivery. Reattaching must never reapply an already executed policy.
+        for result in results:
+            self._remember_result(result)
+        for result in results:
+            await self._send(result)
+
     @staticmethod
     def _error(code: str, message: str, request_id: Any = None) -> Dict[str, Any]:
         return {"type": "error", "code": code, "message": message, "request_id": request_id}
+
+    def _remember_result(self, payload: Dict[str, Any]) -> None:
+        self._sync_request_scope()
+        if payload.get("request_id") is not None and payload.get("type") in {"command_result", "speed", "run_closed"}:
+            self.request_results[str(payload["request_id"])] = dict(payload)
 
     @staticmethod
     async def _send_text(websocket: Any, value: str) -> None:
@@ -399,6 +706,7 @@ class OverlayServer:
         await sender(value)
 
     async def _send(self, payload: Dict[str, Any]) -> None:
+        self._remember_result(payload)
         if self.client is not None:
             probe = self.simulator.performance
             if payload.get('type') == 'update':

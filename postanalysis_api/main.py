@@ -62,9 +62,13 @@ async def handle_http(http_request: web.Request, app: PostAnalysisApp) -> web.Re
         if http_request.method == "POST":
             if http_request.content_length is not None and http_request.content_length > MAX_REQUEST_BYTES:
                 raise ApiError("PAYLOAD_TOO_LARGE", "请求体超过 16 MiB", 413)
-            raw = await http_request.content.read(MAX_REQUEST_BYTES + 1)
-            if len(raw) > MAX_REQUEST_BYTES:
-                raise ApiError("PAYLOAD_TOO_LARGE", "请求体超过 16 MiB", 413)
+            # StreamReader.read(n) may return only the currently available bytes.
+            # Assemble the entire bounded body before decoding split UTF-8/JSON.
+            raw = bytearray()
+            async for chunk in http_request.content.iter_chunked(64 * 1024):
+                if len(raw) + len(chunk) > MAX_REQUEST_BYTES:
+                    raise ApiError("PAYLOAD_TOO_LARGE", "请求体超过 16 MiB", 413)
+                raw.extend(chunk)
             if raw:
                 if http_request.content_type != "application/json":
                     raise ApiError("UNSUPPORTED_MEDIA_TYPE", "请求体必须是 application/json", 415)

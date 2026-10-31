@@ -7,16 +7,34 @@
     {
       "id": "chen_yi_square",
       "name": "陈毅广场",
-      "anchor": {"longitude": 121.4859637, "latitude": 31.2410283},
+      "anchor": {
+        "longitude": 121.4859637,
+        "latitude": 31.2410283
+      },
       "anchor_basis": "OpenStreetMap node 476071294 (陈毅雕像) is used only as a geographic anchor",
       "target_edge": "40301368#10",
-      "target_edges": ["40301368#10"],
-      "measurement_edges": ["40301368#9", "40301368#10", "40301368#12"],
-      "arrival_window_seconds": [240, 420],
-      "dwell_seconds": [240, 420],
+      "target_edges": [
+        "40301368#10"
+      ],
+      "measurement_edges": [
+        "40301368#9",
+        "40301368#10",
+        "40301368#12"
+      ],
+      "arrival_window_seconds": [
+        240,
+        420
+      ],
+      "dwell_seconds": [
+        240,
+        420
+      ],
       "visitor_count": 600,
       "background_count": 1330,
-      "background_departure_window_seconds": [0, 1199.5],
+      "background_departure_window_seconds": [
+        0,
+        1199.5
+      ],
       "approach_max_distance_meters": 250,
       "reference_walking_speed_mps": 1.2,
       "phase_thresholds": {
@@ -39,16 +57,21 @@
     {
       "id": "people_heroes_monument",
       "name": "上海人民英雄纪念塔",
-      "anchor": {"longitude": 121.4869337, "latitude": 31.2442744},
+      "anchor": {
+        "longitude": 121.4869337,
+        "latitude": 31.2442744
+      },
       "anchor_basis": "centroid of OpenStreetMap way 47007059 (人民英雄纪念塔); geographic anchor only",
       "target_edge": "679361567#1",
       "target_edges": [
         "679361567#1",
-        "679361567#2"
+        "679361567#2",
+        "679361567#2_m3_north"
       ],
       "entry_edges": [
         "178411801#0",
-        "177931018#0"
+        "177931018#0",
+        "monument_m3"
       ],
       "access_portals": [
         {
@@ -62,6 +85,12 @@
           "edge": "177931018#0",
           "outside_side": "auto",
           "inside_side": "auto"
+        },
+        {
+          "id": "west_middle_gate",
+          "edge": "monument_m3",
+          "outside_side": "from",
+          "inside_side": "to"
         }
       ],
       "park_access_edges": [
@@ -78,16 +107,35 @@
         "906417852#7",
         "906417852#8",
         "906417852#9",
+        "906417852#9_p24_north",
         "906417852#10",
+        "906417852#10_p21_north",
         "906417853#0",
+        "906417853#0_p22_east",
         "906417853#1",
         "906417854",
+        "906417854_p23_south",
         "906417855#1",
-        "906417855#2"
+        "906417855#2",
+        "huangpu_park_j05_j15",
+        "huangpu_park_j05_j15_p21_south",
+        "huangpu_park_p21",
+        "huangpu_park_p22",
+        "huangpu_park_p23",
+        "huangpu_park_p24",
+        "906417854_p23_south_p26_south",
+        "huangpu_park_j05_j15_p21_south_p25_south",
+        "huangpu_park_p25",
+        "huangpu_park_p26",
+        "huangpu_park_p27_a",
+        "huangpu_park_p27_b",
+        "huangpu_park_p27_c",
+        "huangpu_park_p28"
       ],
       "measurement_edges": [
         "679361567#1",
-        "679361567#2"
+        "679361567#2",
+        "679361567#2_m3_north"
       ],
       "excluded_edges": [
         "178411801#1",
@@ -99,20 +147,60 @@
         "679361564"
       ],
       "visitor_spawn_edges": [
+        "177931046",
         "906417851#0",
+        "906417851#1",
+        "906417852#0",
+        "906417852#1",
+        "906417852#2",
+        "906417852#3",
+        "906417852#4",
+        "906417852#5",
+        "906417852#6",
         "906417852#7",
         "906417852#8",
         "906417852#9",
-        "906417852#10"
+        "906417852#9_p24_north",
+        "906417852#10",
+        "906417852#10_p21_north",
+        "906417853#0",
+        "906417853#0_p22_east",
+        "906417853#1",
+        "906417854",
+        "906417854_p23_south",
+        "906417855#1",
+        "906417855#2",
+        "huangpu_park_j05_j15",
+        "huangpu_park_j05_j15_p21_south",
+        "huangpu_park_p21",
+        "huangpu_park_p22",
+        "huangpu_park_p23",
+        "huangpu_park_p24",
+        "178411801#0",
+        "177931018#0",
+        "monument_m3",
+        "679361567#1",
+        "679361567#2",
+        "679361567#2_m3_north",
+        "906417854_p23_south_p26_south",
+        "huangpu_park_j05_j15_p21_south_p25_south",
+        "huangpu_park_p25",
+        "huangpu_park_p26",
+        "huangpu_park_p27_a",
+        "huangpu_park_p27_b",
+        "huangpu_park_p27_c",
+        "huangpu_park_p28"
       ],
-      "spawn_distribution": "edge_length_weighted_random",
+      "spawn_distribution": "edge_length_uniform",
       "spawn_position_margin_meters": 2.0,
       "visitor_destination_edges": [
         "906417851#0",
         "906417852#7",
         "906417852#8",
         "906417852#9",
-        "906417852#10"
+        "906417852#9_p24_north",
+        "906417852#10",
+        "906417852#10_p21_north"
       ],
       "destination_distribution": "edge_uniform_random",
       "destination_position_margin_meters": 2.0,
@@ -145,51 +233,86 @@
         {
           "id": "east_best_view",
           "edge": "679361567#1",
-          "position_range_meters": [35, 90],
+          "position_range_meters": [
+            35,
+            90
+          ],
           "weight": 0.55
         },
         {
           "id": "north_secondary_view",
           "edge": "679361567#1",
-          "position_range_meters": [15, 35],
+          "position_range_meters": [
+            15,
+            35
+          ],
           "weight": 0.15
         },
         {
           "id": "south_secondary_view",
           "edge": "679361567#1",
-          "position_range_meters": [90, 110],
+          "position_range_meters": [
+            90,
+            110
+          ],
           "weight": 0.15
         },
         {
           "id": "northwest_overflow",
           "edge": "679361567#1",
-          "position_range_meters": [2, 15],
+          "position_range_meters": [
+            2,
+            15
+          ],
           "weight": 0.05
         },
         {
           "id": "southwest_overflow",
           "edge": "679361567#1",
-          "position_range_meters": [110, 119.78],
+          "position_range_meters": [
+            110,
+            119.78
+          ],
           "weight": 0.04
         },
         {
-          "id": "west_back_overflow",
+          "id": "west_back_overflow_south",
           "edge": "679361567#2",
-          "position_range_meters": [2, 17.83],
-          "weight": 0.06
+          "position_range_meters": [
+            2,
+            3.81
+          ],
+          "weight": 0.01590044
+        },
+        {
+          "id": "west_back_overflow_north",
+          "edge": "679361567#2_m3_north",
+          "position_range_meters": [
+            2,
+            7.02
+          ],
+          "weight": 0.04409956
         }
       ],
       "align_first_visitor_to_zero": true,
-      "visitor_arrival_profile": [
-        {"window_seconds": [240, 360], "fraction": 0.10},
-        {"window_seconds": [360, 540], "fraction": 0.75},
-        {"window_seconds": [540, 660], "fraction": 0.15}
+      "visitor_departure_window_seconds": [
+        0,
+        0
       ],
-      "activity_window_seconds": [600, 800],
-      "visitor_release_delay_seconds": [0, 90],
+      "activity_window_seconds": [
+        600,
+        800
+      ],
+      "visitor_release_delay_seconds": [
+        0,
+        90
+      ],
       "visitor_count": 700,
       "background_count": 0,
-      "background_departure_window_seconds": [0, 1799.5],
+      "background_departure_window_seconds": [
+        0,
+        1799.5
+      ],
       "approach_max_distance_meters": 750,
       "reference_walking_speed_mps": 1.2,
       "phase_thresholds": {
@@ -216,8 +339,17 @@
         "congested_density_person_per_m2": 1.5,
         "speed_floor_mps": 0.2
       },
-      "spatial_model_status": "hotspot-visitors-only demand, random west-side park-path spawning, direct park-internal approach, single outer-ring destination zone, park-internal profile-aware route choice, independently sampled west-side dispersal destinations, weighted viewing arcs, concentrated pre-event arrivals, common event release and gradual dispersal defined",
-      "basis": "the scenario intentionally contains no background pedestrians; visitors start at length-weighted random positions on five pedestrian edges along the west side of Huangpu Park, skip the external park-entry stage because they are already inside the park network, and gather only on the outer ground-level pedestrian ring around the monument; the inner surface ring and OpenStreetMap level=-1/deeper ring edges are explicitly excluded from visitor routes; each visitor independently selects one of the same five west-side park edges with equal edge probability and a random on-edge position as the dispersal destination, without linking it to the spawn location or forcing a monument exit; the eastern arc is treated as the best-view engineering assumption, 75 percent of visitors are planned to arrive in the main pre-event wave, the event runs from 600 to 800 seconds, and individual release is spread across the following 90 seconds; timing, viewing preference and volume remain engineering assumptions pending calibration"
+      "spatial_model_status": "hotspot-visitors-only demand, simultaneous initial population distributed uniformly by pedestrian-edge length over Huangpu Park paths including P20 and its P21 connector parallel to P15 and P22/P23 meeting at J31 and P24 connecting J31 to P13, three monument access portals and the ground-level outer ring, assigned viewing destinations, profile-aware park route choice, common event release and gradual dispersal; P25 and P26 included with their physical access junctions; three-segment P27 trapezoid branch included; northeast perpendicular P28 branch from J33 included",
+      "basis": "all visitors depart at zero and are initially distributed over Huangpu Park paths, all three monument portals including M3, and the outer ground-level monument ring; edge quotas are proportional to full pedestrian-edge length and positions are stratified randomly along each edge with endpoint margins capped at one quarter of short edge lengths; initial ring visitors stay on the ring, initial portal visitors move inward, and park visitors choose a monument entrance; the inner surface ring and OpenStreetMap level=-1/deeper edges remain excluded; P20 is the user-requested straight 2-meter-wide J05-to-J15 park footway with walking-area widths of 4 meters at J05 and 6 meters at J15 (increased from 5 meters after the P22/P23 stress test); P21 is a straight 2-meter-wide connector parallel to P15, from P14 (J27) to the north-to-south 40% point of the complete P20 centerline (J28), with new walking areas initially set to 4 meters; P14 and P20 are split at these physical junctions and all segments remain in the initial population and route-choice scope; the P14 destination weight is divided by usable segment length to preserve the relative weights of the five original physical west-side destination roads; P22 starts at the complete P15 midpoint (J29), runs southeast parallel to the near-J15 straight segment of P17, and terminates at J31; P23 starts at 20% of the full P17 polyline length from J15 (J30), runs southwest parallel to P15, and also terminates at J31; both new footways are 2 meters wide and all three new walking areas are 4 meters wide; P15 and P17 are split at these physical access junctions and all resulting segments are included in initial population and route choice; P24 is the user-requested straight 2-meter-wide connector from J31 southwest to P13 at J32, with equal angles to P22 and P23 at J31; P13 is split at J32, and its destination weight is divided by usable segment length to preserve the original physical-road quota; J31 is rebuilt as a three-arm walking area, and J31/J32 are initially widened to 4 meters; M3 is the manually modeled 2-meter-wide J13-to-J26 entrance on the shorter western outer arc H2; assigned viewing-arc weights, independent west-side dispersal destinations, the event window of 600 to 800 seconds and release delays of 0 to 90 seconds remain engineering assumptions pending calibration; P25 connects J29 to J33 at the full J28-J15 midpoint and P26 connects J21 to J34 at one third of the full J18-J30 polyline length from J18; both are straight 2-meter-wide footways, P20/P17 retain all split segments and the original P17 bend, J29/J21 are rebuilt with four/five arms and all four affected walking areas are widened to at least 4 meters; P27 is the user-confirmed three-segment northeast J34-J35-J36-J30 trapezoid branch: its short base is half the J34-J30 chord, its legs are equal, and its J34-J35 leg is parallel and codirectional with J21-to-J34/P26; the resulting height is approximately 8.376 meters; the original P17b bend is retained, so the road loop is an approximate trapezoid; all new segments are 2 meters wide, J30/J34 are rebuilt with four arms, and J35/J36 are real two-arm corner junctions with walking areas initially widened to 4 meters; J34 is subsequently widened to 5 meters after its 4-meter all-movements pedestrian stress test stalled, while J30/J35/J36 remain at 4 meters; P28 is a straight 2-meter-wide northeast branch from J33 to the free endpoint J37, perpendicular to J15-J28 and half of the complete junction-to-junction J15-J13/P16 centerline length (approximately 17.254 meters); J33 is rebuilt as a four-arm walking area with at least 4-meter width, while J37 is a one-arm pedestrian dead end",
+      "destination_edge_weights": {
+        "906417851#0": 1.0,
+        "906417852#7": 1.0,
+        "906417852#8": 1.0,
+        "906417852#9": 0.6067020087835556,
+        "906417852#10": 0.5286303914915395,
+        "906417852#10_p21_north": 0.4713696085084606,
+        "906417852#9_p24_north": 0.3932979912164445
+      }
     }
   ]
 }

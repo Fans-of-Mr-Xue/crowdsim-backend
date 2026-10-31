@@ -5,6 +5,7 @@ from crowdsim.environment.crowd_environment import CrowdEnvironment
 from crowdsim.domain.crowdsim_models import AgentProfile, AgentState, MotionSnapshot
 from crowdsim.infrastructure.network_adapter import ResearchNetwork
 from crowdsim.environment.hazard_model import HazardZone
+from crowdsim.infrastructure.performance_probe import PerformanceProbe
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,6 +27,21 @@ class CrowdEnvironmentTests(unittest.TestCase):
         observations = self.environment.observe(motions, profiles, states, "s1")
         self.assertEqual(("p2",), observations["p1"].neighbour_ids)
         self.assertEqual(2, observations["p1"].local_people_count)
+
+    def test_monitor_counts_work_without_changing_neighbours_or_density(self):
+        motions = {"p1": motion("p1", 1, 0), "p2": motion("p2", 3, 0),
+                   "p3": motion("p3", 4, 0, "upper_a"), "p4": motion("p4", 30, 0)}
+        profiles = {person_id: AgentProfile(person_id, perception_radius=5) for person_id in motions}
+        states = {person_id: AgentState(person_id) for person_id in motions}
+        normal = self.environment.observe(motions, profiles, states, "s1")
+        self.environment.performance = PerformanceProbe('neighbours', enabled=True)
+        monitored = self.environment.observe(motions, profiles, states, "s1")
+        self.assertEqual(normal, monitored)
+        stats = self.environment.performance.stats
+        self.assertEqual(6, stats['neighbour_candidate_comparisons']['total'])
+        self.assertEqual(2, stats['occupied_edges']['max'])
+        self.assertEqual(3, stats['max_people_on_edge']['max'])
+        self.assertEqual(4, stats['neighbours_per_person']['count'])
 
     def test_objective_density_depends_only_on_real_people_and_explicit_area(self):
         motions = {"p1": motion("p1", 1, 0), "p2": motion("p2", 2, 0)}

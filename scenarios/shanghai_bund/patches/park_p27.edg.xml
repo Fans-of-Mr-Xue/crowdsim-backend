@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- P27: J34-J35-J36-J30, three straight 2m bidirectional pedestrian segments.
+     Existing P17b retains its bend and forms the approximate southwest base. -->
+<edges>
+    <edge id="huangpu_park_p27_a" from="huangpu_park_p26_p17" to="huangpu_park_p27_se" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18580.915,5772.235 18583.563,5786.044"/>
+    <edge id="huangpu_park_p27_b" from="huangpu_park_p27_se" to="huangpu_park_p27_ne" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18583.563,5786.044 18573.765,5806.396"/>
+    <edge id="huangpu_park_p27_c" from="huangpu_park_p27_ne" to="huangpu_park_p23_start" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18573.765,5806.396 18561.319,5812.939"/>
+</edges>

@@ -1,0 +1,18 @@
+req-default 需求备份（2026-10-12 恢复）
+
+备份：config/requirements/req-default.json
+运行时文件：runs/requirements/req-default.json
+本次通过前端正式提交接口获得的新记录：req-2249d70450c84c18a41821e9711b20a1。
+备份与运行时 req-default 文件逐字节一致，只将提交记录的顶层 requirement_id 改为 req-default。
+完整需求从当前对话的历史工具输出恢复，需求指纹与原始记录完全一致：
+sha256:81aa8dd48a4f1672c920ff7b799353e4dab7fe8358cd56f6ed77acc782f83ab7
+本次重新提交的 created_at 为新的创建时间；原历史需求的参数、边界、分布、指标及文案均保留。
+历史指标快照保留当时的 B3 名称“绝对疏散密度”；当前前端仍显示新版“人群密度差”。指标 ID 未改变。
+后台存储目录设计未修改，此备份不会自动恢复。
+
+以后清空 runs 后，在后端根目录运行：
+mkdir -p runs/requirements
+cp config/requirements/req-default.json runs/requirements/req-default.json
+
+恢复后重新初始化或重置仿真，隐藏五次 Enter 调试入口仍可使用 req-default。
+草稿和大模型建议的采用过程记录依然只保存在前端；本备份是正式需求记录。

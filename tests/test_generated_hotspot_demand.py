@@ -52,11 +52,11 @@ class GeneratedHotspotDemandTests(unittest.TestCase):
                     self.assertTrue(all(len(p.findall('walk')) == 2 and not p.findall('stop') for p in people))
                     if expected >= 700:
                         self.assertGreater(len(report['spawn_edge_counts']), 1)
-                        self.assertGreater(len({p.get('depart') for p in people}), 100)
+                        self.assertEqual({'0.00'}, {p.get('depart') for p in people})
                         offset = report['timeline_shift_seconds']
                         self.assertEqual([600.0 - offset, 800.0 - offset], report['activity_window_seconds'])
                     if expected:
-                        self.assertEqual('aligned', report['timeline_alignment_status'])
+                        self.assertEqual('already_aligned', report['timeline_alignment_status'])
                         self.assertEqual(0.0, min(float(p.get('depart')) for p in people))
                     else:
                         self.assertEqual('no_visitors', report['timeline_alignment_status'])
@@ -91,8 +91,10 @@ class GeneratedHotspotRuntimeTests(unittest.IsolatedAsyncioTestCase):
                 server = OverlayServer(runtime, '127.0.0.1', 0)
                 client = CapturingClient(); server.client = client
                 async def command(action='configure', **payload):
+                    previous = len(client.messages)
                     await server._handle_message(json.dumps({'action': action, **payload}))
-                    return client.messages[-1]
+                    return next(message for message in client.messages[previous:]
+                                if message['type'] not in {'preparing', 'update'})
                 try:
                     for count in [-1, 10001, True, 2.5, '12']:
                         self.assertEqual('invalid_count', (await command(count=count))['code'])
@@ -107,6 +109,8 @@ class GeneratedHotspotRuntimeTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual('init', init['type'], init)
                     self.assertNotEqual(empty_run, runtime.run_id)
                     self.assertEqual(12, init['demand']['planned'])
+                    self.assertEqual(12, len(runtime.current.persons))
+                    self.assertEqual(0.5, runtime.current.time_seconds)
                     self.assertEqual(12, runtime.adapter.connection.simulation.getMinExpectedNumber())
                     generated = runtime.run_id
                     self.assertEqual('init', (await command(count=12))['type'])
@@ -125,7 +129,7 @@ class GeneratedHotspotRuntimeTests(unittest.IsolatedAsyncioTestCase):
                     for _ in range(4):
                         await runtime.tick_async()
                     self.assertTrue(runtime.population.ledger.departed_ids)
-                    self.assertLessEqual(runtime.current.time_seconds, 2.0)
+                    self.assertLessEqual(runtime.current.time_seconds, 2.5)
                     self.assertEqual(12, runtime.frame()['metrics']['population']['planned'])
                     runtime.close()
                     init = await command(request_id='default')
@@ -147,5 +151,8 @@ class GeneratedHotspotRuntimeTests(unittest.IsolatedAsyncioTestCase):
                             self.assertEqual('init', initialized['type'])
                             self.assertEqual(3, initialized['demand']['planned'])
                             self.assertEqual('wire', initialized['request_id'])
+                            initial_frame = json.loads(await asyncio.wait_for(socket.recv(), 10))
+                            self.assertEqual('READY', initial_frame['runtime_state'])
+                            self.assertEqual(3, len(initial_frame['pedestrians']))
                 finally:
                     await server._stop_runtime()

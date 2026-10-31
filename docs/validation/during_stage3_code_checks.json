@@ -1,0 +1,83 @@
+{
+  "phase": "during-stage3",
+  "recordedAt": "2026-10-14T23:00:47.969634+08:00",
+  "status": "code_checks_passed_runtime_acceptance_pending",
+  "realModelCalled": false,
+  "realSimulationRun": false,
+  "servicesStartedOrRestarted": false,
+  "browserAcceptancePerformed": false,
+  "checks": {
+    "backend": {
+      "passed": 177,
+      "command": "PYTHONPATH=tests:. /opt/miniconda3/envs/sumo/bin/python -m pytest -p code_only_guard tests/test_during_strategy.py tests/test_during_experiments.py tests/test_during_clarification.py tests/test_during_frontend_contract.py tests/test_during_crowding.py tests/test_control_experiments.py tests/test_control_actions.py tests/test_inflow_meter.py -q",
+      "liveIOForbidden": true
+    },
+    "frontend": {
+      "passed": 65,
+      "command": "npm run test:during-experiment",
+      "modelAndHttp": "injected fakes; live sockets prohibited"
+    },
+    "eslint": {
+      "status": "passed",
+      "scope": "duringExperimentClient.js; DuringAnalysis/chat/*.js and *.vue; four during workflow/clarification/component/strategy test files"
+    },
+    "build": {
+      "status": "passed",
+      "command": "npm run build",
+      "durationSeconds": 15.71,
+      "warnings": [
+        "existing chunk-size and project bundling warnings"
+      ]
+    },
+    "diffWhitespace": {
+      "status": "passed",
+      "repositories": [
+        "CrowdSim",
+        "crowdsim-backend"
+      ]
+    }
+  },
+  "sourceSha256": {
+    "/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/crowdsim/experiments/during_strategy.py": "f919fe6e36d045d1e98eaffb886077762978d6f383745056da9da56787242ae4",
+    "/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/crowdsim/experiments/controllers/during_replay.py": "064e9273774e34cef2192ca9b608253974a2da43d098fa984e45d5668ed55c1d",
+    "/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/crowdsim/experiments/contracts.py": "dba50dd6b7342ab6cb656cd8eeb2849c824a18b5f66e216f8ec3790fd9586fc9",
+    "/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/crowdsim/experiments/controller_registry.py": "062d651af664208394d98cdd83c32dd38d9c1c0b4d1c42b70cda5b1df76c7050",
+    "/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/crowdsim/experiments/orchestrator.py": "4431eec55f657cb0bea7db72f906a149e9d2f84e8fff927d889a947710d381fc",
+    "/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/crowdsim/experiments/report_service.py": "5bff16e3bd8467ff0d397ff8dd6ed40cfb04e35984ca33b664f54abea252d4d0",
+    "/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/crowdsim/experiments/serve.py": "ccd42fea767c8b63b6e470aa88a01089c2553e7159d1d953ba49ec1fb937dd11",
+    "/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/crowdsim/experiments/service.py": "f34aa75b247f5c2e425a234989216dafade5938980764f5140e8581f1f9ade6d",
+    "/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/crowdsim/experiments/action_validator.py": "3dad662adb78477ea1804d5f85a99f5c562501c1eabe6847a94f775d86dff487",
+    "/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/crowdsim/domain/action_contract.py": "cf1c508a8e119ac71d3d4aad826d5d4c63ef895bbb423349567c42e830137e63",
+    "/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/crowdsim/domain/runtime_capabilities.py": "8aa8b364e55461f54584b0a3c1691a3f736c759bcd7a6f1e07547e9b772c8f4a",
+    "/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/crowdsim/control/intervention_lifecycle.py": "1b7c1e5ef810681feda4b559307a533fed1eb43fbe096bd2c480239b1317ce13",
+    "/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/crowdsim/core/simulation_runtime.py": "7162f0e8e7b251a43deee929c2299587419bd2d0d1e92c103cce982a0bd9e922",
+    "/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/tests/test_during_strategy.py": "4bad9080a6a713c7b6e1d762f0e0f9459215cda2e1f685b3e2809f71a6245c6e",
+    "/Users/omega/Documents/CrowdSim/frontend/src/api/crowdsim/duringExperimentClient.js": "ff5c9a70091a5f893ea3cfff9a21f8626cb5cdb43244feb6a7f140793cdaf937",
+    "/Users/omega/Documents/CrowdSim/frontend/src/views/crowdSim/DuringAnalysis/chat/duringStrategy.js": "111f5427c54c63b48a030e2d3524e478cb3742ead8746e8ea1197a47da8e437f",
+    "/Users/omega/Documents/CrowdSim/frontend/src/views/crowdSim/DuringAnalysis/chat/DuringStrategyPanel.vue": "591a79a39b725c23d88c8072fc20ac51925896ef77bf7de613c40b47c52a517d",
+    "/Users/omega/Documents/CrowdSim/frontend/src/views/crowdSim/DuringAnalysis/chat/duringExperimentWorkflow.js": "7fab8a66a60fcf89a437c97482b6e1046e7fe8cccc2c48af06e9e26cd0e45cd5",
+    "/Users/omega/Documents/CrowdSim/frontend/src/views/crowdSim/DuringAnalysis/chat/duringExperimentAssistant.js": "1ef3a9ca5e7f185a9d2e05cf001af85a99189421bb45d82161342129db296133",
+    "/Users/omega/Documents/CrowdSim/frontend/src/views/crowdSim/DuringAnalysis/chat/DuringExperimentPanel.vue": "4b1e83503cdc807cf112f164674d777c95d9a0ed928be95877a97dbb6273ed52",
+    "/Users/omega/Documents/CrowdSim/frontend/src/views/crowdSim/DuringAnalysis/chat/DuringExperimentResults.vue": "f310ef36c86a4626a387ea1e62e7325c3337f63e5bec8d2eeb6e910ce2470e89",
+    "/Users/omega/Documents/CrowdSim/frontend/src/views/crowdSim/DuringAnalysis/chat/DuringPresetSummary.vue": "cfda47c30f32dd5f8b30709cdaaf98553cf858ecf50cd6c8df1fd61efc2eccce",
+    "/Users/omega/Documents/CrowdSim/frontend/src/views/crowdSim/DuringAnalysis/chat/DuringClarificationPanel.vue": "0d531f370eb5db0599baf1dae64da34f98b74cf7bd0e3e91e0fde09dfa9e0014",
+    "/Users/omega/Documents/CrowdSim/frontend/src/views/crowdSim/DuringAnalysis/chat/duringClarification.js": "444917788573b1d4ca6d6710aa10c787187e9969013792dd4ecb96015b996b83",
+    "/Users/omega/Documents/CrowdSim/frontend/src/views/crowdSim/DuringAnalysis/chat/DuringChat.vue": "846bfd39326f5b745e2f81575fa918c7ed70c4c928ed9e9c4331d33035aa8c7e",
+    "/Users/omega/Documents/CrowdSim/frontend/src/views/crowdSim/DuringAnalysis/chat/InEventExperimentPlan.vue": "596683bafc68ddf7af0c6a9e716fc47598347c982925a8c1220d3bbbbeb95336",
+    "/Users/omega/Documents/CrowdSim/frontend/tests/duringStrategy.test.mjs": "0ab9566f9e617def3c087f090879f5f2d95dc7031ddd5dc57385e33a1a049627",
+    "/Users/omega/Documents/CrowdSim/frontend/tests/duringExperimentComponents.test.mjs": "ff882768dfa08f71e739b97c2c9e19ea3c6dcc38988f06d0757e4fc678b047d1",
+    "/Users/omega/Documents/CrowdSim/frontend/tests/duringClarification.test.mjs": "f06b2d3336e423b3481b0fb541c79b44826d7b9dfe939ca66177ceb513056624",
+    "/Users/omega/Documents/CrowdSim/frontend/tests/duringExperimentWorkflow.test.mjs": "323aa93c0a2d1c9011a57698a3cb9dfb5bb102f346ff34ca7337c9da9ce25c24",
+    "/Users/omega/Documents/CrowdSim/frontend/package.json": "4d1f69e468d44bdb996564e85dc008201efc1cc38e6019474f9cc8fd6aaae541"
+  },
+  "limitations": [
+    "No real model generation or SUMO effectiveness acceptance in this change.",
+    "Fixed inflow control only; xw interface unavailable; classes 3/4 not implemented.",
+    "Runtime must advertise endTimeSeconds before a D2 replay starts.",
+    "Source and validation share seeds; comparisons are descriptive, not generalization claims."
+  ],
+  "logs": [
+    "/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/docs/validation/stage3-code-checks/backend-tests.log",
+    "/Users/omega/Documents/CrowdSim/frontend/docs/crowdSim/during/validation/stage3-code-checks"
+  ]
+}

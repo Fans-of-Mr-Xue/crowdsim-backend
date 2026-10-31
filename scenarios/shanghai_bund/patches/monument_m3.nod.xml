@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Coordinates use the existing bund.net.xml SUMO projection, in meters.
+     J26 is the new junction on the shorter outer arc H2. -->
+<nodes>
+    <node id="monument_m3_ring_junction" x="18596.41" y="5848.74" type="dead_end"/>
+</nodes>

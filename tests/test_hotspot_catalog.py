@@ -63,6 +63,7 @@ class HotspotCatalogTests(unittest.TestCase):
             {
                 "679361567#1",
                 "679361567#2",
+                "679361567#2_m3_north",
             },
             set(hotspot["target_edges"]),
         )
@@ -84,7 +85,7 @@ class HotspotCatalogTests(unittest.TestCase):
     def test_all_configured_monument_edges_exist_and_allow_pedestrians(self):
         hotspot = self.catalog.hotspots["people_heroes_monument"]
 
-        for edge_id in (*hotspot["target_edges"], *hotspot["excluded_edges"]):
+        for edge_id in (*hotspot["target_edges"], *hotspot["entry_edges"], *hotspot["excluded_edges"]):
             edge = self.network.edges[edge_id]
             self.assertTrue(any(lane.allows("pedestrian") for lane in edge.getLanes()), edge_id)
 
@@ -93,57 +94,49 @@ class HotspotCatalogTests(unittest.TestCase):
             item for item in self.catalog.serialize() if item["id"] == "people_heroes_monument"
         )
 
-        self.assertEqual(2, len(hotspot["target_edges"]))
+        self.assertEqual(3, len(hotspot["target_edges"]))
         self.assertEqual(7, len(hotspot["excluded_edges"]))
-        self.assertEqual(2, len(hotspot["entry_edges"]))
+        self.assertEqual(3, len(hotspot["entry_edges"]))
         self.assertEqual(hotspot["park_access_edges"], hotspot["approach_edges"])
         self.assertEqual(
             hotspot["entry_edges"],
             [portal["edge"] for portal in hotspot["access_portals"]],
         )
-        self.assertEqual(19, len(hotspot["park_access_edges"]))
+        self.assertEqual(37, len(hotspot["park_access_edges"]))
+        self.assertIn("huangpu_park_j05_j15", hotspot["park_access_edges"])
         self.assertEqual(2, len(hotspot["park_entry_edges"]))
         self.assertEqual(
-            {
-                "906417851#0",
-                "906417852#7",
-                "906417852#8",
-                "906417852#9",
-                "906417852#10",
-            },
+            set(hotspot["park_access_edges"]) | set(hotspot["entry_edges"]) | set(hotspot["target_edges"]),
             set(hotspot["visitor_spawn_edges"]),
         )
-        self.assertEqual("edge_length_weighted_random", hotspot["spawn_distribution"])
+        self.assertEqual("edge_length_uniform", hotspot["spawn_distribution"])
         self.assertEqual(2.0, hotspot["spawn_position_margin_meters"])
         self.assertEqual(
-            set(hotspot["visitor_spawn_edges"]),
+            {"906417851#0", "906417852#7", "906417852#8", "906417852#9", "906417852#9_p24_north", "906417852#10", "906417852#10_p21_north"},
             set(hotspot["visitor_destination_edges"]),
         )
         self.assertEqual("edge_uniform_random", hotspot["destination_distribution"])
         self.assertEqual(2.0, hotspot["destination_position_margin_meters"])
         self.assertEqual([], hotspot["visitor_exit_edges"])
-        self.assertIsNone(hotspot["visitor_departure_window_seconds"])
+        self.assertEqual([0.0, 0.0], hotspot["visitor_departure_window_seconds"])
         self.assertEqual("weighted_viewing_arcs", hotspot["target_distribution"])
-        self.assertEqual(6, len(hotspot["viewing_zones"]))
+        self.assertEqual(7, len(hotspot["viewing_zones"]))
         self.assertAlmostEqual(
             1.0,
             sum(zone["weight"] for zone in hotspot["viewing_zones"]),
         )
         self.assertEqual([600.0, 800.0], hotspot["activity_window_seconds"])
         self.assertEqual([0.0, 90.0], hotspot["visitor_release_delay_seconds"])
-        self.assertEqual(
-            [0.10, 0.75, 0.15],
-            [segment["fraction"] for segment in hotspot["visitor_arrival_profile"]],
-        )
+        self.assertIsNone(hotspot["visitor_arrival_profile"])
         self.assertEqual(0, self.catalog.hotspots["people_heroes_monument"]["background_count"])
         self.assertEqual(18, len(hotspot["external_approach_edges"]))
-        self.assertTrue(set(hotspot["visitor_spawn_edges"]).issubset(hotspot["park_access_edges"]))
+        self.assertEqual(43, len(hotspot["visitor_spawn_edges"]))
         self.assertTrue(
             set(hotspot["visitor_spawn_edges"]).isdisjoint(hotspot["external_approach_edges"])
         )
         self.assertTrue(hotspot["is_default"])
 
-    def test_park_access_network_reaches_both_entrances_in_both_directions(self):
+    def test_park_access_network_reaches_all_entrances_in_both_directions(self):
         hotspot = self.catalog.hotspots["people_heroes_monument"]
         allowed = (*hotspot["park_access_edges"], *hotspot["entry_edges"])
 
@@ -158,7 +151,7 @@ class HotspotCatalogTests(unittest.TestCase):
                     f"{entry_edge} cannot reach {park_edge} within the configured park network",
                 )
 
-    def test_both_entrances_reach_every_ground_target_edge_in_both_directions(self):
+    def test_all_entrances_reach_every_ground_target_edge_in_both_directions(self):
         hotspot = self.catalog.hotspots["people_heroes_monument"]
         allowed = (*hotspot["entry_edges"], *hotspot["target_edges"])
 
@@ -209,6 +202,17 @@ class HotspotCatalogTests(unittest.TestCase):
                 ":8417005112_w0",
                 ":8417005113_w0",
                 ":8417005115_w0",
+                ":monument_m3_ring_junction_w0",
+                ":huangpu_park_p21_west_w0",
+                ":huangpu_park_p21_east_w0",
+                ":huangpu_park_p22_start_w0",
+                ":huangpu_park_p23_start_w0",
+                ":huangpu_park_p22_p23_join_w0",
+                ":huangpu_park_p24_p13_w0",
+                ":huangpu_park_p25_p20_w0",
+                ":huangpu_park_p26_p17_w0",
+                ":huangpu_park_p27_se_w0",
+                ":huangpu_park_p27_ne_w0",
             },
             set(walking_areas),
         )

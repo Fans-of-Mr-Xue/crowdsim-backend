@@ -16,4 +16,3 @@ def handle(request: Request):
     if match and request.method == "GET":
         return response(request.app.result(match.group(1), request.user, request.workspace, SECTIONS[match.group(2)]))
     return None
-

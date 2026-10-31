@@ -48,7 +48,7 @@ class DecisionScheduler:
                 return await self.engine.decide(profiles[person_id], states[person_id], observations[person_id], candidates.get(person_id, ()))
 
         plans = list(await asyncio.gather(*(decide(person_id) for person_id in selected)))
-        self.llm_count += sum(plan.source == "llm" for plan in plans)
+        self.llm_count += sum(plan.source in {"llm", "llm_driven"} for plan in plans)
         if fallback_ids:
             plans.extend(self.resolve_rule(fallback_ids, profiles, states, observations, candidates))
             self.budget_fallback_count += len(fallback_ids)

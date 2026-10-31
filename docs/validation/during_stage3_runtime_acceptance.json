@@ -1,0 +1,358 @@
+{
+  "phase": "during-stage3-runtime-acceptance",
+  "recordedAt": "2026-10-15T00:18:41.861669+08:00",
+  "status": "functional_acceptance_passed_strategy_effects_mixed",
+  "conversationId": "conv_1791990780586_mmx0mc",
+  "sourceExperimentId": "exp_18f2fbf9c7d245cdac139a001f754ad0",
+  "replayExperimentId": "exp_f48666c054324c5c9d8e3e82cefec0bc",
+  "realModelCalled": true,
+  "realSimulationRun": true,
+  "browserAcceptancePerformed": true,
+  "controlRestartRecoveryVerified": true,
+  "model": "GLM-5.3-Flash-exl3-4.05bpw",
+  "strategy": {
+    "actions": [
+      {
+        "entryId": "177931018#0",
+        "startSeconds": 1,
+        "endSeconds": 120,
+        "rate": 0.7
+      },
+      {
+        "entryId": "178411801#0",
+        "startSeconds": 1,
+        "endSeconds": 120,
+        "rate": 0.7
+      },
+      {
+        "entryId": "monument_m3",
+        "startSeconds": 1,
+        "endSeconds": 120,
+        "rate": 0.7
+      },
+      {
+        "entryId": "177931018#0",
+        "startSeconds": 120,
+        "endSeconds": 360,
+        "rate": 0.5
+      },
+      {
+        "entryId": "178411801#0",
+        "startSeconds": 120,
+        "endSeconds": 360,
+        "rate": 0.5
+      },
+      {
+        "entryId": "monument_m3",
+        "startSeconds": 120,
+        "endSeconds": 360,
+        "rate": 0.5
+      }
+    ],
+    "name": "早段温和限流-双段递减",
+    "rationale": "观察显示两轮均在约130.5–136.5秒确认持续拥挤，且120秒采样点核心人数已达约314、拥挤约55.5，说明拥挤在入场前两分钟内快速形成，控制需从第1秒开始。240–720秒区间核心人数维持在约555–634、拥挤约467–540的高位平台，峰值拥挤625、峰值核心密度约2.56，提示入场速率长期超过核心区消化能力。因此设计两段递减限流：第1–120秒三入口均以0.7温和放行（不完全关闭），第120–360秒降至0.5加强削峰，360秒到期后全部自动恢复放行，让已入场人员先行疏散、降低后续入场叠加。动作共6条（3入口×2时段），未超出上限；所有比例均在0–1内，未使用0（完全关闭）。",
+    "expectedEffect": "假设：早段温和限流可推迟约130秒的拥挤确认时刻并压低240–720秒的拥挤平台峰值；360秒恢复放行后，若核心区已明显疏解，行程完成率有望较基线（0.2与1.0）更稳定。以上均为待验证假设，需以相同种子从头重跑确认，不构成改善承诺。",
+    "limitations": "本策略仅调整三个入口的放行比例，不改变总人数、路由或安全区；0.5的恢复档位仍可能延长入场与完成时间，属于以时间换拥挤的代价；若实际到达节奏与假设不符，早段限流可能不足以阻止拥挤形成。timeline为稀疏采样跨轮均值，不能据此断言未采样时刻的实时状态；两轮种子差异较大（完成率0.2对1.0），单轮结果可能受种子影响，需多轮验证。"
+  },
+  "strategyFingerprint": "sha256:9c195c6910ce119418bd8bcbfeb5e8ba0b3598b7a76c8899e7b3ee15eb0afaec",
+  "checks": {
+    "requirements": "Bare 事中 stays blank; explicit requirements, suggestions and confirmation preserved.",
+    "staging": "Requirements confirmation and strategy confirmation do not create; saving creates a draft with zero runs; explicit start runs it.",
+    "sourceGating": "Draft and partially completed observation reject generation; wrong workspace rejected; original source unchanged.",
+    "liveModel": "Preflight constraints corrected; two new-source UI generations validated; regenerate revokes confirmation; final result interpretation rechecked with real model.",
+    "liveInvalidStrategyCases": 14,
+    "completedRuns": 4,
+    "validPairs": 2,
+    "failedRuns": 0,
+    "cancelledRuns": 0,
+    "rawAudit": {
+      "checkedSteps": 13629,
+      "trajectoryRows": 8409983,
+      "populationLedger": "valid at every step",
+      "eventIntervals": "independently reconstructed",
+      "completionAndT95": "checked against arrivals",
+      "demandHashesMatchWithinPairs": true,
+      "priorStage2C0ObservationHashesUnchanged": true
+    },
+    "actionAudit": {
+      "plannedActions": 12,
+      "appliedActions": 12,
+      "rejectedOrMissingActions": 0,
+      "applicationDelaySeconds": 0.5,
+      "absoluteExpiryPreserved": true,
+      "noHeldAgentsAfterLastControlEndSeconds": 360
+    },
+    "recovery": "Pause/continue, paused page reload, source/replay switching, final control restart and duplicate save passed; no new experiment or run.",
+    "frontendTests": {
+      "passed": 65,
+      "failed": 0
+    },
+    "eslint": "passed",
+    "productionBuild": {
+      "passed": true,
+      "durationSeconds": 16.88,
+      "existingWarnings": [
+        "chunk size and project bundling warnings"
+      ]
+    },
+    "backendTests": "177 passed in prior code-only acceptance; production backend hashes unchanged; not rerun this turn.",
+    "diffWhitespace": "passed in both repositories",
+    "finalServices": "8080/8765/8766/8767/8768/8800/27018 listening; both experiments completed; no active or queued runs"
+  },
+  "runs": [
+    {
+      "experiment": "baseline",
+      "run_id": "run_e9f76b88db2c41e7b2ff2e85f95534d7",
+      "runtime_run_id": "run-fe55264beb664fdeb3901c37d3dee8ba",
+      "seed": 20260909,
+      "status": "completed"
+    },
+    {
+      "experiment": "baseline",
+      "run_id": "run_41dbce8b2ba84613a36c37980385c56d",
+      "runtime_run_id": "run-9d6527885d3445debbcbcddedb9a8002",
+      "seed": 20260908,
+      "status": "completed"
+    },
+    {
+      "experiment": "replay",
+      "run_id": "run_c8ee2ff7667644b4bcb540f8ed7d4d2a",
+      "runtime_run_id": "run-48916a3f724243f59085abacd63ad001",
+      "seed": 20260909,
+      "status": "completed"
+    },
+    {
+      "experiment": "replay",
+      "run_id": "run_4e73f44132494e4f9f1770e01487e82d",
+      "runtime_run_id": "run-e6995ae9a429434b9c20393c8138f035",
+      "seed": 20260908,
+      "status": "completed"
+    }
+  ],
+  "independentAudits": [
+    {
+      "runId": "run_41dbce8b2ba84613a36c37980385c56d",
+      "seed": 20260908,
+      "steps": 3600,
+      "trajectoryRows": 2330254,
+      "demandSha256": "4f848b4aafa6895ebc1e16ae94a4f47c045f466057f1348f74bd81a0db39844a",
+      "observationsSha256": "a3e7308775a13853ff5aa3c797d82dae7f0a14567ee1e7446514b9e686906f21"
+    },
+    {
+      "runId": "run_e9f76b88db2c41e7b2ff2e85f95534d7",
+      "seed": 20260909,
+      "steps": 2829,
+      "trajectoryRows": 1616330,
+      "demandSha256": "6b1e03f25955c62785ca713f11c3351969b527d037c311a0b882196e4fab7dd4",
+      "observationsSha256": "6e01906a6113401044633d536c36b8b2d0d1358c585e5c942173e9fbbcd4910d"
+    },
+    {
+      "runId": "run_4e73f44132494e4f9f1770e01487e82d",
+      "seed": 20260908,
+      "steps": 3600,
+      "trajectoryRows": 2251199,
+      "demandSha256": "4f848b4aafa6895ebc1e16ae94a4f47c045f466057f1348f74bd81a0db39844a",
+      "observationsSha256": "a699a852200b05a78ca5a27b66845f5f4d35672925f79c4ec69b587b1f0e0beb"
+    },
+    {
+      "runId": "run_c8ee2ff7667644b4bcb540f8ed7d4d2a",
+      "seed": 20260909,
+      "steps": 3600,
+      "trajectoryRows": 2212200,
+      "demandSha256": "6b1e03f25955c62785ca713f11c3351969b527d037c311a0b882196e4fab7dd4",
+      "observationsSha256": "bdcc0cbbc3a534af5f1f169ea55b793b4376b7d78481c9b7fd29719963644d6c"
+    }
+  ],
+  "comparison": {
+    "pairs": [
+      {
+        "seed": 20260909,
+        "baseline": {
+          "firstCrowdingConfirmedAtSeconds": 136.5,
+          "crowdingDurationSeconds": 876.5,
+          "peakCrowdedCount": 625,
+          "peakHighRiskCount": 167,
+          "peakCoreDensity": 2.5620379181611885,
+          "finalCompletionRate": 1.0,
+          "t95Seconds": 1299.0,
+          "peakBlockedLowSpeedCount": 309,
+          "peakControlHeldCount": 0
+        },
+        "candidate": {
+          "firstCrowdingConfirmedAtSeconds": 177.0,
+          "crowdingDurationSeconds": 1633.0,
+          "peakCrowdedCount": 573,
+          "peakHighRiskCount": 16,
+          "peakCoreDensity": 2.433936022253129,
+          "finalCompletionRate": 0.32,
+          "t95Seconds": null,
+          "peakBlockedLowSpeedCount": 404,
+          "peakControlHeldCount": 218
+        },
+        "differences": {
+          "firstCrowdingConfirmedAtSeconds": 40.5,
+          "crowdingDurationSeconds": 756.5,
+          "peakCrowdedCount": -52,
+          "peakHighRiskCount": -151,
+          "peakCoreDensity": -0.12810189590805932,
+          "finalCompletionRate": -0.6799999999999999,
+          "t95Seconds": null,
+          "peakBlockedLowSpeedCount": 95,
+          "peakControlHeldCount": 218
+        },
+        "sameDemandHash": "6b1e03f25955c62785ca713f11c3351969b527d037c311a0b882196e4fab7dd4"
+      },
+      {
+        "seed": 20260908,
+        "baseline": {
+          "firstCrowdingConfirmedAtSeconds": 130.5,
+          "crowdingDurationSeconds": 1679.5,
+          "peakCrowdedCount": 477,
+          "peakHighRiskCount": 0,
+          "peakCoreDensity": 2.119171363736183,
+          "finalCompletionRate": 0.2,
+          "t95Seconds": null,
+          "peakBlockedLowSpeedCount": 494,
+          "peakControlHeldCount": 0
+        },
+        "candidate": {
+          "firstCrowdingConfirmedAtSeconds": 162.5,
+          "crowdingDurationSeconds": 717.0,
+          "peakCrowdedCount": 249,
+          "peakHighRiskCount": 0,
+          "peakCoreDensity": 1.3871605299758436,
+          "finalCompletionRate": 0.2914285714285714,
+          "t95Seconds": null,
+          "peakBlockedLowSpeedCount": 468,
+          "peakControlHeldCount": 150
+        },
+        "differences": {
+          "firstCrowdingConfirmedAtSeconds": 32.0,
+          "crowdingDurationSeconds": -962.5,
+          "peakCrowdedCount": -228,
+          "peakHighRiskCount": 0,
+          "peakCoreDensity": -0.7320108337603395,
+          "finalCompletionRate": 0.09142857142857141,
+          "t95Seconds": null,
+          "peakBlockedLowSpeedCount": -26,
+          "peakControlHeldCount": 150
+        },
+        "sameDemandHash": "4f848b4aafa6895ebc1e16ae94a4f47c045f466057f1348f74bd81a0db39844a"
+      }
+    ],
+    "metrics": [
+      {
+        "metric": "firstCrowdingConfirmedAtSeconds",
+        "pairCount": 2,
+        "meanDifference": 36.25,
+        "lowerIsBetter": false,
+        "direction": "candidate_minus_baseline"
+      },
+      {
+        "metric": "crowdingDurationSeconds",
+        "pairCount": 2,
+        "meanDifference": -103.0,
+        "lowerIsBetter": true,
+        "direction": "candidate_minus_baseline"
+      },
+      {
+        "metric": "peakCrowdedCount",
+        "pairCount": 2,
+        "meanDifference": -140,
+        "lowerIsBetter": true,
+        "direction": "candidate_minus_baseline"
+      },
+      {
+        "metric": "peakHighRiskCount",
+        "pairCount": 2,
+        "meanDifference": -75.5,
+        "lowerIsBetter": true,
+        "direction": "candidate_minus_baseline"
+      },
+      {
+        "metric": "peakCoreDensity",
+        "pairCount": 2,
+        "meanDifference": -0.4300563648341994,
+        "lowerIsBetter": true,
+        "direction": "candidate_minus_baseline"
+      },
+      {
+        "metric": "finalCompletionRate",
+        "pairCount": 2,
+        "meanDifference": -0.29428571428571426,
+        "lowerIsBetter": false,
+        "direction": "candidate_minus_baseline"
+      },
+      {
+        "metric": "t95Seconds",
+        "pairCount": 0,
+        "meanDifference": null,
+        "lowerIsBetter": true,
+        "direction": "candidate_minus_baseline"
+      },
+      {
+        "metric": "peakBlockedLowSpeedCount",
+        "pairCount": 2,
+        "meanDifference": 34.5,
+        "lowerIsBetter": true,
+        "direction": "candidate_minus_baseline"
+      },
+      {
+        "metric": "peakControlHeldCount",
+        "pairCount": 2,
+        "meanDifference": 184,
+        "lowerIsBetter": true,
+        "direction": "candidate_minus_baseline"
+      }
+    ],
+    "occurrence": {
+      "baseline": {
+        "count": 2,
+        "frequency": 1.0
+      },
+      "candidate": {
+        "count": 2,
+        "frequency": 1.0
+      }
+    },
+    "sourceUnchanged": true,
+    "baselinePreservation": [
+      {
+        "seed": 20260908,
+        "observationsSha256": "a3e7308775a13853ff5aa3c797d82dae7f0a14567ee1e7446514b9e686906f21",
+        "demandSha256": "4f848b4aafa6895ebc1e16ae94a4f47c045f466057f1348f74bd81a0db39844a",
+        "matchesPriorStage2": true
+      },
+      {
+        "seed": 20260909,
+        "observationsSha256": "6e01906a6113401044633d536c36b8b2d0d1358c585e5c942173e9fbbcd4910d",
+        "demandSha256": "6b1e03f25955c62785ca713f11c3351969b527d037c311a0b882196e4fab7dd4",
+        "matchesPriorStage2": true
+      }
+    ]
+  },
+  "fixes": [
+    "Clarified global six-action limit, earliest start 1 second, sparse evidence and narrative/action consistency in real model prompt.",
+    "Fixed stale unsaved-replay notice when returning to an already-saved source; opening it reuses the existing experiment.",
+    "Added per-seed comparison facts and explicit t95 missingness attribution to result interpretation after real model misattributed a missing pair to the baseline."
+  ],
+  "changedSourceFiles": [
+    "/Users/omega/Documents/CrowdSim/frontend/src/views/crowdSim/DuringAnalysis/chat/duringStrategy.js",
+    "/Users/omega/Documents/CrowdSim/frontend/src/views/crowdSim/DuringAnalysis/chat/DuringStrategyPanel.vue",
+    "/Users/omega/Documents/CrowdSim/frontend/src/views/crowdSim/DuringAnalysis/chat/duringExperimentAssistant.js",
+    "/Users/omega/Documents/CrowdSim/frontend/tests/duringStrategy.test.mjs",
+    "/Users/omega/Documents/CrowdSim/frontend/tests/duringExperimentComponents.test.mjs"
+  ],
+  "limitations": [
+    "Two seeds shared by generation and validation: descriptive comparisons, no statistical or generalization claim.",
+    "Strategy has mixed effects: reduced average core peaks but worsened average completion and all-scene blocking.",
+    "This runtime session did not inject connection loss while a run was active, cancel a round or force execution failure; related code-only cases are not live acceptance.",
+    "Model outputs still require validation; prompts do not guarantee valid future responses.",
+    "Preset execution, fixed inflow actions only; xw reserved, classes 3/4 and signal agents remain outside scope."
+  ],
+  "evidenceDirectory": "/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/runs/during_stage3_acceptance/20261014",
+  "browserEvidenceDirectory": "/Users/omega/Documents/CrowdSim/frontend/docs/crowdSim/during/validation/stage3-runtime-20261014",
+  "logRetention": "Closed large logs losslessly gzip-compressed with before/after SHA verification; experiment records retained.",
+  "freeDiskGiB": 6.33,
+  "pending": []
+}

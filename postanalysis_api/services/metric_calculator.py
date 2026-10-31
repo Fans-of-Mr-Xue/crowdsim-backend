@@ -10,7 +10,7 @@ from __future__ import annotations
 import math
 from typing import Any
 
-from algorithm.metrics import evacuation_time, kernel_crowd_pressure, mean_movement_speed, peak_grid_density
+from algorithms.metrics import evacuation_time, kernel_crowd_pressure, mean_movement_speed, peak_grid_density
 from postanalysis_api.schemas.common import ApiError, metric_value
 from postanalysis_api.schemas.metrics import METRICS, METRIC_VERSION, RISK_LEVELS, RISK_RULE_VERSION
 

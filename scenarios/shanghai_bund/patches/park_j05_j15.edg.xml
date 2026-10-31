@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- User-requested straight J05-J15 park footway (P20).
+     Manual engineering geometry; width follows nearby 2m park footways.
+     SUMO pedestrian footways allow walking in both directions. -->
+<edges>
+    <edge id="huangpu_park_j05_j15" from="1883306110" to="8417005113" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18514.72,5912.44 18554.63,5828.52"/>
+</edges>

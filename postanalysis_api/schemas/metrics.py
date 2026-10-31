@@ -1,6 +1,6 @@
 """Versioned metric definitions and four density-based risk levels."""
 
-METRIC_VERSION = "post-metrics/1.0"
+METRIC_VERSION = "post-metrics/1.1"
 RISK_RULE_VERSION = "rule-model/1.0"
 
 METRICS = {
@@ -9,13 +9,13 @@ METRICS = {
     "mean_speed": {"unit": "m/s", "direction": "up", "requires": ["person_velocity", "dt"],
                    "definition": "全运行人员-时间加权的速度模长均值，包含零速人员"},
     "peak_pressure_proxy": {"unit": "person/m2*(m/s)^2", "direction": "down",
-                            "requires": ["person_position", "person_velocity", "kernel_radius"],
-                            "definition": "固定观测点上密度乘速度向量加权方差的时空最大值；不是机械接触力"},
+                            "requires": ["person_position", "person_velocity", "grid_population", "effective_area"],
+                            "definition": "固定5米网格密度乘网格内速度向量方差的时空最大值；不是机械接触力"},
     "risk_exposed_unique": {"unit": "person", "direction": "down", "requires": ["person_id", "person_position", "risk_grid"],
                             "definition": "曾进入所选密度风险等级网格的去重人数"},
     "risk_exposure": {"unit": "person*s", "direction": "down", "requires": ["person_id", "person_position", "risk_grid", "dt"],
                       "definition": "每个时间步在所选风险等级网格内的人数乘仿真步长后求和"},
-    "congestion_duration": {"unit": "s", "direction": "down", "requires": ["grid_density", "grid_mean_speed", "dt"],
+    "congestion_duration": {"unit": "cell*s", "direction": "down", "requires": ["grid_density", "grid_mean_speed", "dt"],
                             "definition": "同一网格密度>=3.5且平均速度<=0.5，连续至少10秒的拥挤事件累计时长"},
     "evacuation_time": {"unit": "s", "direction": "down", "requires": ["target_person_ids", "safe_zone_ids", "arrival_times"],
                         "definition": "目标人员全部到达安全区的时间减疏散起点；未完成时右删失"},

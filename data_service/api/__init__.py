@@ -17,12 +17,14 @@ from .pre_assessments import register_pre_assessment_routes
 from .page_assistant import register_page_assistant_routes
 from ..services.task_roads import TaskRoadService
 from ..repositories.environments import EnvironmentRepository
+from .model_gateway import register_model_gateway_routes
 
 
 def create_app(repository=None, *, model=None):
     app = web.Application(client_max_size=8 * 1024 * 1024)
     repository = register_database_routes(app, repository)
-    register_model_routes(app)
+    main_gateway = register_model_gateway_routes(app, include_model_routes=False)
+    register_model_routes(app, main_gateway=main_gateway)
     register_page_assistant_routes(app, repository.db)
     register_environment_routes(app, repository.db)
     register_subject_routes(app, repository.db)

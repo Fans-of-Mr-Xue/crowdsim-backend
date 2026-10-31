@@ -125,20 +125,41 @@ class CrowdSimRepository:
         return self._find_one(key, query)
 
     def create_experiment(self, user_id: str, workspace_id: str, config: dict[str, Any]) -> dict[str, Any]:
-        now = _now()
-        return self._insert("experiments", {
-            **deepcopy(config), "experiment_id": f"exp_{uuid.uuid4().hex}", "user_id": str(user_id),
-            "workspace_id": str(workspace_id), "status": "draft", "created_at": now, "updated_at": now,
-        })
+        # A browser may lose the create response. Retrying the same confirmed
+        # draft must recover its experiment, including after a service restart.
+        with self._lock:
+            request_id = config.get("clientRequestId")
+            if request_id:
+                existing = self._find_one("experiments", {
+                    "user_id": str(user_id), "workspace_id": str(workspace_id), "clientRequestId": request_id,
+                })
+                if existing:
+                    if any(existing.get(key) != value for key, value in config.items()):
+                        raise ValueError("CLIENT_REQUEST_CONFLICT")
+                    return existing
+            now = _now()
+            return self._insert("experiments", {
+                **deepcopy(config), "experiment_id": f"exp_{uuid.uuid4().hex}", "user_id": str(user_id),
+                "workspace_id": str(workspace_id), "status": "draft", "created_at": now, "updated_at": now,
+            })
 
     def get_experiment(self, user_id: str, workspace_id: str, experiment_id: str):
         return self._find_one("experiments", {"user_id": str(user_id), "workspace_id": str(workspace_id), "experiment_id": str(experiment_id)})
 
-    def list_experiments(self, user_id: str, workspace_id: str, limit: int = 50):
+    def list_experiments(self, user_id: str, workspace_id: str, limit: int = 50, offset: int = 0, *, summary: bool = False):
         query = {"user_id": str(user_id), "workspace_id": str(workspace_id)}
         with self._lock:
             docs = [deepcopy(item) for item in self._memory["experiments"] if all(item.get(k) == v for k, v in query.items())]
-        return [_serialize(doc) for doc in reversed(docs[-max(1, int(limit)):])]
+            docs = list(reversed(docs))[max(0, offset):max(0, offset) + max(1, int(limit))]
+            if summary:
+                run_groups = {doc["experiment_id"]: [] for doc in docs}
+                for run in self._memory["runs"]:
+                    if all(run.get(k) == v for k, v in query.items()) and run.get("experiment_id") in run_groups:
+                        run_groups[run["experiment_id"]].append({key: deepcopy(run.get(key)) for key in ("run_id", "status", "error")})
+                docs = [{**{key: doc.get(key) for key in ("experiment_id", "clientRequestId", "name", "status", "created_at", "updated_at", "duringObservation", "executionVersion", "methods")},
+                         "scenario": {"presetId": (doc.get("scenario") or {}).get("presetId")},
+                         "runs": run_groups[doc["experiment_id"]]} for doc in docs]
+        return [_serialize(doc) for doc in docs]
 
     def update_experiment(self, user_id, workspace_id, experiment_id, values):
         return self._update("experiments", {"user_id": str(user_id), "workspace_id": str(workspace_id), "experiment_id": str(experiment_id)}, values)
@@ -166,6 +187,97 @@ class CrowdSimRepository:
 
     def update_run(self, user_id, workspace_id, run_id, values):
         return self._update("runs", {"user_id": str(user_id), "workspace_id": str(workspace_id), "run_id": str(run_id)}, values)
+
+    def validate_observation_reset(self, user_id, workspace_id, experiment_id, expected_run_ids):
+        from .during_observation_reset import runtime_paths, validate_reset
+        with self._lock:
+            experiment = self.get_experiment(user_id, workspace_id, experiment_id)
+            runs = self.list_runs(user_id, workspace_id, experiment_id)
+            validate_reset(experiment, runs, expected_run_ids)
+            ids = {run["run_id"] for run in runs}
+            owns = lambda row: row.get("user_id") == str(user_id) and row.get("workspace_id") == str(workspace_id)
+            other_runs = [row for row in self._memory["runs"] if not (owns(row) and row["run_id"] in ids)]
+            if any((row.get("duringReplay") or {}).get("sourceExperimentId") == experiment_id
+                   for row in self._memory["experiments"] if row["experiment_id"] != experiment_id):
+                from .contracts import ContractError
+                raise ContractError("此实验仍有关联策略重跑，未清除来源结果。")
+            runtime_paths(runs, other_runs)
+            return experiment, runs
+
+    def reset_observation(self, user_id, workspace_id, experiment_id, expected_run_ids):
+        from .during_observation_reset import remove_runtime_files
+        with self._lock:
+            experiment, runs = self.validate_observation_reset(user_id, workspace_id, experiment_id, expected_run_ids)
+            if not runs and experiment["status"] == "draft":
+                return self.get_experiment(user_id, workspace_id, experiment_id)
+            ids = {run["run_id"] for run in runs}
+            owns = lambda row: row.get("user_id") == str(user_id) and row.get("workspace_id") == str(workspace_id)
+            remove_runtime_files(runs, [])
+            # Keep the run IDs until every result collection is flushed. If a
+            # write fails, another attempt can finish deletion without backups.
+            for kind in (*self.APPEND_ONLY, "reports", "runs"):
+                def deleted(row):
+                    return owns(row) and (row.get("experiment_id") == experiment_id if kind == "reports" else row.get("run_id") in ids)
+                previous = self._memory[kind]
+                self._memory[kind] = [row for row in previous if not deleted(row)]
+                try:
+                    self._flush(kind)
+                except Exception:
+                    self._memory[kind] = previous
+                    raise
+            version = self.get_experiment(user_id, workspace_id, experiment_id).get("executionVersion", 0)
+            document = next(row for row in self._memory["experiments"] if owns(row) and row["experiment_id"] == experiment_id)
+            previous = deepcopy(document)
+            try:
+                self.update_experiment(user_id, workspace_id, experiment_id, {"status": "draft", "stop_requested": False, "executionVersion": version + 1})
+            except Exception:
+                document.clear(); document.update(previous)
+                raise
+            return self.get_experiment(user_id, workspace_id, experiment_id)
+
+    def restart_observation_run(self, user_id, workspace_id, run_id):
+        """Replace one round's evidence only after its old worker has stopped.
+
+        Keep the old raw runtime directory and its ID until initialization closes
+        that runtime. Other rounds, their order, seeds and evidence stay intact.
+        A pending flag survives partial writes so cleanup can safely be retried.
+        """
+        from .contracts import ContractError
+        with self._lock:
+            run = self.get_run(user_id, workspace_id, run_id)
+            experiment = self.get_experiment(user_id, workspace_id, run["experiment_id"]) if run else None
+            if not experiment or not experiment.get("duringObservation") or not run.get("restartPending"):
+                raise ContractError("没有待重新运行的事中本轮实验。")
+            owns = lambda row: row.get("user_id") == str(user_id) and row.get("workspace_id") == str(workspace_id)
+            for kind in (*self.APPEND_ONLY, "reports"):
+                previous = self._memory[kind]
+                self._memory[kind] = [row for row in previous if not (owns(row) and (
+                    row.get("experiment_id") == run["experiment_id"] if kind == "reports" else row.get("run_id") == run_id))]
+                try:
+                    self._flush(kind)
+                except Exception:
+                    self._memory[kind] = previous
+                    raise
+            # Rebuild the row so no old summary/completion/model evidence leaks
+            # into the new attempt. Keeping the row position preserves round N.
+            keep = {key: deepcopy(run[key]) for key in (
+                "run_id", "user_id", "workspace_id", "experiment_id", "method_id", "seed", "config",
+                "formal", "created_at", "runtime_run_id", "restartCount", "provenance") if key in run}
+            history = list(run.get("previous_runtime_run_ids") or [])
+            if run.get("runtime_run_id") and run["runtime_run_id"] not in history:
+                history.append(run["runtime_run_id"])
+            keep["previous_runtime_run_ids"] = history
+            keep.update(status="draft", controller_state=None, manualIntervention=False,
+                        started_at=None, completed_at=None, error=None, restartPending=False, updated_at=_now())
+            index = next(i for i, row in enumerate(self._memory["runs"]) if owns(row) and row["run_id"] == run_id)
+            previous = self._memory["runs"][index]
+            self._memory["runs"][index] = keep
+            try:
+                self._flush("runs")
+            except Exception:
+                self._memory["runs"][index] = previous
+                raise
+            return self.get_run(user_id, workspace_id, run_id)
 
     def record(self, kind: str, user_id: str, workspace_id: str, run_id: str, payload: dict[str, Any]):
         if kind not in self.APPEND_ONLY:

@@ -40,4 +40,3 @@ class Request:
 
 def response(data: dict | list, status: int = 200, replayed: bool = False) -> tuple[int, dict, bool]:
     return status, data, replayed
-

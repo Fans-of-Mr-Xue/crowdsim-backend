@@ -78,4 +78,3 @@ def register_database_routes(app, repository=None):
         app.router.add_get(prefix + "/datasets/{identifier}", handle)
         app.router.add_put(prefix + "/datasets/{identifier}", handle)
     return repository
-

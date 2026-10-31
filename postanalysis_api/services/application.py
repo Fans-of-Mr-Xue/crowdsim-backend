@@ -8,6 +8,7 @@ import logging
 import os
 import base64
 import binascii
+from copy import deepcopy
 from pathlib import Path
 import re
 from urllib.error import HTTPError, URLError
@@ -17,25 +18,29 @@ from pymongo.errors import PyMongoError
 from postanalysis_api.repositories.mongodb import MongoRepository
 from postanalysis_api.schemas.common import ApiError, integer, number
 from postanalysis_api.schemas.datasets import validate_dataset
+from postanalysis_api.schemas.review_intake import validate_review_intake
 from postanalysis_api.schemas.experiments import validate_experiment, validate_simulation
 from postanalysis_api.schemas.metrics import METRICS, catalog
-from postanalysis_api.workers.executor import UnavailableExecutor
+from postanalysis_api.workers.sumo_batch import SumoBatchExecutor
 
 
 class PostAnalysisApp:
-    def __init__(self, data_dir: str | Path, executor=None):
+    def __init__(self, data_dir: str | Path, executor=None, *, reconcile=True):
         # Post-review experiment records must survive outside the local runtime
         # directory. Connection details follow Crowdbackend/.env.example.
         self.repo = MongoRepository()
         try:
-            self.repo.reconcile_interrupted()
+            if reconcile:
+                self.repo.reconcile_interrupted()
         except PyMongoError:
             logging.getLogger("postanalysis_api").warning(
                 "MongoDB is unavailable at startup; post-analysis storage requests will retry"
             )
-        self.executor = executor or UnavailableExecutor()
+        self.executor = executor or SumoBatchExecutor(self.repo, data_dir)
 
     def close(self) -> None:
+        if hasattr(self.executor, "close"):
+            self.executor.close()
         self.repo.close()
 
     def capabilities(self) -> dict:
@@ -52,7 +57,8 @@ class PostAnalysisApp:
         raw_file = body.get("rawFile")
         dataset_body = {key: value for key, value in body.items() if key != "rawFile"}
         data = validate_dataset(dataset_body)
-        fingerprint = hashlib.sha256(json.dumps(data["observations"], sort_keys=True,
+        version_input = data["observations"] if not data.get("metadata") else {"observations": data["observations"], "metadata": data["metadata"]}
+        fingerprint = hashlib.sha256(json.dumps(version_input, sort_keys=True,
                                                  separators=(",", ":")).encode("utf-8")).hexdigest()
         payload = {**data, "version": fingerprint, "observationCount": len(data["observations"])}
         if raw_file is not None:
@@ -176,6 +182,44 @@ class PostAnalysisApp:
     def create_experiment(self, user: str, workspace: str, body: dict) -> dict:
         data = validate_experiment(body)
         dataset = self._dataset(data["datasetId"], user, workspace)
+        if data.get("reviewPlanId"):
+            reviewed = self.repo.get("review_plans", data["reviewPlanId"], user, workspace)
+            validate_review_intake(reviewed["plan"])
+            from postanalysis_api.services.execution_template import review_version
+            if data.get("reviewPlanVersion") != review_version(reviewed["plan"]):
+                raise ApiError("PLAN_VERSION_MISMATCH", "已确认方案发生变化，请重新载入并核对工程执行矩阵", 409)
+            data["reviewSnapshot"] = deepcopy(reviewed["plan"])
+            data["reviewPlanUpdatedAt"] = reviewed.get("updatedAt")
+            if reviewed.get("datasetId") != dataset["id"] or reviewed.get("datasetVersion") != dataset["version"]:
+                raise ApiError("DATASET_VERSION_MISMATCH", "执行方案与已确认快照的数据集不一致", 409)
+            if "executionSettings" in reviewed["plan"]:
+                from .execution_template import execution_template
+                expected = validate_experiment(execution_template(dataset, reviewed["plan"]))
+                if any(data[key] != expected[key] for key in ("scenario", "seedStart", "parallelism", "metricIds", "pcFeatures", "groups")):
+                    raise ApiError("EXECUTION_PLAN_MISMATCH", "执行参数与已确认工作台快照不一致，请返回需求界定修改并重新确认", 409)
+            source_groups = {item["id"]: kind for kind, items in reviewed["plan"]["experimentSchemeDesign"].items() for item in items}
+            from postanalysis_api.workers.memorial_scenario import METHODS
+            if any(item["method"] != METHODS[kind] for kind, items in reviewed["plan"]["experimentSchemeDesign"].items() for item in items):
+                raise ApiError("ANALYSIS_METHOD_UNSUPPORTED", "方案中包含当前纪念塔执行器未接入的方法，请返回设计页明确选择", 422)
+            if any(source_groups.get(group.get("sourceGroupId")) != group["experimentType"] for group in data["groups"]):
+                raise ApiError("PLAN_EXECUTION_MISMATCH", "执行组必须逐一关联快照中相同类型的设计组", 422)
+            if {group["sourceGroupId"] for group in data["groups"]} != set(source_groups):
+                raise ApiError("PLAN_EXECUTION_MISMATCH", "执行方案必须覆盖快照内全部设计组", 422)
+            from postanalysis_api.workers.memorial_scenario import control_schedule
+            for group in data["groups"]:
+                if group["experimentType"] not in {"mechanism", "intervention"}:
+                    continue
+                reference = next((row for row in data["groups"] if row["id"] == group["referenceGroupId"]), None)
+                if not reference and group["experimentType"] == "mechanism":
+                    raise ApiError("MECHANISM_REFERENCE_MISSING", "机制消融必须引用本批次完整机制对照组", 422)
+                left, right = control_schedule(reference["interventions"] if reference else []), control_schedule(group["interventions"])
+                differences = [key for key in left if left[key] != right[key]]
+                if group["experimentType"] == "intervention":
+                    timing_only = set(differences) == {"gateOpenSeconds", "guidanceStartSeconds"} and left["gateOpenSeconds"] - right["gateOpenSeconds"] == left["guidanceStartSeconds"] - right["guidanceStartSeconds"]
+                    if len(differences) > 1 and not timing_only:
+                        raise ApiError("INTERVENTION_NOT_ISOLATED", "OFAT 干预组须只改变一个控制因素；启动时点可同步平移开放和引导时刻", 422)
+                elif len(differences) != 1 or differences[0] not in {"compliance", "guidanceDelaySeconds"}:
+                    raise ApiError("MECHANISM_NOT_ISOLATED", "机制消融只允许改变引导遵从比例或响应延迟中的一个，其他控制须与参照组相同", 422)
         baseline_count = max(group["repeatCount"] for group in data["groups"])
         intervention_count = sum(group["repeatCount"] for group in data["groups"])
         item = self.repo.create("experiments", user, workspace,
@@ -202,10 +246,11 @@ class PostAnalysisApp:
         targets = body.get("calibrationTargets")
         if not isinstance(plan, dict) or not isinstance(calibration, dict) or not isinstance(targets, dict):
             raise ApiError("VALIDATION_ERROR", "方案、校准信息和校准目标必须为对象", 422)
+        validate_review_intake(plan)
         draft_id = plan.get("id")
         if not isinstance(draft_id, str) or not 1 <= len(draft_id) <= 120:
             raise ApiError("VALIDATION_ERROR", "方案草案必须包含有效 id", 422, "plan.id")
-        score = number(calibration.get("score"), "calibration.score", 0, 100)
+        score = None if calibration.get("score") is None else number(calibration.get("score"), "calibration.score", 0, 100)
         threshold = number(calibration.get("threshold", 80), "calibration.threshold", 0, 100)
         confirmed = calibration.get("confirmed")
         if not isinstance(confirmed, bool):
@@ -235,6 +280,12 @@ class PostAnalysisApp:
             raise ApiError("PAYLOAD_TOO_LARGE", "方案草案超过 2 MiB", 413)
         dataset_id = body.get("datasetId")
         dataset_version = body.get("datasetVersion")
+        if plan.get("reviewIntake") is not None:
+            baseline = plan["factualBaseline"]
+            if (baseline.get("datasetId") != dataset_id or baseline.get("datasetVersion") != dataset_version):
+                raise ApiError("DATASET_VERSION_MISMATCH", "方案快照与提交引用的数据集不一致", 409)
+            if plan.get("conversationId") != body.get("conversationId"):
+                raise ApiError("VALIDATION_ERROR", "方案快照不属于当前对话", 422, "plan.conversationId")
         if dataset_id is not None:
             if not isinstance(dataset_id, str) or not 1 <= len(dataset_id) <= 80:
                 raise ApiError("VALIDATION_ERROR", "datasetId 格式无效", 422, "datasetId")
@@ -273,12 +324,12 @@ class PostAnalysisApp:
         if dataset["version"] != item["datasetVersion"]:
             raise ApiError("DATASET_VERSION_MISMATCH", "数据集版本与任务创建时不同", 409)
         self._check_start_capability(item)
-        updated = self.repo.update(kind, item_id, user, workspace, {"status": "queued"})
+        self.repo.transition_task(kind, item_id, user, workspace, "draft", {"status": "queued"})
         self.repo.event(kind, item_id, "queued", user=user, workspace=workspace)
         try:
             self.executor.submit(item, lambda event: self.record_worker_event(kind, item_id, user, workspace, event))
         except Exception:
-            self.repo.update(kind, item_id, user, workspace, {"status": "draft"})
+            self.repo.transition_task(kind, item_id, user, workspace, "queued", {"status": "draft"})
             self.repo.event(kind, item_id, "submit_rejected", user=user, workspace=workspace)
             raise
         return self.repo.get(kind, item_id, user, workspace)
@@ -290,10 +341,17 @@ class PostAnalysisApp:
         task = self.repo.get(kind, item_id, user, workspace)
         transitions = {"queued": {"running", "failed", "cancelled"},
                        "running": {"running", "completed", "partial", "failed", "cancelled"},
-                       "cancelling": {"cancelled", "failed"}}
+                       "cancelling": {"running", "cancelled", "failed", "completed", "partial"}}
         if event["status"] not in transitions.get(task["status"], set()):
             raise ApiError("INVALID_TASK_STATE", "执行器请求的状态转移无效", 409)
-        changes = {"status": event["status"]}
+        changes = {"status": "cancelling" if task["status"] == "cancelling" and event["status"] == "running"
+                   else event["status"]}
+        if "activeRun" in event:
+            # Only lifecycle boundaries are persisted. Live display frames are
+            # held by the post executor, not duplicated in task/event documents.
+            changes["activeRun"] = deepcopy(event["activeRun"])
+        if "error" in event:
+            changes["error"] = str(event["error"])[:2000]
         if "progress" in event:
             if not isinstance(event["progress"], dict):
                 raise ApiError("INVALID_WORKER_EVENT", "进度必须是对象", 422)
@@ -324,25 +382,60 @@ class PostAnalysisApp:
             changes["resultId"] = result["id"]
         if event["status"] in {"completed", "partial"} and not changes.get("resultId"):
             raise ApiError("RESULT_NOT_READY", "结果封存前不可报告任务完成", 409)
-        self.repo.update(kind, item_id, user, workspace, changes)
+        try:
+            self.repo.transition_task(kind, item_id, user, workspace, task["status"], changes)
+        except ApiError as exc:
+            # A cancellation can win the compare-and-set after the worker read
+            # its task. Keep that state while retaining actual completed counts.
+            if exc.code != "INVALID_TASK_STATE":
+                raise
+            current = self.repo.get(kind, item_id, user, workspace)
+            if current["status"] != "cancelling":
+                raise
+            retry_changes = {**changes, "status": "cancelling" if event["status"] == "running" else event["status"]}
+            self.repo.transition_task(kind, item_id, user, workspace, "cancelling", retry_changes)
         self.repo.event(kind, item_id, event["status"],
                         {key: value for key, value in event.items() if key != "status"}, user, workspace)
+
+    def runtime(self, kind: str, item_id: str, user: str, workspace: str) -> dict:
+        task = self.repo.get(kind, item_id, user, workspace)
+        state = self.executor.runtime(item_id) if hasattr(self.executor, "runtime") else None
+        state = state or {}
+        active = deepcopy(state.get("activeRun") or task.get("activeRun"))
+        if active and task["status"] in {"interrupted", "cancelled", "failed"}:
+            if active.get("phase") != "completed":
+                active["phase"] = task["status"]
+        frame = state.get("frame")
+        has_frame = frame is not None
+        return {"taskId": item_id, "status": task["status"], "progress": task["progress"],
+                "activeRun": active, "frame": frame, "sequence": state.get("sequence", 0),
+                "updatedAt": state.get("updatedAt", task.get("updatedAt")),
+                "liveAvailable": has_frame,
+                "availableReason": ("live" if task["status"] in {"queued", "running", "cancelling"} else "last_frame")
+                if has_frame else "awaiting_first_frame" if state and task["status"] in {"queued", "running", "cancelling"}
+                else "worker_not_active", "frameError": state.get("frameError")}
+
+    def trajectory(self, run_id: str, user: str, workspace: str, after=-1, limit=10) -> dict:
+        from postanalysis_api.workers.live_frames import geographic_trajectory
+        return geographic_trajectory(self.repo.trajectory(run_id, user, workspace, after, limit))
 
     def cancel(self, kind: str, item_id: str, user: str, workspace: str) -> dict:
         item = self.repo.get(kind, item_id, user, workspace)
         if item["status"] not in {"draft", "queued", "running"}:
             raise ApiError("INVALID_TASK_STATE", "任务当前状态不可取消", 409)
         if item["status"] in {"queued", "running"}:
-            self.executor.cancel(item_id)
             status = "cancelling"
         else:
             status = "cancelled"
-        updated = self.repo.update(kind, item_id, user, workspace, {"status": status})
+        updated = self.repo.transition_task(kind, item_id, user, workspace, item["status"], {"status": status})
+        if status == "cancelling":
+            self.executor.cancel(item_id)
         self.repo.event(kind, item_id, status, user=user, workspace=workspace)
         return updated
 
     def result(self, experiment_id: str, user: str, workspace: str, section: str) -> dict:
-        task = self.repo.get("experiments", experiment_id, user, workspace)
+        task_kind = "simulations" if experiment_id.startswith("sim_") else "experiments"
+        task = self.repo.get(task_kind, experiment_id, user, workspace)
         if task["status"] not in {"completed", "partial"} or not task.get("resultId"):
             raise ApiError("RESULT_NOT_READY", "真实仿真结果尚未生成", 409)
         result = self.repo.get("results", task["resultId"], user, workspace)
@@ -354,23 +447,25 @@ class PostAnalysisApp:
                 "definitionVersion": result.get("definitionVersion"), "data": result[section]}
 
     def model_connection(self) -> dict:
-        model = os.environ.get("CROWDSIM_POST_LLM_MODEL", "qwen3.8-flash-next")
+        model = os.environ.get("CROWDSIM_POST_LLM_MODEL") or os.environ.get("CROWDSIM_LLM_MODEL", "GLM-5.3-Flash")
+        base = os.environ.get("CROWDSIM_LLM_BASE_URL", "http://127.0.0.1:8800/v1").rstrip("/")
+        endpoint = base.removesuffix("/v1")
         headers = {}
-        token = os.environ.get("CROWDSIM_POST_LLM_API_KEY")
+        token = os.environ.get("CROWDSIM_POST_LLM_API_KEY") or os.environ.get("CROWDSIM_MODEL_API_KEY")
         if token:
             headers["Authorization"] = f"Bearer {token}"
-        request = Request("http://127.0.0.1:8800/v1/models", headers=headers)
+        request = Request(base + "/models", headers=headers)
         try:
             with urlopen(request, timeout=2) as response:
                 payload = json.load(response)
             models = [str(item.get("id")) for item in payload.get("data", []) if isinstance(item, dict)]
-            return {"endpoint": "http://127.0.0.1:8800", "model": model,
-                    "displayName": "Qwen3.8-Flash-Next",
+            return {"endpoint": endpoint, "model": model,
+                    "displayName": "GLM-5.3 Flash",
                     "status": "ready" if model in models else "model_unavailable", "availableModels": models}
         except HTTPError as exc:
-            return {"endpoint": "http://127.0.0.1:8800", "model": model,
-                    "displayName": "Qwen3.8-Flash-Next", "status": "http_error",
+            return {"endpoint": endpoint, "model": model,
+                    "displayName": "GLM-5.3 Flash", "status": "http_error",
                     "httpStatus": exc.code, "availableModels": []}
         except (OSError, URLError, ValueError, json.JSONDecodeError):
-            return {"endpoint": "http://127.0.0.1:8800", "model": model,
-                    "displayName": "Qwen3.8-Flash-Next", "status": "unreachable", "availableModels": []}
+            return {"endpoint": endpoint, "model": model,
+                    "displayName": "GLM-5.3 Flash", "status": "unreachable", "availableModels": []}

@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
+
+import httpx
 
 from .controller_registry import ControllerRegistry
 from .gateway import CrowdSimGateway
@@ -12,6 +15,7 @@ from .orchestrator import ExperimentOrchestrator
 from .report_service import ReportService
 from .repository import CrowdSimRepository
 from .routing_service import RoutingService
+from .during_strategy import DuringStrategyService
 
 
 class ControlServiceBundle:
@@ -24,25 +28,35 @@ class ControlServiceBundle:
         self.events = EventBus()
         self.orchestrator = ExperimentOrchestrator(self.repository, self.gateway, self.registry, event_bus=self.events)
         self.reports = ReportService(self.repository)
+        self.during_strategies = DuringStrategyService(self.repository, self.reports)
         self.routing = RoutingService(self.gateway, llm_client=llm_client)
 
     def submit_requirement(self, requirement: dict, *, timeout: float = 20.0) -> dict:
-        """Submit a requirement through the gateway's single CrowdSim connection."""
+        """Save through the simulator's HTTP API without acquiring its WebSocket."""
+        parsed = urlsplit(self.gateway.url)
+        if parsed.scheme not in {"ws", "wss"} or not parsed.hostname:
+            raise RuntimeError("CROWDSIM_UNAVAILABLE")
+        url = urlunsplit(("https" if parsed.scheme == "wss" else "http", parsed.netloc,
+                          "/api/v1/requirements", "", ""))
         try:
-            request_id = self.gateway.submit({
-                "action": "submit_requirement",
-                "requirement": requirement,
-            })
-        except RuntimeError as exc:
+            response = httpx.post(url, json={"requirement": requirement}, timeout=timeout,
+                                  trust_env=parsed.hostname not in {"localhost", "127.0.0.1", "::1"})
+        except httpx.TimeoutException as exc:
+            raise TimeoutError("CROWDSIM_REQUIREMENT_TIMEOUT") from exc
+        except httpx.RequestError as exc:
             raise RuntimeError("CROWDSIM_UNAVAILABLE") from exc
-        result = self.gateway.wait_for_ack(request_id, timeout=timeout)
-        if result is None:
-            self.gateway.forget_request(request_id)
-            raise TimeoutError("CROWDSIM_REQUIREMENT_TIMEOUT")
+        if response.status_code == 404:
+            raise RuntimeError("CROWDSIM_REQUIREMENT_ENDPOINT_UNAVAILABLE")
+        try:
+            result = response.json()
+        except ValueError as exc:
+            raise RuntimeError("CROWDSIM_REQUIREMENT_INVALID_RESPONSE") from exc
+        if not isinstance(result, dict):
+            raise RuntimeError("CROWDSIM_REQUIREMENT_INVALID_RESPONSE")
         if result.get("type") == "error":
             code = str(result.get("code") or "INVALID_REQUIREMENT")
             message = str(result.get("message") or "requirement submission failed")
             raise ValueError(f"{code}: {message}")
-        if result.get("type") != "requirement_accepted":
+        if not response.is_success or result.get("type") != "requirement_accepted":
             raise RuntimeError("CROWDSIM_REQUIREMENT_INVALID_RESPONSE")
         return result

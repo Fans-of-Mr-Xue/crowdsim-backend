@@ -1,0 +1,501 @@
+{
+  "network": "east_nanjing.net.xml",
+  "network_sha256": "79ac540cb49f06b4d53579f5c5e548937cbbc1a13c8c97cba367341cf2d5201d",
+  "sumo_version": "Eclipse SUMO sumo 1.27.0",
+  "settings": {
+    "stripe_width_m": 0.55,
+    "reserve_oncoming": 0.5,
+    "jamtime_seconds": 3601,
+    "local_step_seconds": 0.2,
+    "whole_network_step_seconds": 0.5,
+    "persons_per_ordered_junction_movement": 4,
+    "seed": 20260908
+  },
+  "isolated_junctions": {
+    "count": 23,
+    "passed_count": 23,
+    "planned_people": 440,
+    "max_continuous_stop_seconds": 13.6,
+    "results": [
+      {
+        "walking_area_id": ":J01_w0",
+        "width_m": 6.4,
+        "neighbours": [
+          "R01",
+          "R05"
+        ],
+        "movement_count": 2,
+        "planned": 8,
+        "departed": 8,
+        "arrived": 8,
+        "end_time_seconds": 19.8,
+        "max_continuous_stop_seconds": 0.6,
+        "max_walking_area_count": 7,
+        "final_active_by_edge": {},
+        "error": null,
+        "passed": true
+      },
+      {
+        "walking_area_id": ":J02_w0",
+        "width_m": 4.0,
+        "neighbours": [
+          "R02",
+          "R05",
+          "R06"
+        ],
+        "movement_count": 6,
+        "planned": 24,
+        "departed": 24,
+        "arrived": 24,
+        "end_time_seconds": 24.6,
+        "max_continuous_stop_seconds": 2.8,
+        "max_walking_area_count": 22,
+        "final_active_by_edge": {},
+        "error": null,
+        "passed": true
+      },
+      {
+        "walking_area_id": ":J03_w0",
+        "width_m": 6.4,
+        "neighbours": [
+          "R04",
+          "R06"
+        ],
+        "movement_count": 2,
+        "planned": 8,
+        "departed": 8,
+        "arrived": 8,
+        "end_time_seconds": 21.2,
+        "max_continuous_stop_seconds": 0.6,
+        "max_walking_area_count": 7,
+        "final_active_by_edge": {},
+        "error": null,
+        "passed": true
+      },
+      {
+        "walking_area_id": ":J04_w0",
+        "width_m": 4.0,
+        "neighbours": [
+          "R03",
+          "R04"
+        ],
+        "movement_count": 2,
+        "planned": 8,
+        "departed": 8,
+        "arrived": 8,
+        "end_time_seconds": 18.4,
+        "max_continuous_stop_seconds": 1.4,
+        "max_walking_area_count": 2,
+        "final_active_by_edge": {},
+        "error": null,
+        "passed": true
+      },
+      {
+        "walking_area_id": ":J06_w0",
+        "width_m": 4.0,
+        "neighbours": [
+          "R08a",
+          "R10"
+        ],
+        "movement_count": 2,
+        "planned": 8,
+        "departed": 8,
+        "arrived": 8,
+        "end_time_seconds": 19.2,
+        "max_continuous_stop_seconds": 0.6,
+        "max_walking_area_count": 6,
+        "final_active_by_edge": {},
+        "error": null,
+        "passed": true
+      },
+      {
+        "walking_area_id": ":J07_w0",
+        "width_m": 4.0,
+        "neighbours": [
+          "R07",
+          "R08b",
+          "R09a"
+        ],
+        "movement_count": 6,
+        "planned": 24,
+        "departed": 24,
+        "arrived": 24,
+        "end_time_seconds": 23.6,
+        "max_continuous_stop_seconds": 3.0,
+        "max_walking_area_count": 14,
+        "final_active_by_edge": {},
+        "error": null,
+        "passed": true
+      },
+      {
+        "walking_area_id": ":J08_w0",
+        "width_m": 4.0,
+        "neighbours": [
+          "R02",
+          "R07"
+        ],
+        "movement_count": 2,
+        "planned": 8,
+        "departed": 8,
+        "arrived": 8,
+        "end_time_seconds": 10.8,
+        "max_continuous_stop_seconds": 0.6,
+        "max_walking_area_count": 3,
+        "final_active_by_edge": {},
+        "error": null,
+        "passed": true
+      },
+      {
+        "walking_area_id": ":J09_w0",
+        "width_m": 4.0,
+        "neighbours": [
+          "R10",
+          "R12",
+          "R14"
+        ],
+        "movement_count": 6,
+        "planned": 24,
+        "departed": 24,
+        "arrived": 24,
+        "end_time_seconds": 24.4,
+        "max_continuous_stop_seconds": 3.0,
+        "max_walking_area_count": 17,
+        "final_active_by_edge": {},
+        "error": null,
+        "passed": true
+      },
+      {
+        "walking_area_id": ":J10_w0",
+        "width_m": 4.0,
+        "neighbours": [
+          "R12",
+          "R13",
+          "R15"
+        ],
+        "movement_count": 6,
+        "planned": 24,
+        "departed": 24,
+        "arrived": 24,
+        "end_time_seconds": 24.2,
+        "max_continuous_stop_seconds": 3.0,
+        "max_walking_area_count": 16,
+        "final_active_by_edge": {},
+        "error": null,
+        "passed": true
+      },
+      {
+        "walking_area_id": ":J11_w0",
+        "width_m": 5.0,
+        "neighbours": [
+          "R13",
+          "R25a",
+          "R25b",
+          "R29"
+        ],
+        "movement_count": 12,
+        "planned": 48,
+        "departed": 48,
+        "arrived": 48,
+        "end_time_seconds": 35.4,
+        "max_continuous_stop_seconds": 10.4,
+        "max_walking_area_count": 39,
+        "final_active_by_edge": {},
+        "error": null,
+        "passed": true
+      },
+      {
+        "walking_area_id": ":J12_w0",
+        "width_m": 4.0,
+        "neighbours": [
+          "R09b",
+          "R16"
+        ],
+        "movement_count": 2,
+        "planned": 8,
+        "departed": 8,
+        "arrived": 8,
+        "end_time_seconds": 19.4,
+        "max_continuous_stop_seconds": 1.8,
+        "max_walking_area_count": 5,
+        "final_active_by_edge": {},
+        "error": null,
+        "passed": true
+      },
+      {
+        "walking_area_id": ":J13_w0",
+        "width_m": 4.0,
+        "neighbours": [
+          "R14",
+          "R16",
+          "R17"
+        ],
+        "movement_count": 6,
+        "planned": 24,
+        "departed": 24,
+        "arrived": 24,
+        "end_time_seconds": 24.2,
+        "max_continuous_stop_seconds": 2.4,
+        "max_walking_area_count": 16,
+        "final_active_by_edge": {},
+        "error": null,
+        "passed": true
+      },
+      {
+        "walking_area_id": ":J14_w0",
+        "width_m": 4.0,
+        "neighbours": [
+          "R15",
+          "R17",
+          "R18"
+        ],
+        "movement_count": 6,
+        "planned": 24,
+        "departed": 24,
+        "arrived": 24,
+        "end_time_seconds": 21.4,
+        "max_continuous_stop_seconds": 3.6,
+        "max_walking_area_count": 17,
+        "final_active_by_edge": {},
+        "error": null,
+        "passed": true
+      },
+      {
+        "walking_area_id": ":J15_w0",
+        "width_m": 5.0,
+        "neighbours": [
+          "R18",
+          "R25b",
+          "R25c",
+          "R30"
+        ],
+        "movement_count": 12,
+        "planned": 48,
+        "departed": 48,
+        "arrived": 48,
+        "end_time_seconds": 35.2,
+        "max_continuous_stop_seconds": 13.6,
+        "max_walking_area_count": 42,
+        "final_active_by_edge": {},
+        "error": null,
+        "passed": true
+      },
+      {
+        "walking_area_id": ":J17_w0",
+        "width_m": 4.0,
+        "neighbours": [
+          "R22",
+          "R23"
+        ],
+        "movement_count": 2,
+        "planned": 8,
+        "departed": 8,
+        "arrived": 8,
+        "end_time_seconds": 18.0,
+        "max_continuous_stop_seconds": 1.4,
+        "max_walking_area_count": 4,
+        "final_active_by_edge": {},
+        "error": null,
+        "passed": true
+      },
+      {
+        "walking_area_id": ":J18_w0",
+        "width_m": 4.0,
+        "neighbours": [
+          "R22",
+          "R26a"
+        ],
+        "movement_count": 2,
+        "planned": 8,
+        "departed": 8,
+        "arrived": 8,
+        "end_time_seconds": 20.8,
+        "max_continuous_stop_seconds": 0.6,
+        "max_walking_area_count": 7,
+        "final_active_by_edge": {},
+        "error": null,
+        "passed": true
+      },
+      {
+        "walking_area_id": ":J19_w0",
+        "width_m": 6.4,
+        "neighbours": [
+          "R23",
+          "R24",
+          "R25a"
+        ],
+        "movement_count": 6,
+        "planned": 24,
+        "departed": 24,
+        "arrived": 24,
+        "end_time_seconds": 28.2,
+        "max_continuous_stop_seconds": 3.4,
+        "max_walking_area_count": 17,
+        "final_active_by_edge": {},
+        "error": null,
+        "passed": true
+      },
+      {
+        "walking_area_id": ":J26_w0",
+        "width_m": 4.0,
+        "neighbours": [
+          "R01",
+          "R08a",
+          "R08b"
+        ],
+        "movement_count": 6,
+        "planned": 24,
+        "departed": 24,
+        "arrived": 24,
+        "end_time_seconds": 25.0,
+        "max_continuous_stop_seconds": 4.0,
+        "max_walking_area_count": 21,
+        "final_active_by_edge": {},
+        "error": null,
+        "passed": true
+      },
+      {
+        "walking_area_id": ":J27_w0",
+        "width_m": 4.0,
+        "neighbours": [
+          "R03",
+          "R09a",
+          "R09b"
+        ],
+        "movement_count": 6,
+        "planned": 24,
+        "departed": 24,
+        "arrived": 24,
+        "end_time_seconds": 27.2,
+        "max_continuous_stop_seconds": 2.6,
+        "max_walking_area_count": 20,
+        "final_active_by_edge": {},
+        "error": null,
+        "passed": true
+      },
+      {
+        "walking_area_id": ":J28_w0",
+        "width_m": 4.0,
+        "neighbours": [
+          "R26a",
+          "R26b",
+          "R29"
+        ],
+        "movement_count": 6,
+        "planned": 24,
+        "departed": 24,
+        "arrived": 24,
+        "end_time_seconds": 27.2,
+        "max_continuous_stop_seconds": 4.0,
+        "max_walking_area_count": 21,
+        "final_active_by_edge": {},
+        "error": null,
+        "passed": true
+      },
+      {
+        "walking_area_id": ":J29_w0",
+        "width_m": 4.0,
+        "neighbours": [
+          "R26b",
+          "R26c",
+          "R30"
+        ],
+        "movement_count": 6,
+        "planned": 24,
+        "departed": 24,
+        "arrived": 24,
+        "end_time_seconds": 28.0,
+        "max_continuous_stop_seconds": 3.4,
+        "max_walking_area_count": 22,
+        "final_active_by_edge": {},
+        "error": null,
+        "passed": true
+      },
+      {
+        "walking_area_id": ":J30_w0",
+        "width_m": 4.0,
+        "neighbours": [
+          "R25c",
+          "R31"
+        ],
+        "movement_count": 2,
+        "planned": 8,
+        "departed": 8,
+        "arrived": 8,
+        "end_time_seconds": 19.4,
+        "max_continuous_stop_seconds": 1.4,
+        "max_walking_area_count": 5,
+        "final_active_by_edge": {},
+        "error": null,
+        "passed": true
+      },
+      {
+        "walking_area_id": ":J31_w0",
+        "width_m": 4.0,
+        "neighbours": [
+          "R26c",
+          "R31"
+        ],
+        "movement_count": 2,
+        "planned": 8,
+        "departed": 8,
+        "arrived": 8,
+        "end_time_seconds": 20.8,
+        "max_continuous_stop_seconds": 0.6,
+        "max_walking_area_count": 6,
+        "final_active_by_edge": {},
+        "error": null,
+        "passed": true
+      }
+    ]
+  },
+  "whole_network": {
+    "type": "all_ordered_road_pairs_plus_bidirectional_edges_and_forced_connections",
+    "planned": 998,
+    "departed": 998,
+    "arrived": 998,
+    "ordered_road_pairs": 930,
+    "additional_directional_cases": 68,
+    "end_time_seconds": 1400.0,
+    "max_continuous_stop_seconds": 8.0,
+    "roads_observed": [
+      "R01",
+      "R02",
+      "R03",
+      "R04",
+      "R05",
+      "R06",
+      "R07",
+      "R08a",
+      "R08b",
+      "R09a",
+      "R09b",
+      "R10",
+      "R12",
+      "R13",
+      "R14",
+      "R15",
+      "R16",
+      "R17",
+      "R18",
+      "R22",
+      "R23",
+      "R24",
+      "R25a",
+      "R25b",
+      "R25c",
+      "R26a",
+      "R26b",
+      "R26c",
+      "R29",
+      "R30",
+      "R31"
+    ],
+    "missing_observed_roads": [],
+    "remaining_people": {},
+    "jam_resolution_warning": false,
+    "traci_projection_error_degrees": 1.4210854715202004e-14,
+    "log": "***Starting server on port 51604 ***\nLoading net-file from '/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/scenarios/east_nanjing_road/east_nanjing.net.xml' ... done (7ms).\nLoading route-files incrementally from '/var/folders/5v/tmygthq13lx5k68r5gql64bm0000gn/T/crowdsim-nanjing-validation-n16kbdq3/all-pairs.rou.xml'\nLoading done.\nSimulation version 1.27.0 started with time: 0.00.\nSimulation ended at time: 1400.00.\nReason: TraCI requested termination.\nDijkstraRouter answered 3676 queries and explored 4.03 edges on average.\nDijkstraRouter spent 0.00s answering queries (0.00ms on average).\n",
+    "passed": true
+  },
+  "passed": true
+}

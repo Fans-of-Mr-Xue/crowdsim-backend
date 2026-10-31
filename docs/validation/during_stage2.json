@@ -1,0 +1,272 @@
+{
+  "status": "passed",
+  "date": "2026-10-14",
+  "completed_checks": [
+    "browser_chat_configuration",
+    "real_model_parameter_extraction",
+    "unsupported_population_rejected_atomically",
+    "confirmation_invalidated_on_change",
+    "create_without_start",
+    "browser_start_and_queue",
+    "pause_resume_and_reload",
+    "conversation_scope_isolation",
+    "history_switching",
+    "duplicate_start_live_409",
+    "create_response_timeout_and_idempotent_retry",
+    "disconnect_and_recovery",
+    "stale_preset_backend_rejection_and_reconfirmation",
+    "cancel_current_round_and_continue_queue",
+    "failed_cancelled_excluded_from_frequency",
+    "archived_report_equal_after_service_restart",
+    "idempotency_survives_service_restart",
+    "injected_recorder_exception_automatically_failed_in_UI",
+    "real_model_partial_report_after_final_content_fix",
+    "real_model_parameter_extraction_after_budget_fix",
+    "default_five_complete_and_independently_audited",
+    "final_batch_UI_and_null_t95",
+    "real_model_report_interpretation",
+    "six_complete_runs_and_independent_audits",
+    "single_final_report_UI",
+    "completed_reports_restart_check",
+    "completed_reports_equal_after_main_service_restart",
+    "repeat_seed_20260908_exact_observation_and_demand_match"
+  ],
+  "experiments": {
+    "disk_affected_cancelled": "exp_73271fa79bb242c48e9bc584918728b0",
+    "default_five": "exp_1401633efb8f4f6c818c1454f1ba637c",
+    "replacement_single": "exp_ca26e11438534dd4812660eb4d088226",
+    "fault_cancel_and_gateway_loss": "exp_776e86118ee24a5e8dd56f919e25080d",
+    "stale_preset_reconfirmed_draft": "exp_f16ac8c8aad947f1997d2ed55d9138dd",
+    "injected_recorder_failure": "exp_31cd118ae7de4d09bed5912e3e1b5904"
+  },
+  "checks": {
+    "frontend_tests": 33,
+    "backend_tests": 112,
+    "build_seconds": 26.74,
+    "eslint": "passed",
+    "diff_check": "passed"
+  },
+  "model_service_actual": "GLM-5.3-Flash (8800 service; frontend legacy alias Qwen3.8-Flash-Next)",
+  "completed_at_utc": "2026-10-14T12:29:20.331762+00:00",
+  "pending": [],
+  "counts": {
+    "complete_runs": 6,
+    "checked_steps": 20829,
+    "trajectory_rows": 11536916
+  },
+  "same_seed_reproduced": true,
+  "reports": {
+    "exp_1401633efb8f4f6c818c1454f1ba637c": {
+      "presetId": "memorial-tower-during-v1",
+      "presetVersion": 1,
+      "presetFingerprint": "sha256:87a14590b4d6ac2c8a7edbb178dc89b081caec5562b953114df773c4adf964d6",
+      "phenomenonDefinition": {
+        "id": "sustained_core_crowding",
+        "version": 1,
+        "scope_edges": [
+          "679361567#1",
+          "679361567#2",
+          "679361567#2_m3_north"
+        ],
+        "states": [
+          "crowded",
+          "high_risk"
+        ],
+        "minimum_count": 10,
+        "minimum_fraction": 0.2,
+        "confirmation_seconds": 10.0,
+        "observation_start_seconds": 1.0,
+        "maximum_sample_gap_seconds": 0.5,
+        "denominator": "all_active_pedestrians_on_scope_edges",
+        "unknown_density": "interrupt_continuity_and_mark_unavailable"
+      },
+      "plannedRunCount": 5,
+      "createdRunCount": 5,
+      "validRunCount": 5,
+      "occurredRunCount": 5,
+      "noEventRunCount": 0,
+      "incompleteRunCount": 0,
+      "failedRunCount": 0,
+      "cancelledRunCount": 0,
+      "pendingRunCount": 0,
+      "occurrenceFrequency": 1.0,
+      "scope": "preset_simulation_sample_frequency"
+    },
+    "exp_ca26e11438534dd4812660eb4d088226": {
+      "presetId": "memorial-tower-during-v1",
+      "presetVersion": 1,
+      "presetFingerprint": "sha256:87a14590b4d6ac2c8a7edbb178dc89b081caec5562b953114df773c4adf964d6",
+      "phenomenonDefinition": {
+        "id": "sustained_core_crowding",
+        "version": 1,
+        "scope_edges": [
+          "679361567#1",
+          "679361567#2",
+          "679361567#2_m3_north"
+        ],
+        "states": [
+          "crowded",
+          "high_risk"
+        ],
+        "minimum_count": 10,
+        "minimum_fraction": 0.2,
+        "confirmation_seconds": 10.0,
+        "observation_start_seconds": 1.0,
+        "maximum_sample_gap_seconds": 0.5,
+        "denominator": "all_active_pedestrians_on_scope_edges",
+        "unknown_density": "interrupt_continuity_and_mark_unavailable"
+      },
+      "plannedRunCount": 1,
+      "createdRunCount": 1,
+      "validRunCount": 1,
+      "occurredRunCount": 1,
+      "noEventRunCount": 0,
+      "incompleteRunCount": 0,
+      "failedRunCount": 0,
+      "cancelledRunCount": 0,
+      "pendingRunCount": 0,
+      "occurrenceFrequency": 1.0,
+      "scope": "preset_simulation_sample_frequency"
+    }
+  },
+  "run_results": [
+    {
+      "run_id": "run_dbade55f63fb42d2a43325556317da6a",
+      "runtime_run_id": "run-5e04a29f08f1449d9ac673e7c85d450d",
+      "seed": 20260910,
+      "end_seconds": 1800.0,
+      "first_confirmed_seconds": 145.5,
+      "duration_seconds": 859.0,
+      "completion_rate": 0.9857142857142858,
+      "t95_seconds": 1327.5,
+      "during_sha256": "8fe81408e594ab5916459c4d6e2e402477d05efe3a796f1c8fe47ba89061ce19",
+      "demand_sha256": "5c688f70f7dd9b871f2fbe4483060ac35ee14412c19e11fa59922bda05e97ce8"
+    },
+    {
+      "run_id": "run_3aef0df1dc8e4007a13df65068e0b297",
+      "runtime_run_id": "run-40884b35344e463c9949913d3097d906",
+      "seed": 20260911,
+      "end_seconds": 1800.0,
+      "first_confirmed_seconds": 152.0,
+      "duration_seconds": 853.5,
+      "completion_rate": 0.7885714285714286,
+      "t95_seconds": null,
+      "during_sha256": "994aefe57158307e6e60ef3aa744a811c0f232b6fd45043ac175f2f124431d11",
+      "demand_sha256": "6530d89dc400e15b299eb948b7de1c63a8b1d1f907221e68e9ee4eee658bc7e6"
+    },
+    {
+      "run_id": "run_c65af54c17d74ff88083493fe2a92d76",
+      "runtime_run_id": "run-bd7e819de8424e429dc802e619e59879",
+      "seed": 20260912,
+      "end_seconds": 1800.0,
+      "first_confirmed_seconds": 138.0,
+      "duration_seconds": 1610.5,
+      "completion_rate": 0.73,
+      "t95_seconds": null,
+      "during_sha256": "7010a9c5ccbcf903b7fd83a2027e6840069c013758219e02ea63bb98b9dbd808",
+      "demand_sha256": "5057b81d1d2cb45edad639401b8b23dd75c81d7093beac0bc77d58e28baf1198"
+    },
+    {
+      "run_id": "run_4117aecab4804fbb937c9ed2aaf4070e",
+      "runtime_run_id": "run-06f909e554424aec9a05fdede70605fe",
+      "seed": 20260909,
+      "end_seconds": 1414.5,
+      "first_confirmed_seconds": 136.5,
+      "duration_seconds": 876.5,
+      "completion_rate": 1.0,
+      "t95_seconds": 1299.0,
+      "during_sha256": "6e01906a6113401044633d536c36b8b2d0d1358c585e5c942173e9fbbcd4910d",
+      "demand_sha256": "6b1e03f25955c62785ca713f11c3351969b527d037c311a0b882196e4fab7dd4"
+    },
+    {
+      "run_id": "run_08e8915d3e14413eabd46d84516a61eb",
+      "runtime_run_id": "run-06de8f08f41f496a81aca783de39cb41",
+      "seed": 20260908,
+      "end_seconds": 1800.0,
+      "first_confirmed_seconds": 130.5,
+      "duration_seconds": 1679.5,
+      "completion_rate": 0.2,
+      "t95_seconds": null,
+      "during_sha256": "a3e7308775a13853ff5aa3c797d82dae7f0a14567ee1e7446514b9e686906f21",
+      "demand_sha256": "4f848b4aafa6895ebc1e16ae94a4f47c045f466057f1348f74bd81a0db39844a"
+    },
+    {
+      "run_id": "run_c16ebdfb79324836a9aef19144b56b02",
+      "runtime_run_id": "run-b5cb71f39b0a4101831ff60260b976fc",
+      "seed": 20260908,
+      "end_seconds": 1800.0,
+      "first_confirmed_seconds": 130.5,
+      "duration_seconds": 1679.5,
+      "completion_rate": 0.2,
+      "t95_seconds": null,
+      "during_sha256": "a3e7308775a13853ff5aa3c797d82dae7f0a14567ee1e7446514b9e686906f21",
+      "demand_sha256": "4f848b4aafa6895ebc1e16ae94a4f47c045f466057f1348f74bd81a0db39844a"
+    }
+  ],
+  "frontend_source_sha256": {
+    "package.json": "4cf6c69ad5130496c11d4d1eb60141a289638a7d708aeb34b7ca9bd65a937e98",
+    "src/api/crowdsim/dialogueClient.js": "d9b07b2f9cbc3c94cdf5aed46db60a8cae5330273b24b4780f78135efe9aeab1",
+    "src/api/crowdsim/duringExperimentClient.js": "ea169b770dbd4d2d4717e06ef67d75151eefed02a481804f0065b11119739271",
+    "src/api/crowdsim/duringLlmClient.js": "f488c8a2b5ae51e332b7eac96612375f11d2df880a8bd34c614fb0e491efc941",
+    "src/views/crowdSim/DuringAnalysis/chat/DuringChat.vue": "560176c6469b3a59c862980dfd6edaf09b67806f98550eeac0466208f5f34d9f",
+    "src/views/crowdSim/DuringAnalysis/chat/DuringExperimentPanel.vue": "6f7da3475fb826acca1a8b6d8b59a0f59d1abe3e92c78e361abb8290a3ce56df",
+    "src/views/crowdSim/DuringAnalysis/chat/DuringExperimentResults.vue": "54a69030302d0ecf97156d82ad557f0132fd2ce57011c9eb6be7a68ac28e8a05",
+    "src/views/crowdSim/DuringAnalysis/chat/DuringPresetSummary.vue": "ef10a770eb613630afdd9a53dc5644cc4b360e4d75124ddd2a774295b6124796",
+    "src/views/crowdSim/DuringAnalysis/chat/InEventExperimentPlan.vue": "10c51053f9db95e64895debe4593abb24771c611c23f4f89e968db886947a037",
+    "src/views/crowdSim/DuringAnalysis/chat/duringExperiment.css": "7d1f08a59166dfb2768fb4b67df9cd504549359967d5c4c9194e58d5fe821f3a",
+    "src/views/crowdSim/DuringAnalysis/chat/duringExperimentAssistant.js": "2aac89297f9b0302a5915f09deaa6a1d408e779d410befb3b748cafc209aba44",
+    "src/views/crowdSim/DuringAnalysis/chat/duringExperimentModel.js": "a60d89310a4ce7da6478ebea50549a2ee93267744a06b4263e4be0f02569c475",
+    "src/views/crowdSim/DuringAnalysis/chat/duringExperimentWorkflow.js": "c35d1db6fba6854d8753688711e642a2d333e66e3ed37ab9829e7bc5ba340074",
+    "src/views/crowdSim/DuringAnalysis/chat/useDuringExperiment.js": "4f58a73cab7d370fc2de29bd3793b43fc48ac1166a9ff4e78dcafbd1c882c88f",
+    "src/views/crowdSim/chat/ChatInterface.vue": "3ce494e280df93f564c5930932920039257455e227ad9f0d15bb0526fb8b081d",
+    "src/views/crowdSim/chat/useChatData.js": "9395f4faa4e4d911395984f72e17d5623739042ef13f697fd0d53d2dc32fda75",
+    "tests/crowdSimMergeCompatibility.test.mjs": "c5a76701bde2edd4fdbd8bca17da28e642df99c54809be8900eb8a5e25d52f95",
+    "tests/duringExperimentComponents.test.mjs": "ef46a979792d8fe4458a9c204b3020e90e5169ac50be91d6b089e3576ca6138b",
+    "tests/duringExperimentWorkflow.test.mjs": "2d1684afda61b12f92f005b27cedebfc0e0b0c98468506a147b236cec355d19d",
+    "tests/fixtures/duringExperimentFixtures.mjs": "ca8d7ffdb5bbdfa1a9afeb5bd326771b8736596038603cdb36b1099cdcfdaac2",
+    "vite.config.js": "50776629ba3d8508a40cdd68247c70bc62647a04e1ff46bf00f88dccdb64886d"
+  },
+  "backend_source_sha256": {
+    "crowdsim/experiments/contracts.py": "7c9d325a80d7a1cf2f7c043be1d83fe759fcbb8e6d19db783cdd5baebf83a1b2",
+    "crowdsim/experiments/orchestrator.py": "41d4573d1b0769aa744ebec3beb0fc49f297dcf190283103603246cbb6bfda15",
+    "crowdsim/experiments/repository.py": "bed7a8fb75f563e23af47c59726dbb168b2cc8be81b8bc25f98ed14313cad18d",
+    "crowdsim/infrastructure/websocket_server.py": "37457ad4aa768fe18233ab8f885485412e8ba70184d7829ef91dcf31dcd38a77",
+    "tests/code_only_guard.py": "47a03729d7d8b588577c649771c8e4cdc259e14d46219a11d56b50b9025560b6",
+    "tests/test_during_experiments.py": "3b8da8869bff92cf6546c9a2512f513b4779695b5d9a54a080de921dd6660628",
+    "tests/test_during_frontend_contract.py": "098ebc367a50de0045f562330ef4945ee89464565ae34bedeedb10c61fdb7092",
+    "tests/test_websocket_pacing.py": "e4a9e37cbcb05eddc78928482e58d2af46653572b37f5680de1a8973d5d43f17"
+  },
+  "evidence_directory": "/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/runs/during_stage2_acceptance/20261014",
+  "limitations": [
+    "Only stage 2 preset C0 workflow; policy generation and comparison deferred",
+    "Real model is GLM-5.3-Flash under existing frontend Qwen alias",
+    "Original disk-affected single run cancelled and excluded",
+    "Unknown density/gap handling has unit coverage, not a new full runtime fault experiment",
+    "Server restart restores historical reports; automatic interrupted queue resume not implemented"
+  ],
+  "cleanup": {
+    "owned_services_stopped": true,
+    "ports": [
+      8080,
+      18765,
+      18766,
+      18767,
+      18775,
+      18776
+    ],
+    "user_run_sh_services_preserved": [
+      8765,
+      8767,
+      8768,
+      8800
+    ],
+    "complete_run_log_compression_manifests": 6,
+    "audited_observations_unchanged_after_shutdown": true
+  },
+  "evidence_screenshots": [
+    "batch-final.png",
+    "batch-final-summary.png",
+    "single-final.png",
+    "runtime-error-fixed.png"
+  ]
+}

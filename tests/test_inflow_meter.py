@@ -11,8 +11,20 @@ def test_inflow_meter_queues_then_releases_at_configured_rate():
     assert held == {"p3"}
 
 
+
+
 def test_full_rate_never_holds_pedestrians():
     meter = InflowMeter("a", "entry", rate=1.0, nominal_capacity_per_second=1.0, last_time=0.0)
     held, released = meter.regulate({"p1", "p2"}, 0.0)
     assert held == set()
     assert released == {"p1", "p2"}
+
+
+def test_low_absolute_capacity_eventually_releases_one_person():
+    meter = InflowMeter("a", "entry", rate=1.0, nominal_capacity_per_second=0.1, last_time=0.0, enforce_capacity=True)
+    held, released = meter.regulate({"p1", "p2"}, 0.0)
+    assert released == {"p1"}
+    assert held == {"p2"}
+    held, released = meter.regulate({"p1", "p2"}, 10.0)
+    assert released == {"p2"}
+    assert held == set()

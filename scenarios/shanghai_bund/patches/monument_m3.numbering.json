@@ -1,0 +1,1461 @@
+{
+  "source_network": "/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/scenarios/shanghai_bund/bund.net.xml",
+  "numbering_rule": "Preserve historical J01-J25; append J26 on H2. H2a and H2b are the two SUMO segments of the same shorter arc H2. Append P20 for the straight J05-J15 park footway; all historical road and junction labels stay unchanged. Append P21 and J27/J28; P14a/P14b and P20a/P20b retain the original logical P14/P20 road numbers after splitting. Append P22/P23 and J29/J30/J31; P15a/P15b and P17a/P17b retain the original logical P15/P17 numbers after splitting. Both added roads terminate at J31. Append P24 from J31 to J32 on P13, at equal angles to P22/P23. P13a/P13b retain the original logical P13 number after splitting. Append P25 from J29 to new J33 at the J28-J15 midpoint, and P26 from J21 to new J34 at one third of the full J18-J30 polyline length from J18. Append P20c and P17c while preserving the original physical-road numbers and the P17 bend. Append P27a/P27b/P27c for the three-segment J34-J35-J36-J30 northeast trapezoid branch. Preserve the existing P17b bend. Relative to the J34-J30 chord, the northeast short base is half the southwest long base, the legs are equal, and J34-J35 is parallel and codirectional with P26. J35/J36 are real pedestrian corner junctions. Append P28 from J33 northeast to free endpoint J37, perpendicular to J15-J28 and half of the complete junction-to-junction J15-J13/P16 centerline length. J33 is rebuilt as a four-arm pedestrian junction; J37 is a one-arm dead end.",
+  "road_numbering_source": "/Users/omega/.codex/visualizations/2026/09/21/01a0c3bc-2781-7123-bc1f-98a0d96a5a25/plot_huangpu_park_pedestrian_roads.py",
+  "roads": [
+    {
+      "label": "P01",
+      "sumo_edge_id": "906417851#0",
+      "from_junction_id": "8417005097",
+      "to_junction_id": "8417005110",
+      "note": "北侧入口短连接",
+      "length_m": 6.79,
+      "group": "PARK_ROADS",
+      "color": "#276baf",
+      "from_label": "J02",
+      "to_label": "J03"
+    },
+    {
+      "label": "P02",
+      "sumo_edge_id": "906417851#1",
+      "from_junction_id": "8417005110",
+      "to_junction_id": "1883306436",
+      "note": "北侧入口转换短段",
+      "length_m": 0.2,
+      "group": "PARK_ROADS",
+      "color": "#879bb6",
+      "from_label": "J03",
+      "to_label": "J04"
+    },
+    {
+      "label": "P03",
+      "sumo_edge_id": "177931046",
+      "from_junction_id": "1883306436",
+      "to_junction_id": "1883306110",
+      "note": "北侧入口内连接",
+      "length_m": 6.58,
+      "group": "PARK_ROADS",
+      "color": "#dc781e",
+      "from_label": "J04",
+      "to_label": "J05"
+    },
+    {
+      "label": "P04",
+      "sumo_edge_id": "906417852#0",
+      "from_junction_id": "1883306110",
+      "to_junction_id": "595760221",
+      "note": "公园外围步道（北段）",
+      "length_m": 97.54,
+      "group": "PARK_ROADS",
+      "color": "#b85a37",
+      "from_label": "J05",
+      "to_label": "J09"
+    },
+    {
+      "label": "P05",
+      "sumo_edge_id": "906417852#1",
+      "from_junction_id": "595760221",
+      "to_junction_id": "8417005112",
+      "note": "公园外围步道",
+      "length_m": 14.81,
+      "group": "PARK_ROADS",
+      "color": "#20805d",
+      "from_label": "J09",
+      "to_label": "J13"
+    },
+    {
+      "label": "P06",
+      "sumo_edge_id": "906417852#2",
+      "from_junction_id": "8417005112",
+      "to_junction_id": "599722293",
+      "note": "公园外围步道",
+      "length_m": 14.93,
+      "group": "PARK_ROADS",
+      "color": "#649633",
+      "from_label": "J13",
+      "to_label": "J16"
+    },
+    {
+      "label": "P07",
+      "sumo_edge_id": "906417852#3",
+      "from_junction_id": "599722293",
+      "to_junction_id": "8417005115",
+      "note": "公园外围步道（东段）",
+      "length_m": 77.57,
+      "group": "PARK_ROADS",
+      "color": "#c4444b",
+      "from_label": "J16",
+      "to_label": "J18"
+    },
+    {
+      "label": "P08",
+      "sumo_edge_id": "906417852#4",
+      "from_junction_id": "8417005115",
+      "to_junction_id": "8417005101",
+      "note": "公园外围步道",
+      "length_m": 7.15,
+      "group": "PARK_ROADS",
+      "color": "#ba6742",
+      "from_label": "J18",
+      "to_label": "J19"
+    },
+    {
+      "label": "P09",
+      "sumo_edge_id": "906417852#5",
+      "from_junction_id": "8417005101",
+      "to_junction_id": "8417005102",
+      "note": "公园外围步道",
+      "length_m": 14.754,
+      "group": "PARK_ROADS",
+      "color": "#765ab5",
+      "from_label": "J19",
+      "to_label": "J21"
+    },
+    {
+      "label": "P10",
+      "sumo_edge_id": "906417852#6",
+      "from_junction_id": "8417005102",
+      "to_junction_id": "8417005103",
+      "note": "公园外围步道",
+      "length_m": 17.605,
+      "group": "PARK_ROADS",
+      "color": "#9b67a0",
+      "from_label": "J21",
+      "to_label": "J24"
+    },
+    {
+      "label": "P11",
+      "sumo_edge_id": "906417852#7",
+      "from_junction_id": "8417005103",
+      "to_junction_id": "8417005104",
+      "note": "公园外围步道",
+      "length_m": 11.74,
+      "group": "PARK_ROADS",
+      "color": "#85533c",
+      "from_label": "J24",
+      "to_label": "J23"
+    },
+    {
+      "label": "P12",
+      "sumo_edge_id": "906417852#8",
+      "from_junction_id": "8417005104",
+      "to_junction_id": "8417005105",
+      "note": "南侧入口段",
+      "length_m": 26.15,
+      "group": "PARK_ROADS",
+      "color": "#b0795e",
+      "from_label": "J23",
+      "to_label": "J20"
+    },
+    {
+      "label": "P13a",
+      "sumo_edge_id": "906417852#9",
+      "from_junction_id": "8417005105",
+      "to_junction_id": "huangpu_park_p24_p13",
+      "note": "P13 南段（J20 至 P24 接入点 J32）",
+      "length_m": 50.693,
+      "group": "PARK_ROADS",
+      "color": "#b73587",
+      "from_label": "J20",
+      "to_label": "J32"
+    },
+    {
+      "label": "P13b",
+      "sumo_edge_id": "906417852#9_p24_north",
+      "from_junction_id": "huangpu_park_p24_p13",
+      "to_junction_id": "8417005111",
+      "note": "P13 北段（J32 至 J17，保留原折线）",
+      "length_m": 34.269,
+      "group": "PARK_ROADS",
+      "color": "#b73587",
+      "from_label": "J32",
+      "to_label": "J17"
+    },
+    {
+      "label": "P14a",
+      "sumo_edge_id": "906417852#10",
+      "from_junction_id": "8417005111",
+      "to_junction_id": "huangpu_park_p21_west",
+      "note": "P14 南段（原 P14，在 J27 拆分）",
+      "length_m": 51.517,
+      "group": "PARK_ROADS",
+      "color": "#d06196",
+      "from_label": "J17",
+      "to_label": "J27"
+    },
+    {
+      "label": "P14b",
+      "sumo_edge_id": "906417852#10_p21_north",
+      "from_junction_id": "huangpu_park_p21_west",
+      "to_junction_id": "8417005110",
+      "note": "P14 北段",
+      "length_m": 46.37,
+      "group": "PARK_ROADS",
+      "color": "#d06196",
+      "from_label": "J27",
+      "to_label": "J03"
+    },
+    {
+      "label": "P15a",
+      "sumo_edge_id": "906417853#0",
+      "from_junction_id": "8417005111",
+      "to_junction_id": "huangpu_park_p22_start",
+      "note": "P15 西段（J17 至中点 J29）",
+      "length_m": 13.115,
+      "group": "PARK_ROADS",
+      "color": "#657185",
+      "from_label": "J17",
+      "to_label": "J29"
+    },
+    {
+      "label": "P15b",
+      "sumo_edge_id": "906417853#0_p22_east",
+      "from_junction_id": "huangpu_park_p22_start",
+      "to_junction_id": "8417005113",
+      "note": "P15 东段",
+      "length_m": 12.44,
+      "group": "PARK_ROADS",
+      "color": "#657185",
+      "from_label": "J29",
+      "to_label": "J15"
+    },
+    {
+      "label": "P16",
+      "sumo_edge_id": "906417853#1",
+      "from_junction_id": "8417005113",
+      "to_junction_id": "8417005112",
+      "note": "公园内部横向道路",
+      "length_m": 29.48,
+      "group": "PARK_ROADS",
+      "color": "#789270",
+      "from_label": "J15",
+      "to_label": "J13"
+    },
+    {
+      "label": "P17a",
+      "sumo_edge_id": "906417854",
+      "from_junction_id": "8417005113",
+      "to_junction_id": "huangpu_park_p23_start",
+      "note": "P17 北段（J15 至 20% 接入点 J30）",
+      "length_m": 11.958,
+      "group": "PARK_ROADS",
+      "color": "#8e840b",
+      "from_label": "J15",
+      "to_label": "J30"
+    },
+    {
+      "label": "P17b",
+      "sumo_edge_id": "906417854_p23_south",
+      "from_junction_id": "huangpu_park_p23_start",
+      "to_junction_id": "huangpu_park_p26_p17",
+      "note": "P17 南段（保留原折线）",
+      "length_m": 36.572,
+      "group": "PARK_ROADS",
+      "color": "#8e840b",
+      "from_label": "J30",
+      "to_label": "J34"
+    },
+    {
+      "label": "P17c",
+      "sumo_edge_id": "906417854_p23_south_p26_south",
+      "from_junction_id": "huangpu_park_p26_p17",
+      "to_junction_id": "8417005115",
+      "note": "J34 至 J18；P17 南段继续拆分",
+      "length_m": 14.589,
+      "group": "PARK_ROADS",
+      "color": "#8e840b",
+      "from_label": "J34",
+      "to_label": "J18"
+    },
+    {
+      "label": "P18",
+      "sumo_edge_id": "906417855#1",
+      "from_junction_id": "8417005105",
+      "to_junction_id": "8417005102",
+      "note": "南部小环路",
+      "length_m": 25.76,
+      "group": "PARK_ROADS",
+      "color": "#b39325",
+      "from_label": "J20",
+      "to_label": "J21"
+    },
+    {
+      "label": "P19",
+      "sumo_edge_id": "906417855#2",
+      "from_junction_id": "8417005102",
+      "to_junction_id": "8417005105",
+      "note": "南部小环路",
+      "length_m": 17.149,
+      "group": "PARK_ROADS",
+      "color": "#1696b3",
+      "from_label": "J21",
+      "to_label": "J20"
+    },
+    {
+      "label": "P20a",
+      "sumo_edge_id": "huangpu_park_j05_j15",
+      "from_junction_id": "1883306110",
+      "to_junction_id": "huangpu_park_p21_east",
+      "note": "P20 北段（J05 至 40% 接入点 J28）",
+      "length_m": 32.648,
+      "group": "PARK_ROADS",
+      "color": "#008b89",
+      "from_label": "J05",
+      "to_label": "J28"
+    },
+    {
+      "label": "P20b",
+      "sumo_edge_id": "huangpu_park_j05_j15_p21_south",
+      "from_junction_id": "huangpu_park_p21_east",
+      "to_junction_id": "huangpu_park_p25_p20",
+      "note": "P20 南段",
+      "length_m": 22.888,
+      "group": "PARK_ROADS",
+      "color": "#008b89",
+      "from_label": "J28",
+      "to_label": "J33"
+    },
+    {
+      "label": "P20c",
+      "sumo_edge_id": "huangpu_park_j05_j15_p21_south_p25_south",
+      "from_junction_id": "huangpu_park_p25_p20",
+      "to_junction_id": "8417005113",
+      "note": "J33 至 J15；P20 南段继续拆分",
+      "length_m": 20.537,
+      "group": "PARK_ROADS",
+      "color": "#008b89",
+      "from_label": "J33",
+      "to_label": "J15"
+    },
+    {
+      "label": "P21",
+      "sumo_edge_id": "huangpu_park_p21",
+      "note": "新增与 P15 平行的直连步道",
+      "group": "PARK_ROADS",
+      "color": "#91328f",
+      "from_junction_id": "huangpu_park_p21_west",
+      "to_junction_id": "huangpu_park_p21_east",
+      "from_label": "J27",
+      "to_label": "J28",
+      "length_m": 21.705
+    },
+    {
+      "label": "P22",
+      "sumo_edge_id": "huangpu_park_p22",
+      "note": "P15 中点向东南，平行于 P17 靠近 J15 的直线段，止于 J31",
+      "group": "PARK_ROADS",
+      "color": "#e27034",
+      "from_junction_id": "huangpu_park_p22_start",
+      "to_junction_id": "huangpu_park_p22_p23_join",
+      "length_m": 11.898,
+      "from_label": "J29",
+      "to_label": "J31"
+    },
+    {
+      "label": "P23",
+      "sumo_edge_id": "huangpu_park_p23",
+      "note": "P17 自 J15 起 20% 位点向西南，平行于 P15，止于 J31",
+      "group": "PARK_ROADS",
+      "color": "#b34545",
+      "from_junction_id": "huangpu_park_p23_start",
+      "to_junction_id": "huangpu_park_p22_p23_join",
+      "length_m": 13.244,
+      "from_label": "J30",
+      "to_label": "J31"
+    },
+    {
+      "label": "P24",
+      "sumo_edge_id": "huangpu_park_p24",
+      "note": "J31 至 P13/J32，沿朝西南的 P22/P23 角平分线",
+      "group": "PARK_ROADS",
+      "color": "#1b7c50",
+      "from_junction_id": "huangpu_park_p22_p23_join",
+      "to_junction_id": "huangpu_park_p24_p13",
+      "length_m": 27.582,
+      "from_label": "J31",
+      "to_label": "J32"
+    },
+    {
+      "label": "P25",
+      "sumo_edge_id": "huangpu_park_p25",
+      "group": "PARK_ROADS",
+      "color": "#395db6",
+      "note": "J29 至 J28–J15 中点 J33",
+      "from_junction_id": "huangpu_park_p22_start",
+      "to_junction_id": "huangpu_park_p25_p20",
+      "from_label": "J29",
+      "to_label": "J33",
+      "length_m": 25.031
+    },
+    {
+      "label": "P26",
+      "sumo_edge_id": "huangpu_park_p26",
+      "group": "PARK_ROADS",
+      "color": "#0a88a3",
+      "note": "J21 至 J18–J30 靠近 J18 的三等分点 J34",
+      "from_junction_id": "8417005102",
+      "to_junction_id": "huangpu_park_p26_p17",
+      "from_label": "J21",
+      "to_label": "J34",
+      "length_m": 47.795
+    },
+    {
+      "label": "P27a",
+      "sumo_edge_id": "huangpu_park_p27_a",
+      "group": "PARK_ROADS",
+      "color": "#c28b17",
+      "note": "J34–J35，东南斜边，与 P26 平行同向",
+      "from_junction_id": "huangpu_park_p26_p17",
+      "to_junction_id": "huangpu_park_p27_se",
+      "from_label": "J34",
+      "to_label": "J35",
+      "length_m": 9.406
+    },
+    {
+      "label": "P27b",
+      "sumo_edge_id": "huangpu_park_p27_b",
+      "group": "PARK_ROADS",
+      "color": "#c28b17",
+      "note": "J35–J36，东北侧短底边",
+      "from_junction_id": "huangpu_park_p27_se",
+      "to_junction_id": "huangpu_park_p27_ne",
+      "from_label": "J35",
+      "to_label": "J36",
+      "length_m": 21.927
+    },
+    {
+      "label": "P27c",
+      "sumo_edge_id": "huangpu_park_p27_c",
+      "group": "PARK_ROADS",
+      "color": "#c28b17",
+      "note": "J36–J30，另一条等长斜边",
+      "from_junction_id": "huangpu_park_p27_ne",
+      "to_junction_id": "huangpu_park_p23_start",
+      "from_label": "J36",
+      "to_label": "J30",
+      "length_m": 9.41
+    },
+    {
+      "label": "P28",
+      "sumo_edge_id": "huangpu_park_p28",
+      "group": "PARK_ROADS",
+      "color": "#e44a73",
+      "note": "J33 向东北的垂直支路；J37 为尽端，长度为 J15–J13 完整道路的一半",
+      "from_junction_id": "huangpu_park_p25_p20",
+      "to_junction_id": "huangpu_park_p28_end",
+      "from_label": "J33",
+      "to_label": "J37",
+      "length_m": 14.754
+    },
+    {
+      "label": "M1",
+      "sumo_edge_id": "178411801#0",
+      "from_junction_id": "595760221",
+      "to_junction_id": "6361541057",
+      "note": "纪念塔西侧连接通道",
+      "length_m": 10.83,
+      "group": "MONUMENT_ENTRIES",
+      "color": "#cd352a",
+      "from_label": "J09",
+      "to_label": "J08"
+    },
+    {
+      "label": "M2",
+      "sumo_edge_id": "177931018#0",
+      "from_junction_id": "599722293",
+      "to_junction_id": "6361541058",
+      "note": "纪念塔南侧连接通道",
+      "length_m": 12.28,
+      "group": "MONUMENT_ENTRIES",
+      "color": "#e1750a",
+      "from_label": "J16",
+      "to_label": "J14"
+    },
+    {
+      "label": "M3",
+      "sumo_edge_id": "monument_m3",
+      "note": "新增 J13 至 H2 劣弧入口（工程假设）",
+      "group": "MONUMENT_ENTRIES",
+      "color": "#128855",
+      "from_junction_id": "8417005112",
+      "to_junction_id": "monument_m3_ring_junction",
+      "from_label": "J13",
+      "to_label": "J26",
+      "length_m": 6.9
+    },
+    {
+      "label": "H1",
+      "sumo_edge_id": "679361567#1",
+      "from_junction_id": "6361541057",
+      "to_junction_id": "6361541058",
+      "note": "外环优弧",
+      "length_m": 121.78,
+      "group": "HOTSPOT_RING",
+      "color": "#6630b6",
+      "from_label": "J08",
+      "to_label": "J14"
+    },
+    {
+      "label": "H2a",
+      "sumo_edge_id": "679361567#2",
+      "from_junction_id": "6361541058",
+      "to_junction_id": "monument_m3_ring_junction",
+      "note": "外环劣弧南段",
+      "length_m": 5.81,
+      "group": "HOTSPOT_RING",
+      "color": "#246eba",
+      "from_label": "J14",
+      "to_label": "J26"
+    },
+    {
+      "label": "H2b",
+      "sumo_edge_id": "679361567#2_m3_north",
+      "from_junction_id": "monument_m3_ring_junction",
+      "to_junction_id": "6361541057",
+      "note": "外环劣弧北段",
+      "length_m": 9.02,
+      "group": "HOTSPOT_RING",
+      "color": "#246eba",
+      "from_label": "J26",
+      "to_label": "J08"
+    },
+    {
+      "label": "H3",
+      "sumo_edge_id": "178411801#1",
+      "from_junction_id": "6361541057",
+      "to_junction_id": "6361541016",
+      "note": "内侧地面环道（当前场景排除）",
+      "length_m": 44.65,
+      "group": "HOTSPOT_RING",
+      "color": "#955bce",
+      "from_label": "J08",
+      "to_label": "J06"
+    },
+    {
+      "label": "H4",
+      "sumo_edge_id": "679361566#1",
+      "from_junction_id": "6361541016",
+      "to_junction_id": "6361541028",
+      "note": "内侧地面环道（当前场景排除）",
+      "length_m": 45.49,
+      "group": "HOTSPOT_RING",
+      "color": "#8d44ad",
+      "from_label": "J06",
+      "to_label": "J12"
+    },
+    {
+      "label": "H5",
+      "sumo_edge_id": "177931018#1",
+      "from_junction_id": "6361541058",
+      "to_junction_id": "6361541028",
+      "note": "内侧地面环道（当前场景排除）",
+      "length_m": 0.9,
+      "group": "HOTSPOT_RING",
+      "color": "#aa4faf",
+      "from_label": "J14",
+      "to_label": "J12"
+    },
+    {
+      "label": "S1",
+      "sumo_edge_id": "178564465#2",
+      "from_junction_id": "8417005097",
+      "to_junction_id": "103691961",
+      "note": "历史园外刷新路段",
+      "length_m": 129.27,
+      "group": "CURRENT_SPAWN",
+      "color": "#365da8",
+      "from_label": "J02",
+      "to_label": "J01"
+    },
+    {
+      "label": "S2",
+      "sumo_edge_id": "178412507#4",
+      "from_junction_id": "cluster_103781041_1887596138_1887596182_476671530_#1more",
+      "to_junction_id": "cluster_103781049_1887596157",
+      "note": "历史园外刷新路段",
+      "length_m": 135.95,
+      "group": "CURRENT_SPAWN",
+      "color": "#985073",
+      "from_label": "J22",
+      "to_label": "J25"
+    },
+    {
+      "label": "X1",
+      "sumo_edge_id": "679361565#1",
+      "from_junction_id": "6361541001",
+      "to_junction_id": "6361540988",
+      "note": "地下内环（场景排除）",
+      "length_m": 29.23,
+      "group": "EXCLUDED_UNDERGROUND",
+      "color": "#78818f",
+      "from_label": "J10",
+      "to_label": "J07"
+    },
+    {
+      "label": "X2",
+      "sumo_edge_id": "679361565#2",
+      "from_junction_id": "6361540988",
+      "to_junction_id": "6361541001",
+      "note": "地下内环（场景排除）",
+      "length_m": 34.73,
+      "group": "EXCLUDED_UNDERGROUND",
+      "color": "#78818f",
+      "from_label": "J07",
+      "to_label": "J10"
+    },
+    {
+      "label": "X3",
+      "sumo_edge_id": "679361563",
+      "from_junction_id": "6361541016",
+      "to_junction_id": "6361540988",
+      "note": "地下连接短段（排除）",
+      "length_m": 0.2,
+      "group": "EXCLUDED_UNDERGROUND",
+      "color": "#78818f",
+      "from_label": "J06",
+      "to_label": "J07"
+    },
+    {
+      "label": "X4",
+      "sumo_edge_id": "679361564",
+      "from_junction_id": "6361541001",
+      "to_junction_id": "6361541059",
+      "note": "地下连接短段（排除）",
+      "length_m": 0.37,
+      "group": "EXCLUDED_UNDERGROUND",
+      "color": "#78818f",
+      "from_label": "J10",
+      "to_label": "J11"
+    }
+  ],
+  "junctions": [
+    {
+      "label": "J01",
+      "sumo_junction_id": "103691961",
+      "x_m": 18535.74,
+      "y_m": 6050.46,
+      "connected_numbered_roads": [
+        "S1"
+      ],
+      "scope_degree": 1
+    },
+    {
+      "label": "J02",
+      "sumo_junction_id": "8417005097",
+      "x_m": 18493.65,
+      "y_m": 5921.33,
+      "connected_numbered_roads": [
+        "P01",
+        "S1"
+      ],
+      "scope_degree": 2
+    },
+    {
+      "label": "J03",
+      "sumo_junction_id": "8417005110",
+      "x_m": 18504.65,
+      "y_m": 5916.84,
+      "connected_numbered_roads": [
+        "P01",
+        "P02",
+        "P14b"
+      ],
+      "scope_degree": 3
+    },
+    {
+      "label": "J04",
+      "sumo_junction_id": "1883306436",
+      "x_m": 18506.34,
+      "y_m": 5916.11,
+      "connected_numbered_roads": [
+        "P02",
+        "P03"
+      ],
+      "scope_degree": 2
+    },
+    {
+      "label": "J05",
+      "sumo_junction_id": "1883306110",
+      "x_m": 18514.72,
+      "y_m": 5912.44,
+      "connected_numbered_roads": [
+        "P03",
+        "P04",
+        "P20a"
+      ],
+      "scope_degree": 3
+    },
+    {
+      "label": "J06",
+      "sumo_junction_id": "6361541016",
+      "x_m": 18631.77,
+      "y_m": 5870.78,
+      "connected_numbered_roads": [
+        "H3",
+        "H4",
+        "X3"
+      ],
+      "scope_degree": 3
+    },
+    {
+      "label": "J07",
+      "sumo_junction_id": "6361540988",
+      "x_m": 18628.97,
+      "y_m": 5868.48,
+      "connected_numbered_roads": [
+        "X1",
+        "X2",
+        "X3"
+      ],
+      "scope_degree": 3
+    },
+    {
+      "label": "J08",
+      "sumo_junction_id": "6361541057",
+      "x_m": 18593.0,
+      "y_m": 5862.32,
+      "connected_numbered_roads": [
+        "M1",
+        "H1",
+        "H2b",
+        "H3"
+      ],
+      "scope_degree": 4
+    },
+    {
+      "label": "J09",
+      "sumo_junction_id": "595760221",
+      "x_m": 18576.72,
+      "y_m": 5861.18,
+      "connected_numbered_roads": [
+        "P04",
+        "P05",
+        "M1"
+      ],
+      "scope_degree": 3
+    },
+    {
+      "label": "J10",
+      "sumo_junction_id": "6361541001",
+      "x_m": 18608.47,
+      "y_m": 5857.27,
+      "connected_numbered_roads": [
+        "X1",
+        "X2",
+        "X4"
+      ],
+      "scope_degree": 3
+    },
+    {
+      "label": "J11",
+      "sumo_junction_id": "6361541059",
+      "x_m": 18605.66,
+      "y_m": 5856.55,
+      "connected_numbered_roads": [
+        "X4"
+      ],
+      "scope_degree": 1
+    },
+    {
+      "label": "J12",
+      "sumo_junction_id": "6361541028",
+      "x_m": 18605.6,
+      "y_m": 5847.22,
+      "connected_numbered_roads": [
+        "H4",
+        "H5"
+      ],
+      "scope_degree": 2
+    },
+    {
+      "label": "J13",
+      "sumo_junction_id": "8417005112",
+      "x_m": 18585.94,
+      "y_m": 5843.03,
+      "connected_numbered_roads": [
+        "P05",
+        "P06",
+        "P16",
+        "M3"
+      ],
+      "scope_degree": 4
+    },
+    {
+      "label": "J14",
+      "sumo_junction_id": "6361541058",
+      "x_m": 18604.01,
+      "y_m": 5840.44,
+      "connected_numbered_roads": [
+        "M2",
+        "H1",
+        "H2a",
+        "H5"
+      ],
+      "scope_degree": 4
+    },
+    {
+      "label": "J15",
+      "sumo_junction_id": "8417005113",
+      "x_m": 18554.63,
+      "y_m": 5828.52,
+      "connected_numbered_roads": [
+        "P15b",
+        "P16",
+        "P17a",
+        "P20c"
+      ],
+      "scope_degree": 4
+    },
+    {
+      "label": "J16",
+      "sumo_junction_id": "599722293",
+      "x_m": 18595.36,
+      "y_m": 5824.48,
+      "connected_numbered_roads": [
+        "P06",
+        "P07",
+        "M2"
+      ],
+      "scope_degree": 3
+    },
+    {
+      "label": "J17",
+      "sumo_junction_id": "8417005111",
+      "x_m": 18521.42,
+      "y_m": 5813.13,
+      "connected_numbered_roads": [
+        "P13b",
+        "P14a",
+        "P15a"
+      ],
+      "scope_degree": 3
+    },
+    {
+      "label": "J18",
+      "sumo_junction_id": "8417005115",
+      "x_m": 18591.58,
+      "y_m": 5752.3,
+      "connected_numbered_roads": [
+        "P07",
+        "P08",
+        "P17c"
+      ],
+      "scope_degree": 3
+    },
+    {
+      "label": "J19",
+      "sumo_junction_id": "8417005101",
+      "x_m": 18587.69,
+      "y_m": 5742.32,
+      "connected_numbered_roads": [
+        "P08",
+        "P09"
+      ],
+      "scope_degree": 2
+    },
+    {
+      "label": "J20",
+      "sumo_junction_id": "8417005105",
+      "x_m": 18547.61,
+      "y_m": 5717.26,
+      "connected_numbered_roads": [
+        "P12",
+        "P13a",
+        "P18",
+        "P19"
+      ],
+      "scope_degree": 4
+    },
+    {
+      "label": "J21",
+      "sumo_junction_id": "8417005102",
+      "x_m": 18569.86,
+      "y_m": 5714.58,
+      "connected_numbered_roads": [
+        "P09",
+        "P10",
+        "P18",
+        "P19",
+        "P26"
+      ],
+      "scope_degree": 5
+    },
+    {
+      "label": "J22",
+      "sumo_junction_id": "cluster_103781041_1887596138_1887596182_476671530_#1more",
+      "x_m": 18506.56,
+      "y_m": 5688.41,
+      "connected_numbered_roads": [
+        "S2"
+      ],
+      "scope_degree": 1
+    },
+    {
+      "label": "J23",
+      "sumo_junction_id": "8417005104",
+      "x_m": 18546.16,
+      "y_m": 5681.41,
+      "connected_numbered_roads": [
+        "P11",
+        "P12"
+      ],
+      "scope_degree": 2
+    },
+    {
+      "label": "J24",
+      "sumo_junction_id": "8417005103",
+      "x_m": 18562.2,
+      "y_m": 5677.13,
+      "connected_numbered_roads": [
+        "P10",
+        "P11"
+      ],
+      "scope_degree": 2
+    },
+    {
+      "label": "J25",
+      "sumo_junction_id": "cluster_103781049_1887596157",
+      "x_m": 18471.86,
+      "y_m": 5535.1,
+      "connected_numbered_roads": [
+        "S2"
+      ],
+      "scope_degree": 1
+    },
+    {
+      "label": "J26",
+      "sumo_junction_id": "monument_m3_ring_junction",
+      "x_m": 18596.41,
+      "y_m": 5848.74,
+      "connected_numbered_roads": [
+        "M3",
+        "H2a",
+        "H2b"
+      ],
+      "scope_degree": 3
+    },
+    {
+      "label": "J27",
+      "sumo_junction_id": "huangpu_park_p21_west",
+      "x_m": 18506.268,
+      "y_m": 5867.557,
+      "connected_numbered_roads": [
+        "P14a",
+        "P14b",
+        "P21"
+      ],
+      "scope_degree": 3
+    },
+    {
+      "label": "J28",
+      "sumo_junction_id": "huangpu_park_p21_east",
+      "x_m": 18530.684,
+      "y_m": 5878.872,
+      "connected_numbered_roads": [
+        "P20a",
+        "P20b",
+        "P21"
+      ],
+      "scope_degree": 3
+    },
+    {
+      "label": "J29",
+      "sumo_junction_id": "huangpu_park_p22_start",
+      "x_m": 18538.025,
+      "y_m": 5820.825,
+      "connected_numbered_roads": [
+        "P15a",
+        "P15b",
+        "P22",
+        "P25"
+      ],
+      "scope_degree": 4
+    },
+    {
+      "label": "J30",
+      "sumo_junction_id": "huangpu_park_p23_start",
+      "x_m": 18561.319,
+      "y_m": 5812.939,
+      "connected_numbered_roads": [
+        "P17a",
+        "P17b",
+        "P23",
+        "P27c"
+      ],
+      "scope_degree": 4
+    },
+    {
+      "label": "J31",
+      "sumo_junction_id": "huangpu_park_p22_p23_join",
+      "x_m": 18544.714,
+      "y_m": 5805.244,
+      "connected_numbered_roads": [
+        "P22",
+        "P23",
+        "P24"
+      ],
+      "scope_degree": 3
+    },
+    {
+      "label": "J32",
+      "sumo_junction_id": "huangpu_park_p24_p13",
+      "x_m": 18532.475,
+      "y_m": 5773.279,
+      "connected_numbered_roads": [
+        "P13a",
+        "P13b",
+        "P24"
+      ],
+      "scope_degree": 3
+    },
+    {
+      "label": "J33",
+      "sumo_junction_id": "huangpu_park_p25_p20",
+      "x_m": 18542.657,
+      "y_m": 5853.696,
+      "connected_numbered_roads": [
+        "P20b",
+        "P20c",
+        "P25",
+        "P28"
+      ],
+      "scope_degree": 4
+    },
+    {
+      "label": "J34",
+      "sumo_junction_id": "huangpu_park_p26_p17",
+      "x_m": 18580.915,
+      "y_m": 5772.235,
+      "connected_numbered_roads": [
+        "P17b",
+        "P17c",
+        "P26",
+        "P27a"
+      ],
+      "scope_degree": 4
+    },
+    {
+      "label": "J35",
+      "sumo_junction_id": "huangpu_park_p27_se",
+      "x_m": 18583.563,
+      "y_m": 5786.044,
+      "connected_numbered_roads": [
+        "P27a",
+        "P27b"
+      ],
+      "scope_degree": 2
+    },
+    {
+      "label": "J36",
+      "sumo_junction_id": "huangpu_park_p27_ne",
+      "x_m": 18573.765,
+      "y_m": 5806.396,
+      "connected_numbered_roads": [
+        "P27b",
+        "P27c"
+      ],
+      "scope_degree": 2
+    },
+    {
+      "label": "J37",
+      "sumo_junction_id": "huangpu_park_p28_end",
+      "x_m": 18558.239,
+      "y_m": 5861.106,
+      "connected_numbered_roads": [
+        "P28"
+      ],
+      "scope_degree": 1
+    }
+  ],
+  "verification": {
+    "road_segments": 52,
+    "junctions": 37,
+    "manual_geometry": true,
+    "simulation_run": false,
+    "new_road": "M3",
+    "new_junction": "J26",
+    "joined_arc": "H2",
+    "j05_j15_patch": {
+      "new_road": "P20",
+      "sumo_edge_id": "huangpu_park_j05_j15",
+      "new_junctions": [],
+      "from_label": "J05",
+      "to_label": "J15",
+      "centerline_length_m": 92.93,
+      "lane_width_m": 2,
+      "walking_area_min_width_m": 4,
+      "manual_geometry": true,
+      "walking_area_widths_m": {
+        "J05": 4,
+        "J15": 5
+      },
+      "simulation_run": true,
+      "sumo_version": "1.27.0",
+      "test_type": "isolated_sumo_hotspot_walking_area",
+      "persons_per_movement": 4,
+      "jamtime_seconds": 3601,
+      "passed_count": 2,
+      "junction_count": 2,
+      "j15_4m_failed": true,
+      "max_continuous_stop_seconds": {
+        "J05": 4.2,
+        "J15": 6.0
+      }
+    },
+    "p21_patch": {
+      "new_road": "P21",
+      "new_junctions": [
+        "J27",
+        "J28"
+      ],
+      "parallel_to": "P15",
+      "position_on_P20_from_north": 0.4,
+      "position_basis": "full J05-J15 junction-to-junction centerline",
+      "centerline_length_m": 26.91,
+      "road_width_m": 2,
+      "walking_area_widths_m": {
+        "J27": 4,
+        "J28": 4
+      },
+      "manual_geometry": true,
+      "simulation_run": true,
+      "sumo_version": "1.27.0",
+      "all_six_affected_junctions_passed": true,
+      "persons_per_movement": 4,
+      "jamtime_seconds": 3601,
+      "new_junction_max_stop_seconds": {
+        "J27": 3.0,
+        "J28": 2.6
+      },
+      "affected_junctions_passed": 6,
+      "affected_junctions_tested": 6
+    },
+    "p22_p23_patch": {
+      "new_roads": [
+        "P22",
+        "P23"
+      ],
+      "new_junctions": [
+        "J29",
+        "J30",
+        "J31"
+      ],
+      "position_on_P15": 0.5,
+      "position_on_P17_from_J15": 0.2,
+      "position_basis": "full junction-to-junction centerline length, including the P17 bend",
+      "parallel_P17_basis": "near-J15 first straight segment, confirmed by user",
+      "both_roads_terminate_at": "J31",
+      "walking_area_width_m": 4.0,
+      "road_width_m": 2,
+      "centerline_lengths_m": {
+        "P22": 16.9561,
+        "P23": 18.3013
+      },
+      "walking_area_widths_m": {
+        "J29": 4.0,
+        "J30": 4.0,
+        "J31": 4.0,
+        "J17": 4.0,
+        "J15": 6.0,
+        "J18": 4.0
+      },
+      "simulation_run": true,
+      "test_type": "isolated_sumo_hotspot_walking_area",
+      "sumo_version": "1.27.0",
+      "persons_per_movement": 4,
+      "jamtime_seconds": 3601,
+      "affected_junctions_tested": 6,
+      "affected_junctions_passed": 6,
+      "max_continuous_stop_seconds": {
+        "J29": 5.4,
+        "J30": 3.2,
+        "J31": 0.6,
+        "J17": 4.6,
+        "J15": 9.4,
+        "J18": 3.4
+      },
+      "j15_5m_exceeded_15s_stop_standard": true
+    },
+    "p24_patch": {
+      "new_road": "P24",
+      "new_junction": "J32",
+      "rebuilt_junction": "J31",
+      "geometry_basis": "southwest-directed opposite of the normalized sum of the J31-to-J29 and J31-to-J30 unit vectors; first intersection with the full P13 centerline",
+      "road_width_m": 2.0,
+      "walking_area_widths_m": {
+        "J31": 4.0,
+        "J32": 4.0
+      },
+      "centerline_length_m": 34.228,
+      "angles_at_j31_degrees": {
+        "P22": 135.814694,
+        "P23": 135.814917
+      },
+      "endpoint_coords_m": {
+        "J31": [
+          18544.714,
+          5805.244
+        ],
+        "J32": [
+          18532.475,
+          5773.279
+        ]
+      },
+      "simulation_run": true,
+      "test_type": "isolated_sumo_hotspot_walking_area",
+      "sumo_version": "1.27.0",
+      "persons_per_movement": 4,
+      "jamtime_seconds": 3601,
+      "affected_junctions_tested": 6,
+      "affected_junctions_passed": 6,
+      "max_continuous_stop_seconds": {
+        "J31": 2.4,
+        "J32": 2.4,
+        "J17": 4.2,
+        "J20": 4.6,
+        "J29": 5.4,
+        "J30": 3.2
+      }
+    },
+    "p25_p26_patch": {
+      "new_roads": [
+        "P25",
+        "P26"
+      ],
+      "new_junctions": [
+        "J33",
+        "J34"
+      ],
+      "rebuilt_junctions": [
+        "J29",
+        "J21"
+      ],
+      "position_basis": "full junction-to-junction centerline length including the original P17 bend",
+      "position_on_J28_J15": 0.5,
+      "position_on_J18_J30_from_J18": 0.3333333333333333,
+      "road_width_m": 2,
+      "walking_area_widths_m": {
+        "J33": 4.0,
+        "J34": 4.0,
+        "J29": 4.0,
+        "J21": 4.0,
+        "J28": 4.0,
+        "J15": 6.0,
+        "J30": 4.0,
+        "J18": 4.0,
+        "J17": 4.0,
+        "J31": 4.0,
+        "J19": 4.0,
+        "J24": 4.0,
+        "J20": 4.0
+      },
+      "centerline_lengths_m": {
+        "P25": 33.1958,
+        "P26": 58.7053
+      },
+      "simulation_run": true,
+      "test_type": "isolated_sumo_hotspot_walking_area",
+      "sumo_version": "1.27.0",
+      "persons_per_movement": 4,
+      "jamtime_seconds": 3601,
+      "affected_junctions_tested": 13,
+      "affected_junctions_passed": 13,
+      "max_continuous_stop_seconds": {
+        "J33": 3.2,
+        "J34": 2.4,
+        "J29": 9.6,
+        "J21": 7.8,
+        "J28": 2.6,
+        "J15": 12.8,
+        "J30": 3.2,
+        "J18": 3.4,
+        "J17": 4.2,
+        "J31": 2.4,
+        "J19": 2.4,
+        "J24": 4.6,
+        "J20": 4.6
+      },
+      "stress_test_report": "runs/park_p25_p26_junction_checks.json"
+    },
+    "p27_patch": {
+      "new_road": "P27",
+      "segments": [
+        "P27a",
+        "P27b",
+        "P27c"
+      ],
+      "new_junctions": [
+        "J35",
+        "J36"
+      ],
+      "rebuilt_junctions": [
+        "J30",
+        "J34"
+      ],
+      "user_confirmed_original_bend_retained": true,
+      "geometry_type": "approximate trapezoid with unchanged bent southwest road; exact trapezoid dimensions refer to endpoint chord",
+      "southeast_leg_parallel_codirectional_with": "J21-to-J34 / P26",
+      "geometry": {
+        "J34": [
+          18580.915,
+          5772.235
+        ],
+        "J30": [
+          18561.319,
+          5812.939
+        ],
+        "J35": [
+          18583.5628411884,
+          5786.044252258448
+        ],
+        "J36": [
+          18573.7648411884,
+          5806.396252258448
+        ],
+        "height_m": 8.375878097038175,
+        "long_chord_m": 45.17542287571977,
+        "short_base_m": 22.587711437858687,
+        "legs_m": [
+          14.060814730890948,
+          14.060814730892345
+        ],
+        "new_road_full_centerline_m": 50.70934089964198,
+        "j34_leg_scale_of_p26_direction": 0.23951525901393883
+      },
+      "road_width_m": 2,
+      "walking_area_widths_m": {
+        "J34": 5.0,
+        "J30": 4.0,
+        "J35": 4.0,
+        "J36": 4.0,
+        "J15": 6.0,
+        "J31": 4.0,
+        "J18": 4.0,
+        "J21": 4.0
+      },
+      "simulation_run": true,
+      "test_type": "isolated_sumo_hotspot_walking_area",
+      "sumo_version": "1.27.0",
+      "persons_per_movement": 4,
+      "jamtime_seconds": 3601,
+      "affected_junctions_tested": 8,
+      "affected_junctions_passed": 8,
+      "max_continuous_stop_seconds": {
+        "J34": 4.6,
+        "J30": 8.2,
+        "J35": 1.6,
+        "J36": 1.6,
+        "J15": 12.8,
+        "J31": 2.4,
+        "J18": 3.4,
+        "J21": 7.8
+      },
+      "j34_4m_stalled": true,
+      "stress_test_report": "runs/park_p27_junction_checks.json"
+    },
+    "p28_patch": {
+      "new_road": "P28",
+      "new_junction": "J37",
+      "rebuilt_junction": "J33",
+      "geometry": {
+        "J33": [
+          18542.657,
+          5853.696
+        ],
+        "J37": [
+          18558.239050561642,
+          5861.106386533785
+        ],
+        "direction_reference_J15": [
+          18554.63,
+          5828.52
+        ],
+        "direction_reference_J28": [
+          18530.684,
+          5878.872
+        ],
+        "length_reference_J15_J13_edge_id": "906417853#1",
+        "length_reference_full_centerline_m": 34.50878892605383,
+        "new_full_centerline_length_m": 17.254394463026916,
+        "nearest_other_roads": [
+          [
+            "P04",
+            18.481096046652326
+          ],
+          [
+            "P05",
+            18.481096046652326
+          ],
+          [
+            "M1",
+            18.481096046652326
+          ],
+          [
+            "P15b",
+            27.87650708860162
+          ],
+          [
+            "P20a",
+            27.87801472486832
+          ]
+        ],
+        "unexpected_crossings": []
+      },
+      "road_width_m": 2,
+      "endpoint_type": "free pedestrian dead end without walkingarea",
+      "simulation_run": true,
+      "test_type": "isolated_sumo_hotspot_walking_area",
+      "sumo_version": "1.27.0",
+      "persons_per_movement": 4,
+      "jamtime_seconds": 3601,
+      "affected_junctions_tested": 4,
+      "affected_junctions_passed": 4,
+      "walking_area_widths_m": {
+        "J33": 4.0,
+        "J28": 4.0,
+        "J15": 6.0,
+        "J29": 4.0
+      },
+      "max_continuous_stop_seconds": {
+        "J33": 8.6,
+        "J28": 2.6,
+        "J15": 12.8,
+        "J29": 9.6
+      },
+      "terminal_roundtrip": {
+        "test_type": "isolated_p28_terminal_roundtrip",
+        "network": "/Users/omega/Documents/Codefield_Cursor/crowdsim-backend/scenarios/shanghai_bund/bund.net.xml",
+        "route": "approach -> P28 near J37 -> P28 reversed -> approach",
+        "jamtime_seconds": 3601,
+        "persons_per_approach_pair": 2,
+        "result": {
+          "walking_area_id": ":huangpu_park_p25_p20_w0",
+          "width_m": 4.0,
+          "neighbours": [
+            "huangpu_park_j05_j15_p21_south",
+            "huangpu_park_j05_j15_p21_south_p25_south",
+            "huangpu_park_p25"
+          ],
+          "movement_count": 9,
+          "planned": 18,
+          "departed": 18,
+          "arrived": 18,
+          "end_time_seconds": 62.8,
+          "max_continuous_stop_seconds": 5.4,
+          "max_walking_area_count": 16,
+          "final_active_by_edge": {},
+          "error": null,
+          "passed": true
+        }
+      }
+    }
+  },
+  "visualization_revision": {
+    "date": "2026-10-10",
+    "label_policy": "Preserve existing J/P/M/H/S/X labels; no SUMO IDs or topology changes.",
+    "color_policy": "Darker colors for white-background legibility; all segments of one logical road share a color. P25 and P28 are distinct from P13/P22/P20.",
+    "network_sha256": "7f1e900aa870f1c55d90ad18d18f41690f774083996d68fe1a06d8f114c9c67c",
+    "checked_junction_count": 37,
+    "checked_road_segment_count": 52
+  }
+}

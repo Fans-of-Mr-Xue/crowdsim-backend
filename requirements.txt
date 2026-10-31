@@ -8,9 +8,11 @@ numpy>=1.26,<3.0
 shapely>=2.0,<3.0
 pymongo>=4.6,<5.0
 python-dotenv>=1.0,<2.0
+PyYAML>=6.0,<7.0
 pypdf>=6.0,<7.0
 PyMuPDF>=1.26,<2.0
 beautifulsoup4>=4.12,<5.0
 # Tests
-pytest>=8,<10
+pytest>=8,<9
 mongomock>=4.3,<5
+psutil>=5.9,<8.0; sys_platform == "win32"

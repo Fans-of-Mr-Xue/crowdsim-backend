@@ -5,6 +5,7 @@ import unittest
 import xml.etree.ElementTree as ET
 
 from crowdsim.core.population_manager import PopulationManager
+from crowdsim.infrastructure.network_adapter import ResearchNetwork
 from crowdsim.domain.person_parameters import (
     GOAL_LOCK_PARAM,
     HOTSPOT_DWELL_SECONDS_PARAM,
@@ -19,6 +20,21 @@ from crowdsim.scenarios.hotspot_demand import LOCK_PARAM, _timeline_alignment, b
 
 ROOT = Path(__file__).resolve().parents[1]
 BUND = ROOT / "scenarios" / "shanghai_bund"
+
+
+def arrival_profile_configuration():
+    """Retain coverage of scheduled arrivals independently of the new default."""
+    config = json.loads((ROOT / "config" / "crowd_hotspots.json").read_text())
+    hotspot = next(item for item in config["hotspots"] if item["id"] == "people_heroes_monument")
+    hotspot.pop("visitor_departure_window_seconds")
+    hotspot["visitor_arrival_profile"] = [
+        {"window_seconds": [240, 360], "fraction": 0.10},
+        {"window_seconds": [360, 540], "fraction": 0.75},
+        {"window_seconds": [540, 660], "fraction": 0.15},
+    ]
+    hotspot["visitor_spawn_edges"] = hotspot["visitor_destination_edges"][:]
+    hotspot["spawn_distribution"] = "edge_length_weighted_random"
+    return config
 
 
 class HotspotDemandTests(unittest.TestCase):
@@ -38,7 +54,7 @@ class HotspotDemandTests(unittest.TestCase):
     def test_alignment_preserves_people_routes_positions_and_all_time_gaps(self):
         with tempfile.TemporaryDirectory() as directory:
             directory = Path(directory)
-            config = json.loads((ROOT / "config" / "crowd_hotspots.json").read_text())
+            config = arrival_profile_configuration()
             hotspot = next(item for item in config["hotspots"] if item["id"] == "people_heroes_monument")
             # Both counts and seeds can change the first departure; never hardcode 50s.
             for count, seed in [(12, 20260908), (700, 20260908), (12, 20260909)]:
@@ -138,10 +154,12 @@ class HotspotDemandTests(unittest.TestCase):
     def test_monument_visitors_follow_arrival_profile_and_common_event_release(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "monument.rou.xml"
+            config_path = Path(directory) / "arrival-config.json"
+            config_path.write_text(json.dumps(arrival_profile_configuration()))
             report = build_hotspot_demand(
                 BUND / "bund_ped.rou.xml",
                 BUND / "bund.net.xml",
-                ROOT / "config" / "crowd_hotspots.json",
+                config_path,
                 output,
                 hotspot_id="people_heroes_monument",
                 visitor_count=300,
@@ -161,7 +179,7 @@ class HotspotDemandTests(unittest.TestCase):
                 "679361564",
             }
             targets = set(report["target_edges"])
-            self.assertEqual({"679361567#1", "679361567#2"}, targets)
+            self.assertEqual({"679361567#1", "679361567#2", "679361567#2_m3_north"}, targets)
             seen_entries = set()
             seen_departure_entries = set()
             seen_park_entries = set()
@@ -171,15 +189,15 @@ class HotspotDemandTests(unittest.TestCase):
             viewing_ranges = {
                 "679361567#1": ((2.0, 15.0), (15.0, 35.0), (35.0, 90.0),
                                       (90.0, 110.0), (110.0, 119.78)),
-                "679361567#2": ((2.0, 17.83),),
+                "679361567#2": ((2.0, 3.81),),
+                "679361567#2_m3_north": ((2.0, 7.02),),
             }
-            internal_spawn_lengths = {
-                "906417851#0": 6.8,
-                "906417852#7": 11.7,
-                "906417852#8": 26.1,
-                "906417852#9": 91.5,
-                "906417852#10": 102.9,
-            }
+            network = ResearchNetwork(str(BUND / "bund.net.xml"))
+            internal_spawn_lengths = {edge: network.edges[edge].getLength() for edge in (
+                "906417851#0", "906417852#7", "906417852#8", "906417852#9",
+                "906417852#9_p24_north",
+                "906417852#10", "906417852#10_p21_north",
+            )}
             park_entry_edges = {"906417851#0", "906417852#8"}
             park_access_edges = {
                 "177931046",
@@ -191,6 +209,20 @@ class HotspotDemandTests(unittest.TestCase):
                 "906417854",
                 "906417855#1",
                 "906417855#2",
+                "huangpu_park_j05_j15",
+                "huangpu_park_j05_j15_p21_south",
+                "906417852#10_p21_north",
+                "huangpu_park_p21",
+                "906417853#0_p22_east",
+                "906417854_p23_south",
+                "huangpu_park_p22",
+                "huangpu_park_p23",
+                "906417852#9_p24_north",
+                "huangpu_park_p24",
+                "huangpu_park_p25", "huangpu_park_p26",
+                "huangpu_park_p27_a", "huangpu_park_p27_b", "huangpu_park_p27_c",
+                "huangpu_park_p28",
+                "huangpu_park_j05_j15_p21_south_p25_south", "906417854_p23_south_p26_south",
             }
             for person in visitors:
                 params = {item.get("key"): item.get("value") for item in person.findall("param")}
@@ -208,7 +240,7 @@ class HotspotDemandTests(unittest.TestCase):
                 self.assertIn(inbound[0], internal_spawn_lengths)
                 self.assertIn(outbound[-1], internal_spawn_lengths)
                 seen_departure_entries.update(
-                    set(outbound) & {"178411801#0", "177931018#0"}
+                    set(outbound) & {"178411801#0", "177931018#0", "monument_m3"}
                 )
                 self.assertIn("departPos", person.attrib)
                 depart_position = float(person.get("departPos"))
@@ -234,15 +266,15 @@ class HotspotDemandTests(unittest.TestCase):
                     start <= target_position <= end
                     for start, end in viewing_ranges[target]
                 ))
-                seen_entries.update(set(inbound) & {"178411801#0", "177931018#0"})
+                seen_entries.update(set(inbound) & {"178411801#0", "177931018#0", "monument_m3"})
                 if HOTSPOT_PARK_ENTRY_EDGE_PARAM in params:
                     seen_park_entries.add(params[HOTSPOT_PARK_ENTRY_EDGE_PARAM])
 
             self.assertEqual(300, len(visitors))
             self.assertEqual(300, sum(report["target_edge_counts"].values()))
             self.assertTrue(all(count > 0 for count in report["target_edge_counts"].values()))
-            self.assertEqual({"178411801#0", "177931018#0"}, seen_entries)
-            self.assertEqual({"178411801#0", "177931018#0"}, seen_departure_entries)
+            self.assertEqual({"178411801#0", "177931018#0", "monument_m3"}, seen_entries)
+            self.assertEqual({"178411801#0", "177931018#0", "monument_m3"}, seen_departure_entries)
             self.assertGreater(same_entry_departures, 0)
             self.assertGreater(different_entry_departures, 0)
             self.assertEqual(set(), seen_park_entries)
@@ -252,10 +284,11 @@ class HotspotDemandTests(unittest.TestCase):
             self.assertEqual(set(internal_spawn_lengths), set(report["spawn_edge_counts"]))
             self.assertTrue(all(count > 0 for count in report["spawn_edge_counts"].values()))
             self.assertEqual("edge_uniform_random", report["destination_distribution"])
-            self.assertEqual(
-                {edge_id: 60 for edge_id in internal_spawn_lengths},
-                report["destination_edge_counts"],
-            )
+            destination_counts = report["destination_edge_counts"]
+            for edge_id in ("906417851#0", "906417852#7", "906417852#8"):
+                self.assertEqual(60, destination_counts[edge_id])
+            self.assertEqual(60, destination_counts["906417852#9"] + destination_counts["906417852#9_p24_north"])
+            self.assertEqual(60, destination_counts["906417852#10"] + destination_counts["906417852#10_p21_north"])
             self.assertEqual(300, sum(report["departure_entry_counts"].values()))
             self.assertTrue(all(count > 0 for count in report["departure_entry_counts"].values()))
             self.assertGreater(report["same_spawn_destination_edge_count"], 0)
@@ -278,7 +311,8 @@ class HotspotDemandTests(unittest.TestCase):
                     "south_secondary_view": 45,
                     "northwest_overflow": 15,
                     "southwest_overflow": 12,
-                    "west_back_overflow": 18,
+                    "west_back_overflow_south": 5,
+                    "west_back_overflow_north": 13,
                 },
                 report["viewing_zone_counts"],
             )

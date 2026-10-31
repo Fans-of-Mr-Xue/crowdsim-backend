@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+from contextlib import nullcontext
 from dataclasses import asdict
 import hashlib
 import json
@@ -14,6 +15,8 @@ from typing import Any
 from crowdsim.infrastructure.decision_table_writer import (
     DecisionTableWriter, FORMAT, FORMAT_VERSION, MANIFEST_FILE, REPLAY_SUPPORTED, json_default as _json_default,
 )
+from crowdsim.infrastructure.observation_recorder import ObservationRecorder
+from crowdsim.infrastructure.performance_probe import timed
 
 
 class ExperimentRecorder:
@@ -24,6 +27,7 @@ class ExperimentRecorder:
         if (self.directory / "manifest.json").exists():
             raise FileExistsError("experiment already exists; start a new run")
         self._seen_profiles = set()
+        self.observation_writer = None
         self._trajectory_path = self.directory / "trajectory.csv"
         self._metrics_path = self.directory / "metrics.csv"
         config_bytes = config_path.read_bytes()
@@ -61,6 +65,10 @@ class ExperimentRecorder:
         self._write_json(path, payload)
 
     def record_step(self, runtime, result, metrics: dict) -> None:
+        observation = metrics.get("observation")
+        extra_fields = ["snapshot_id", "in_observation_scope", "observation_cell_id",
+            "behavior_state", "behavior_reason", "crowded", "psychological_state",
+            "stress", "fatigue", "perceived_risk", "perceived_crowding"] if observation else []
         self._append_jsonl("lifecycle.jsonl", [{"time": result.time_seconds, "event": "departed", "person_id": person_id} for person_id in result.departed_person_ids] + [{"time": result.time_seconds, "event": "arrived", "person_id": person_id} for person_id in result.arrived_person_ids])
         new_profiles = []
         for person_id in result.persons:
@@ -69,22 +77,27 @@ class ExperimentRecorder:
                 self._seen_profiles.add(person_id)
         self._append_jsonl("profiles.jsonl", new_profiles)
         exists = self._trajectory_path.exists()
-        with self._trajectory_path.open("a", newline="", encoding="utf-8") as handle:
+        with self._measure('trajectory_log_write'), self._trajectory_path.open("a", newline="", encoding="utf-8") as handle:
             writer = csv.writer(handle)
             if not exists:
                 writer.writerow(["time", "person_id", "x", "y", "speed", "edge",
                     "density_person_per_m2", "visual_state", "visual_reason", "activity_state",
                     "low_speed_duration_seconds", "blocked_duration_seconds",
                     "critical_density_duration_seconds", "dense_low_speed_duration_seconds",
-                    "visual_blocked_duration_seconds"])
+                    "visual_blocked_duration_seconds", *extra_fields])
             for motion in result.persons.values():
                 visual = runtime.visual_states[motion.person_id]
                 state = runtime.population.states[motion.person_id]
-                writer.writerow([result.time_seconds, motion.person_id, motion.x, motion.y, motion.speed, motion.edge_id,
+                row = [result.time_seconds, motion.person_id, motion.x, motion.y, motion.speed, motion.edge_id,
                     visual["density_person_per_m2"], visual["visual_state"], visual["visual_reason"], state.activity_state,
                     visual["low_speed_duration_seconds"], visual["blocked_duration_seconds"],
                     visual["critical_density_duration_seconds"], visual["dense_low_speed_duration_seconds"],
-                    visual["visual_blocked_duration_seconds"]])
+                    visual["visual_blocked_duration_seconds"]]
+                if observation:
+                    agent = observation["agents"].get(motion.person_id, {})
+                    row.extend([observation["snapshot_id"], agent.get("in_scope"), agent.get("cell_id"),
+                                *[agent.get(field) for field in extra_fields[3:]]])
+                writer.writerow(row)
         metrics_row = {"time": result.time_seconds, "pedestrian_count": metrics["pedestrian_count"], "vehicle_count": metrics["vehicle_count"], "pedestrian_avg_speed_mps": metrics["pedestrian_avg_speed_mps"], "vehicle_avg_speed_mps": metrics["vehicle_avg_speed_mps"], "conservation_error": metrics["population"]["conservation_error"]}
         metrics_row.update({
             f"visual_{name}_count": count
@@ -92,11 +105,51 @@ class ExperimentRecorder:
         })
         metrics_row["visual_density_unknown_count"] = metrics.get("visual_density_unknown_count", 0)
         exists = self._metrics_path.exists()
-        with self._metrics_path.open("a", newline="", encoding="utf-8") as handle:
+        with self._measure('metrics_log_write'), self._metrics_path.open("a", newline="", encoding="utf-8") as handle:
             writer = csv.DictWriter(handle, fieldnames=list(metrics_row))
             if not exists:
                 writer.writeheader()
             writer.writerow(metrics_row)
+        if self.observation_writer is not None and observation is not None:
+            self.observation_writer.record(observation)
+        during = metrics.get("during")
+        if during is not None:
+            self._append_jsonl("during_observations.jsonl", [during])
+            if during["finished"]:
+                self._write_json(self.directory / "during_result.json", during)
+
+    def attach_during_preset(self, preset) -> None:
+        from crowdsim.domain.during_preset import preset_fingerprint
+        self._write_json(self.directory / "during_preset.json", preset)
+        self.update_manifest(during={
+            "preset_id": preset["preset_id"], "preset_version": preset["version"],
+            "preset_fingerprint": preset_fingerprint(preset), "preset_file": "during_preset.json",
+            "observations_file": "during_observations.jsonl", "result_file": "during_result.json",
+        })
+
+    def attach_observations(self, collector) -> None:
+        if collector is not None:
+            self.observation_writer = ObservationRecorder(self.directory, collector)
+            self.observation_writer.performance = getattr(self, 'performance', None)
+            self.update_manifest(observation={
+                **collector.config.metadata(), "metric_ids": list(collector.metric_ids),
+                "requested_metric_ids": list(collector.requested_ids),
+                "computed_metric_ids": sorted(collector.computed_ids),
+                "network_sha256": collector.network_sha256,
+                "geometry_file": "observation_geometry.json",
+                "result_file": "observation_result.json",
+                "evacuation_state_file": "evacuation_state.json" if collector.evacuation else None,
+                "evacuation_progress_file": "evacuation_progress.jsonl" if collector.evacuation else None,
+                "density_differences_file": "evacuation_density_differences.csv" if "absolute-evacuation-density" in collector.metric_ids else None,
+            })
+
+    def record_observation_lifecycle(self) -> None:
+        if self.observation_writer is not None:
+            self.observation_writer.sync_lifecycle()
+
+    def finalize_observations(self, status: str, reason: str, error=None) -> None:
+        if self.observation_writer is not None:
+            self.observation_writer.finalize(status, reason, error)
 
     def record_decision(self, plan, result, *, context=None, candidates=()) -> None:
         self.decision_writer.write_record({"context": context, "candidates": list(candidates), "plan": plan, "execution": result})
@@ -109,6 +162,7 @@ class ExperimentRecorder:
 
     def finalize(self, runtime) -> None:
         self.close_logs(runtime)
+        self.finalize_observations("error" if runtime.last_error else "interrupted", "runtime_finalized", runtime.last_error)
         self.write_summary(runtime)
 
     def close_logs(self, runtime) -> None:
@@ -139,6 +193,11 @@ class ExperimentRecorder:
             "cache_evictions": {name: cache.evictions for name, cache in writer.caches.items()},
         }
 
+    def _measure(self, name):
+        probe = getattr(self, 'performance', None)
+        return probe.measure(name) if probe is not None and probe.enabled else nullcontext()
+
+    @timed('business_jsonl_write')
     def _append_jsonl(self, name: str, records: list[Any]) -> None:
         if not records:
             return

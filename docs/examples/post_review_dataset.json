@@ -1,0 +1,9 @@
+{
+  "name": "事后对接示例：合成时序",
+  "sourceKind": "synthetic_reference",
+  "sourceNote": "接口演示数据，无真实事件含义。timeSeconds 从本数据集起点计时；density 单位人/m²，meanSpeed 单位 m/s，pressureProxy 为压力代理指标。",
+  "observations": [
+    { "timeSeconds": 0, "regionId": "global", "population": 100, "density": 2, "meanSpeed": 1, "pressureProxy": null, "sourceTime": "0", "state": "示例基线起点" },
+    { "timeSeconds": 60, "regionId": "global", "population": 120, "density": 2.4, "meanSpeed": 0.8, "pressureProxy": null, "sourceTime": "60", "state": "示例客流汇入" }
+  ]
+}

@@ -1,6 +1,18 @@
 # CrowdSim 本机对话服务
 
-该目录是独立的**本机对话存储服务**，不修改原有 SUMO/WebSocket 仿真服务。SUMO 默认使用 `8765`，事后反事实入口使用 `8766`；本服务只监听 `127.0.0.1:8767`，负责保存和读取对话记录。
+## 事后受约束对话
+
+`POST /post-review/chat` 是事后阶段专用入口。请求包含 `task`、用户/助手 `messages`、业务 `context`，可指定 `model` 和 `maxTokens`。后端从仓库加载 `agent/PostAgent.agent.md`，按任务加载其白名单内完整 skill 指引：数据接入及目的确认使用 `post_data_assessment`，方案建议使用 `post_causal_hypothesis` 与 `counterfactual_design`。客户端不能提交 system 指令或自行选择 skill。
+
+目的、设计、PC特征建议和兼容参数问答还加载[执行与分析共同契约](../docs/post_execution_analysis_contract.md)，避免skill与SUMO实际字段分叉。契约文件缺失、不可读或为空时停止该轮模型请求，不静默退回旧说明。回复白名单和HTTP公共字段保持不变；窗口主要终点、方向核验及机制事件扩展见[对接清单](../docs/post_sumo_handoff.md)。
+
+响应包含 `reply`、`agent`、`skills`、`phase`、`mode` 和 `toolsExecuted`。常规任务为false；historical_event实际收集到来源时为true，仍不表示执行过SUMO或PC。方案字段必须通过结构校验；锁定参数、实验结果、伪造校准字段、不一致的组数、不存在的组更新不会返回给前端应用。前端据此更新需求界定右侧工作台，并按对话保存快照，独立方案设计页只读预览。
+
+本接口仅做评估和设计建议，不执行skill中的PC、编译、仿真等工具，也不会代替用户确认目标。historical_event只使用后端实际收集的资料；未配置搜索服务且没有可读来源时要求补充资料。数据解析与登记仍走现有数据服务，仿真仍在运行页由用户启动。模型连接读取 `CROWDSIM_LLM_BASE_URL`（默认 `http://127.0.0.1:8800/v1`）、`CROWDSIM_LLM_MODEL`（默认 `GLM-5.3-Flash`，页面显示 GLM-5.3 Flash）和 `CROWDSIM_MODEL_API_KEY`；事后专用的 `CROWDSIM_POST_LLM_MODEL`、`CROWDSIM_POST_LLM_API_KEY` 可覆盖通用配置。Agent/skill 加载需要 requirements 中的 PyYAML。
+
+下文所述存储及直接模型路径继续适用于其他既有页面；事后对话的模型请求经本接口加载服务端指引。
+
+该目录是独立的**本机对话存储服务**，不修改原有SUMO/WebSocket仿真服务。SUMO与事后HTTP入口均使用8765；原C0—C5控制服务可独立使用8766；本服务监听127.0.0.1:8767，保存/读取对话并提供事后受约束建议接口。
 
 前端页面继续使用 `8080`。前端的 `/crowdsim-dialog-api` 只代理到 `8767` 读写对话记录；模型请求走 `/qwen-api` 代理到本机 `8800` 的 OpenAI 兼容接口。统一启动入口会检查并建立所需的 SSH 隧道；对话存储进程本身不建立 SSH 连接，也不转发模型请求：
 
@@ -23,6 +35,6 @@ python -m dialogue_service.server
 
 主对话快照写入 `runs/dialogues/*.json`，工作台对话写入 `runs/dialogues/workbench/*.json`。`runs/` 已由 crowdsim-backend 现有 Git 排除规则忽略。
 
-这里的 `runs` 指 `crowdsim-backend/runs`，与 `CrowdSim` 前端仓库的目录不同。后端启动时创建对话目录；前端每次保存会话后，会将会话快照同步为 JSON 文件。模型服务公布的实际 ID 为 `qwen3.8-flash-next`，页面仍显示 `Qwen3.8-Flash-Next`。
+这里的 `runs` 指 `crowdsim-backend/runs`，与 `CrowdSim` 前端仓库的目录不同。后端启动时创建对话目录；前端每次保存会话后，会将会话快照同步为 JSON 文件。事后阶段使用模型 ID `GLM-5.3-Flash`，页面显示 `GLM-5.3 Flash`。
 
 存储服务启动后将其请求日志实时输出到终端，并写入本机 `runs/dialogue_logs/service.log`（最多 5 MB，保留 3 份轮转备份）。对话正文保存在上述 JSON 文件，服务日志不重复记录正文或 API 密钥。vLLM 请求由前端开发代理直接发送到 `8800`，不会经过 `8767`。

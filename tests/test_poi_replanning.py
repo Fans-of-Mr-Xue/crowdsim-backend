@@ -311,6 +311,7 @@ class RuntimeContextTests(unittest.TestCase):
         self.adapter.find_pedestrian_route.side_effect = lambda a, b, **kwargs: (
             Stage(type=tc.STAGE_WALKING, edges=routes[(a, b)]),)
         self.runtime = SimulationRuntime.__new__(SimulationRuntime)
+        self.runtime.artificial_society_record = None
         self.runtime.route_provider = RouteProvider(Network(), self.adapter)
         self.runtime.plan_executor = PlanExecutor(self.adapter, self.runtime.route_provider)
         self.runtime.adapter = self.adapter

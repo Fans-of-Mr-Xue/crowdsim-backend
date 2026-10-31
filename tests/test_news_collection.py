@@ -128,11 +128,12 @@ class NewsSchemaTests(unittest.TestCase):
         supervisor = Supervisor()
         dead = Mock(pid=1, returncode=1)
         dead.poll.return_value = 1
-        supervisor.children = [('新闻采集服务', dead)]
-        supervisor.optional_children.add(1)
+        supervisor.children = [('新闻采集服务', dead, False)]
+        supervisor.optional_names.add('新闻采集服务')
         with patch('start_backend.report'):
             supervisor.check_children()
-        self.assertEqual(supervisor.reported_exits, {1})
+        self.assertEqual(supervisor.unavailable_services, {'新闻采集服务'})
+        self.assertEqual(supervisor.children, [])
 
 
 class NewsRepositoryTests(unittest.TestCase):

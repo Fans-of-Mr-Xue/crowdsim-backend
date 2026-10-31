@@ -1,6 +1,6 @@
 # CrowdSim SUMO Backend
 
-该后端以 SUMO 1.24.0 striping 为唯一运动引擎。SUMO 管理行人实际位置、速度、道路交互、出发和到达；Python 管理画像、局部观察、心理状态、信息、策略、危险输入、实验记录和 WebSocket 协议。事件不会直接乘人数或密度。
+该后端以 SUMO striping 为唯一运动引擎。统一入口支持远端原有的 SUMO 1.24.0 和本机使用的 1.27.0。SUMO 管理行人实际位置、速度、道路交互、出发和到达；Python 管理画像、局部观察、心理状态、信息、策略、危险输入、实验记录和 WebSocket 协议。事件不会直接乘人数或密度。
 
 ## 工程结构
 
@@ -41,30 +41,62 @@ D:\sumo-1.24.0\bin\sumo.exe --version
 `pip install -e .` 会安装仓库内的 `crowdsim` 与 `arde_emergency`。C0—C5 对比实验、
 ARDE 算法和 SUMO 仿真全部由本仓库提供，运行时不依赖 MACE。
 
-`traci`、`sumolib` 和 SUMO 二进制必须使用相同版本。仅安装 Python 包不包含完整 SUMO 仿真程序。
+`requirements.txt` 保留现有的 `traci==1.24.0`、`sumolib==1.24.0`。本机 Conda `sumo` 环境通过这两个客户端包连接系统安装的 SUMO 1.27.0；已有可用安装无需重新安装或降级。统一入口接受这两种 SUMO 程序版本，版本放行不等于全部场景已完成仿真验证。仅安装 `traci`、`sumolib` 不包含完整 SUMO 仿真程序。
 
 ## 启动
 
-日常使用只需在仓库根目录执行一个后端命令：
+日常使用在仓库根目录按当前终端选择入口。Windows PowerShell（包括提示符含 `PS` 的 Cursor 终端）：
 
-```sh
-./run.sh
+```powershell
+.\run.ps1
 ```
 
-统一入口 `start_backend.py` 自动检查 SUMO 和依赖，复用或建立模型（本机 8800 → 服务器 8800）与数据库（本机 27018 → 服务器 27018）的 SSH 隧道，然后启动 SUMO（8765）、对话存储（8767）、数据服务（8768）和新闻采集（8769）。这些模块仍以独立进程运行，不会把爬虫或数据库操作加入仿真循环。前端仍用 `npm run dev` 单独启动，无需再手动启动对话服务或执行 SSH 映射命令。
+Git Bash / macOS / Linux 终端：
 
-首次配置时，复制 `.env.example` 为 `.env` 并填写 MongoDB 密码和 SSH 参数；已有 `.env` 按模板补齐 `CROWDSIM_MODEL_SSH_*` 即可。默认模板使用已知数据库 SSH 账号 `hyq`；如果模型服务器账号不同，请修改 `CROWDSIM_MODEL_SSH_USER`。远程模型服务需要已经运行并提供本机 8800 对应的 OpenAI 兼容接口，启动器负责建立连接，不负责在远端部署模型。
+```bash
+bash ./run.sh
+```
 
-SSH 使用现有密钥或 ssh-agent，也可在终端按提示输入密码；密码不会写入配置。统一入口使用明确的 SSH 连接参数，不读取用户 SSH 配置中的其他转发规则。已有可用服务和连接会被复用；Ctrl+C 会停止本次创建的服务和隧道，复用的外部进程会保留。启动失败时会清理本次创建的进程，输出失败原因。
+统一入口 `start_backend.py` 自动检查 SUMO 和依赖，复用或建立模型（本机 8800 → 服务器 8800）与数据库（本机 27018 → 服务器 27018）的 SSH 隧道，然后启动 SUMO（8765）、实验控制（8766）、对话存储（8767）、数据服务（8768）和新闻采集（8769）。事中聊天和实验方案页依赖 8766；该服务也纳入就绪检查和退出清理。已运行且健康的服务会复用，退出启动器不会关闭复用的进程。这些模块仍以独立进程运行，不会把爬虫或数据库操作加入仿真循环。前端仍用 `npm run dev` 单独启动，无需再手动启动对话、实验控制服务或执行 SSH 映射命令。
 
-统一入口要求 Python 3.10 或更新版本。`run.sh` 优先使用 `CROWDSIM_PYTHON`，其次使用明确设置的 `CROWDSIM_CONDA` 环境，再使用本仓库 `.venv-backend/bin/python`，最后使用 PATH 中的 `python`。如需在其他电脑初始化独立环境，可执行：
+修改后端代码后，可显式重启本机五个服务以加载新代码。PowerShell 使用：
+
+```powershell
+.\run.ps1 --restart-services
+```
+
+Git Bash / macOS / Linux 使用：
+
+```bash
+bash ./run.sh --restart-services
+```
+
+PowerShell 中不要直接执行 `./run.sh`：`.sh` 会交给 Windows 文件关联程序处理，可能另开窗口或立即返回当前提示符。应执行 `.\run.ps1`；如需使用 Bash 入口，请明确写 `bash ./run.sh`。出现来自 Cursor / Node.js 的 `punycode` 弃用提示，不代表 Python 后端已经启动；应以 `[CrowdSim]` 日志为准。
+
+只检查环境而不启动或重启服务，PowerShell 使用：
+
+```powershell
+.\run.ps1 --check --restart-services
+```
+
+不加该参数时仍按原方式复用服务，其他同学的启动习惯不变。重启模式只处理当前用户、当前仓库的 8765～8769 进程，核对进程命令、工作目录和启动时间；不会按端口无差别结束进程，也不重启远程大模型／数据库或已有 SSH 隧道。它会中断使用这四个本机服务的页面连接，因此共用同一台电脑的同学应先结束相关操作。
+
+如果旧启动器仍在运行，需先在那个终端按 Ctrl+C，再运行上述命令；这可以避免旧启动器发现子服务退出后连带清理其余服务与隧道。运行中／排队的实验、仍有子进程的仿真（包括暂停的 SUMO）会阻止自动重启；无法确认归属或状态时也会退出并提示手动处理。macOS/Linux 使用 `ps` 和 `lsof`；Windows 使用 `requirements.txt` 中的 `psutil` 获取原生进程信息，核对通过后只终止对应 PID，不按端口或进程名批量结束。
+
+重启后新服务由本次启动器管理；Ctrl+C、SIGTERM 或终端 SIGHUP 会清理本次创建的服务。默认模式复用的外部进程仍会保留。`--check --restart-services` 仍然只做环境检查，不重启任何服务。
+
+首次配置时，复制 `.env.example` 为 `.env` 并填写 MongoDB 密码和 SSH 参数；已有 `.env` 按模板补齐 `CROWDSIM_MODEL_SSH_*` 即可。公共模板沿用 SSH 账号 `hyq`；各自使用的账号由 `.env` 中的 `CROWDSIM_DB_SSH_USER` 和 `CROWDSIM_MODEL_SSH_USER` 覆盖，已有 `.env` 不会被改写。远程模型服务需要已经运行并提供本机 8800 对应的 OpenAI 兼容接口，启动器负责建立连接，不负责在远端部署模型。
+
+SSH 使用现有密钥或 ssh-agent，也可在终端按提示输入 SSH 账户密码；输入时终端不显示字符，SSH 密码不会写入配置。SSH 进程保留启动终端以支持密码输入，后台服务使用独立进程组；请从交互终端运行需要密码认证的启动命令。统一入口使用明确的 SSH 连接参数，不读取用户 SSH 配置中的其他转发规则。已有可用服务和连接会被复用；Ctrl+C 会停止本次创建的服务和隧道，复用的外部进程会保留。启动失败时会清理本次创建的进程，输出失败原因。
+
+统一入口要求 Python 3.10 或更新版本。`run.sh` 和 `run.ps1` 优先使用环境变量 `CROWDSIM_PYTHON`，其次使用明确设置的 `CROWDSIM_CONDA` 环境；均未设置时读取本机 `.env` 中的 `CROWDSIM_PYTHON`，再使用本仓库虚拟环境（Windows 为 `.venv-backend/Scripts/python.exe`），最后使用 PATH 中的 `python`。脚本只按文本读取解释器路径，不执行 `.env` 内容。本机路径变化时同步更新 `CROWDSIM_PYTHON` 和 `SUMO_BINARY`；路径可以使用正斜杠，含空格时在配置值两端加引号。如需在其他电脑初始化独立环境，可执行：
 
 ```sh
 python -m venv .venv-backend
 .venv-backend/bin/python -m pip install -r requirements.txt
 ```
 
-需要 SUMO 1.24.0 二进制程序；已经安装 SUMO 的电脑可设置 `SUMO_HOME` 或 `SUMO_BINARY`。也可按 [SUMO 官方安装说明](https://sumo.dlr.de/docs/Downloads.php#python_packages__virtual_environments) 在该环境中安装匹配版本的程序：
+需要 SUMO 1.24.0 或 1.27.0 二进制程序；已经安装 SUMO 的电脑可设置 `SUMO_HOME` 或 `SUMO_BINARY`，也可以使用 PATH 中的 `sumo`。如果尚未安装 SUMO，可按 [SUMO 官方安装说明](https://sumo.dlr.de/docs/Downloads.php#python_packages__virtual_environments) 在独立环境中安装程序，例如：
 
 ```sh
 .venv-backend/bin/python -m pip install eclipse-sumo==1.24.0
@@ -77,7 +109,26 @@ python start_backend.py
 ./run.sh --check
 ```
 
-默认使用热点场景，可通过 `./run.sh --scenario research` 切换。`--no-tunnels` 表示只复用现有数据库和模型连接，不创建 SSH 隧道。原有模块入口仍可单独使用，下面是分别启动时的说明。
+本机 macOS 已有 Conda `sumo` 环境和系统 SUMO 1.27.0，可直接复用：
+
+```sh
+conda activate sumo
+./run.sh --check
+./run.sh
+```
+
+`--check` 会加载 `requirements.txt` 对应的服务依赖、识别实际 SUMO 程序版本并解析场景配置，不启动服务或 SSH 隧道，也不验证远端连接。缺少 `pypdf` 或 `beautifulsoup4` 等依赖时先补齐 Python 包；如果镜像源没有返回可用版本，可在当前环境执行 `python -m pip install --index-url https://pypi.org/simple -r requirements.txt`。无需因此安装另一份 SUMO。
+
+Windows 后端在加载 HTTP 依赖前启用 Python 的本机系统信息回退路径，避免 `platform.system()` 的 WMI 查询无响应导致启动一直没有输出。该初始化同时覆盖仿真、实验控制、对话和数据服务；启动器会先打印 Python 环境及依赖检查进度。更新代码后，已经卡住的旧启动进程需要先在原终端按 Ctrl+C 结束，再重新执行启动命令。
+
+默认使用热点场景，可通过 `./run.sh --scenario research` 或 `./run.sh --scenario east-nanjing-road` 切换。`--no-tunnels` 表示只复用现有数据库和模型连接，不创建 SSH 隧道。原有模块入口仍可单独使用，下面是分别启动时的说明。
+
+实验控制服务 8766 会照常自动启动。普通启动时，若该服务端口被占用、启动失败或随后退出，会明确报告实验控制不可用，仿真、对话与数据服务仍继续运行；需要实验控制的功能应在服务恢复后使用。显式 `--restart-services` 仍先核对所有待重启服务的归属和实验状态，无法安全确认时拒绝重启。未开启监测时可以复用没有监测接口的旧仿真服务；显式开启监测时仍要求服务支持并匹配监测配置。
+
+正常启动默认关闭开销监测。单独测试时添加 `./run.sh --monitor-performance`；可配合
+`--performance-interval 10` 调整汇总/系统采样间隔，或 `--performance-no-system` 关闭系统采样。
+诊断记录位于本次 `runs/<run_id>/performance.*`，正常仿真的业务记录照常保存。
+旧 `CROWDSIM_PERF`、`CROWDSIM_SYSTEM_PERF` 环境变量不再开启监测。详见[按需开销监测说明](docs/performance_monitoring.md)。
 
 共享 MongoDB 数据集接口、前端连接和独立数据库服务启动见[数据库接入说明](docs/database_api.md)。数据服务使用独立 8768 进程：
 
@@ -108,7 +159,11 @@ D:\Anaconda\python.exe crowdsim_overlay_server.py --host 127.0.0.1 --port 8765
 
 默认 WebSocket 地址为 `ws://127.0.0.1:8765`，事后阶段任务 HTTP API 同时挂在 `http://127.0.0.1:8765/api/v1/post`；只需启动这一个 8765 进程。WebSocket 协议见 `docs/websocket_protocol.md`，事后请求与响应契约见 [事后任务 API 规范](postanalysis_api/README.md)。启动前须安装更新后的 `requirements.txt`（新增 `aiohttp`，用于同一端口处理 HTTP 与 WebSocket）。
 
-如需运行原有、独立的 C0—C5 控制实验，可另开终端启动其 8766 服务；**事后反事实工作台和新任务 API 不依赖它**：
+方案页保存需求时，8766 通过 `POST http://127.0.0.1:8765/api/v1/requirements` 调用同一套需求校验与存储逻辑，保存到 `runs/requirements` 并返回原格式的需求回执，不建立或保留仿真 WebSocket。推演页随后通过原 WebSocket 按该需求编号初始化。已有实验使用的网关连接不受需求保存影响；原 WebSocket 的 `submit_requirement` 协议仍保留。升级此流程后需同时重启 8765、8766。
+
+新版第一类推演实验需求的 `experiment.duration_seconds` 在初始化和重置时作为单次推演时间上限，同时设置运行时结束条件和 SUMO 的 `--end`；达到上限的仿真步结束后停止，全部行程完成仍可提前结束。推演页时间线采用同一上限，并核对后端回执以防复用旧服务。该值使用仿真秒，不改变原活动安排或自动执行平行实验次数。旧版固定实验及没有此字段的历史需求继续使用原场景时长。
+
+事中预设实验及 C0—C5 控制实验共用 8766 服务，`./run.sh` 已自动启动它。若使用原仿真入口而非统一入口，可另开终端手动启动：
 
 ```powershell
 D:\Anaconda\python.exe -m crowdsim.experiments --host 127.0.0.1 --port 8766 --gateway-url ws://127.0.0.1:8765
@@ -132,6 +187,21 @@ C2—C4 使用 OpenAI 兼容接口。正式运行前设置 `CROWDSIM_LLM_BASE_UR
 控制器会明确记录 `fallback` 并使用 C1 规则结果，报告不会把回退结果描述成真实大模型基线。
 模型密钥只能由后端环境变量提供；实验接口拒绝接收或持久化 API Key、令牌与密码。
 
+macOS / Linux 的 `./run.sh` 使用上文的统一入口，默认启动热点场景及对话、数据服务。
+`./viewer.sh` 使用当前终端 PATH 中的 `python`（不存在时使用 `python3`），
+也支持 `CROWDSIM_PYTHON` 指定解释器。运行前请准备好项目的 Python 和 SUMO 环境。
+
+需求界定提交的预设地点会在决策推演连接时自动选择对应 SUMO 场景。普通启动、
+`--scenario hotspot` 和 `--scenario east-nanjing-road` 都支持这条需求绑定流程：
+
+- `memorial-tower`：人民英雄纪念塔热点场景。
+- `east-nanjing-road`：已确认的南京东路外滩路口路网，以陈毅广场为热点，按需求人数与画像生成聚集访客；刷新、到达、停留和离场机制复用纪念塔。
+
+更新代码后需重启后端并刷新前端；选择地点并提交需求后，在决策推演连接、等待初始化完成、
+点击开始即可。切换另一份需求时，点击前端“重置”显式建立新运行。离开决策推演页面会在当前步结束后暂停并保留运行；返回自动恢复原运行，点击继续推进。点击“结束”才释放该运行。后端进程须持续存活，暂不支持后端重启后恢复。自定义 `--config`
+保持显式指定的路网，不启用预设自动切换。实现与验证见
+`docs/2026-10-09_南京东路前后端场景接入.md`。
+
 默认启动普通外滩研究场景。启动“上海人民英雄纪念塔有限聚集”热点场景时，使用场景预设，让 SUMO 配置与行人路线保持成对选择；该热点预设目前只包含热点访客，不包含背景行人：
 
 ```powershell
@@ -144,7 +214,7 @@ D:\Anaconda\python.exe crowdsim_overlay_server.py --scenario hotspot --host 127.
 倒推每名访客的刷新时刻，活动在 600 s 开始、1000 s 结束，并在之后 120 s 内逐渐释放离场。
 服务向初始化帧输出 0—1800 s 的热点观察时间轴，共 3600 个 0.5 s 步。
 
-如需使用自定义 SUMO 配置，必须同时指定配置中实际引用的行人路线；已内置的两个配置可以省略 `--ped-routes`：
+如需使用自定义 SUMO 配置，必须同时指定配置中实际引用的行人路线；已内置的配置可以省略 `--ped-routes`：
 
 ```powershell
 D:\Anaconda\python.exe crowdsim_overlay_server.py --config scenarios\custom\scenario.sumocfg --ped-routes scenarios\custom\pedestrians.rou.xml
@@ -174,6 +244,72 @@ D:\Anaconda\python.exe scripts\replay_experiment.py runs\<source_run_id>
 ```
 
 运行产物写入 `runs/<run_id>/`，包括 manifest、实际需求、画像、命令、消息、决策、生命周期、轨迹、指标、SUMO 日志和摘要。新决策日志默认使用六个 JSONL 表无损去重，不引入数据库；格式和测试见 [决策日志拆表](docs/decision_log_format.md)。读取器兼容旧格式与新格式，按需解析计划和路线；基础回放按时间批次消费计划与轨迹，不生成新规则或 LLM 决策，并比较位置、速度和人口账本。历史日志不会自动转换或改写。基础回放不支持包含已记录外部命令的实验，也不等于完整 context 复原或所有场景均可精确复现。
+
+## 需求观测指标与数据记录
+
+携带 `requirement_id` 初始化时，后端按需求选择计算 A1 全局密度、A2 局部密度、
+A3 全局速度、A4 局部速度、A5 边界密度差、B1 疏散时间、B2 疏散效率、
+B3 人群密度差、C1 行为状态变化和 C2 心理变化。D1/D2 决策产物暂不实现，
+结果中明确标为 `not_implemented`。B1/B2/B3 使用本轮所有行人正常完成 SUMO
+行程的简化口径，具体定义和状态见 [疏散观测说明](docs/evacuation_observations.md)。
+历史需求文件保持不变，读取时仅在内存中刷新当前能力声明。
+
+参数位于 `config/observation_metrics.json`。区域使用需求的 WGS84 边界，严格转换
+到 SUMO 米制坐标；未投影、无面积、自交等无效区域不能初始化观测。密度分母是
+所选区域面积，局部使用裁剪后的片区面积。默认 20 m 均匀网格，整轮运行固定；
+随机划分暂不支持。共享边界两侧各采样 5 m，保存 A 侧减 B 侧及其绝对值。
+外边界没有区域外数据时，差值为空且标记 `outside_not_observed`，不将外侧人数视作零。
+共享网格线上的行人只归属一个片区；所有有效片区（包括空片区）每步都保存。
+平均速度包含实际停留人员；无人时速度为空，密度为零。无效速度另外计数，不替换为零。
+
+C1 主状态为 `walking/waiting/blocked/avoiding/unknown`，拥挤是可同时成立的附加标志。
+拥挤使用原有个人邻域密度近似，区别于 A1/A2 的区域密度。只有执行成功、且感知风险
+达到阈值的改道会形成短暂 `avoiding` 观察状态，普通入场改道不算避让。
+C2 根据模型压力值生成 `calm/tense/panic/unknown`；默认分界 0.4/0.7，滞回 0.05，
+持续确认 5 s。新行人的首次标签直接按初始值建立；无效心理值为空并标为未知。
+这些工程分类只用于观测，不反馈到行人运动决策。
+个人原始变量和标签跟随在网人员记录；区域汇总仅统计区域内人员，转换事件记录
+在区域内或跨区域边界发生的变化，离开区域、正常到达与未知消失分别记录。
+
+观测使用仿真时间，在初始化和每步更新后记录；播放倍速、推送频率不影响采样。
+运行目录 `runs/<run_id>/` 新增：
+
+| 文件 | 内容 |
+| --- | --- |
+| `observation_geometry.json` | 计算参数、坐标系、网格/边界编号与几何、面积、路网哈希 |
+| `observation_global.csv` | 区域人数、密度、速度、行为/心理人数与心理变量均值 |
+| `observation_cells.csv` | 有效片区人数、密度和速度；选择局部指标时生成 |
+| `observation_boundaries.csv` | 两侧面积/人数/密度与差值；选择 A5 时生成 |
+| `state_transitions.jsonl` | 带快照编号、位置与原因的区域出入和状态转换 |
+| `observation_samples.jsonl` | 完整写入的快照索引，读取多文件时按此排除未完成快照 |
+| `observation_result.json` | 运行状态、结束原因、错误、已记录样本数与各指标有效性 |
+| `evacuation_state.json` | 首次运行、策略应用、行程完成时点及密度基线，策略历史、目标行人编号 |
+| `evacuation_progress.jsonl` | 逐快照记录完成进度、剩余人数、异常计数和指标状态 |
+| `evacuation_density_differences.csv` | 正常完成后按固定片区输出初始/运行时/结束密度及三组绝对差 |
+
+`trajectory.csv` 增加快照编号、区域/片区归属、行为/心理标签、压力、疲劳、
+感知风险和感知拥挤字段。原有个人密度字段仍是个人邻域密度，区域密度在新 CSV 中。
+`manifest.json` 保存实际计算项及依赖（例如只选 A5 时内部仍计算片区密度）。
+未选择的指标字段为空；无有效样本标为 `no_valid_samples`。
+
+`observation_result.json` 每 20 个样本更新检查点，首次运行/策略应用/行程完成时也立即更新，完整快照索引逐步追加。
+正常 `FINISHED` 立即保存 `complete`，不等待前端断开；提前关闭为 `interrupted`，
+异常为 `error`，保留已有完整快照。这里的完成仅表示观测记录结束，不表示疏散完成。
+重复关闭不会覆盖已完成的观测结果。原有 `summary.json` 仍在运行关闭时生成诊断摘要。
+无需求的旧运行维持原有记录方式。实时帧新增 `metrics.observations`，初始化帧新增
+`observation_geometry`，个人 `state` 新增观测标签；前端已有字段保留。
+这些文件是结构化数据，不生成分析报告。
+
+### 离线实验指标查看器
+
+运行 `./viewer.sh`，生成 `outputs/experiment_viewer/index.html` 并自动打开浏览器，
+即可按场景/实验查看十项观测指标的曲线、
+片区与边界地图、疏散阶段及状态转换。支持时间回放、片区选取和 CSV/PNG/JSON 导出；
+旧记录、缺失数据和未完成疏散会明确标注。加 `--png` 可额外生成每轮十项静态图。
+外滩范围调整后显示保存范围与已同步预设的边界对照；旧指标保留原值，
+新实验按其新提交需求保存的区域和网格展示。CSV/PNG 标明范围版本和面积。
+不启动 SUMO、不连接前端、不改写实验记录。使用与口径见
+[实验指标查看器](docs/experiment_viewer.md)。
 
 ## DeepSeek 行人决策 Skill
 
@@ -206,7 +342,9 @@ S(t)冻结快照
 明确不支持运行时任意多边形硬障碍、动态硬封路、火灾/积水物理场、身体接触压力或连续二维群体队形；相关请求必须明确拒绝。
 ## 上海人民英雄纪念塔热点人群实验
 
-默认实验现在使用“上海人民英雄纪念塔有限聚集”需求，只包含热点访客，不再生成背景行人。需求不是运行中补人，而是在启动前生成包含明确出发、到达、活动停留和离场阶段的 SUMO person。热点访客按三段目标到达曲线倒推出发时间，并按可用长度加权随机刷新到黄浦公园西侧的五条园内人行道路上。由于刷新位置已经属于公园路网，行人不再先折返南、北公园入口，而是直接在园内选择路线前往两个纪念塔入口；进入园内道路后允许根据画像和拥堵重新选择纪念塔入口。访客随后进入地面环道，按最佳、次优和普通观赏弧段的权重选择目标位置，停留到统一活动结束时刻后在 120 s 内逐渐离场，最后经公园道路离开至园外道路：
+默认实验使用“上海人民英雄纪念塔有限聚集”需求，只包含热点访客。所有行人的 `depart` 均为 0，初始化时按道路长度分配人数，并在每条道路内分层随机分布。初始范围包含黄浦公园的 19 条步道、纪念塔的 3 条连接道路（含 M3）以及外环的 3 条道路段。位置通常距道路端点至少 2 m；短连接段的端点余量自动缩小为道路长度的四分之一。内侧及地下道路仍排除。
+
+初始化会执行 SUMO 的首个插入步，确认全部计划行人已载入，再发送 READY 状态的初始人群画面；保留实际引擎时间，默认从 0.5 s 的初始快照开始显示。点击开始后，行人沿可行路线前往各自按观赏弧段权重分配的热点位置。初始就在外环上的行人直接在外环内前往目标，连接道路上的行人直接向内进入；公园内的行人可根据画像和拥堵选择入口。人群构成、热点目的地权重和后续停留离场机制继续沿用配置：活动时间为 600–800 s，活动结束后在 90 s 内逐渐释放，并前往独立抽样的公园西侧道路位置。
 
 ```powershell
 D:\Anaconda\python.exe scripts\generate_hotspot_demand.py
@@ -216,6 +354,14 @@ D:\Anaconda\python.exe scripts\run_experiment.py --steps 3600
 
 热点规模和时间窗见 `config/crowd_hotspots.json`。`runs/hotspot/people_heroes_monument_report.json` 记录环道人数、密度、入口低速行人、外围速度及后期消散。当前数值是涌现机制演示参数，未经过外滩实测标定。
 
-在线帧把观测区拆成 `core`（外圈两条地面环道边）、`entries`（纪念塔两个入口）、`park`（黄浦公园内部道路）、`park_entries`（公园南北入口）和 `external_approach`（园外接近道路）。内侧地面环道和更深层环道不参与访客目标、路线或核心区测量。当前访客从 `park` 区域开始，`park_entries` 仍用于网络观测和离场过程，不再作为到访必经点。`core_process_state` 描述环道自身的 `normal → building → congested → dispersing → cleared`；安全口径的 `process_state` 还会检查园内、园外未完成访客与低速积压，必要时进入 `residual_congestion`，避免环道清空后误报整体消散。`visit_lifecycle` 给出未出发、园外接近/排队、园内接近/排队、进入环道、聚集停留、离场、完成和未完成人数。其中 `stopped_count` 表示计划停留，`slow_walking_count` 才表示步行阶段的低速人数。
+在线帧把观测区拆成 `core`（外环三条道路段）、`entries`（纪念塔三个入口）、`park`（黄浦公园内部道路）、`park_entries`（公园南北入口）和 `external_approach`（园外接近道路）。内侧地面环道和更深层环道不参与访客目标、路线或核心区测量。访客初始分布在 `park`、`entries` 和 `core` 区域，`park_entries` 仍用于网络观测，不作为到访必经点。`core_process_state` 描述环道自身的 `normal → building → congested → dispersing → cleared`；安全口径的 `process_state` 还会检查园内、园外未完成访客与低速积压，必要时进入 `residual_congestion`，避免环道清空后误报整体消散。`visit_lifecycle` 给出未出发、园外接近/排队、园内接近/排队、进入环道、聚集停留、离场、完成和未完成人数。其中 `stopped_count` 表示计划停留，`slow_walking_count` 才表示步行阶段的低速人数。
 
 案例库数据库结构、初始迁移、HTML 详情页上传和预留预案 / 模型挂载接口见 [案例库持久化](docs/case_profiles.md)。
+
+### 合并后的模型接口与启动行为
+
+共享 `/api/crowdSim/models/status`、`/models/{model}/chat/completions` 和 `/llm/chat` 保留远端 main 的契约；共享聊天中的 `GLM-5.3-Flash` 与 `GLM-5.3-Flash-8800` 均指向 8800。
+
+事前多模型接口使用 `/api/crowdSim/pre/models/status` 与 `/pre/models/{model}/chat/completions`（也支持 `/crowdSim` 前缀），保留原始提供商 ID：`GLM-5.3-Flash-8800` 为 8800，`GLM-5.3-Flash` 为 Tabby 8899，Qwen 和 DiffusionGemma 同样保留。所有阶段的新请求和模型菜单统一使用共享 GLM 8800；业务接口收到 `X-CrowdSim-Model: GLM-5.3-Flash` 时也映射到 8800。已保存任务中的提供商 ID 保持原有含义，内部读取不迁移；旧多模型独立接口仅用于兼容。
+
+新闻采集 8769 与实验控制 8766 均为可选服务，单独启动失败不会关闭其他服务；已有健康进程继续复用。可选模型映射包括 8899 和 8500。`--restart-services` 对 8769 同样检查进程归属，仅停止本项目、本用户的服务。

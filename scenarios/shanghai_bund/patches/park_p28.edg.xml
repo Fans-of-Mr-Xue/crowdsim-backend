@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- P28: straight 2m bidirectional pedestrian branch from J33 northeast,
+     perpendicular to J15-J28 and half the full J15-J13 centerline length. -->
+<edges>
+    <edge id="huangpu_park_p28" from="huangpu_park_p25_p20" to="huangpu_park_p28_end" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18542.657,5853.696 18558.239,5861.106"/>
+</edges>

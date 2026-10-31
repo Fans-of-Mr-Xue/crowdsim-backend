@@ -91,6 +91,7 @@ class MacSampler:
         self.backend_pid = os.getpid()
         self.lib = None
         self.objc = None
+        self.native_memory = None
 
     def cpu(self):
         if self.lib is None:
@@ -243,13 +244,31 @@ class MacSampler:
                 'external_power_connected': row.get('ExternalConnected') if type(row.get('ExternalConnected')) is bool else None,
                 'charging': row.get('IsCharging') if type(row.get('IsCharging')) is bool else None}
 
+    def _memory_sampler(self):
+        if self.native_memory is None:
+            from crowdsim.infrastructure.mac_performance_memory import NativeMemorySampler
+            self.native_memory = NativeMemorySampler()
+        return self.native_memory
+
+    def memory(self):
+        return self._memory_sampler().memory()
+
+    def process_io(self):
+        return self._memory_sampler().process_io(self.previous_processes)
+
     def sample(self):
         result = {}
-        for name in ('cpu', 'processes', 'gpu', 'thermal', 'battery'):
+        sensor_wall_ms = {}
+        for name in ('cpu', 'processes', 'memory', 'process_io', 'gpu', 'thermal', 'battery'):
+            started = time.monotonic()
             try:
                 result[name] = getattr(self, name)()
             except Exception as exc:
                 result[name] = {'status': 'unavailable', 'reason': type(exc).__name__}
+            sensor_wall_ms[name] = (time.monotonic() - started) * 1000
+        result['sensor_collection_wall_ms'] = sensor_wall_ms
+        result['frequency_and_power'] = {'status': 'unavailable',
+            'reason': 'Use the separate privileged collect_power_metrics.py helper for supported powermetrics fields'}
         result['chip_temperature'] = {
             'status': 'unavailable', 'cpu_celsius': None, 'gpu_celsius': None,
             'reason': 'No supported unprivileged chip temperature source configured; thermal pressure and battery temperature are not chip temperatures',
@@ -271,7 +290,7 @@ class SystemPerformanceMonitor:
 
     def metadata(self):
         return {'enabled': self.enabled, 'platform': platform.system(), 'interval_wall_seconds': self.interval,
-                'file': 'performance.system.jsonl', 'version': 1,
+                'file': 'performance.system.jsonl', 'version': 2,
                 'running': bool(self.thread and self.thread.is_alive()), 'error': self.error}
 
     def start(self):
@@ -286,16 +305,19 @@ class SystemPerformanceMonitor:
 
     def _record(self, final=False):
         started = time.monotonic()
+        cpu_started = time.thread_time()
+        wall_started = time.time()
         context = self.context()
         if self.sampler is None:
             data = {'status': 'unavailable', 'reason': 'Only macOS host sampling is implemented'}
         else:
             data = self.sampler.sample()
         terminal = context.get('runtime_state') in ('FINISHED', 'ERROR', 'CLOSED')
-        row = {'version': 1, 'run_id': self.run_id, 'wall_time_unix': time.time(),
-               'sample_started_wall_time_unix': time.time() - (time.monotonic() - started),
+        row = {'version': 2, 'run_id': self.run_id, 'wall_time_unix': time.time(),
+               'sample_started_wall_time_unix': wall_started,
                'interval_wall_seconds': self.interval, 'final': final or terminal, **context,
-               'host': data, 'collection_wall_ms': (time.monotonic() - started) * 1000}
+               'host': data, 'collection_wall_ms': (time.monotonic() - started) * 1000,
+               'collection_thread_cpu_ms': (time.thread_time() - cpu_started) * 1000}
         with (self.directory / 'performance.system.jsonl').open('a', encoding='utf-8') as handle:
             handle.write(json.dumps(row, ensure_ascii=True, allow_nan=False) + '\n')
         return terminal or self.sampler is None

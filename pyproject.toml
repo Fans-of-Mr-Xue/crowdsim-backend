@@ -15,14 +15,18 @@ dependencies = [
   "pymongo>=4.6,<5.0",
   "python-dotenv>=1.0,<2.0",
   "beautifulsoup4>=4.12,<5.0",
+  "PyYAML>=6.0,<7.0",
+  "psutil>=5.9,<8.0; sys_platform == 'win32'",
 ]
+
+[project.optional-dependencies]
+test = ["pytest>=8.0,<9.0", "mongomock>=4.3,<5"]
+prediction = ["jupedsim==1.4.2", "numpy>=2.2,<3", "shapely>=2,<3", "pyproj>=3.6,<4"]
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["arde_emergency*", "crowdsim*", "postanalysis_api*", "data_service*"]
 
-[project.optional-dependencies]
-prediction = ["jupedsim==1.4.2", "numpy>=2.2,<3", "shapely>=2,<3", "pyproj>=3.6,<4"]
 
 [tool.setuptools.package-data]
 arde_emergency = ["README.md", "examples/*.json"]

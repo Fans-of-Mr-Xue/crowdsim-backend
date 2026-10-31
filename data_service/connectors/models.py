@@ -64,7 +64,7 @@ class ModelGateway:
             raise ValueError('请选择已配置的模型')
         if not isinstance(payload, dict) or payload.get('stream') not in (None, False):
             raise ValueError('模型请求必须为 JSON 对象，当前仅支持非流式响应')
-        allowed = {'messages', 'stream', 'max_tokens', 'temperature', 'top_p', 'response_format', 'tools', 'tool_choice', 'chat_template_kwargs'}
+        allowed = {'messages', 'stream', 'max_tokens', 'temperature', 'top_p', 'response_format', 'tools', 'tool_choice', 'chat_template_kwargs', 'reasoning_budget_tokens'}
         if set(payload) - allowed:
             raise ValueError('模型请求包含不支持的参数')
         messages = payload.get('messages')

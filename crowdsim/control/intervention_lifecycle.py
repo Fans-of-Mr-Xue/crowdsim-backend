@@ -21,6 +21,11 @@ class InterventionLifecycle:
             "expiresAt": float(now) + duration if duration > 0 else None,
             "detail": deepcopy(detail),
         }
+        if action["actionType"] == "set_inflow_rate" and "endTimeSeconds" in action["parameters"]:
+            end = float(action["parameters"]["endTimeSeconds"])
+            if end <= now:
+                raise ValueError("限流时段已结束")
+            record["expiresAt"] = min(record["expiresAt"], end)
         if record["expiresAt"] is not None:
             self.active[action["actionId"]] = record
         return record

@@ -7,6 +7,7 @@ import copy
 
 import aiohttp
 
+from crowdsim.domain.llm_generation import generation_options
 from ..config import load_database_env
 
 
@@ -28,6 +29,8 @@ class JsonModelClient:
         self.max_output_tokens = self.extra.get("max_tokens", 3000)
         if type(self.max_output_tokens) is not int or self.max_output_tokens < 1:
             raise ValueError("模型 max_tokens 必须是正整数")
+        self.extra = generation_options(self.model, self.max_output_tokens, self.extra)
+        self.max_output_tokens = self.extra.pop("max_tokens")
         self.session = None
 
     async def open(self):
@@ -47,7 +50,9 @@ class JsonModelClient:
         client.base_url = provider['base_url']
         client.model = provider['model']
         client.api_key = provider['api_key']
-        client.extra = self.extra if identifier == 'Qwen3.8-Flash-Next' else {}
+        extra = self.extra if identifier == 'Qwen3.8-Flash-Next' else {}
+        client.extra = generation_options(client.model, client.max_output_tokens, extra)
+        client.max_output_tokens = client.extra.pop('max_tokens')
         return client
 
     async def extract(self, system, source, *, fast_json=False):

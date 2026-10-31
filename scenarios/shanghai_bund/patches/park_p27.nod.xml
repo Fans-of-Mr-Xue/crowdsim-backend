@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- J35/J36: northeast half-length short-base corners of the J34-J30
+     chord trapezoid. Height is fixed by the J34 leg being parallel to P26. -->
+<nodes>
+    <node id="huangpu_park_p27_se" x="18583.563" y="5786.044" type="dead_end"/>
+    <node id="huangpu_park_p27_ne" x="18573.765" y="5806.396" type="dead_end"/>
+</nodes>

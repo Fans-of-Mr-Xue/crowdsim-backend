@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- User-requested P21 parallel to P15; 2m bidirectional pedestrian footway.
+     Split P14 south/north and P20 north/south without moving their outer endpoints. -->
+<edges>
+    <edge id="906417852#10" from="8417005111" to="huangpu_park_p21_west" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18521.420,5813.130 18514.670,5835.540 18506.268,5867.557"/>
+    <edge id="906417852#10_p21_north" from="huangpu_park_p21_west" to="8417005110" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18506.268,5867.557 18497.930,5899.330 18504.650,5916.840"/>
+    <edge id="huangpu_park_j05_j15" from="1883306110" to="huangpu_park_p21_east" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18514.720,5912.440 18530.684,5878.872"/>
+    <edge id="huangpu_park_j05_j15_p21_south" from="huangpu_park_p21_east" to="8417005113" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18530.684,5878.872 18554.630,5828.520"/>
+    <edge id="huangpu_park_p21" from="huangpu_park_p21_west" to="huangpu_park_p21_east" priority="1" type="highway.footway" spreadType="center" numLanes="1" allow="pedestrian" speed="2.78" width="2.00" shape="18506.268,5867.557 18530.684,5878.872"/>
+</edges>

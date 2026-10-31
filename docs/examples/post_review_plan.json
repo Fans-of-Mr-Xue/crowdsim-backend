@@ -1,0 +1,31 @@
+{
+  "name": "事后对接示例方案（合成）",
+  "conversationId": "post-example-001",
+  "datasetId": null,
+  "datasetVersion": null,
+  "calibration": { "score": null, "threshold": 80, "confirmed": true, "scoreSource": "not_measured" },
+  "calibrationTargets": { "datasetId": null, "datasetVersion": null, "metricFields": ["density", "meanSpeed"], "timeWindow": "0—600 秒", "observationCount": 0 },
+  "plan": {
+    "id": "post-example-001-draft",
+    "conversationId": "post-example-001",
+    "label": "事后对接示例方案（合成）",
+    "userIntent": "在同一区域和 0—600 秒内，比较实际处置与提前导流的密度峰值，检验响应链对结果的影响。",
+    "factualBaseline": { "id": "F-00", "eventName": "合成接口示例", "source": "configured-baseline", "synthetic": true, "reconstructionConfirmed": true, "calibrationScore": null, "datasetId": null, "datasetVersion": null },
+    "reviewIntake": { "schemaVersion": 1, "baselineConfirmed": true, "goalConfirmed": true, "confirmedStages": { "observation": true, "intervention": true, "mechanism": true }, "goalMissingFields": [], "planConfirmedAt": "2026-10-22T00:00:00Z" },
+    "variableDefinitions": {
+      "factors": [{ "name": "关键决策启动时点", "symbol": "T_start", "range": "相对 F-00 提前 0—120 秒", "calculation": "实验启动时刻减去基线启动时刻" }],
+      "responses": [{ "name": "密度峰值", "symbol": "rho_peak", "range": "非负", "calculation": "固定观测区域和窗口内的密度最大值，单位人/m²" }]
+    },
+    "experimentSchemeDesign": {
+      "observation": [{ "id": "OBS-01", "name": "提前导流世界线", "hypothesis": "提前导流降低密度峰值", "factor": "关键决策启动时点", "change": "相对 F-00 提前 60 秒；其他条件固定", "method": "配对蒙特卡洛模拟" }],
+      "intervention": [{ "id": "INT-01", "name": "启动时点单因子", "hypothesis": "启动时点与风险变化存在非线性关系", "factor": "关键决策启动时点", "change": "相对 F-00 提前 0 / 60 / 120 秒，固定其他因素", "method": "一次一因子法（OFAT）" }],
+      "mechanism": [{ "id": "MEC-01", "name": "信息响应链隔离", "hypothesis": "提前导流通过人群响应影响瓶颈密度", "factor": "关键决策启动时点", "change": "对提前导流组比较保留与隔离信息响应链；需轨迹与规则适配后执行", "method": "机制消融实验" }]
+    },
+    "counterfactualSettings": { "repeatCount": 6 },
+    "arguments": { "region": "示例观测区域，待地图映射" },
+    "status": { "observedSecond": "0—600 秒", "isPending": true },
+    "analysisPath": [
+      { "id": "1", "name": "反事实实验运行" }, { "id": "2", "name": "观察分析" }, { "id": "3", "name": "干预分析" }, { "id": "4", "name": "机制分析" }, { "id": "5", "name": "复盘报告" }
+    ]
+  }
+}

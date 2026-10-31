@@ -10,6 +10,24 @@ from crowdsim.infrastructure.websocket_server import OverlayServer
 
 
 class WebsocketPacingTests(unittest.IsolatedAsyncioTestCase):
+    async def test_tick_write_failure_notifies_owner_without_building_final_frame(self):
+        frames = []
+        runtime = SimpleNamespace(state=RuntimeState.RUNNING, time_seconds=3.0,
+                                  run_id='disk-error-run', performance=PerformanceProbe('failure', enabled=False))
+        async def tick():
+            runtime.state = RuntimeState.ERROR
+            raise OSError(28, 'No space left on device')
+        async def send(payload):
+            frames.append(json.loads(payload))
+        runtime.tick_async = tick
+        server = OverlayServer(runtime, '127.0.0.1', 0)
+        server.client = SimpleNamespace(send=send)
+        await server._run_loop()
+        self.assertEqual(len(frames), 1)
+        self.assertEqual(frames[0]['type'], 'runtime_error')
+        self.assertEqual(frames[0]['run_id'], 'disk-error-run')
+        self.assertIn('No space left on device', frames[0]['message'])
+
     async def run_case(self, costs, *, speed=3, paused=False, change_speed=None, finish=False):
         clock = [0.0]
         sleeps, frames = [], []
@@ -47,8 +65,17 @@ class WebsocketPacingTests(unittest.IsolatedAsyncioTestCase):
             if step[0] >= len(costs):
                 server.client = None
 
+        async def wait_for_stop(awaitable, timeout):
+            # Model a pacing deadline without real wall time; the production
+            # wait is now interruptible by detach/pause instead of sleep only.
+            awaitable.close()
+            await sleep(timeout)
+            raise asyncio.TimeoutError
+
         with patch('crowdsim.infrastructure.websocket_server.time.perf_counter', side_effect=lambda: clock[0]), patch(
             'crowdsim.infrastructure.websocket_server.asyncio.sleep', side_effect=sleep
+        ), patch(
+            'crowdsim.infrastructure.websocket_server.asyncio.wait_for', side_effect=wait_for_stop
         ):
             await server._run_loop()
         return sleeps, frames, runtime.performance

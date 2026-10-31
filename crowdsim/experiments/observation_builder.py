@@ -98,6 +98,12 @@ class ObservationBuilder:
             "efficiency": max(0.0, min(1.0, arrived / total + 0.25 * min((finite(metrics.get("pedestrian_avg_speed"), 0.0) or 0.0) / 1.4, 1))),
             "congestion": finite(metrics.get("congestion"), 0.0),
         }
+        during = deepcopy(metrics.get("during"))
+        if during is not None:
+            # These values are computed from the full backend population at every tick.
+            global_metrics["completionRate"] = during["completion_rate"]
+            global_metrics["activePopulation"] = during["population"]["active"]
+            global_metrics["evacuatedPopulation"] = during["population"]["arrived"]
         global_metrics["riskIndex"] = self._risk({**metrics, **global_metrics})
         sim_time = finite(frame.get("step_seconds", frame.get("step")), 0.0) or 0.0
         previous = self._history[-1] if self._history else None
@@ -112,6 +118,7 @@ class ObservationBuilder:
             "simTimeSeconds": sim_time,
             "receivedAt": public_time(),
             "global": global_metrics,
+            "during": during,
             "regions": self._regions(metrics),
             "edges": self._edges(metrics),
             "hazards": list(frame.get("flood_points") or []) + list(frame.get("events") or []),
@@ -124,6 +131,7 @@ class ObservationBuilder:
                 "regions": "available" if metrics.get("hotspot_metrics") is not None else "unavailable",
                 "edges": "available" if metrics.get("edge_metrics") is not None else "unavailable",
                 "strategyStats": "unavailable",
+                "during": "available" if during is not None else "unavailable",
             },
         })
         self._history.append(deepcopy(observation))

@@ -16,6 +16,7 @@
         <pedestrian.model value="striping"/>
         <pedestrian.striping.stripe-width value="0.55"/>
         <pedestrian.striping.reserve-oncoming value="0.5"/>
+        <pedestrian.striping.reserve-oncoming.junctions value="0"/>
         <pedestrian.striping.jamtime value="3601"/>
         <pedestrian.striping.jamtime.crossing value="3601"/>
         <pedestrian.striping.jamtime.narrow value="3601"/>
