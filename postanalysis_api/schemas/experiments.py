@@ -108,7 +108,7 @@ def validate_experiment(payload: dict) -> dict:
                        "repeatCount": integer(group.get("repeatCount"), f"{field}.repeatCount", 1, 50),
                        "hypothesis": text_(group.get("hypothesis"), f"{field}.hypothesis", max_len=500),
                        "manipulatedFeatureId": choice(group.get("manipulatedFeatureId"), f"{field}.manipulatedFeatureId", feature_ids),
-                       "experimentType": choice(group.get("experimentType", "observation"), f"{field}.experimentType", {"observation", "intervention", "mechanism"}),
+                       "experimentType": choice(group.get("experimentType", "observation"), f"{field}.experimentType", {"observation", "intervention", "mechanism", "counterfactual"}),
                        "referenceGroupId": text_(group.get("referenceGroupId", "F-00"), f"{field}.referenceGroupId", max_len=32, pattern=r"F-00|CF-[0-9]{2}"),
                        "sourceGroupId": text_(group["sourceGroupId"], f"{field}.sourceGroupId", max_len=64, pattern=IDENTIFIER) if group.get("sourceGroupId") else None,
                        "interventions": actions})

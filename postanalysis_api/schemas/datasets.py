@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .common import array, choice, integer, object_, optional_number, text_, fail
+from .common import array, choice, integer, number, object_, optional_number, text_, fail
 
 
 def validate_dataset(payload: dict) -> dict:
@@ -16,7 +16,11 @@ def validate_dataset(payload: dict) -> dict:
     for index, raw in enumerate(observations):
         field = f"observations[{index}]"
         row = object_(raw, field, keys={"timeSeconds", "regionId", "population", "density", "meanSpeed", "pressureProxy", "sourceTime", "state"})
-        time = integer(row.get("timeSeconds"), f"{field}.timeSeconds", 0, 86400)
+        metadata = data.get("metadata")
+        binding = metadata.get("sourceBinding") if isinstance(metadata, dict) else None
+        # During runs can archive a fractional final step; retain its exact time.
+        precise_during_time = isinstance(binding, dict) and binding.get("sourcePhase") == "during"
+        time = (number if precise_during_time else integer)(row.get("timeSeconds"), f"{field}.timeSeconds", 0, 86400)
         region = text_(row.get("regionId"), f"{field}.regionId", max_len=64,
                        pattern=r"[A-Za-z0-9][A-Za-z0-9_-]*")
         key = (time, region)

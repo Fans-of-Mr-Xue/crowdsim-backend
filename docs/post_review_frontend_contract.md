@@ -2,7 +2,15 @@
 
 2026-10-30补充：当前可执行方法、指标与结果字段以[执行与分析共同契约](post_execution_analysis_contract.md)为准；SUMO和后端待实现项见[对接清单](post_sumo_handoff.md)。本文保留现有HTTP字段，不将设计充分性建议写成已实现的结构化校验。
 
-本次接口服务于既有“事后：复盘解释”流程。顺序是：接入数据、明确确认基线、规范化并确认目的、逐类设计和确认观察/干预/机制实验、确认完整方案、进入方案设计快照。后续仍为反事实运行、观察分析、干预分析、机制分析、复盘报告。
+当前流程为：上传数据（含事实基线核对确认）、明确用户目的、查看与修改人工社会、统一反事实方案设计。左侧“方案预览”打开只读快照。右侧只显示当前流程内容，取消总览及工作台内部导航；旧 `postchat/parameters` 总览跳转路由已删除。后续仍为反事实运行、观察分析、干预分析、机制分析、复盘报告；三段分析页面保持原布局。
+
+新方案使用 `reviewIntake.schemaVersion=2`，包含 `baselineConfirmed/goalConfirmed/societyConfirmed/designConfirmed/planConfirmedAt`。统一实验池保存在 `counterfactualDesign={schemaVersion:2,groups,unit,scope,controlledVariables,repeatCount,executionSettings}`；每组为 `id/name/hypothesis/method/factorSymbols/primaryMetricId/expectedDirection/decisionRule/execution`。方法为paired/ofat/ablation，参照可为F-00或本池其他组，不按三段分析分组。变量定义继续使用variableDefinitions。实际改变变量、完整参照、循环引用、主要指标、重复数与数值均受后端校验。
+
+人工社会原模型可在右侧查看，修改记录保存在 `artificialSociety={schemaVersion:1,baseModel,overrides:{agents,environment,rules}}`，作为各组共同条件进入持久化快照。当前执行器未接入任意文本模型改动；非空overrides可保存，但执行模板返回SOCIETY_MAPPING_REQUIRED，不能静默忽略。修改目标、变量、组、共同条件或社会配置后完整确认失效。
+
+新对话上下文设置 `designSchemaVersion=2`、`designStage=counterfactual`、`counterfactualDesign`、`variableDefinitions`、基线与目的确认状态、执行能力；答复仅包含assistant_message和可选完整groups、repeat_count。新执行组为experimentType=counterfactual。观察筛选全部组；干预筛选实际单变量或零差异对照；机制筛选有完整策略参照且实际隔离一个模块的消融组，同一组可复用。PC仅用独立F-00样本。分析接口保持原字段，页面无需改变。
+
+以下示例及分类型协议保留为**历史v1兼容协议**，新工作台不再使用逐类确认或三类分组。
 
 ## 可直接用于接口的示例
 
@@ -28,7 +36,9 @@ Idempotency-Key: example-dataset-001
 ## 三种基线来源
 
 1. 独立上传：界面支持 UTF-8 CSV、JSON、Markdown，必需字段为 `time/crowd/density/speed/pressure`；选择实测或合成性质。JSON 可包含 `name/location/sourceKind/rows`。前端解析校验后转为数据接口的 `observations`，原件以 Base64 `rawFile` 入库。`timeSeconds` 是相对时间；数值范围和重复时空记录由后端复核。
-2. 事中实验：事后读取当前用户已关联事中实验的报告，从 `valid=true && status=completed` 的轮次中明确选择一轮。保留 `conversationId/experimentId/runId/seed/reportVersion/requirementId/modelId/snapshotId` 及可用指纹；从 `series` 读取原始人数、全局密度与全局速度，未测指标保留为空。通过数据接口复制到本次事后工作区，记录新数据集 ID 和版本；不覆盖事中记录。
+2. 事中实验：当前工作台分页读取后端历史对话元数据，从事中对话各自的 `during-<conversationId>` 工作区读取分页实验目录；本地索引只补充来源，不再作为唯一目录。列表只显示含已完成轮次且携带原始观测绑定的实验；读取后仅允许选择 `valid===true && status=completed` 且具有原始时序的一轮。导入前重新读取报告与实验，核对六项需求/模型绑定、executionVersion、所选轮次restartCount、seed和实际series。版本变更、读取失败或对话切换时不向当前需求写入旧结果。
+
+   通过现有事后数据接口复制到 `post-<当前对话>`，不修改事中实验；metadata保存完整sourceBinding（含reportVersion、observationEvidenceVersion等）、原始sourceSeries、观测间隔、指标与缺失项。事中末帧允许小数秒：仅 `metadata.sourceBinding.sourcePhase=during` 的导入保留精确数值时间，普通上传仍遵守原整数秒约束；人数/速度为零原样保留，未测压力为null。聊天和方案只保存来源摘要与数据集引用，完整原始时序仍在事后数据集。保存后仍需用户确认事实基线，再沿原四步流程继续。没有原始时序或有效完成轮次的实验不会被当成可导入数据。
 3. 网络资料：`historical_event` 先在后端收集公开网页/PDF 正文，返回来源标题、URL、读取时间和内容校验和。自动搜索需配置搜索服务；用户直接提供的链接可独立读取。模型只整理实际读取的正文。网络资料可形成待确认的事件事实摘要；数值时间线仍须单独接入并校验。没有来源时不允许确认事实基线。
 
 数据检查通过后仍须用户明确确认基线。`baseline_review` 可以根据用户明确补充修正名称、地点、时窗显示标签、说明；不能改写原始数值、数据版本、来源性质或代用户确认。
@@ -38,7 +48,7 @@ Idempotency-Key: example-dataset-001
 | task | 后端加载的 skill | 输出与用途 |
 |---|---|---|
 | `intake`、`baseline_review`、`goal_review`、`historical_event` | `post_data_assessment` | 数据接入、基线核对、目标规范化、来源梳理 |
-| `design` | `post_causal_hypothesis`、`counterfactual_design` | 当前类型实验的建议及结构化变更 |
+| `design` | `post_causal_hypothesis`、`counterfactual_design` | v2统一实验池建议；旧v1仍兼容分类型结构 |
 | `parameter_defaults`、`parameter_intent` | `counterfactual_design` | 兼容原有参数问答 |
 | `pc_defaults` | `post_causal_hypothesis`、`counterfactual_design` | 已绑定执行能力的干预设计中建议PC特征，不运行PC |
 

@@ -49,6 +49,17 @@ class PostAnalysisApp:
                 "baselinePlanId": "F-00", "baselineSeedPolicy": "shared_prefix_per_group",
                 "metricCatalog": catalog(), "storage": "mongodb"}
 
+    def health(self) -> dict:
+        """Probe actual dependencies without exposing connection credentials."""
+        try:
+            self.repo.db.command("ping")
+            storage = {"ready": True, "kind": "mongodb"}
+        except PyMongoError:
+            storage = {"ready": False, "kind": "mongodb", "reason": "STORAGE_UNAVAILABLE"}
+        simulation = self.executor.capabilities()
+        return {"ready": storage["ready"] and simulation.get("ready", False),
+                "storage": storage, "simulation": simulation}
+
     @staticmethod
     def dataset_metadata(document: dict) -> dict:
         return {key: value for key, value in document.items() if key != "observations"}
@@ -192,14 +203,16 @@ class PostAnalysisApp:
             data["reviewPlanUpdatedAt"] = reviewed.get("updatedAt")
             if reviewed.get("datasetId") != dataset["id"] or reviewed.get("datasetVersion") != dataset["version"]:
                 raise ApiError("DATASET_VERSION_MISMATCH", "执行方案与已确认快照的数据集不一致", 409)
-            if "executionSettings" in reviewed["plan"]:
+            unified = reviewed["plan"].get("counterfactualDesign", {}).get("schemaVersion") == 2
+            if "executionSettings" in reviewed["plan"] or unified:
                 from .execution_template import execution_template
                 expected = validate_experiment(execution_template(dataset, reviewed["plan"]))
                 if any(data[key] != expected[key] for key in ("scenario", "seedStart", "parallelism", "metricIds", "pcFeatures", "groups")):
                     raise ApiError("EXECUTION_PLAN_MISMATCH", "执行参数与已确认工作台快照不一致，请返回需求界定修改并重新确认", 409)
-            source_groups = {item["id"]: kind for kind, items in reviewed["plan"]["experimentSchemeDesign"].items() for item in items}
+            designs = {"counterfactual": reviewed["plan"]["counterfactualDesign"]["groups"]} if unified else reviewed["plan"]["experimentSchemeDesign"]
+            source_groups = {item["id"]: kind for kind, items in designs.items() for item in items}
             from postanalysis_api.workers.memorial_scenario import METHODS
-            if any(item["method"] != METHODS[kind] for kind, items in reviewed["plan"]["experimentSchemeDesign"].items() for item in items):
+            if not unified and any(item["method"] != METHODS[kind] for kind, items in designs.items() for item in items):
                 raise ApiError("ANALYSIS_METHOD_UNSUPPORTED", "方案中包含当前纪念塔执行器未接入的方法，请返回设计页明确选择", 422)
             if any(source_groups.get(group.get("sourceGroupId")) != group["experimentType"] for group in data["groups"]):
                 raise ApiError("PLAN_EXECUTION_MISMATCH", "执行组必须逐一关联快照中相同类型的设计组", 422)
@@ -444,7 +457,8 @@ class PostAnalysisApp:
         if section not in result:
             raise ApiError("ANALYSIS_UNAVAILABLE", "该分析尚无可信计算结果", 409)
         return {"experimentId": experiment_id, "resultId": result["id"], "section": section,
-                "definitionVersion": result.get("definitionVersion"), "data": result[section]}
+                "definitionVersion": result.get("definitionVersion"), "data": result[section],
+                "diagnostics": result.get("diagnostics", result.get("limitations", []))}
 
     def model_connection(self) -> dict:
         model = os.environ.get("CROWDSIM_POST_LLM_MODEL") or os.environ.get("CROWDSIM_LLM_MODEL", "GLM-5.3-Flash")

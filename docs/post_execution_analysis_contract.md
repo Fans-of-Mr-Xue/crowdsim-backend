@@ -1,8 +1,20 @@
 # 事后 SUMO 执行与分析共同契约
 
-契约标识：`post-execution-analysis/1.0`。核对日期：2026-10-30。本标识用于指引文档，不是 HTTP 响应新增字段。适用于现有纪念塔执行器；其他场景必须另有实际能力声明。
+契约标识：`post-execution-analysis/2.0`。核对日期：2026-10-30。本标识用于指引文档，不是 HTTP 响应新增字段。当前采用统一实验池，并兼容历史v1分类型方案。适用于现有纪念塔执行器；其他场景必须另有实际能力声明。
 
 ## 1. 实现依据和调用边界
+
+### 当前需求界定与统一设计 v2
+
+需求界定按“上传数据（含基线核对）→明确用户目的→查看与修改人工社会→反事实方案设计”推进。当前工作台取消总览和内部导航，仅显示正在进行的流程。左侧“方案预览”是只读快照入口。
+
+新方案以 `reviewIntake.schemaVersion=2`、`counterfactualDesign.schemaVersion=2` 和统一 `groups` 数组保存；不要求观察、干预、机制三份设计或三次确认。每组保存 `id/name/hypothesis/method/factorSymbols/primaryMetricId/expectedDirection/decisionRule/execution`；method 为 `paired/ofat/ablation`，是实验方法而不是分析页面归属。记录实验单位、范围、共同控制条件、重复数和种子。参照可为F-00或本池其他完整策略组，禁止循环；实际改变的控制量须全部关联假设。旧版分类型字段及下文白名单只用于兼容历史v1快照。
+
+`design` 对话在 `context.designSchemaVersion=2` 时，仅返回 `assistant_message`、可选完整 `groups` 与 `repeat_count`；后端校验全部变量、参照、方法及数值一致性。人工社会修改保存到 `artificialSociety.overrides`，作为共同配置进入快照。当前SUMO尚未实现任意主体/环境/规则的文本改写，因此非空修改在执行模板阶段以 `SOCIETY_MAPPING_REQUIRED` 阻止运行，不能静默忽略。
+
+新执行组统一为 `experimentType=counterfactual`。分析器从全部组及实际控制变化筛选：观察比较全部组；干预取单变量或零差异配对；机制取已声明消融方法且实际只改变一个遵从/延迟模块、具有完整策略参照的组。一个组可被多段分析复用。PC仍仅使用独立F-00样本，不按实验组数量扩充样本。三段分析页面本轮不变。全局终点、模型有效性和真实事件链等能力限制继续适用。
+
+设计原则参考：[NIST：随机区组设计](https://www.itl.nist.gov/div898/handbook/pri/section3/pri332.htm)，在可控制的共同条件内比较因素水平；本系统共同种子用于仿真配对，不能冒充现实RCT。
 
 当前生产路径是 `services/application.py → services/execution_template.py → workers/sumo_batch.py → workers/measurement.py / workers/analysis.py / workers/causal.py`，路径均相对 `postanalysis_api/`。`services/metric_calculator.py`、`services/result_service.py` 和 `services/causal_analysis.py` 是另一套未接入该执行器的实现，不能用它们的字段或方向核验结果解释当前输出。
 

@@ -13,7 +13,13 @@ def execution_template(dataset, plan=None):
     duration = dataset.get("metadata", {}).get("durationSeconds")
     if duration != 19800:
         raise ApiError("EXECUTION_TEMPLATE_UNSUPPORTED", "默认模板对应纪念塔完整 19800 秒基线；其他时间窗需显式设计执行请求", 422)
-    source = plan["experimentSchemeDesign"] if plan else {
+    unified = bool(plan and plan.get("counterfactualDesign", {}).get("schemaVersion") == 2)
+    if unified:
+        from postanalysis_api.schemas.unified_design import validate_unified_execution
+        from postanalysis_api.schemas.review_intake import validate_review_intake
+        validate_review_intake(plan)
+        validate_unified_execution(plan)
+    source = {"counterfactual": plan["counterfactualDesign"]["groups"]} if unified else plan["experimentSchemeDesign"] if plan else {
         kind: [{"id": prefix + "-01", "name": label, "hypothesis": hypothesis}]
         for kind, prefix, label, hypothesis in (
             ("observation", "OBS", "提前开放与引导世界线", "提前开放 C 测试通道并引导可改变密度和风险暴露"),
@@ -23,9 +29,9 @@ def execution_template(dataset, plan=None):
     from postanalysis_api.schemas.execution import validate_execution_settings
     settings = validate_execution_settings(plan["executionSettings"]) if plan and "executionSettings" in plan else None
     groups = []
-    for kind in ("observation", "intervention", "mechanism"):
+    for kind in source:
         for design in source[kind]:
-            if plan and design.get("method") != METHODS[kind]:
+            if plan and not unified and design.get("method") != METHODS[kind]:
                 raise ApiError("ANALYSIS_METHOD_UNSUPPORTED", f"当前纪念塔执行器只支持 {METHODS[kind]}，不能静默替换已确认方法", 422)
             config = design.get("execution")
             if config:

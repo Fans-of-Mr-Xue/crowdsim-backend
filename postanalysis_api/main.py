@@ -26,6 +26,8 @@ MAX_REQUEST_BYTES = 16 * 1024 * 1024
 
 
 def _dispatch(request: Request) -> tuple[int, dict, bool]:
+    if request.method == "GET" and request.path == "/health":
+        return response(request.app.health())
     if request.method == "GET" and request.path == "/capabilities":
         return response(request.app.capabilities())
     for route in ROUTES:

@@ -12,7 +12,7 @@ modes: [plan]
 
 1. 用 `/experiments/{id}`、`/events`、`/runs` 核对真实状态和次数。结果接口仅在 completed/partial 且有resultId时可读；当前执行器失败/取消会停止，不封存部分分析，重启只标记interrupted。保留已完成运行的证据，不声称支持自动补跑或分析恢复。
 2. 对齐dataset版本、reviewPlanVersion、experimentId、planId、sourceGroupId、referenceGroupId、seed、runId、resultId。所有读取沿用owner/workspace。轨迹通过 `/runs/{id}/trajectory` 分页，实际事件和校准明细通过运行详情读取。
-3. 观察读取metrics.distributions的n/mean/std和观察组效应；干预读取对应组与实际参照的同种子差；机制读取相对完整观察组的消融效应。effect字段为pairCount/seeds/estimate/ci95，差值为候选减参照。不要把单组n当配对数，或补出旧字段validPairs/plannedPairs/missingReason。
+3. v2三段分析从同一实验池筛选：观察读取全部组的分布和配对差异，干预读取实际单因素/零差异对照，机制读取具有完整策略参照的单模块消融；同一组可复用，不能按编号前缀限制读取。v1分类型结果继续兼容。effect字段为pairCount/seeds/estimate/ci95，差值为候选减参照；不要把单组n当配对数，或补出旧字段validPairs/plannedPairs/missingReason。
 4. 至少2对才给2000次配对Bootstrap区间，不足20对为descriptive_only；估计为空结合运行状态和删失信息解释。computed仅表示计算，不表示假设成立。指标单位、指标版本与分析版本分别保留。
 5. 当前七项主要指标是全程全局汇总，主动停留计入速度和拥堵；全部到达时间从20:00计，未完成为null。压力是密度乘速度向量方差代理。PC特征窗口不自动成为主要终点窗口；其速度帧均值与全程人员—时间加权速度不同。
 6. PC候选图位于causal-graph及intervention.causalGraph；独立F-00样本不足、常量、奇异检验状态照实呈现。当前没有interventionSupportedDirections。模块消融可分析，消息/遵从/实际改道链缺失时保留“作用路径未验证”，不把整个机制section误称为不可用。

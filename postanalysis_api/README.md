@@ -1,5 +1,7 @@
 # 事后阶段本地任务 API：v1 契约与联调说明
 
+完整可编辑预设、一键真实运行入口、因果协议及恢复实机验收方法见[事后完整案例工作流](../docs/post_live_case_workflow.md)。
+
 当前执行与分析字段以[事后共同契约](../docs/post_execution_analysis_contract.md)为准；该文件按真实workers执行路径核对，并由事后设计对话加载。待扩展的SUMO/TraCI、测量和后端工作见[对接清单](../docs/post_sumo_handoff.md)，不能视为已经接入。
 
 本目录提供挂载在 SUMO 8765 服务内的 HTTP 接口、字段校验、MongoDB 持久化及真实结果计算。现已接入 `workers/sumo_batch.py`，使用独立SUMO进程执行纪念塔 `memorial-post-test` 的F-00/CF批次，保留现有事中运行时。A→M1、B→M2、C→M3为已确认工程测试映射，M3不是真实北侧通道；其他场景仍须声明能力后才能执行。源数据未观测指标保持null，实际指标来自FCD/tripinfo，未校准误差单独展示。

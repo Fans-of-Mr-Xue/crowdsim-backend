@@ -1,8 +1,8 @@
 """Run real SUMO -> Mongo -> analysis checks in an isolated workspace.
 
-Smoke uses a small synthetic fixture; memorial uses the complete source window
-with the engineering test model. Records are retained in Mongo and the report
-contains their IDs. Neither profile establishes historical causal conclusions.
+Smoke uses a small synthetic fixture; memorial uses the complete source window;
+live-case also stores the exact editable frontend preset before executing it.
+Records remain in Mongo. These profiles do not establish historical causality.
 """
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from pathlib import Path
 import sys
 import time
 from uuid import uuid4
+from bson import ObjectId
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -24,18 +25,23 @@ from postanalysis_api.services.application import PostAnalysisApp
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--duration", type=int, default=600)
-    parser.add_argument("--profile", choices=("smoke", "memorial"), default="smoke")
+    parser.add_argument("--profile", choices=("smoke", "memorial", "live-case"), default="smoke")
     parser.add_argument("--repeats", type=int, default=1)
     parser.add_argument("--timeout-seconds", type=int, default=None,
                         help="Overall deadline; full-window checks default to 15 minutes per planned run")
     args = parser.parse_args()
+    if not 1 <= args.repeats <= 50:
+        parser.error("--repeats must be between 1 and 50")
     if args.timeout_seconds is not None and args.timeout_seconds <= 0:
         parser.error("--timeout-seconds must be positive")
     load_database_env()
     user, workspace = "crowdsim-local-user", "post-acceptance-" + uuid4().hex[:12]
     app = PostAnalysisApp(ROOT / "runs/postanalysis", reconcile=False)
     try:
-        capability = app.capabilities()["simulation"]
+        health = app.health()
+        if not health["storage"]["ready"]:
+            raise RuntimeError("MongoDB not ready; check the configured database and SSH tunnel")
+        capability = health["simulation"]
         if not capability["ready"]:
             raise RuntimeError("SUMO not ready")
         # Small independent fixture: explicit arrivals and releases exercise routing.
@@ -66,21 +72,40 @@ def main():
                                 "windowStartSeconds": 0, "windowEndSeconds": args.duration // 2, "aggregation": "peak"},
                                {"id": "late_speed", "metricId": "mean_speed", "regionId": "global",
                                 "windowStartSeconds": args.duration // 2, "windowEndSeconds": args.duration, "aggregation": "mean"}]}
-        if args.profile == "memorial":
+        if args.profile in {"memorial", "live-case"}:
             from postanalysis_api.services.execution_template import execution_template
             source_path = ROOT / "docs/examples/shanghai_memorial_post_dataset.json"
             payload = json.loads(source_path.read_text(encoding="utf-8"))
             payload["rawFile"] = {"name": source_path.name, "contentType": "application/json",
                                   "data": base64.b64encode(source_path.read_bytes()).decode("ascii")}
             dataset = app.create_dataset(user, workspace, payload)
-            body = execution_template(dataset)
+            original = dataset.get("originalFile") or {}
+            if not original.get("fileId"):
+                raise RuntimeError("Original upload was not stored in GridFS")
+            with app.repo.files.open_download_stream(ObjectId(original["fileId"])) as stream:
+                if stream.read() != source_path.read_bytes():
+                    raise RuntimeError("GridFS original upload differs from input bytes")
+            plan = None
+            if args.profile == "live-case":
+                plan = json.loads((ROOT / "docs/examples/shanghai_memorial_post_plan.json").read_text(encoding="utf-8"))
+                plan["conversationId"] = workspace
+                plan["factualBaseline"].update(datasetId=dataset["id"], datasetVersion=dataset["version"])
+                plan["counterfactualSettings"]["repeatCount"] = args.repeats
+                plan["counterfactualDesign"]["repeatCount"] = args.repeats
+                receipt = app.create_review_plan(user, workspace, {
+                    "name": plan["label"], "conversationId": workspace, "datasetId": dataset["id"], "datasetVersion": dataset["version"],
+                    "plan": plan, "calibration": {"score": None, "threshold": 80, "confirmed": True, "scoreSource": "not_measured"},
+                    "calibrationTargets": {"datasetId": dataset["id"], "datasetVersion": dataset["version"]}})
+            body = execution_template(dataset, plan)
+            if plan:
+                body["reviewPlanId"] = receipt["id"]
             for group in body["groups"]:
                 group["repeatCount"] = args.repeats
             body["name"] = f"纪念塔完整时窗工程验收（每组{args.repeats}次）"
         task = app.create_experiment(user, workspace, body)
         app.start("experiments", task["id"], user, workspace)
         planned_runs = max(group["repeatCount"] for group in body["groups"]) + sum(group["repeatCount"] for group in body["groups"])
-        timeout_seconds = args.timeout_seconds or (900 * planned_runs if args.profile == "memorial" else 180)
+        timeout_seconds = args.timeout_seconds or (900 * planned_runs if args.profile != "smoke" else 180)
         deadline = time.monotonic() + timeout_seconds
         last_progress = None
         while True:
@@ -100,6 +125,10 @@ def main():
         sections = {section: app.result(task["id"], user, workspace, section)["data"]
                     for section in ("observation", "intervention", "mechanism", "causalGraph")}
         runs = [run for run in app.repo.list("runs", user, workspace, limit=1000) if run["experimentId"] == task["id"]]
+        if len(runs) != planned_runs or any(run["status"] != "completed" for run in runs):
+            raise RuntimeError("Completed run set differs from the planned execution matrix")
+        if args.profile == "live-case" and any(not sections[key].get("experiments") for key in ("observation", "intervention", "mechanism")):
+            raise RuntimeError("The live preset did not produce all three analysis sections")
         task["archive"] = app.repo.archive_entry(task["id"], user, workspace)
         for run in runs:
             run["archive"] = app.repo.archive_entry(run["id"], user, workspace)

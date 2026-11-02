@@ -1,0 +1,300 @@
+{
+  "id": "postchat-post-case-validation",
+  "conversationId": "post-case-validation",
+  "createdAt": 1,
+  "label": "纪念塔完整因果复盘案例",
+  "userIntent": "在20:00至次日01:30的纪念塔测试场景中，以同一源流量和随机种子比较提前开放与引导C测试通道的风险暴露、密度峰值和全部到达时间；逐水平检验启动时点，并消融引导遵从模块，为处置时机选择提供仿真证据。",
+  "factualBaseline": {
+    "name": "上海纪念塔事后完整测试基线（原始合成数据规范化）",
+    "synthetic": true,
+    "window": "20:00—次日01:30（19800秒）",
+    "reconstructionConfirmed": true,
+    "datasetId": "DATASET_ID",
+    "datasetVersion": "DATASET_VERSION"
+  },
+  "caseSource": {
+    "id": "memorial-post-review-v3",
+    "synthetic": true,
+    "execution": "sumo"
+  },
+  "reviewIntake": {
+    "schemaVersion": 2,
+    "baselineConfirmed": true,
+    "goalConfirmed": true,
+    "societyConfirmed": true,
+    "designConfirmed": true,
+    "planConfirmedAt": 1
+  },
+  "counterfactualDesign": {
+    "schemaVersion": 2,
+    "groups": [
+      {
+        "id": "OBS-01",
+        "name": "提前开放与引导世界线",
+        "hypothesis": "完整提前开放与引导策略可能改变密度和风险暴露，需与F-00配对验证。",
+        "method": "paired",
+        "factorSymbols": [
+          "T_start",
+          "Compliance",
+          "Delay"
+        ],
+        "primaryMetricId": "risk_exposure",
+        "expectedDirection": "decrease",
+        "decisionRule": "预登记主要终点为风险暴露人时；报告实验组减参照组的配对均值和95% Bootstrap区间。至少20对才作方向判定；其他指标为次要终点，零差异组用于实现一致性检查。",
+        "execution": {
+          "startSeconds": 13800,
+          "compliance": 0.7,
+          "delaySeconds": 0,
+          "referenceDesignId": "F-00"
+        }
+      },
+      {
+        "id": "INT-01",
+        "name": "启动时点水平13800秒",
+        "hypothesis": "固定其他控制时，不同启动时点可能产生不同的风险暴露。",
+        "method": "ofat",
+        "factorSymbols": [
+          "T_start"
+        ],
+        "primaryMetricId": "risk_exposure",
+        "expectedDirection": "two_sided",
+        "decisionRule": "预登记主要终点为风险暴露人时；报告实验组减参照组的配对均值和95% Bootstrap区间。至少20对才作方向判定；其他指标为次要终点，零差异组用于实现一致性检查。",
+        "execution": {
+          "startSeconds": 13800,
+          "compliance": 0.7,
+          "delaySeconds": 0,
+          "referenceDesignId": "OBS-01"
+        }
+      },
+      {
+        "id": "INT-02",
+        "name": "启动时点水平14100秒",
+        "hypothesis": "固定其他控制时，不同启动时点可能产生不同的风险暴露。",
+        "method": "ofat",
+        "factorSymbols": [
+          "T_start"
+        ],
+        "primaryMetricId": "risk_exposure",
+        "expectedDirection": "increase",
+        "decisionRule": "预登记主要终点为风险暴露人时；报告实验组减参照组的配对均值和95% Bootstrap区间。至少20对才作方向判定；其他指标为次要终点，零差异组用于实现一致性检查。",
+        "execution": {
+          "startSeconds": 14100,
+          "compliance": 0.7,
+          "delaySeconds": 0,
+          "referenceDesignId": "OBS-01"
+        }
+      },
+      {
+        "id": "INT-03",
+        "name": "启动时点水平14400秒",
+        "hypothesis": "固定其他控制时，不同启动时点可能产生不同的风险暴露。",
+        "method": "ofat",
+        "factorSymbols": [
+          "T_start"
+        ],
+        "primaryMetricId": "risk_exposure",
+        "expectedDirection": "increase",
+        "decisionRule": "预登记主要终点为风险暴露人时；报告实验组减参照组的配对均值和95% Bootstrap区间。至少20对才作方向判定；其他指标为次要终点，零差异组用于实现一致性检查。",
+        "execution": {
+          "startSeconds": 14400,
+          "compliance": 0.7,
+          "delaySeconds": 0,
+          "referenceDesignId": "OBS-01"
+        }
+      },
+      {
+        "id": "MEC-01",
+        "name": "引导遵从模块消融",
+        "hypothesis": "取消引导遵从模块后，完整观察组的风险差异可能减弱，须由配对消融检验。",
+        "method": "ablation",
+        "factorSymbols": [
+          "Compliance"
+        ],
+        "primaryMetricId": "risk_exposure",
+        "expectedDirection": "increase",
+        "decisionRule": "预登记主要终点为风险暴露人时；报告实验组减参照组的配对均值和95% Bootstrap区间。至少20对才作方向判定；其他指标为次要终点，零差异组用于实现一致性检查。",
+        "execution": {
+          "startSeconds": 13800,
+          "compliance": 0,
+          "delaySeconds": 0,
+          "referenceDesignId": "OBS-01"
+        }
+      }
+    ],
+    "controlledVariables": "源流量、路网、模型版本、人工社会配置、初始化条件和配对随机种子保持一致。",
+    "unit": "一次独立仿真运行；同一种子跨组配对",
+    "scope": "20:00—次日01:30（19800秒）",
+    "repeatCount": 3,
+    "executionSettings": {
+      "seedStart": 20261023,
+      "parallelism": 1,
+      "metricIds": [
+        "peak_density",
+        "mean_speed",
+        "peak_pressure_proxy",
+        "risk_exposed_unique",
+        "risk_exposure",
+        "congestion_duration",
+        "evacuation_time"
+      ],
+      "pcFeatures": [
+        {
+          "id": "early_density",
+          "metricId": "peak_density",
+          "regionId": "global",
+          "windowStartSeconds": 12000,
+          "windowEndSeconds": 13800,
+          "aggregation": "peak"
+        },
+        {
+          "id": "late_density",
+          "metricId": "peak_density",
+          "regionId": "global",
+          "windowStartSeconds": 13800,
+          "windowEndSeconds": 16200,
+          "aggregation": "peak"
+        },
+        {
+          "id": "late_speed",
+          "metricId": "mean_speed",
+          "regionId": "global",
+          "windowStartSeconds": 16200,
+          "windowEndSeconds": 19800,
+          "aggregation": "mean"
+        }
+      ]
+    }
+  },
+  "variableDefinitions": {
+    "factors": [
+      {
+        "name": "处置启动时点",
+        "symbol": "T_start",
+        "range": "1—19799 秒（20:00 起）",
+        "calculation": "同步调整 C 测试通道开放与引导启动时刻，其他条件保持不变。"
+      },
+      {
+        "name": "引导遵从比例",
+        "symbol": "Compliance",
+        "range": "0—1",
+        "calculation": "按共同随机数确定遵从引导、改走 C 测试通道的人群比例。"
+      },
+      {
+        "name": "响应延迟",
+        "symbol": "Delay",
+        "range": "0—19800 秒",
+        "calculation": "从引导启动到引导生效的等待秒数。"
+      }
+    ],
+    "responses": [
+      {
+        "id": "peak_density",
+        "name": "峰值密度",
+        "symbol": "rho_peak",
+        "unit": "人/m²",
+        "calculation": "5 米网格人数除以可行走有效面积，取全时窗峰值。",
+        "range": "人/m²"
+      },
+      {
+        "id": "mean_speed",
+        "name": "平均移动速度",
+        "symbol": "v_mean",
+        "unit": "m/s",
+        "calculation": "按人员与时间加权的速度均值，包含静止人员。",
+        "range": "m/s"
+      },
+      {
+        "id": "peak_pressure_proxy",
+        "name": "压力代理峰值",
+        "symbol": "pressure_proxy",
+        "unit": "人/m²·(m/s)²",
+        "calculation": "密度乘以网格速度向量方差；不是机械接触力。",
+        "range": "人/m²·(m/s)²"
+      },
+      {
+        "id": "risk_exposed_unique",
+        "name": "风险暴露人数",
+        "symbol": "risk_people",
+        "unit": "人",
+        "calculation": "密度不低于3.5人/m²的网格内，按人员ID去重计数。",
+        "range": "人"
+      },
+      {
+        "id": "risk_exposure",
+        "name": "风险暴露人时",
+        "symbol": "risk_time",
+        "unit": "人·秒",
+        "calculation": "累积高风险网格内的人数乘以采样时长。",
+        "range": "人·秒"
+      },
+      {
+        "id": "congestion_duration",
+        "name": "拥堵网格累计时长",
+        "symbol": "congestion",
+        "unit": "cell·s",
+        "calculation": "密度不低于3.5且速度不高于0.5，连续至少10秒的网格时长总和。",
+        "range": "cell·s"
+      },
+      {
+        "id": "evacuation_time",
+        "name": "全部到达时间",
+        "symbol": "evacuation",
+        "unit": "秒或null",
+        "calculation": "所有计划人员均实际到达时给出时间，否则保留null和右删失状态。",
+        "range": "秒或null"
+      }
+    ]
+  },
+  "counterfactualSettings": {
+    "repeatCount": 3,
+    "runCount": 5
+  },
+  "executionSettings": {
+    "seedStart": 20261023,
+    "parallelism": 1,
+    "metricIds": [
+      "peak_density",
+      "mean_speed",
+      "peak_pressure_proxy",
+      "risk_exposed_unique",
+      "risk_exposure",
+      "congestion_duration",
+      "evacuation_time"
+    ],
+    "pcFeatures": [
+      {
+        "id": "early_density",
+        "metricId": "peak_density",
+        "regionId": "global",
+        "windowStartSeconds": 12000,
+        "windowEndSeconds": 13800,
+        "aggregation": "peak"
+      },
+      {
+        "id": "late_density",
+        "metricId": "peak_density",
+        "regionId": "global",
+        "windowStartSeconds": 13800,
+        "windowEndSeconds": 16200,
+        "aggregation": "peak"
+      },
+      {
+        "id": "late_speed",
+        "metricId": "mean_speed",
+        "regionId": "global",
+        "windowStartSeconds": 16200,
+        "windowEndSeconds": 19800,
+        "aggregation": "mean"
+      }
+    ]
+  },
+  "artificialSociety": {
+    "schemaVersion": 1,
+    "baseModel": "memorial-post-striping",
+    "overrides": {
+      "agents": "",
+      "environment": "",
+      "rules": ""
+    }
+  }
+}
