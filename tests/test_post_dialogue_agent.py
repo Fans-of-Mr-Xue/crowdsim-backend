@@ -31,7 +31,7 @@ class PostDialogueAgentTests(unittest.TestCase):
                 self.assertEqual(expected, _execution_contract(task))
         with patch("dialogue_service.post_agent.EXECUTION_ANALYSIS_CONTRACT") as source:
             self.assertEqual("", _execution_contract("historical_event"))
-            self.assertEqual("", _execution_contract("intake"))
+            self.assertEqual("", _execution_contract("baseline_review"))
             source.read_text.assert_not_called()
 
     def test_missing_or_empty_execution_contract_is_not_silently_ignored(self):
@@ -212,8 +212,51 @@ class PostDialogueAgentTests(unittest.TestCase):
 
     @unittest.skipUnless(importlib.util.find_spec("yaml"), "PyYAML is required for actual agent/skill loading")
     def test_data_assessment_skill_applies_to_goal_confirmation(self):
-        result = respond(request_payload("goal_review"), complete=lambda *args: {"assistant_message": "请确认分析目的。"})
+        result = respond(request_payload("goal_review"), complete=lambda *args: {"assistant_message": "请说明分析目的。", "action": "clarify"})
         self.assertEqual(["post_data_assessment"], result["skills"])
+
+    def test_goal_questions_cannot_supply_a_replacement_goal(self):
+        answer = {"assistant_message": "**拥堵累计时长**用网格·秒表示；**疏散完成时刻**从20:00计时。", "action": "answer"}
+        self.assertEqual(answer, validate_reply("goal_review", deepcopy(answer), {}))
+        for extra in ({"proposed_goal": "用户的解释问题"}, {"missing_fields": ["用途"]}):
+            with self.subTest(extra=extra), self.assertRaises(ValueError):
+                validate_reply("goal_review", {**answer, **extra}, {})
+        with self.assertRaisesRegex(ValueError, "有效意图"):
+            validate_reply("goal_review", {"assistant_message": "我理解目的是：解释一下指标"}, {})
+
+    def test_goal_proposals_require_goal_and_missing_fields(self):
+        proposal = {"assistant_message": "已保留原范围，改为比较通道开放时点。", "action": "propose_goal",
+                    "proposed_goal": "比较提前开放通道是否降低拥堵累计时长", "missing_fields": []}
+        self.assertEqual(proposal, validate_reply("goal_review", deepcopy(proposal), {}))
+        for key in ("proposed_goal", "missing_fields"):
+            invalid = {k: v for k, v in proposal.items() if k != key}
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                validate_reply("goal_review", invalid, {})
+
+    def test_goal_confirmation_requires_a_reviewed_complete_pending_goal(self):
+        reply = {"assistant_message": "已收到确认。", "action": "confirm_goal"}
+        brief = {"goalReviewVersion": 2, "goalProposal": "比较通道开放时点的效果", "goalMissingFields": [], "goalConfirmed": False}
+        self.assertEqual(reply, validate_reply("goal_review", deepcopy(reply), {"brief": brief}))
+        for patch_value in ({"goalReviewVersion": 1}, {"goalProposal": ""}, {"goalMissingFields": ["比较口径"]},
+                            {"goalMissingFields": None}, {"goalConfirmed": True}):
+            with self.subTest(patch_value=patch_value), self.assertRaises(ValueError):
+                validate_reply("goal_review", deepcopy(reply), {"brief": {**brief, **patch_value}})
+
+    @unittest.skipUnless(importlib.util.find_spec("yaml"), "PyYAML is required for actual agent/skill loading")
+    def test_goal_review_uses_history_and_real_metric_definitions_for_explanations(self):
+        payload = request_payload("goal_review")
+        payload["messages"] = [{"role": "user", "content": "比较提前开放通道能否缓解拥堵"},
+                               {"role": "assistant", "content": "关注拥堵累计时长和疏散完成时间。"},
+                               {"role": "user", "content": "不是，我是想让你解释这两个指标的含义"}]
+        seen = []
+        def complete(messages, *args):
+            seen.extend(messages)
+            return {"action": "answer", "assistant_message": "两者分别统计网格累计拥堵时长和最后到达秒数。"}
+        self.assertEqual("answer", respond(payload, complete=complete)["reply"]["action"])
+        self.assertEqual(payload["messages"], seen[-3:])
+        self.assertIn("cell*s", seen[0]["content"])
+        self.assertIn("20:00", seen[0]["content"])
+        self.assertIn("直接回答问题，保留当前目的和阶段", seen[0]["content"])
 
     def test_http_route_returns_validated_reply_and_rejects_invalid_reply(self):
         # The chat endpoint does not need or write conversation repositories.
