@@ -36,10 +36,10 @@ CONTRACTS = {
     "baseline_review": '输出 {"assistant_message":"核对结果及缺口","baseline_updates":{}}。baseline_updates 只允许 name、location、window、description 字符串；只采纳用户明确给出的元数据修正，不猜测。不能改变原始时序、数据版本、来源性质或代用户确认。window 是显示标签，不能转换原始时间口径。',
     "goal_review": '''先结合最近对话和context.brief判断用户本轮意图，不因为当前处于目的澄清阶段就把每句话当成实验目的。输出JSON对象，必须包含assistant_message和action。action只能是answer、propose_goal、confirm_goal、clarify：
 answer：用户询问指标含义、比较口径、流程、原因，或纠正“我是问你解释”。直接回答问题，保留当前目的和阶段，禁止返回proposed_goal或missing_fields。例如“congestion_duration和evacuation_time分别是什么意思、什么倾向？”是在提问；解释这两个指标的定义、单位、计时起点与适用范围，不把问题复述成目标。
-propose_goal：用户实际提出或补充研究目标。必须返回proposed_goal（简洁的待确认目的）和missing_fields（尚未明确且会改变结论的关键缺项）。结合原目的只修改用户明确变更的内容；可继承已确认基线的对象、范围，不让用户重复提供已有信息。用中文指标名；英文ID仅在解释术语或消除歧义时括注。用户问“提前开放通道能否降低风险”也可能是在陈述研究问题，应根据语义和上下文判断，不能按问号或单个关键词分流。混合消息先回答问题；只有同时明确变更目标时才返回propose_goal。
+propose_goal：用户实际提出或补充研究目标。必须返回proposed_goal（简洁的待确认目的）和missing_fields（本阶段无法理解研究问题的关键缺项）。本阶段先明确用户要解决什么问题和用途，变量、技术指标、对照方案、阈值与重复次数在后续实验设计中确定，不能作为目的确认的必填门槛。结合已确认基线，用户说“总结可复用经验，避免以后大型人群活动出现踩踏”已经是有效研究目的，应提出待确认目标且missing_fields为[]；不要再次强迫用户挑选工程指标或比较措施。只有不知道在研究什么对象或问题时，才补问最关键的一项。结合原目的只修改用户明确变更的内容；可继承已确认基线的对象、范围，不让用户重复提供已有信息。用中文指标名；英文ID仅在解释术语或消除歧义时括注。用户问“提前开放通道能否降低风险”也可能是在陈述研究问题，应根据语义和上下文判断，不能按问号或单个关键词分流。混合消息先回答问题；只有同时明确变更目标时才返回propose_goal。
 confirm_goal：用户清楚同意当前待确认目的，且brief.goalReviewVersion为2、goalProposal非空、goalMissingFields为空、goalConfirmed不为true；不返回proposed_goal。否则clarify，请用户先说明或补全目的。不要把引用确认短语、否定确认或询问确认流程当成同意。
 clarify：意图或关键指代不清，直接问最关键的1—2个问题，不猜测、不保存原话为目的。
-assistant_message使用可读的Markdown字符串：先直接回答或说明本次变化，再用2—4个短要点展开；一般不超过350个中文字。用户明确要求详细解释时再展开。提问答复不附加确认催促。propose_goal的assistant_message不要再全文复述proposed_goal，页面会单独展示。没有缺项时用一句话提示可确认，有缺项时聚焦缺项。不得重复整套流程、列举无关指标、数据集ID或倾倒工程配置；仅在影响当前回答时说明数据限制。不能替用户确认或执行实验。''',
+assistant_message使用可读的Markdown字符串：先直接回答或说明本次变化，再用2—4个短要点展开；一般不超过350个中文字。用户明确要求详细解释时再展开。提问答复不附加确认催促。propose_goal的assistant_message只说明已理解的方向与本轮变化，不复述proposed_goal或逐项列出missing_fields，页面会单独展示它们。没有缺项时用一句话提示可确认。不得重复整套流程、列举无关指标、数据集ID或倾倒工程配置；仅在影响当前回答时说明数据限制。不能替用户确认或执行实验。''',
     "parameter_defaults": '输出 {"assistant_message":"建议及缺口","parameters":{}}。parameters 只能包含 name、region、controlStrategy、observedSecond、observeArea、selectedRegion 字符串。未提供的值不填，不生成预估观测结果。',
     "parameter_intent": '输出 {"assistant_message":"说明","action":"modify|complete|need_modify|no_modify|unknown","updates":[{"key":"允许修改的参数","value":"明确的新值"}],"resetKeys":[],"note":"说明"}。updates/resetKeys 只允许 name、region、controlStrategy、observedSecond、observeArea、selectedRegion。没有明确新值时补问。',
     "historical_event": '只据后端 collectedEvidence 整理公开事件事实；无资料时请用户提供可读取的来源。输出 {"assistant_message":"资料摘要或缺口","name":"事件名或未核实","date":"有据日期或未核实","region":"有据地点或未核实","window":"有据时段或未核实","initialCrowd":"有据规模或未核实","summary":"有据事实与缺口","rows":[],"sources":[{"title":"实际读取的标题","url":"实际读取的URL"}]}。不能凭模型记忆补充史实，数值时间线另行接收和校验。',
@@ -374,6 +374,8 @@ def respond(payload, *, complete=None):
     validated = validate_reply(task, reply, context)
     result = {"reply": validated, "agent": agent.name, "skills": list(TASK_SKILLS[task]),
               "mode": agent.mode, "phase": "post", "toolsExecuted": bool(research and research["sources"])}
+    if task == "goal_review":
+        result["goalReviewProtocolVersion"] = 2
     if research is not None:
         result["research"] = {**research, "sources": [{key: value for key, value in item.items() if key != "excerpt"} for item in research["sources"]]}
     return result

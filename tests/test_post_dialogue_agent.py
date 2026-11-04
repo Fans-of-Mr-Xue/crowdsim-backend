@@ -214,6 +214,7 @@ class PostDialogueAgentTests(unittest.TestCase):
     def test_data_assessment_skill_applies_to_goal_confirmation(self):
         result = respond(request_payload("goal_review"), complete=lambda *args: {"assistant_message": "请说明分析目的。", "action": "clarify"})
         self.assertEqual(["post_data_assessment"], result["skills"])
+        self.assertEqual(2, result["goalReviewProtocolVersion"])
 
     def test_goal_questions_cannot_supply_a_replacement_goal(self):
         answer = {"assistant_message": "**拥堵累计时长**用网格·秒表示；**疏散完成时刻**从20:00计时。", "action": "answer"}
@@ -232,6 +233,14 @@ class PostDialogueAgentTests(unittest.TestCase):
             invalid = {k: v for k, v in proposal.items() if k != key}
             with self.subTest(key=key), self.assertRaises(ValueError):
                 validate_reply("goal_review", invalid, {})
+
+    def test_reusable_experience_goal_can_be_reviewed_before_technical_design(self):
+        reply = {"action": "propose_goal", "assistant_message": "已理解为提炼可复用的人群风险防控经验。",
+                 "proposed_goal": "基于已确认基线总结可复用经验，为未来大型人群活动预防踩踏提供参考", "missing_fields": []}
+        self.assertEqual(reply, validate_reply("goal_review", deepcopy(reply), {}))
+        brief = {"goalReviewVersion": 2, "goalProposal": reply["proposed_goal"], "goalMissingFields": [], "goalConfirmed": False}
+        confirm = {"action": "confirm_goal", "assistant_message": "已收到确认。"}
+        self.assertEqual(confirm, validate_reply("goal_review", confirm, {"brief": brief}))
 
     def test_goal_confirmation_requires_a_reviewed_complete_pending_goal(self):
         reply = {"assistant_message": "已收到确认。", "action": "confirm_goal"}
