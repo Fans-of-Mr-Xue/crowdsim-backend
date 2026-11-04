@@ -2,6 +2,7 @@ import contextlib
 import io
 import os
 import signal
+import socket
 import subprocess
 import sys
 import unittest
@@ -57,6 +58,49 @@ class DependencyTests(unittest.TestCase):
         self.assertIn("pypdf", message)
         self.assertIn("beautifulsoup4", message)
         self.assertIn(sys.executable, message)
+
+
+class PortBoundTests(unittest.TestCase):
+    def test_reusable_listener_is_detected_then_released_without_connecting(self):
+        for host in ('127.0.0.1', '0.0.0.0'):
+            with self.subTest(host=host):
+                with socket.socket() as listener:
+                    listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                    listener.bind((host, 0))
+                    listener.listen()
+                    port = listener.getsockname()[1]
+                    with patch('start_backend.socket.create_connection', side_effect=AssertionError('no remote channel')):
+                        self.assertTrue(start_backend.port_bound(port))
+                self.assertFalse(start_backend.port_bound(port))
+
+    def test_windows_accepts_loopback_and_wildcard_listeners(self):
+        for host in ('127.0.0.1', '0.0.0.0'):
+            with self.subTest(host=host):
+                connection = SimpleNamespace(status='LISTEN', laddr=SimpleNamespace(ip=host, port=8800))
+                api = SimpleNamespace(CONN_LISTEN='LISTEN', net_connections=Mock(return_value=[connection]))
+                with patch('start_backend.WINDOWS', True), patch('start_backend.importlib.import_module', return_value=api):
+                    self.assertTrue(start_backend.port_bound(8800))
+                api.net_connections.assert_called_once_with(kind='tcp4')
+
+    def test_windows_ignores_other_addresses_ports_and_non_listeners(self):
+        connections = [
+            SimpleNamespace(status='LISTEN', laddr=SimpleNamespace(ip='127.0.0.2', port=8800)),
+            SimpleNamespace(status='LISTEN', laddr=SimpleNamespace(ip='127.0.0.1', port=8899)),
+            SimpleNamespace(status='ESTABLISHED', laddr=SimpleNamespace(ip='127.0.0.1', port=8800)),
+            SimpleNamespace(status='TIME_WAIT', laddr=SimpleNamespace(ip='127.0.0.1', port=8800)),
+            SimpleNamespace(status='NONE', laddr=()),
+        ]
+        api = SimpleNamespace(CONN_LISTEN='LISTEN', net_connections=Mock(return_value=connections))
+        with patch('start_backend.WINDOWS', True), patch('start_backend.importlib.import_module', return_value=api):
+            self.assertFalse(start_backend.port_bound(8800))
+
+    def test_windows_query_failure_is_reported_instead_of_assuming_a_free_port(self):
+        class ApiError(Exception):
+            pass
+        api = SimpleNamespace(Error=ApiError, net_connections=Mock(side_effect=ApiError('access denied')))
+        with patch('start_backend.WINDOWS', True), patch('start_backend.importlib.import_module', return_value=api):
+            with self.assertRaisesRegex(start_backend.StartupError, 'Windows.*监听'):
+                start_backend.port_bound(8800)
 
 
 class UnifiedStartupTests(unittest.TestCase):

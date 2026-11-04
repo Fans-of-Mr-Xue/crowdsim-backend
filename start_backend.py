@@ -470,7 +470,18 @@ def tunnel_settings(kind):
 
 
 def port_bound(port):
-    # Inspect the local bind, without opening an SSH channel to the model server.
+    # Inspect local state without opening an SSH channel to the model server.
+    if WINDOWS:
+        # SO_REUSEADDR on Windows can bind over a live SSH listener, so a
+        # successful bind does not establish that the port is free.
+        api = importlib.import_module("psutil")
+        try:
+            return any(connection.status == api.CONN_LISTEN
+                       and connection.laddr.port == port
+                       and connection.laddr.ip in {"127.0.0.1", "0.0.0.0"}
+                       for connection in api.net_connections(kind="tcp4"))
+        except api.Error as exc:
+            raise StartupError("无法读取 Windows 本机端口监听状态，请检查系统权限") from exc
     with socket.socket() as candidate:
         candidate.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
