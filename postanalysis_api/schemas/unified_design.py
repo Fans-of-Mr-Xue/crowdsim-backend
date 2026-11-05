@@ -22,7 +22,7 @@ def validate_unified_design(design, variables):
     import re
     ids = set()
     for group in groups:
-        allowed = {"id", "name", "hypothesis", "method", "factorSymbols", "primaryMetricId", "expectedDirection", "decisionRule", "execution"}
+        allowed = {"id", "name", "hypothesis", "method", "factorSymbols", "primaryMetricId", "expectedDirection", "decisionRule", "execution", "planningOnly", "changeDescription"}
         if isinstance(group, dict) and set(group) - allowed:
             fail("实验组包含未定义字段")
         if not isinstance(group, dict) or any(not isinstance(group.get(key), str) or not group[key].strip() or len(group[key]) > limit
@@ -40,7 +40,19 @@ def validate_unified_design(design, variables):
         defined = {item.get("symbol") for item in variables.get("factors", [])}
         if not isinstance(factors, list) or not factors or any(not isinstance(symbol, str) or symbol not in defined for symbol in factors):
             fail("每组须关联已定义的变量")
-        validate_group_execution(group.get("execution"))
+        if "planningOnly" in group and type(group["planningOnly"]) is not bool:
+            fail("planningOnly须为布尔值")
+        if group.get("planningOnly"):
+            config = group.get("execution")
+            if (not isinstance(config, dict) or set(config) != {"startSeconds", "compliance", "delaySeconds", "referenceDesignId"}
+                    or any(config[key] is not None for key in CONTROL_FIELDS) or not isinstance(config["referenceDesignId"], str)):
+                fail("待映射方案须保留参照组，数值控制量必须为null")
+            if not isinstance(group.get("changeDescription"), str) or not group["changeDescription"].strip() or len(group["changeDescription"]) > 2000:
+                fail("待映射方案须明确要改变的措施与水平说明")
+            if group["method"] in {"ofat", "ablation"} and len(factors) != 1:
+                fail("单因素或消融草案须只关联一个实际改变的因素")
+        else:
+            validate_group_execution(group.get("execution"))
     for group in groups:
         reference = group["execution"]["referenceDesignId"]
         if reference != "F-00" and reference not in ids or reference == group["id"]:
@@ -51,6 +63,12 @@ def validate_unified_design(design, variables):
                 fail("参照组不得循环引用")
             seen.add(reference)
             reference = next(item for item in groups if item["id"] == reference)["execution"]["referenceDesignId"]
+        if group.get("planningOnly"):
+            if group["method"] == "ablation" and group["execution"]["referenceDesignId"] == "F-00":
+                fail("消融草案须参照完整策略组")
+            continue
+        if any(item.get("planningOnly") and item["id"] == group["execution"]["referenceDesignId"] for item in groups):
+            fail("数值执行组不能引用尚未完成工程映射的草案")
         changes = changed_controls(group, groups)
         if any(CONTROL_FIELDS[field] not in group["factorSymbols"] for field in changes):
             fail("实际改变的变量须全部关联到假设")
@@ -72,6 +90,8 @@ def validate_unified_execution(plan):
     if any(overrides.values()):
         raise ApiError("SOCIETY_MAPPING_REQUIRED", "人工社会修改已保存；当前执行器尚未映射这些模型改动，需对接后运行或明确恢复原配置", 422)
     for group in plan["counterfactualDesign"]["groups"]:
+        if group.get("planningOnly"):
+            raise ApiError("EXECUTION_MAPPING_REQUIRED", "实验假设已保存，但措施与数值控制尚未映射到执行器；请先完成工程映射", 422)
         if group["primaryMetricId"] not in METRICS or set(group["factorSymbols"]) - set(CONTROL_FIELDS.values()):
             raise ApiError("EXECUTION_MAPPING_REQUIRED", "自定义变量或主要终点尚未接入当前执行模型", 422)
         if group["primaryMetricId"] not in plan.get("executionSettings", {}).get("metricIds", []):

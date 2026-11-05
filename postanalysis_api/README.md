@@ -2,6 +2,8 @@
 
 完整可编辑预设、一键真实运行入口、因果协议及恢复实机验收方法见[事后完整案例工作流](../docs/post_live_case_workflow.md)。
 
+统一设计v2区分可保存的实验假设与可执行的工程矩阵。未映射组使用 `planningOnly=true`、`changeDescription` 和全为null的数值控制字段（保留 `referenceDesignId`）；可以新增、保存和预览，不能启动。`GET /review-plans/{id}/execution` 对未绑定场景返回HTTP200、`execution:null`、`requiresConfirmation:false`及`readiness={ready:false,code,message,missing,nextAction}`。只有当前场景、完整工程输入和组映射均就绪时才返回执行矩阵，不能仅凭时窗数值相同认定可执行。
+
 当前执行与分析字段以[事后共同契约](../docs/post_execution_analysis_contract.md)为准；该文件按真实workers执行路径核对，并由事后设计对话加载。待扩展的SUMO/TraCI、测量和后端工作见[对接清单](../docs/post_sumo_handoff.md)，不能视为已经接入。
 
 本目录提供挂载在 SUMO 8765 服务内的 HTTP 接口、字段校验、MongoDB 持久化及真实结果计算。现已接入 `workers/sumo_batch.py`，使用独立SUMO进程执行纪念塔 `memorial-post-test` 的F-00/CF批次，保留现有事中运行时。A→M1、B→M2、C→M3为已确认工程测试映射，M3不是真实北侧通道；其他场景仍须声明能力后才能执行。源数据未观测指标保持null，实际指标来自FCD/tripinfo，未校准误差单独展示。
@@ -62,7 +64,7 @@ python crowdsim_overlay_server.py --host 127.0.0.1 --port 8765
 | `sourceKind` | `synthetic_reference` / `observed` | 细粒度 Markdown 应标为前者，仅供参考曲线与校准 |
 | `sourceNote` | 字符串 1—500 | 来源、生成方法或观测说明 |
 | `observations` | 数组 1—50000 | 标准化时间线；同一区域同一秒不可重复 |
-| `observations[].timeSeconds` | 整数 0—86400 | 从 20:00 起的仿真秒数；可跨午夜 |
+| `observations[].timeSeconds` | 有限数值 0—86400，可为小数 | 保留源数据相对秒；日期/时钟型纪念塔输入按20:00锚点规范化，事中相对时间不改起点 |
 | `observations[].regionId` | 字符串 1—64，字母数字/`_`/`-` | A/B/C 等区域标识 |
 | `observations[].population` | 整数 0—1000000 | 分区在场人数；A/B/C 若互不重叠才可求和 |
 | `observations[].density` | 数值或 `null`，0—1000 | 人/m²；缺失用 `null` |

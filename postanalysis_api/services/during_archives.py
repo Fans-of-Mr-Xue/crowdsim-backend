@@ -168,7 +168,13 @@ class DuringArchiveReader:
             limitations = self._spatial(document, series, provenance)
         except (ValueError, TypeError, KeyError, OSError, EOFError, UnicodeError, InvalidId, csv.Error, NoFile) as exc:
             raise ApiError("DURING_ARCHIVE_INVALID", f"事中原始观测校验失败：{exc}", 422) from None
-        return {"sourceKind": "mongodb_archive", "sourceVersion": self.version(document), "executionVersion": 0,
+        names = {item.get("original_name") for item in document.get("files", [])}
+        source_run = {"runId": run_id, "status": document["run_status"], "simulatedSeconds": document.get("simulated_seconds"),
+                      "resultFiles": sorted(name for name in names if isinstance(name, str)),
+                      "manifestArchived": "manifest.json" in names, "demandArchived": "demand.rou.xml" in names,
+                      "geometryArchived": "observation_geometry.json" in names,
+                      "note": "已完成SUMO运行结果的归档状态；结果完整不代表原运行配置和初始化输入已一同归档。"}
+        return {"sourceKind": "mongodb_archive", "sourceVersion": self.version(document), "executionVersion": 0, "sourceRun": source_run,
                 "reportVersion": self.version(document), "observationIntervalSeconds": document.get("summary", {}).get("sample_interval_seconds"),
                 "sourceBinding": {"sourcePhase": "during", "sourceKind": "mongodb_archive", "collection": "during_results",
                                   "runId": run_id, "fileId": str(descriptor["file_id"]), "sha256": descriptor["sha256"], "sourceVersion": self.version(document), "files": provenance},

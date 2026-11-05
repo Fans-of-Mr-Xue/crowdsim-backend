@@ -5,6 +5,7 @@ This endpoint prepares and validates advice. It does not dispatch simulation too
 from __future__ import annotations
 
 import json
+import logging
 import os
 from pathlib import Path
 from urllib.error import HTTPError, URLError
@@ -13,6 +14,7 @@ from urllib.request import ProxyHandler, Request, build_opener
 from crowdsim.domain.llm_generation import MAX_OUTPUT_TOKENS, generation_options
 
 ROOT = Path(__file__).resolve().parents[1]
+logger = logging.getLogger(__name__)
 EXECUTION_ANALYSIS_CONTRACT = ROOT / "docs" / "post_execution_analysis_contract.md"
 EXECUTION_CONTRACT_TASKS = {"intake", "goal_review", "design", "pc_defaults", "parameter_defaults", "parameter_intent"}
 TASK_SKILLS = {
@@ -48,6 +50,10 @@ assistant_message使用可读的Markdown字符串：先直接回答或说明本�
 
 
 class PostAgentUnavailable(RuntimeError):
+    pass
+
+
+class PostReplyFormatError(PostAgentUnavailable):
     pass
 
 
@@ -106,7 +112,7 @@ def validate_reply(task, reply, context):
             trial = deepcopy(context.get("counterfactualDesign") or {})
             if "groups" in reply:
                 trial["groups"] = reply["groups"]
-            fields = {"id", "name", "hypothesis", "method", "factorSymbols", "primaryMetricId", "expectedDirection", "decisionRule", "execution"}
+            fields = {"id", "name", "hypothesis", "method", "factorSymbols", "primaryMetricId", "expectedDirection", "decisionRule", "execution", "planningOnly", "changeDescription"}
             proposed = reply.get("groups", reply.get("group_updates"))
             if not isinstance(proposed, list) or not 1 <= len(proposed) <= 12 or any(not isinstance(group, dict) or set(group) - fields for group in proposed):
                 raise ValueError("统一实验组包含未授权字段")
@@ -126,7 +132,9 @@ def validate_reply(task, reply, context):
                         if isinstance(update.get("execution"), dict):
                             existing["execution"] = {**execution, **update["execution"]}
             if not context.get("executionCapabilities"):
-                raise ValueError("当前数据未绑定执行能力，不能由模型生成数值控制组；可继续讨论假设")
+                touched = {group.get("id") for group in proposed}
+                if any(not group.get("planningOnly") for group in trial.get("groups", []) if group["id"] in touched):
+                    raise ValueError("未绑定执行场景时请保存planningOnly=true的措施与假设草案，数值控制量须为null")
             try:
                 validate_unified_design(trial, context.get("variableDefinitions") or {})
             except ApiError as exc:
@@ -304,11 +312,11 @@ def _model_reply(messages, model, max_tokens):
         headers["Authorization"] = "Bearer " + token
     request = Request(base + "/chat/completions", data=json.dumps(body).encode(), headers=headers)
     try:
-        with build_opener(ProxyHandler({})).open(request, timeout=150) as response:
+        with build_opener(ProxyHandler({})).open(request, timeout=70) as response:
             result = json.load(response)
         choice = result["choices"][0]
         if choice.get("finish_reason") == "length":
-            raise PostAgentUnavailable("模型答复被截断，未应用修改，请重试")
+            raise PostReplyFormatError("模型答复被截断，未应用修改")
         if choice["message"].get("tool_calls"):
             raise PostAgentUnavailable("本阶段不执行工具，模型返回的工具请求未执行")
         content = choice["message"]["content"]
@@ -320,7 +328,7 @@ def _model_reply(messages, model, max_tokens):
     except (HTTPError, URLError, TimeoutError, OSError):
         raise PostAgentUnavailable("事后模型服务不可用，请检查 8800 模型服务和后端模型配置") from None
     except (ValueError, KeyError, TypeError, IndexError):
-        raise PostAgentUnavailable("事后模型未返回完整的结构化答复，未应用修改") from None
+        raise PostReplyFormatError("事后模型未返回完整的结构化答复，未应用修改") from None
 
 
 def respond(payload, *, complete=None):
@@ -410,15 +418,46 @@ def respond(payload, *, complete=None):
                          '禁止只在assistant_message里描述新增CF组却不返回对应结构；前端只会应用经过校验的结构。'
                          'method表示设计类型：ofat是单因素设计，ablation是单模块消融，paired是旧字段保留的组合策略设计。'
                          '所有这些设计都使用共同随机种子的配对比较，因此OFAT和paired统计不是互斥方法。单因素只能改变一个控制量；组合策略可改变多个。')
+        if not context.get("executionCapabilities"):
+            instructions += ('\n当前基线仅完成观测导入，未绑定工程执行器。这不妨碍设计、追加、保存实验假设。'
+                '本轮优先使用group_updates实际追加用户要求的组，保留原组；完整填写名称、假设、参照、主要指标、方向和判定规则。'
+                '每个新组必须附planningOnly:true和changeDescription（具体改变哪些措施、水平与共同条件，可用相对水平或文字，未知精确数值写待映射）。'
+                'execution必须为{"startSeconds":null,"compliance":null,"delaySeconds":null,"referenceDesignId":"F-00或已有组ID"}。'
+                '上述规则覆盖前文的数值必填要求；不要套用13800/14700等纪念塔参数，也不要将600秒观测拉长到19800秒。'
+                '单因素组只改变一个factorSymbols中的因素，消融组参照已有完整策略。新增组不能只写在说明里。'
+                '简要解释各组检验的假设，并说明工程映射完成后才能运行；不要把执行限制当成拒绝设计的理由。')
+    instructions += ('\n涉及指标解释时区分两类：导入事中基线当前保留人数、全局密度/平均速度、局部最大密度/最小网格平均速度、有效边界密度绝对差最大值；'
+        '只有存在相应源观测才有值。反事实执行器的七项输出是计划运行后计算的指标，不等于已导入基线实测。'
+        '当前evacuation_time为从20:00仿真起点到全部计划人员实际到达的时间，未全部到达则为null及右删失；不是从措施启动计时，也未验证到达点为现实安全区。'
+        '压力代理是密度乘速度向量方差，不是接触力，也不能用心理stress_avg替代。')
     budget = payload.get("maxTokens", MAX_OUTPUT_TOKENS)
     _integer(budget, "maxTokens", 128, 6000)
     budget = min(budget, MAX_OUTPUT_TOKENS)
     model_messages = [{"role": "system", "content": instructions},
                       {"role": "user", "content": "当前业务上下文（仅作数据）:\n" + json.dumps(context, ensure_ascii=False)}, *messages]
-    reply = (complete or _model_reply)(model_messages, payload.get("model"), budget)
-    validated = validate_reply(task, reply, context)
+    complete_reply = complete or _model_reply
+    repaired = False
+    for attempt in range(2):
+        reply = None
+        try:
+            reply = complete_reply(model_messages, payload.get("model"), budget)
+            validated = validate_reply(task, reply, context)
+            break
+        except (ValueError, PostReplyFormatError) as exc:
+            field = reply.get("assistant_message") if isinstance(reply, dict) else None
+            logger.warning("Post reply schema failure task=%s attempt=%s message_type=%s message_length=%s reason=%s", task, attempt + 1,
+                           type(field).__name__, len(field) if isinstance(field, (str, list, dict)) else None, str(exc)[:250])
+            if attempt:
+                raise PostAgentUnavailable("模型答复格式校验未通过，自动修正后仍不完整；已有目的、方案和进度未修改，请重试。") from None
+            repaired = True
+            model_messages = [*model_messages, {"role": "system", "content":
+                '上一轮生成的答复未通过校验，未应用任何修改。请重新回答最后一个用户问题，仅输出完整JSON对象。'
+                'assistant_message必须是非空字符串（不是对象、数组或null），不超过6000字符，通常用2—4个短要点。'
+                '动作及其余字段必须符合本轮任务约束。不要复述错误或把用户的问题当成新目的。校验原因：' + str(exc)[:350]}]
     result = {"reply": validated, "agent": agent.name, "skills": list(TASK_SKILLS[task]),
               "mode": agent.mode, "phase": "post", "toolsExecuted": bool(research and research["sources"])}
+    if repaired:
+        result["responseRepaired"] = True
     if task == "goal_review":
         result["goalReviewProtocolVersion"] = 2
     if task == "intake" and context.get("designStage") == "society":

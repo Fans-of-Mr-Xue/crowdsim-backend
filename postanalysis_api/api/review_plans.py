@@ -11,11 +11,14 @@ def handle(request: Request):
     execution_match = re.fullmatch(r"/review-plans/([A-Za-z0-9_-]+)/execution", request.path)
     if execution_match:
         from postanalysis_api.schemas.common import ApiError
-        from postanalysis_api.services.execution_template import execution_template
+        from postanalysis_api.services.execution_template import execution_template, execution_readiness
         reviewed = request.app.repo.get("review_plans", execution_match[1], request.user, request.workspace)
         if request.method == "GET":
             dataset = request.app.repo.get("datasets", reviewed["datasetId"], request.user, request.workspace)
-            return response({"execution": execution_template(dataset, reviewed["plan"]), "requiresConfirmation": True,
+            readiness = execution_readiness(dataset, reviewed["plan"])
+            if not readiness["ready"]:
+                return response({"execution": None, "readiness": readiness, "requiresConfirmation": False, "note": readiness["message"]})
+            return response({"execution": execution_template(dataset, reviewed["plan"]), "readiness": readiness, "requiresConfirmation": True,
                              "note": "默认数值为可编辑工程测试建议；请逐组核对，未确认不会运行。"})
         if request.method == "POST":
             if set(request.body) != {"execution", "confirmed"} or request.body.get("confirmed") is not True:

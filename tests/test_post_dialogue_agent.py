@@ -24,6 +24,32 @@ def request_payload(task="design"):
 
 
 class PostDialogueAgentTests(unittest.TestCase):
+    def test_invalid_model_message_is_repaired_once_without_changing_the_goal(self):
+        context = {"brief": {"goal": "原目的", "goalConfirmed": True}}
+        payload = {"task": "goal_review", "context": context, "messages": [{"role": "user", "content": "人群场景一般使用什么指标？"}]}
+        for invalid in (None, {}, [], "", "x" * 6001):
+            calls = []
+            def complete(messages, model, budget):
+                calls.append(messages)
+                return {"assistant_message": invalid, "action": "answer"} if len(calls) == 1 else {"assistant_message": "可按人数、密度、速度和局部差异核对已观测指标；风险暴露需要相应的运行证据。", "action": "answer"}
+            result = respond(payload, complete=complete)
+            self.assertEqual(2, len(calls))
+            self.assertTrue(result["responseRepaired"])
+            self.assertEqual("answer", result["reply"]["action"])
+            self.assertEqual("原目的", context["brief"]["goal"])
+            self.assertIn("不是对象、数组或null", calls[1][-1]["content"])
+
+    def test_invalid_model_output_has_a_bounded_retry_and_transport_errors_are_not_retried(self):
+        payload = {"task": "intake", "messages": [{"role": "user", "content": "解释指标"}]}
+        complete = unittest.mock.Mock(return_value={"assistant_message": None})
+        with self.assertRaises(PostAgentUnavailable):
+            respond(payload, complete=complete)
+        self.assertEqual(2, complete.call_count)
+        complete = unittest.mock.Mock(side_effect=PostAgentUnavailable("网络不可用"))
+        with self.assertRaises(PostAgentUnavailable):
+            respond(payload, complete=complete)
+        self.assertEqual(1, complete.call_count)
+
     def test_society_confirmation_is_a_validated_action_instead_of_prose(self):
         context = {"designStage": "society", "goalConfirmed": True}
         reply = {"assistant_message": "将按当前设置继续。", "action": "confirm_society"}

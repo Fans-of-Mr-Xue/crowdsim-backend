@@ -40,7 +40,7 @@ def validate_review_intake(plan):
             if row["id"] in ids:
                 fail("实验组 ID 不能重复")
             ids.add(row["id"])
-            if "execution" in row:
+            if "execution" in row and not row.get("planningOnly"):
                 from .execution import validate_group_execution
                 validate_group_execution(row["execution"])
         total += len(rows)

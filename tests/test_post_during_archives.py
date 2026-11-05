@@ -107,6 +107,9 @@ class DuringArchiveTests(unittest.TestCase):
         self.assertIsNone(points[-1]["global-speed"])
         self.assertTrue(all(row["pressureProxy"] is None for row in points))
         self.assertIsNone(report["runs"][0]["seed"])
+        self.assertFalse(report["sourceRun"]["manifestArchived"])
+        self.assertFalse(report["sourceRun"]["demandArchived"])
+        self.assertEqual("run-one", report["sourceRun"]["runId"])
         self.assertEqual(self.digest, report["sourceBinding"]["sha256"])
         self.assertEqual(before, self.document)
 

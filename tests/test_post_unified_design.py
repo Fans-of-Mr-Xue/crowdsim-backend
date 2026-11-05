@@ -34,6 +34,41 @@ def fixture():
 
 
 class UnifiedDesignTests(unittest.TestCase):
+    def test_unmapped_during_data_can_save_and_append_hypothesis_groups_but_cannot_execute(self):
+        from postanalysis_api.schemas.unified_design import validate_unified_design, validate_unified_execution
+        from postanalysis_api.services.execution_template import execution_readiness
+        from postanalysis_api.api.review_plans import handle
+        from postanalysis_api.api.common import Request
+        dataset, plan = fixture()
+        plan.pop("executionSettings")
+        group = deepcopy(plan["counterfactualDesign"]["groups"][0])
+        group.update(planningOnly=True, changeDescription="相对事实基线提前引导，具体时点待场景映射")
+        group["execution"] = {"startSeconds": None, "compliance": None, "delaySeconds": None, "referenceDesignId": "F-00"}
+        plan["counterfactualDesign"]["groups"] = [group]
+        validate_review_intake(plan)
+        context = {"designSchemaVersion": 2, "executionCapabilities": False, "counterfactualDesign": plan["counterfactualDesign"], "variableDefinitions": plan["variableDefinitions"]}
+        added = {**deepcopy(group), "id": "CF-02", "name": "提前引导单因素对照", "method": "ofat", "factorSymbols": ["T_start"]}
+        reply = validate_reply("design", {"assistant_message": "已追加假设草案", "action": "update_design", "group_updates": [added]}, context)
+        self.assertEqual("update_design", reply["action"])
+        self.assertEqual(1, len(context["counterfactualDesign"]["groups"]))
+        plan["counterfactualDesign"]["groups"].append(added)
+        validate_unified_design(plan["counterfactualDesign"], plan["variableDefinitions"])
+        with self.assertRaises(ApiError):
+            validate_unified_execution(plan)
+        dataset["metadata"] = {"observedEndSeconds": 600, "sourceBinding": {"sourcePhase": "during", "runId": "run-one"}}
+        self.assertFalse(execution_readiness(dataset, plan)["ready"])
+        reviewed = {"datasetId": dataset["id"], "plan": plan}
+        app = SimpleNamespace(repo=SimpleNamespace(get=lambda kind, *args: reviewed if kind == "review_plans" else dataset))
+        status, data, _ = handle(Request("GET", "/review-plans/p1/execution", {}, {}, {"X-CrowdSim-User": "u", "X-CrowdSim-Workspace": "w"}, app))
+        self.assertEqual(200, status)
+        self.assertIsNone(data["execution"])
+        self.assertEqual("SOURCE_RUN_INPUTS_NOT_LINKED", data["readiness"]["code"])
+        self.assertIn("已完成的SUMO运行", data["readiness"]["message"])
+        self.assertGreaterEqual(len(data["readiness"]["missing"]), 2)
+        invalid = deepcopy(added); invalid["execution"]["startSeconds"] = 13800
+        with self.assertRaises(ValueError):
+            validate_reply("design", {"assistant_message": "不能混入其他场景数值", "group_updates": [invalid]}, context)
+
     def test_one_group_is_enough_without_three_design_confirmations(self):
         _, plan = fixture()
         plan["counterfactualDesign"]["groups"] = plan["counterfactualDesign"]["groups"][:1]

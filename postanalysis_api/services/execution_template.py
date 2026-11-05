@@ -9,10 +9,41 @@ def review_version(plan):
     return hashlib.sha256(json.dumps(plan, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode("utf-8")).hexdigest()
 
 
+def execution_readiness(dataset, plan=None):
+    """A valid scientific draft may still need a scene-specific execution mapping."""
+    metadata = dataset.get("metadata") or {}
+    profile = metadata.get("executionProfile")
+    profile = profile if isinstance(profile, dict) else {}
+    missing = []
+    if metadata.get("durationSeconds") != 19800:
+        missing.append("当前纪念塔执行器使用19800秒工程时窗；需提供当前事中场景自身的执行适配，不能拉伸观测时间")
+    if profile.get("scenarioId") != "memorial-post-test":
+        missing.append("场景模型、路网与控制动作映射")
+    if not metadata.get("sourceRecords"):
+        missing.append("可重建源流量与人员初始化的工程输入；仅有观测曲线不足以重新运行仿真")
+    if missing:
+        if metadata.get("sourceBinding", {}).get("sourcePhase") == "during":
+            return {"ready": False, "code": "SOURCE_RUN_INPUTS_NOT_LINKED",
+                    "message": "基线来自已完成的SUMO运行；事后尚未关联该轮原运行输入，已有观测和假设均已保留。",
+                    "missing": ["原运行manifest、场景/模型/路网与控制配置的关联", "原始人员初始化、需求文件和种子等可重跑输入", "事后对该运行场景的控制与测量适配"],
+                    "nextAction": "定位原事中运行目录并关联其输入与配置，再生成同场景的反事实执行请求；不需要把观测时窗改成19800秒。"}
+        return {"ready": False, "code": "SCENE_EXECUTION_MAPPING_REQUIRED", "message": "方案可继续设计和保存；当前基线尚未绑定可执行场景。",
+                "missing": missing, "nextAction": "返回需求界定核对措施与假设，补齐当前场景的工程执行映射后再运行。"}
+    if plan and plan.get("counterfactualDesign", {}).get("schemaVersion") == 2:
+        try:
+            from postanalysis_api.schemas.unified_design import validate_unified_execution
+            validate_unified_execution(plan)
+        except ApiError as exc:
+            return {"ready": False, "code": exc.code, "message": exc.message, "missing": [exc.message],
+                    "nextAction": "返回需求界定补齐执行参数或模型映射，并重新确认方案。"}
+    return {"ready": True, "code": "READY", "message": "已绑定纪念塔工程执行模型，须核对确认后运行。", "missing": [], "nextAction": "核对并确认工程执行矩阵。"}
+
+
 def execution_template(dataset, plan=None):
     duration = dataset.get("metadata", {}).get("durationSeconds")
-    if duration != 19800:
-        raise ApiError("EXECUTION_TEMPLATE_UNSUPPORTED", "默认模板对应纪念塔完整 19800 秒基线；其他时间窗需显式设计执行请求", 422)
+    readiness = execution_readiness(dataset, plan)
+    if not readiness["ready"]:
+        raise ApiError(readiness["code"], readiness["message"] + "；" + "；".join(readiness["missing"]), 422)
     unified = bool(plan and plan.get("counterfactualDesign", {}).get("schemaVersion") == 2)
     if unified:
         from postanalysis_api.schemas.unified_design import validate_unified_execution

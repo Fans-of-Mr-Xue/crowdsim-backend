@@ -1,6 +1,6 @@
 # 事后 SUMO 执行与分析共同契约
 
-契约标识：`post-execution-analysis/2.0`。核对日期：2026-10-30。本标识用于指引文档，不是 HTTP 响应新增字段。当前采用统一实验池，并兼容历史v1分类型方案。适用于现有纪念塔执行器；其他场景必须另有实际能力声明。
+契约标识：`post-execution-analysis/2.0`。核对日期：2026-11-05。本标识用于指引文档，不是 HTTP 响应新增字段。当前采用统一实验池，并兼容历史v1分类型方案。适用于现有纪念塔执行器；其他场景必须另有实际能力声明。
 
 ## 1. 实现依据和调用边界
 
@@ -10,7 +10,9 @@
 
 新方案以 `reviewIntake.schemaVersion=2`、`counterfactualDesign.schemaVersion=2` 和统一 `groups` 数组保存；不要求观察、干预、机制三份设计或三次确认。每组保存 `id/name/hypothesis/method/factorSymbols/primaryMetricId/expectedDirection/decisionRule/execution`。设计类型与比较方式分开：OFAT限定只改变一个因素，组合策略可改变多个，消融隔离一个模块；三者均使用共同随机种子的配对比较，OFAT与配对比较可以在同一组共同使用。为兼容既有快照，method字段仍为 `paired/ofat/ablation`，其中旧值paired表示组合策略设计，不代表只有该类型才配对，也不是分析页面归属。记录实验单位、范围、共同控制条件、重复数和种子。参照可为F-00或本池其他完整策略组，禁止循环；实际改变的控制量须全部关联假设。旧版分类型字段及下文白名单只用于兼容历史v1快照。
 
-`design` 对话在 `context.designSchemaVersion=2` 时，仅返回 `assistant_message`、可选完整 `groups` 与 `repeat_count`；后端校验全部变量、参照、方法及数值一致性。人工社会修改保存到 `artificialSociety.overrides`，作为共同配置进入快照。当前SUMO尚未实现任意主体/环境/规则的文本改写，因此非空修改在执行模板阶段以 `SOCIETY_MAPPING_REQUIRED` 阻止运行，不能静默忽略。
+`design` 对话在 `context.designSchemaVersion=2` 时返回字符串 `assistant_message` 和 `action=answer/update_design`；更新可使用按ID增量合并/追加的 `group_updates`，或完整替换的 `groups`，二者互斥，另可返回 `repeat_count`。后端校验全部变量、参照、方法及配置一致性。人工社会修改保存到 `artificialSociety.overrides`，作为共同配置进入快照。当前SUMO尚未实现任意主体/环境/规则的文本改写，因此非空修改在执行条件检查中以 `SOCIETY_MAPPING_REQUIRED` 标记未就绪，实际提交仍拒绝运行，不能静默忽略。
+
+科学设计不以工程执行映射就绪为前提。未映射组使用 `planningOnly=true` 和 `changeDescription` 说明措施/水平；execution保留参照，三个数值控制量必须为null，不套用纪念塔参数。可以新增、保存、预览假设，但不得编译运行。单因素/消融仍只关联一个实际改变的因素，并校验参照存在及无循环。旧工程数值可单独保留为待核对历史草案。`GET /review-plans/{id}/execution` 对未映射返回HTTP200、execution=null及结构化readiness缺项，不把预期的场景未就绪当成数据服务故障。
 
 新执行组统一为 `experimentType=counterfactual`。分析器从全部组及实际控制变化筛选：观察比较全部组；干预取单变量或零差异配对；机制取已声明消融方法且实际只改变一个遵从/延迟模块、具有完整策略参照的组。一个组可被多段分析复用。PC仍仅使用独立F-00样本，不按实验组数量扩充样本。三段分析页面本轮不变。全局终点、模型有效性和真实事件链等能力限制继续适用。
 
