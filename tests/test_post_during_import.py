@@ -23,10 +23,20 @@ class DuringImportDatasetTests(unittest.TestCase):
         self.assertIsNone(data["observations"][-1]["pressureProxy"])
         self.assertEqual("model-v1", data["metadata"]["sourceBinding"]["modelFingerprint"])
 
-    def test_normal_uploads_keep_the_existing_integer_time_contract(self):
+    def test_uploaded_observations_also_preserve_fractional_sampling(self):
         body = self.payload(); body.pop("metadata")
-        with self.assertRaises(ApiError):
-            validate_dataset(body)
+        self.assertEqual(5.5, validate_dataset(body)["observations"][-1]["timeSeconds"])
+
+    def test_spatial_metrics_preserve_null_zero_and_snapshot_identifiers(self):
+        body = self.payload()
+        body["observations"][0].update(localDensity=3.2, localMeanSpeed=0, boundaryDensityDifference=None, sourceSnapshotId="run-one:0")
+        row = validate_dataset(body)["observations"][0]
+        self.assertEqual((3.2, 0, None, "run-one:0"), tuple(row[key] for key in ("localDensity", "localMeanSpeed", "boundaryDensityDifference", "sourceSnapshotId")))
+        for key in ("localDensity", "localMeanSpeed", "boundaryDensityDifference"):
+            body["observations"][0][key] = -1
+            with self.assertRaises(ApiError):
+                validate_dataset(body)
+            body["observations"][0][key] = None
 
     def test_imported_dataset_and_timeline_read_back_exact_samples_in_the_post_workspace(self):
         records = {}

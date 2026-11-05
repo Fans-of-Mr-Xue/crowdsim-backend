@@ -219,6 +219,7 @@ services/metric_calculator.py、result_service.py、causal_analysis.py保留另�
 ## 从数据库读取事中已完成实验
 
 - `GET /api/v1/post/during-sources`：读取 `during_results` 中 `run_status=completed`、`archive_status=ready`、`data_complete=true` 的来源目录。沿用事后接口的用户与工作区请求头；带所有者的记录仅向对应用户开放，未记录所有者的旧共享归档可只读使用。
-- `GET /api/v1/post/during-sources/{runId}`：核对 GridFS 文件的实验绑定及 SHA-256，读取 `during_result_files` 中的 `observation_global.csv.gz`。返回全局人数、密度、速度与原始采样时间，保留真实零值；压力代理和未归档随机种子保持为空，不伪造现实日期或区域名称。
+- `GET /api/v1/post/during-sources/{runId}`：核对 GridFS 文件的实验绑定及 SHA-256，读取 `during_result_files` 中的全局、网格、边界观测及采样提交记录。返回人数、全局密度/速度、局部最大密度/最小网格平均速度、有效边界密度绝对差最大值与原始采样时间，保留真实零值；压力代理和未归档随机种子保持为空，不伪造现实日期或区域名称。
 - 读取接口不修改源记录。事后页面在用户选择轮次后再次核验版本与采样，再通过已有数据集接口复制到当前事后工作区，并进入事实基线确认。大体积轨迹和局部网格仍保留在原归档，不在此接口展开。
 - 来源可读取不代表已接入反事实执行器；运行仍须满足实际场景与控制映射的执行校验。
+- 筛选字段、聚合口径、缺测值和浏览器缓存规则见[事后基线观测格式](../docs/post_review_observation_format.md)。旧字段继续兼容；时间统一允许有限非负小数，避免上传原生事中观测时改变采样时间。

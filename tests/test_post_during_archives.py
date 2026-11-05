@@ -52,6 +52,51 @@ class DuringArchiveTests(unittest.TestCase):
         result.metadata = self.metadata
         return result
 
+    def spatial_files(self, mutate=None):
+        data = {
+            "observation_cells": 'time_seconds,snapshot_id,cell_id,density_person_per_m2,avg_speed_mps\n0.5,run-one:0,c1,2,\n0.5,run-one:0,c2,4,0\n1.0,run-one:1,c1,0,\n1.0,run-one:1,c2,0,1.2\n',
+            "observation_boundaries": 'time_seconds,snapshot_id,boundary_id,absolute_difference_person_per_m2,status\n0.5,run-one:0,b1,2,valid\n0.5,run-one:0,b2,99,invalid\n1.0,run-one:1,b1,0,valid\n1.0,run-one:1,b2,,invalid\n',
+            "observation_samples": '\n'.join(json.dumps({"snapshot_id": f"run-one:{index}", "time_seconds": time, "cell_rows": 2, "boundary_rows": 2}) for index, time in enumerate((.5, 1.0))) + '\n',
+        }
+        if mutate:
+            mutate(data)
+        files = {}
+        for index, (role, content) in enumerate(data.items(), 1):
+            encoded = gzip.compress(content.encode())
+            digest = hashlib.sha256(encoded).hexdigest()
+            file_id = f"{index:024x}"
+            self.document["files"].append({"role": role, "original_name": role + (".jsonl" if role == "observation_samples" else ".csv"), "compression": "gzip", "file_id": file_id, "sha256": digest})
+            files[file_id] = (encoded, {"run_id": "run-one", "role": role, "sha256": digest})
+        def get(file_id):
+            if str(file_id) not in files:
+                return self.file(file_id)
+            content, metadata = files[str(file_id)]
+            result = io.BytesIO(content); result.metadata = metadata
+            return result
+        self.reader.files = SimpleNamespace(get=get)
+
+    def test_spatial_metrics_match_during_extrema_and_preserve_empty_cells_and_zero(self):
+        before = self.reader.version(self.document)
+        self.spatial_files()
+        report = self.reader.report("run-one", "user")
+        points = report["runs"][0]["series"]
+        self.assertEqual([4, 0], [point["local-density"] for point in points])
+        self.assertEqual([0, 1.2], [point["local-speed"] for point in points])
+        self.assertEqual([2, 0], [point["boundary-density-difference"] for point in points])
+        self.assertEqual(4, len(report["sourceBinding"]["files"]))
+        self.assertNotEqual(before, report["sourceVersion"])
+
+    def test_spatial_files_with_incomplete_commits_duplicates_or_foreign_snapshots_are_rejected(self):
+        for mutate in (
+            lambda data: data.update(observation_samples=data["observation_samples"].replace('"cell_rows": 2', '"cell_rows": 3')),
+            lambda data: data.update(observation_cells=data["observation_cells"].replace('0.5,run-one:0,c2', '0.5,other:0,c2')),
+            lambda data: data.update(observation_cells=data["observation_cells"].replace('0.5,run-one:0,c2', '0.5,run-one:0,c1')),
+            lambda data: data.update(observation_boundaries=data["observation_boundaries"].replace('b1,2,valid', 'b1,,valid')),
+        ):
+            self.setUp(); self.spatial_files(mutate)
+            with self.assertRaises(ApiError):
+                self.reader.report("run-one", "user")
+
     def test_completed_archive_reads_exact_samples_without_mutating_source(self):
         before = deepcopy(self.document)
         report = self.reader.report("run-one", "user")

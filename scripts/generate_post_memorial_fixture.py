@@ -7,6 +7,15 @@ import hashlib
 import json
 from pathlib import Path
 
+METRIC_DEFINITIONS = {
+    "population": {"source": "observation_global.person_count", "unit": "人"},
+    "density": {"source": "observation_global.density_person_per_m2", "unit": "人/m²"},
+    "meanSpeed": {"source": "observation_global.avg_speed_mps", "unit": "m/s"},
+    "localDensity": {"source": "observation_cells.density_person_per_m2", "aggregation": "同一snapshot_id有效网格最大值", "unit": "人/m²"},
+    "localMeanSpeed": {"source": "observation_cells.avg_speed_mps", "aggregation": "同一snapshot_id有效网格平均速度最小值；空网格无速度观测，保留null", "unit": "m/s"},
+    "boundaryDensityDifference": {"source": "observation_boundaries.absolute_difference_person_per_m2", "aggregation": "同一snapshot_id且status=valid的绝对差最大值", "unit": "人/m²"},
+}
+
 
 def normalize(source: Path) -> dict:
     content = source.read_text(encoding="utf-8-sig")
@@ -34,6 +43,7 @@ def normalize(source: Path) -> dict:
         previous[region] = population
         rows.append({"timeSeconds": seconds, "regionId": region, "population": population,
                      "density": None, "meanSpeed": None, "pressureProxy": None,
+                     "localDensity": None, "localMeanSpeed": None, "boundaryDensityDifference": None,
                      "sourceTime": clock.isoformat(timespec="minutes") + "+08:00", "state": state})
         records.append({"sourceLine": line_number, "timeSeconds": seconds, "regionId": region,
                         "population": population, "intervalEntered": entered, "intervalExited": exited,
@@ -45,7 +55,7 @@ def normalize(source: Path) -> dict:
     return {
         "name": "上海纪念塔事后完整测试基线（原始合成数据规范化）",
         "sourceKind": "synthetic_reference",
-        "sourceNote": "合成案例按原数据等比例缩放至同一时刻总人数峰值300人，人数及区间进出流量四舍五入为整数；人口占比保留原值。非真实事故监测记录。密度、速度、压力原文缺失，保留 null，由 SUMO 运行测量；取整后的收支残差如实记录。",
+        "sourceNote": "合成案例按原数据等比例缩放至同一时刻总人数峰值300人，人数及区间进出流量四舍五入为整数；人口占比保留原值。非真实事故监测记录。密度、速度、压力原文缺失，保留 null，由 SUMO 运行测量；取整后的收支残差如实记录。 采用事中观测筛选后的规范字段；局部密度、局部速度与边界密度差无原始观测，保留null。",
         "observations": rows,
         "metadata": {
             "schemaVersion": "post-dataset/2.0", "location": "上海市人民英雄纪念塔",
@@ -64,7 +74,9 @@ def normalize(source: Path) -> dict:
                 "controlOrigin": "工程测试设定，不是原文数值观测；源文字只记录尝试开放和分流生效的阶段。",
                 "reconstruction": "区间进入均匀分布，离开按FIFO重建停留时间，SUMO生成运动轨迹；原始人数只作校准目标。",
             },
-            "quality": {"populationResiduals": residuals, "missingMetrics": ["density", "meanSpeed", "pressureProxy"],
+            "observationSchemaVersion": 2, "metricDefinitions": METRIC_DEFINITIONS,
+            "unmeasuredMetricPolicy": "缺失为null；pressureProxy为兼容字段，没有原始测量时必须为null；不把stress_avg当作压力代理。",
+            "quality": {"populationResiduals": residuals, "missingMetrics": ["density", "meanSpeed", "pressureProxy", "localDensity", "localMeanSpeed", "boundaryDensityDifference"],
                         "flowSemantics": "Interval totals, never persons/second; each entrance is a separate observation region.",
                         "demographicSemantics": "Age and nationality are independent marginal distributions; no joint distribution is inferred."},
         },

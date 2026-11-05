@@ -1,9 +1,66 @@
 {
   "name": "事后对接示例：合成时序",
   "sourceKind": "synthetic_reference",
-  "sourceNote": "接口演示数据，无真实事件含义。timeSeconds 从本数据集起点计时；density 单位人/m²，meanSpeed 单位 m/s，pressureProxy 为压力代理指标。",
+  "sourceNote": "接口演示数据，无真实事件含义。timeSeconds 从本数据集起点计时；density 单位人/m²，meanSpeed 单位 m/s，pressureProxy 为压力代理指标。 采用事中观测筛选后的规范字段；局部密度、局部速度与边界密度差无原始观测，保留null。",
   "observations": [
-    { "timeSeconds": 0, "regionId": "global", "population": 100, "density": 2, "meanSpeed": 1, "pressureProxy": null, "sourceTime": "0", "state": "示例基线起点" },
-    { "timeSeconds": 60, "regionId": "global", "population": 120, "density": 2.4, "meanSpeed": 0.8, "pressureProxy": null, "sourceTime": "60", "state": "示例客流汇入" }
-  ]
+    {
+      "timeSeconds": 0,
+      "regionId": "global",
+      "population": 100,
+      "density": 2,
+      "meanSpeed": 1,
+      "pressureProxy": null,
+      "sourceTime": "0",
+      "state": "示例基线起点",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
+    },
+    {
+      "timeSeconds": 60,
+      "regionId": "global",
+      "population": 120,
+      "density": 2.4,
+      "meanSpeed": 0.8,
+      "pressureProxy": null,
+      "sourceTime": "60",
+      "state": "示例客流汇入",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
+    }
+  ],
+  "metadata": {
+    "observationSchemaVersion": 2,
+    "metricDefinitions": {
+      "population": {
+        "source": "observation_global.person_count",
+        "unit": "人"
+      },
+      "density": {
+        "source": "observation_global.density_person_per_m2",
+        "unit": "人/m²"
+      },
+      "meanSpeed": {
+        "source": "observation_global.avg_speed_mps",
+        "unit": "m/s"
+      },
+      "localDensity": {
+        "source": "observation_cells.density_person_per_m2",
+        "aggregation": "同一snapshot_id有效网格最大值",
+        "unit": "人/m²"
+      },
+      "localMeanSpeed": {
+        "source": "observation_cells.avg_speed_mps",
+        "aggregation": "同一snapshot_id有效网格平均速度最小值；空网格无速度观测，保留null",
+        "unit": "m/s"
+      },
+      "boundaryDensityDifference": {
+        "source": "observation_boundaries.absolute_difference_person_per_m2",
+        "aggregation": "同一snapshot_id且status=valid的绝对差最大值",
+        "unit": "人/m²"
+      }
+    },
+    "unmeasuredMetricPolicy": "缺失为null；pressureProxy为兼容字段，没有原始测量时必须为null；不把stress_avg当作压力代理。"
+  }
 }
