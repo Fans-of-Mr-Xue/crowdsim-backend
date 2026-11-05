@@ -641,7 +641,8 @@ class ExperimentOrchestrator:
             binding = scenario["observationBinding"]
             return {**payload, "count": scenario["population"], "requirement_id": binding["requirementId"],
                     "artificial_society_id": binding["modelId"],
-                    "artificial_society_fingerprint": binding["modelFingerprint"]}
+                    "artificial_society_fingerprint": binding["modelFingerprint"],
+                    **({"during_llm_model": binding["llmModel"]} if binding.get("llmModel") else {})}
         if scenario.get("presetId"):
             preset = verify_bound_preset(scenario)
             submission_id = self.gateway.submit({

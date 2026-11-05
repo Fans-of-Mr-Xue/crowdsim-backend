@@ -21,10 +21,12 @@ from .model_gateway import register_model_gateway_routes
 
 
 def create_app(repository=None, *, model=None):
+    from crowdsim.during_models import register_during_model_routes
     app = web.Application(client_max_size=8 * 1024 * 1024)
     repository = register_database_routes(app, repository)
     main_gateway = register_model_gateway_routes(app, include_model_routes=False)
     register_model_routes(app, main_gateway=main_gateway)
+    register_during_model_routes(app)
     register_page_assistant_routes(app, repository.db)
     register_environment_routes(app, repository.db)
     register_subject_routes(app, repository.db)

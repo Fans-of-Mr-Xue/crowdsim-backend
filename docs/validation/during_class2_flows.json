@@ -1,0 +1,552 @@
+{
+  "syntheticOnly": true,
+  "browserUsed": false,
+  "servicesRestarted": false,
+  "cases": [
+    {
+      "name": "multi-100",
+      "passed": true,
+      "sumoVersion": "SUMO 1.27.0",
+      "count": 100,
+      "flowCounts": {
+        "flow-a": 40,
+        "flow-b": 35,
+        "flow-c": 25
+      },
+      "previewMaxErrorMeters": 0.0,
+      "sumoMaxPositionErrorMeters": 5.077083989123583e-05,
+      "destinationMaxPreviewErrorMeters": 0.0,
+      "speedPeaksMps": {
+        "flow-a": 0.9927134464029223,
+        "flow-b": 1.2948370518209413,
+        "flow-c": 1.5228319065272808
+      },
+      "configuredSpeedsMps": {
+        "flow-a": 1,
+        "flow-b": 1.3,
+        "flow-c": 1.6
+      },
+      "dwelling": 0,
+      "timeSeconds": 2.0,
+      "population": {
+        "planned": 100,
+        "departed": 100,
+        "active": 100,
+        "arrived": 0,
+        "explicitly_removed": 0,
+        "unknown_disappearances": [],
+        "conservation_error": 0
+      },
+      "configuration": {
+        "version": 1,
+        "location_id": "memorial-tower",
+        "network_sha256": "7f1e900aa870f1c55d90ad18d18f41690f774083996d68fe1a06d8f114c9c67c",
+        "flows": [
+          {
+            "id": "flow-a",
+            "name": "西侧人流",
+            "count": 40,
+            "density": 2.2,
+            "speed": 1,
+            "origin": {
+              "lane_id": "679361567#1_0:0",
+              "offset": 25
+            },
+            "destination": {
+              "lane_id": "906417852#1_0:0",
+              "offset": 7
+            }
+          },
+          {
+            "id": "flow-b",
+            "name": "入口人流",
+            "count": 35,
+            "density": 1.8,
+            "speed": 1.3,
+            "origin": {
+              "lane_id": "178411801#0_0:0",
+              "offset": 4
+            },
+            "destination": {
+              "lane_id": "679361567#1_0:0",
+              "offset": 75
+            }
+          },
+          {
+            "id": "flow-c",
+            "name": "公园人流",
+            "count": 25,
+            "density": 2.6,
+            "speed": 1.6,
+            "origin": {
+              "lane_id": "906417852#1_0:0",
+              "offset": 9
+            },
+            "destination": {
+              "lane_id": "679361567#1_0:0",
+              "offset": 105
+            }
+          }
+        ]
+      },
+      "runDirectory": "/var/folders/5v/tmygthq13lx5k68r5gql64bm0000gn/T/crowdsim-flow-sumo-sook5cbw/multi-100/runs/run-ee46d8d9e3944409aea257082dae6534"
+    },
+    {
+      "name": "multi-300",
+      "passed": true,
+      "sumoVersion": "SUMO 1.27.0",
+      "count": 300,
+      "flowCounts": {
+        "flow-a": 120,
+        "flow-b": 105,
+        "flow-c": 75
+      },
+      "previewMaxErrorMeters": 1.4210854715202004e-14,
+      "sumoMaxPositionErrorMeters": 5.077081796838221e-05,
+      "destinationMaxPreviewErrorMeters": 2.842170943040401e-14,
+      "speedPeaksMps": {
+        "flow-a": 0.9959026050753892,
+        "flow-b": 1.2995187582494692,
+        "flow-c": 1.5940072940289975
+      },
+      "configuredSpeedsMps": {
+        "flow-a": 1,
+        "flow-b": 1.3,
+        "flow-c": 1.6
+      },
+      "dwelling": 0,
+      "timeSeconds": 2.0,
+      "population": {
+        "planned": 300,
+        "departed": 300,
+        "active": 300,
+        "arrived": 0,
+        "explicitly_removed": 0,
+        "unknown_disappearances": [],
+        "conservation_error": 0
+      },
+      "configuration": {
+        "version": 1,
+        "location_id": "memorial-tower",
+        "network_sha256": "7f1e900aa870f1c55d90ad18d18f41690f774083996d68fe1a06d8f114c9c67c",
+        "flows": [
+          {
+            "id": "flow-a",
+            "name": "西侧人流",
+            "count": 120,
+            "density": 2.2,
+            "speed": 1,
+            "origin": {
+              "lane_id": "679361567#1_0:0",
+              "offset": 25
+            },
+            "destination": {
+              "lane_id": "906417852#1_0:0",
+              "offset": 7
+            }
+          },
+          {
+            "id": "flow-b",
+            "name": "入口人流",
+            "count": 105,
+            "density": 1.8,
+            "speed": 1.3,
+            "origin": {
+              "lane_id": "178411801#0_0:0",
+              "offset": 4
+            },
+            "destination": {
+              "lane_id": "679361567#1_0:0",
+              "offset": 75
+            }
+          },
+          {
+            "id": "flow-c",
+            "name": "公园人流",
+            "count": 75,
+            "density": 2.6,
+            "speed": 1.6,
+            "origin": {
+              "lane_id": "906417852#1_0:0",
+              "offset": 9
+            },
+            "destination": {
+              "lane_id": "679361567#1_0:0",
+              "offset": 105
+            }
+          }
+        ]
+      },
+      "runDirectory": "/var/folders/5v/tmygthq13lx5k68r5gql64bm0000gn/T/crowdsim-flow-sumo-sook5cbw/multi-300/runs/run-039d9b96531b414384275f46ee023c82"
+    },
+    {
+      "name": "multi-600",
+      "passed": true,
+      "sumoVersion": "SUMO 1.27.0",
+      "count": 600,
+      "flowCounts": {
+        "flow-a": 240,
+        "flow-b": 210,
+        "flow-c": 150
+      },
+      "previewMaxErrorMeters": 2.842170943040401e-14,
+      "sumoMaxPositionErrorMeters": 5.077084514958e-05,
+      "destinationMaxPreviewErrorMeters": 2.842170943040401e-14,
+      "speedPeaksMps": {
+        "flow-a": 0.9928178923204541,
+        "flow-b": 1.2987438262533397,
+        "flow-c": 1.5920489836484195
+      },
+      "configuredSpeedsMps": {
+        "flow-a": 1,
+        "flow-b": 1.3,
+        "flow-c": 1.6
+      },
+      "dwelling": 0,
+      "timeSeconds": 2.0,
+      "population": {
+        "planned": 600,
+        "departed": 600,
+        "active": 600,
+        "arrived": 0,
+        "explicitly_removed": 0,
+        "unknown_disappearances": [],
+        "conservation_error": 0
+      },
+      "configuration": {
+        "version": 1,
+        "location_id": "memorial-tower",
+        "network_sha256": "7f1e900aa870f1c55d90ad18d18f41690f774083996d68fe1a06d8f114c9c67c",
+        "flows": [
+          {
+            "id": "flow-a",
+            "name": "西侧人流",
+            "count": 240,
+            "density": 2.2,
+            "speed": 1,
+            "origin": {
+              "lane_id": "679361567#1_0:0",
+              "offset": 25
+            },
+            "destination": {
+              "lane_id": "906417852#1_0:0",
+              "offset": 7
+            }
+          },
+          {
+            "id": "flow-b",
+            "name": "入口人流",
+            "count": 210,
+            "density": 1.8,
+            "speed": 1.3,
+            "origin": {
+              "lane_id": "178411801#0_0:0",
+              "offset": 4
+            },
+            "destination": {
+              "lane_id": "679361567#1_0:0",
+              "offset": 75
+            }
+          },
+          {
+            "id": "flow-c",
+            "name": "公园人流",
+            "count": 150,
+            "density": 2.6,
+            "speed": 1.6,
+            "origin": {
+              "lane_id": "906417852#1_0:0",
+              "offset": 9
+            },
+            "destination": {
+              "lane_id": "679361567#1_0:0",
+              "offset": 105
+            }
+          }
+        ]
+      },
+      "runDirectory": "/var/folders/5v/tmygthq13lx5k68r5gql64bm0000gn/T/crowdsim-flow-sumo-sook5cbw/multi-600/runs/run-ac74896459b9493c8fda0a0ef19fa65c"
+    },
+    {
+      "name": "multi-700",
+      "passed": true,
+      "sumoVersion": "SUMO 1.27.0",
+      "count": 700,
+      "flowCounts": {
+        "flow-a": 280,
+        "flow-b": 244,
+        "flow-c": 176
+      },
+      "previewMaxErrorMeters": 2.842170943040401e-14,
+      "sumoMaxPositionErrorMeters": 5.077083736363117e-05,
+      "destinationMaxPreviewErrorMeters": 3.1776437161565096e-14,
+      "speedPeaksMps": {
+        "flow-a": 0.9951267845463008,
+        "flow-b": 1.2937340358877556,
+        "flow-c": 1.5883415142446757
+      },
+      "configuredSpeedsMps": {
+        "flow-a": 1,
+        "flow-b": 1.3,
+        "flow-c": 1.6
+      },
+      "dwelling": 0,
+      "timeSeconds": 2.0,
+      "population": {
+        "planned": 700,
+        "departed": 700,
+        "active": 700,
+        "arrived": 0,
+        "explicitly_removed": 0,
+        "unknown_disappearances": [],
+        "conservation_error": 0
+      },
+      "configuration": {
+        "version": 1,
+        "location_id": "memorial-tower",
+        "network_sha256": "7f1e900aa870f1c55d90ad18d18f41690f774083996d68fe1a06d8f114c9c67c",
+        "flows": [
+          {
+            "id": "flow-a",
+            "name": "西侧人流",
+            "count": 280,
+            "density": 2.2,
+            "speed": 1,
+            "origin": {
+              "lane_id": "679361567#1_0:0",
+              "offset": 25
+            },
+            "destination": {
+              "lane_id": "906417852#1_0:0",
+              "offset": 7
+            }
+          },
+          {
+            "id": "flow-b",
+            "name": "入口人流",
+            "count": 244,
+            "density": 1.8,
+            "speed": 1.3,
+            "origin": {
+              "lane_id": "178411801#0_0:0",
+              "offset": 4
+            },
+            "destination": {
+              "lane_id": "679361567#1_0:0",
+              "offset": 75
+            }
+          },
+          {
+            "id": "flow-c",
+            "name": "公园人流",
+            "count": 176,
+            "density": 2.6,
+            "speed": 1.6,
+            "origin": {
+              "lane_id": "906417852#1_0:0",
+              "offset": 9
+            },
+            "destination": {
+              "lane_id": "679361567#1_0:0",
+              "offset": 105
+            }
+          }
+        ]
+      },
+      "runDirectory": "/var/folders/5v/tmygthq13lx5k68r5gql64bm0000gn/T/crowdsim-flow-sumo-sook5cbw/multi-700/runs/run-a38e13dc3bb64a60ae042800ce7ce595"
+    },
+    {
+      "name": "multi-1000",
+      "passed": true,
+      "sumoVersion": "SUMO 1.27.0",
+      "count": 1000,
+      "flowCounts": {
+        "flow-a": 400,
+        "flow-b": 350,
+        "flow-c": 250
+      },
+      "previewMaxErrorMeters": 1.4210854715202004e-14,
+      "sumoMaxPositionErrorMeters": 5.077084154871934e-05,
+      "destinationMaxPreviewErrorMeters": 2.842170943040401e-14,
+      "speedPeaksMps": {
+        "flow-a": 0.9991605506744236,
+        "flow-b": 1.296572677511722,
+        "flow-c": 1.5951655999571086
+      },
+      "configuredSpeedsMps": {
+        "flow-a": 1,
+        "flow-b": 1.3,
+        "flow-c": 1.6
+      },
+      "dwelling": 81,
+      "timeSeconds": 2.0,
+      "population": {
+        "planned": 1000,
+        "departed": 1000,
+        "active": 1000,
+        "arrived": 0,
+        "explicitly_removed": 0,
+        "unknown_disappearances": [],
+        "conservation_error": 0
+      },
+      "configuration": {
+        "version": 1,
+        "location_id": "memorial-tower",
+        "network_sha256": "7f1e900aa870f1c55d90ad18d18f41690f774083996d68fe1a06d8f114c9c67c",
+        "flows": [
+          {
+            "id": "flow-a",
+            "name": "西侧人流",
+            "count": 400,
+            "density": 2.2,
+            "speed": 1,
+            "origin": {
+              "lane_id": "679361567#1_0:0",
+              "offset": 25
+            },
+            "destination": {
+              "lane_id": "906417852#1_0:0",
+              "offset": 7
+            }
+          },
+          {
+            "id": "flow-b",
+            "name": "入口人流",
+            "count": 350,
+            "density": 1.8,
+            "speed": 1.3,
+            "origin": {
+              "lane_id": "178411801#0_0:0",
+              "offset": 4
+            },
+            "destination": {
+              "lane_id": "679361567#1_0:0",
+              "offset": 75
+            }
+          },
+          {
+            "id": "flow-c",
+            "name": "公园人流",
+            "count": 250,
+            "density": 2.6,
+            "speed": 1.6,
+            "origin": {
+              "lane_id": "906417852#1_0:0",
+              "offset": 9
+            },
+            "destination": {
+              "lane_id": "679361567#1_0:0",
+              "offset": 105
+            }
+          }
+        ]
+      },
+      "runDirectory": "/var/folders/5v/tmygthq13lx5k68r5gql64bm0000gn/T/crowdsim-flow-sumo-sook5cbw/multi-1000/runs/run-49ecdf3ef5e44901b0c25ca373cfeb41"
+    },
+    {
+      "name": "single-hold",
+      "passed": true,
+      "sumoVersion": "SUMO 1.27.0",
+      "count": 12,
+      "flowCounts": {
+        "flow-a": 12
+      },
+      "previewMaxErrorMeters": 0.0,
+      "sumoMaxPositionErrorMeters": 5.077065661530285e-05,
+      "destinationMaxPreviewErrorMeters": 2.842170943040401e-14,
+      "speedPeaksMps": {
+        "flow-a": 1.2999208578187973
+      },
+      "configuredSpeedsMps": {
+        "flow-a": 1.3
+      },
+      "dwelling": 12,
+      "timeSeconds": 40.0,
+      "population": {
+        "planned": 12,
+        "departed": 12,
+        "active": 12,
+        "arrived": 0,
+        "explicitly_removed": 0,
+        "unknown_disappearances": [],
+        "conservation_error": 0
+      },
+      "configuration": {
+        "version": 1,
+        "location_id": "memorial-tower",
+        "network_sha256": "7f1e900aa870f1c55d90ad18d18f41690f774083996d68fe1a06d8f114c9c67c",
+        "flows": [
+          {
+            "id": "flow-a",
+            "name": "西侧人流",
+            "count": 12,
+            "density": 1.5,
+            "speed": 1.3,
+            "origin": {
+              "lane_id": "679361567#1_0:0",
+              "offset": 25
+            },
+            "destination": {
+              "lane_id": "679361567#1_0:0",
+              "offset": 40
+            }
+          }
+        ]
+      },
+      "runDirectory": "/var/folders/5v/tmygthq13lx5k68r5gql64bm0000gn/T/crowdsim-flow-sumo-sook5cbw/single-hold/runs/run-85383f3f6f5c47d7a340fa6cbb0a63fd"
+    },
+    {
+      "name": "coincident-hold",
+      "passed": true,
+      "sumoVersion": "SUMO 1.27.0",
+      "count": 1,
+      "flowCounts": {
+        "flow-a": 1
+      },
+      "previewMaxErrorMeters": 0.0,
+      "sumoMaxPositionErrorMeters": 5.0770481442091885e-05,
+      "destinationMaxPreviewErrorMeters": 0.0,
+      "speedPeaksMps": {
+        "flow-a": 0.0
+      },
+      "configuredSpeedsMps": {
+        "flow-a": 1.3
+      },
+      "dwelling": 1,
+      "timeSeconds": 5.0,
+      "population": {
+        "planned": 1,
+        "departed": 1,
+        "active": 1,
+        "arrived": 0,
+        "explicitly_removed": 0,
+        "unknown_disappearances": [],
+        "conservation_error": 0
+      },
+      "configuration": {
+        "version": 1,
+        "location_id": "memorial-tower",
+        "network_sha256": "7f1e900aa870f1c55d90ad18d18f41690f774083996d68fe1a06d8f114c9c67c",
+        "flows": [
+          {
+            "id": "flow-a",
+            "name": "西侧人流",
+            "count": 1,
+            "density": 1.5,
+            "speed": 1.3,
+            "origin": {
+              "lane_id": "679361567#1_0:0",
+              "offset": 25
+            },
+            "destination": {
+              "lane_id": "679361567#1_0:0",
+              "offset": 25
+            }
+          }
+        ]
+      },
+      "runDirectory": "/var/folders/5v/tmygthq13lx5k68r5gql64bm0000gn/T/crowdsim-flow-sumo-sook5cbw/coincident-hold/runs/run-eb55f5e4d8a04d279be4037bca248f31"
+    }
+  ],
+  "passed": true
+}

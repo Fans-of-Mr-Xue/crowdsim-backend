@@ -45,6 +45,8 @@ ARDE 算法和 SUMO 仿真全部由本仓库提供，运行时不依赖 MACE。
 
 ## 启动
 
+机房停电时可使用事中专用入口 `./run_during.sh`（先激活已安装依赖的 `sumo` 环境）。它不依赖 MongoDB、SSH 或事后应用；前端事中菜单可切换独立配置的 DeepSeek，GLM 及事前/事后默认行为不变。配置、检查和恢复方式见[事中备用模型与独立启动](docs/during_deepseek.md)。
+
 日常使用在仓库根目录按当前终端选择入口。Windows PowerShell（包括提示符含 `PS` 的 Cursor 终端）：
 
 ```powershell
@@ -310,6 +312,10 @@ C2 根据模型压力值生成 `calm/tense/panic/unknown`；默认分界 0.4/0.7
 新实验按其新提交需求保存的区域和网格展示。CSV/PNG 标明范围版本和面积。
 不启动 SUMO、不连接前端、不改写实验记录。使用与口径见
 [实验指标查看器](docs/experiment_viewer.md)。
+
+## 第二类演示聚集预设
+
+后端提供独立的纪念塔聚集初始化接口，按用户人数生成初始分布，开始后直接离场；第一类实验仍沿用原初始化规则。接口、人数范围与归档见 [第二类聚集预设后端](docs/during_class2_crowding.md)。本次入口尚未连接前端。
 
 ## DeepSeek 行人决策 Skill
 

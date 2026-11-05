@@ -7,6 +7,7 @@ from enum import Enum
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
 from typing import Any, Iterable, Optional
 import uuid
@@ -166,6 +167,7 @@ class SimulationRuntime:
         self.decision_engine = IndividualModelingEngine(base_decision_engine)
         self.decision_scheduler = DecisionScheduler(self.decision_engine)
         self.use_llm = bool(use_llm)
+        self.during_llm_model = None
         # Model bindings may enable LLM decisions for one run, not for later
         # requirements that have no model. Preserve the launcher's baseline.
         self._base_use_llm = self.use_llm
@@ -218,6 +220,7 @@ class SimulationRuntime:
         self.commands = RuntimeCommandQueue()
         self.requirement_record: dict | None = None
         self._hotspot_activity = None
+        self.class2_flows = None
         self._hotspot_exit_applied: set[str] = set()
         self.requirement_id: str | None = None
         self.during_preset = json.loads(json.dumps(during_preset)) if during_preset else None
@@ -328,7 +331,8 @@ class SimulationRuntime:
             if self.demand_mode == "generated_hotspot":
                 # Generated scenes own their hotspot topology. It must load even
                 # when the scene has no legacy Bund POI/activity-plan catalog.
-                self.hotspot_catalog = HotspotCatalog(self.network, self.hotspot_demand_spec.config_path)
+                if not getattr(self.hotspot_demand_spec, 'is_class2_demo', False):
+                    self.hotspot_catalog = HotspotCatalog(self.network, self.hotspot_demand_spec.config_path)
             if self.generated_demand_spec is not None:
                 activity_options = ({"activity": self._hotspot_activity,
                                      "observation_scope": self.observation_collector.scope}
@@ -342,6 +346,11 @@ class SimulationRuntime:
                         self.hotspot_catalog = HotspotCatalog(self.network, run_directory / "hotspot.config.json")
                     self.hotspot_catalog.apply_demand_timing(self.demand_generation_report)
                 self.population = PopulationManager([source], profile_sampler=self.population.profile_sampler)
+                if getattr(self.generated_demand_spec, 'is_class2_demo', False):
+                    from crowdsim.scenarios.class2_flow_runtime import Class2FlowController
+                    self.class2_flows = Class2FlowController(self.demand_generation_report['layout_file'])
+                    if self.demand_generation_report['requested_layout_sha256'] != self.requirement_record['requirement']['class2_demo']['layout_sha256']:
+                        raise ValueError('第二类生成布局与已冻结方案不一致')
                 # Empty baseline runs must still replace the preset route file.
                 self.prepared_demand_path = source
             if self.population.ledger.planned_ids:
@@ -349,6 +358,7 @@ class SimulationRuntime:
                 self.population.prepare_demand(
                     self.prepared_demand_path,
                     None if self.generated_demand_spec is not None else self.demand_count,
+                    **({'flow_speeds': self.class2_flows.speeds} if self.class2_flows is not None else {}),
                 )
             if self.prepared_demand_path is not None:
                 # Replay and specialised experiments may already provide a complete
@@ -359,6 +369,7 @@ class SimulationRuntime:
                     route_files = [path for path in self._route_files_from_config() if path not in replaced]
                     route_files.append(self.prepared_demand_path)
                     self.adapter.extra_args.extend(["--route-files", ",".join(str(path) for path in route_files)])
+            self.adapter.allow_unknown_person_stage = self.class2_flows is not None
             self.current = self._materialize_initial_population(self.adapter.start())
             self.population.reconcile(self.current)
             if self.during_preset and self.population.diagnostics()["planned"] != self.during_preset["requirement"]["population"]["total"]:
@@ -366,10 +377,12 @@ class SimulationRuntime:
             self.route_provider = RouteProvider(self.network, self.adapter)
             if self.hotspot_catalog is not None:
                 self.hotspot_route_choice = HotspotRouteChoice(self.network, self.route_provider)
-            self.plan_executor = PlanExecutor(self.adapter, self.route_provider)
+            self.plan_executor = PlanExecutor(self.adapter, self.route_provider, defer_speed_updates=self.class2_flows is not None)
             self._configure_model_gates()
             for person_id in self.current.persons:
                 self.plan_executor.register_profile(self.population.profile_for(person_id))
+            if self.class2_flows is not None:
+                self.current = self.class2_flows.bind(self)
             self._update_hotspot_activity(self.current)
             self.metrics_collector = MetricsCollector(
                 self.network,
@@ -377,7 +390,7 @@ class SimulationRuntime:
                 population_manager=self.population,
             )
             self.latest_metrics = self.metrics_collector.measure(self.current, self.population.states, self.population.diagnostics())
-            self._refresh_visual_states()
+            self._refresh_initial_visual_states()
             self._measure_observations()
             self._measure_during()
             self.recorder = ExperimentRecorder(self.run_id, self.config_path, self.adapter.diagnostics)
@@ -405,6 +418,9 @@ class SimulationRuntime:
             self.state = RuntimeState.READY
             if self.observation_collector is not None:
                 self.recorder.record_step(self, self.current, self.latest_metrics)
+            if getattr(self.generated_demand_spec, 'is_class2_demo', False):
+                from crowdsim.scenarios.class2_crowding import record_initial_state
+                record_initial_state(self, run_directory)
             if (self._observation_duration_seconds is not None
                     and self.time_seconds + 1e-9 >= self._observation_duration_seconds):
                 # Inserting depart=0 people may already advance SUMO by one
@@ -436,6 +452,16 @@ class SimulationRuntime:
         if missing:
             raise RuntimeError(f"initial population insertion is incomplete: {len(missing)} persons missing")
         return snapshot
+
+    def _refresh_initial_visual_states(self) -> None:
+        if getattr(self.generated_demand_spec, 'is_class2_demo', False):
+            # READY already contains the class-two crowd. Observe that frozen
+            # snapshot before classifying it; no engine step or timer update.
+            self.observations = self.environment.observe(
+                self.current.persons, self.population.profiles, self.population.states,
+                self.snapshot_id, self.hazards.zones.values(),
+            )
+        self._refresh_visual_states()
 
     def start(self) -> None:
         if self.state not in {RuntimeState.READY, RuntimeState.PAUSED}:
@@ -491,6 +517,8 @@ class SimulationRuntime:
     def _prepare_boundary(self) -> list[str]:
         self.process_pending_commands()
         self._expire_control_actions()
+        if self.class2_flows is not None:
+            self.class2_flows.control.advance(self)
         self.hazards.update(self.time_seconds)
         if self.event_manager is not None:
             self.event_manager.step(self.time_seconds)
@@ -514,7 +542,8 @@ class SimulationRuntime:
             if self.current is not None:
                 for person_id, motion in self.current.persons.items():
                     profile = self.population.profile_for(person_id)
-                    base_speed = profile.free_walking_speed * profile.mobility
+                    base_speed = (self.class2_flows.speeds[person_id] if self.class2_flows is not None
+                                  else profile.free_walking_speed * profile.mobility)
                     self.plan_executor.set_hazard_limit(person_id, self.hazards.speed_limit_for(motion, base_speed))
         due = self.decision_scheduler.collect_due(self.population.states, self.observations, self.time_seconds)
         with self.performance.measure('route_context'):
@@ -565,6 +594,10 @@ class SimulationRuntime:
             return self.apply_policy(data)
         if action == "apply_action":
             return self.apply_control_action(data)
+        if action == "install_class2_control_plan":
+            if self.class2_flows is None or data.get("run_id") != self.run_id:
+                raise ValueError("控制计划须绑定本次第二类运行")
+            return self.class2_flows.control.install(self, data.get("controlPlan"))
         if action == "set_group":
             record = GroupRecord(
                 group_id=str(data.get("group_id") or ""),
@@ -588,6 +621,8 @@ class SimulationRuntime:
                     execution = self.apply_plan(plan)
                     if execution.status == "partial_failure":
                         raise RuntimeError(execution.reason)
+        if self.class2_flows is not None:
+            self.class2_flows.before_step(self)
         with self.performance.measure('sumo_step'):
             result = self.adapter.step()
         self.population.reconcile(result)
@@ -597,6 +632,8 @@ class SimulationRuntime:
             if self.plan_executor is not None and person_id not in self.plan_executor.base_limits:
                 self.plan_executor.register_profile(self.population.profile_for(person_id))
         self._update_hotspot_activity(result)
+        if self.class2_flows is not None:
+            self.class2_flows.update(self, result)
         old_states = dict(self.population.states)
         if self.environment is not None:
             with self.performance.measure('neighbour_observation'):
@@ -636,6 +673,8 @@ class SimulationRuntime:
             with self.performance.measure('record_step'):
                 self.recorder.record_step(self, result, self.latest_metrics)
         if finished:
+            if self.class2_flows is not None:
+                self.class2_flows.control.finish(self)
             self.state = RuntimeState.FINISHED
             self.observation_end_reason = reason
             if self.recorder is not None:
@@ -647,6 +686,8 @@ class SimulationRuntime:
             self.latest_metrics["during"] = self.during_observer.measure(self, finished=finished)
 
     def _measure_observations(self) -> None:
+        if getattr(self, 'class2_flows', None) is not None:
+            self.latest_metrics['class2_flows'] = self.class2_flows.metrics()
         if self.observation_collector is not None:
             with self.performance.measure('observation_metrics'):
                 self.latest_metrics["observation"] = self.observation_collector.measure(
@@ -1006,7 +1047,18 @@ class SimulationRuntime:
         distributions = requirement.get("population", {}).get("distributions")
         if not isinstance(distributions, dict):
             raise ValueError("requirement population distributions are missing")
-        duration = requirement_observation_duration(requirement)
+        class2 = 'class2_demo' in requirement
+        if class2 != bool(getattr(self.generated_demand_spec, 'is_class2_demo', False)):
+            raise ValueError('class-two demonstration requires its isolated runtime')
+        if class2:
+            from crowdsim.scenarios.class2_crowding import validate_binding
+            binding = validate_binding(requirement)
+            if (binding['seed'] != self.random_seed
+                    or binding['count'] != self.hotspot_demand_spec.bound_count):
+                raise ValueError('class-two runtime differs from the frozen requirement')
+            duration = binding['duration_seconds']
+        else:
+            duration = requirement_observation_duration(requirement)
         self.requirement_record = json.loads(json.dumps(record, ensure_ascii=False))
         self.requirement_id = str(record.get("requirement_id") or "") or None
         self._hotspot_activity = (requirement_hotspot_activity(requirement)
@@ -1014,6 +1066,27 @@ class SimulationRuntime:
         self.population.profile_sampler.configure_distributions(distributions)
         self._observation_duration_seconds = duration
         self.timeline_end_seconds = duration if duration is not None else self._scenario_timeline_end_seconds
+
+    def configure_during_llm(self, identifier: str | None) -> None:
+        """Opt-in, per-run provider binding; shared launch defaults are untouched."""
+        if identifier is not None and (not isinstance(identifier, str) or identifier not in {"GLM-5.3-Flash", "deepseek-flash"}):
+            raise ValueError("unsupported during model")
+        if self.state not in {RuntimeState.CREATED, RuntimeState.CLOSED, RuntimeState.ERROR}:
+            raise ValueError("changing the during model requires a runtime reset")
+        from crowdsim.modeling_algorithm.individual_model.decision.llm_driven import LLMDrivenDecisionModel
+        if identifier == "deepseek-flash":
+            from crowdsim.during_models import DeepSeekSettings
+            settings = DeepSeekSettings.load()
+            if not settings.available:
+                raise ValueError("DeepSeek 未启用或未配置后端 Key")
+            llm = LLMDrivenDecisionModel(timeout_seconds=float(os.environ.get("CROWDSIM_DURING_DEEPSEEK_DECISION_TIMEOUT", "8")))
+            llm.base_url, llm.model, llm.api_key = settings.base_url, settings.model, settings.api_key
+            llm.extra_body = {"thinking": {"type": "disabled"}}
+            self.decision_engine.llm = llm
+        elif self.during_llm_model == "deepseek-flash":
+            self.decision_engine.llm = LLMDrivenDecisionModel()
+        self.decision_engine.model = self.decision_engine.llm.model
+        self.during_llm_model = identifier
 
     def configure_artificial_society(self, record: dict) -> None:
         model = record.get("artificial_society") if isinstance(record, dict) else None
@@ -1126,6 +1199,8 @@ class SimulationRuntime:
         self.artificial_society_id = None
 
     def supports_requirement(self, record: dict) -> bool:
+        if ('class2_demo' in record.get('requirement', {})) != bool(getattr(self.generated_demand_spec, 'is_class2_demo', False)):
+            return False
         location_id = record.get("requirement", {}).get("spatial_scope", {}).get("location_id")
         if self.location_id is not None and location_id != self.location_id:
             return False
@@ -1170,6 +1245,7 @@ class SimulationRuntime:
         random_seed = self.random_seed if seed is None else int(seed)
         performance_options = self.performance_options
         during_preset = self.during_preset
+        during_llm_model = self.during_llm_model
         self.close()
         self.__init__(
             config_path,
@@ -1192,17 +1268,30 @@ class SimulationRuntime:
         )
         if artificial_society_record is not None:
             self.configure_artificial_society(artificial_society_record)
+        if during_llm_model is not None:
+            self.configure_during_llm(during_llm_model)
         if count is not None:
             self.configure_demand(count)
         return self.initialize()
 
     @timed('frame_build')
     def frame(self) -> dict:
-        return self.serializer.build_frame(self)
+        frame = self.serializer.build_frame(self)
+        if self.class2_flows is not None and self.class2_flows.control.plan is not None:
+            frame['class2_control'] = self.class2_flows.control.status()
+        return frame
 
     def init_frame(self) -> dict:
+        frame = self.serializer.build_init(self)
+        if getattr(self.generated_demand_spec, 'is_class2_demo', False) and frame.get('observation_geometry'):
+            from crowdsim.scenarios.class2_crowding import observation_map_geometry
+            frame['observation_geometry'] = observation_map_geometry(self.network, frame['observation_geometry'])
+        if self.class2_flows is not None:
+            frame['class2_control_version'] = 1
+            if self.class2_flows.control.plan is not None:
+                frame['class2_control'] = self.class2_flows.control.status()
         return {
-            **self.serializer.build_init(self),
+            **frame,
             'artificial_society': self.artificial_society_diagnostics(),
             'performance_measurement': self.performance.metadata(),
         }
@@ -1690,6 +1779,8 @@ class SimulationRuntime:
             "timeline_start_seconds": 0.0,
             "timeline_end_seconds": self.timeline_end_seconds,
             "timeline_step_count": steps,
+            **({'class2_demo': dict(self.requirement_record['requirement']['class2_demo'])}
+               if getattr(self.generated_demand_spec, 'is_class2_demo', False) and self.requirement_record else {}),
             **({"hotspot_activity": dict(self._hotspot_activity)} if self._hotspot_activity else {}),
         }
 

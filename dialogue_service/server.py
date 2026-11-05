@@ -13,6 +13,8 @@ from urllib.parse import urlsplit, parse_qs
 
 from dialog_storage.repository import ConversationRepository
 from dialog_storage.during_requirements import DuringRequirementRepository, RequirementConflict
+from dialog_storage.during_artifacts import DuringArtifactRepository, ArtifactConflict
+from dialog_storage.during_empty_conversations import delete_empty_during_conversation
 from dialogue_service.logging_setup import configure_logging
 
 
@@ -39,6 +41,7 @@ class DialogueHttpServer(ThreadingHTTPServer):
         self.repository = ConversationRepository()
         self.workbench_repository = ConversationRepository(self.repository.root / "workbench")
         self.during_requirements = DuringRequirementRepository(self.repository.root / "during-requirements")
+        self.during_artifacts = DuringArtifactRepository(self.repository.root / "during-artifacts", self.during_requirements)
         self.repository.root.mkdir(parents=True, exist_ok=True)
         self.workbench_repository.root.mkdir(parents=True, exist_ok=True)
         self.allowed_origins = _allowed_origins()
@@ -120,6 +123,12 @@ class DialogueHandler(BaseHTTPRequestHandler):
                 raise ValueError(f"无效的分页参数 {name}")
 
         try:
+            artifacts = re.fullmatch(r"/during/conversations/([A-Za-z0-9_-]{1,120})/artifacts", path)
+            if artifacts:
+                try:
+                    return self._send(200, {"record": self.server.during_artifacts.load(artifacts.group(1), query.get('snapshotId', [None])[0])})
+                except (OSError, ValueError):
+                    return self._send(503, {"message": "事中派生档案无法读取，原记录未覆盖"})
             match = re.fullmatch(r"/during/conversations/([A-Za-z0-9_-]{1,120})/requirements", path)
             if match:
                 try:
@@ -171,6 +180,20 @@ class DialogueHandler(BaseHTTPRequestHandler):
             return
         path = urlsplit(self.path).path
         try:
+            artifacts = re.fullmatch(r"/during/conversations/([A-Za-z0-9_-]{1,120})/artifacts", path)
+            if artifacts:
+                try:
+                    return self._send(200, {"record": self.server.during_artifacts.save(artifacts.group(1), self._json_body())})
+                except ArtifactConflict as exc:
+                    return self._send(409, {"message": str(exc)})
+            cleanup = re.fullmatch(r"/during/conversations/([A-Za-z0-9_-]{1,120})/delete-empty", path)
+            if cleanup:
+                payload = self._json_body()
+                if "conversation" not in payload or "requirement" not in payload:
+                    raise ValueError("missing during cleanup inspection")
+                deleted = delete_empty_during_conversation(self.server.repository, self.server.during_requirements,
+                    cleanup.group(1), conversation=payload["conversation"], requirement=payload["requirement"])
+                return self._send(200 if deleted else 409, {"deleted": deleted})
             match = re.fullmatch(r"/during/conversations/([A-Za-z0-9_-]{1,120})/requirements", path)
             if match:
                 payload = self._json_body()

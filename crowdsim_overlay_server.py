@@ -197,6 +197,27 @@ def build_runtime(args: argparse.Namespace, selection: ServiceScenario | None = 
 
 
 def build_requirement_runtime(args: argparse.Namespace, record: dict) -> SimulationRuntime:
+    if 'class2_demo' in record['requirement']:
+        from crowdsim.scenarios.class2_crowding import (
+            Class2CrowdingDemandSpec, PRESET_PATH, load_preset, validate_binding,
+        )
+        binding = validate_binding(record['requirement'])
+        preset, _, _ = load_preset()
+        return SimulationRuntime(
+            PROJECT_ROOT / preset['sumo_config'],
+            pedestrian_route_files=SCENARIO_PRESETS['hotspot'].pedestrian_route_files,
+            sumo_binary=args.sumo_binary, use_llm=False,
+            scenario_name='during-class2-flows', demand_mode='generated_hotspot',
+            timeline_end_seconds=binding['duration_seconds'], location_id='memorial-tower',
+            road_network_url=SCENARIO_PRESETS['hotspot'].road_network_url,
+            hotspot_demand_spec=Class2CrowdingDemandSpec(
+                PROJECT_ROOT / preset['source_demand'], PRESET_PATH,
+                seed=binding['seed'], bound_seed=binding['seed'], bound_count=binding['count'],
+                expected_fingerprint=binding['fingerprint'], flow_design=binding['flow_design'],
+                duration_seconds=binding['duration_seconds']),
+            requirement_record=record, random_seed=binding['seed'],
+            performance_options=performance_options(args),
+        )
     location_id = record["requirement"]["spatial_scope"]["location_id"]
     preset_name = {"memorial-tower": "hotspot", "east-nanjing-road": "east-nanjing-road"}.get(location_id)
     if preset_name is None:

@@ -57,6 +57,15 @@ def _preserve_bindings(previous, state):
         raise ValueError("saved requirement snapshots cannot be removed or changed")
     if any(after["submissions"].get(key) != value for key, value in before["submissions"].items()):
         raise ValueError("saved requirement receipts cannot be removed or changed")
+    for kind in ('artificialSocietyPublications', 'executionManifests'):
+        if set(before.get(kind, {})) - set(after.get(kind, {})):
+            raise ValueError('saved model and runtime bindings cannot be removed')
+    for key, binding in before.get('artificialSocietyPublications', {}).items():
+        updated = after['artificialSocietyPublications'][key]
+        if any(updated.get(field) != binding.get(field) for field in ('model_id', 'model_fingerprint', 'requirement_ref')):
+            raise ValueError('saved model source references cannot be changed')
+    if any(after['executionManifests'][key] != manifest for key, manifest in before.get('executionManifests', {}).items()):
+        raise ValueError('saved runtime manifests cannot be changed')
     entries = {item["clientRequestId"]: item for item in (state.get("observation") or {}).get("entries", [])}
     for item in (previous.get("observation") or {}).get("entries", []):
         updated = entries.get(item["clientRequestId"], {})

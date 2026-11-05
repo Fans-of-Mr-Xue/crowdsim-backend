@@ -66,9 +66,46 @@ class OverlayServer:
         app.router.add_get("/", self._aio_websocket_handler)
         app.router.add_get("/api/v1/performance/config", self._performance_config)
         app.router.add_post("/api/v1/requirements", self._requirement_http_handler)
+        self._register_class2_routes(app)
         app.router.add_route("*", "/api/v1/post", self._post_http_handler)
         app.router.add_route("*", "/api/v1/post/{tail:.*}", self._post_http_handler)
         return app
+
+    def _register_class2_routes(self, app):
+        app.router.add_get('/api/v1/during/class2/preset', self._class2_preset_http)
+        app.router.add_post('/api/v1/during/class2/requirements', self._class2_requirement_http)
+        app.router.add_post('/api/v1/during/class2/control-preview', self._class2_control_preview)
+
+    async def _class2_control_preview(self, request):
+        try:
+            plan = await request.json()
+            flows = getattr(self.simulator, 'class2_flows', None)
+            if flows is None:
+                raise ValueError('当前没有可校验的第二类推演')
+            return web.json_response({'actions': flows.control.preview(self.simulator, plan)})
+        except ValueError as exc:
+            return web.json_response(self._error('invalid_class2_control', str(exc)), status=400)
+
+    async def _class2_preset_http(self, request):
+        from crowdsim.scenarios.class2_crowding import preset_capabilities
+        return web.json_response(await asyncio.to_thread(preset_capabilities))
+
+    async def _class2_requirement_http(self, request):
+        from crowdsim.scenarios.class2_crowding import prepare_requirement
+        try:
+            body = await request.json()
+            def prepare():
+                spec = prepare_requirement(body)
+                result = self._accept_requirement(spec.payload, for_experiment=True, reuse_identical=True)
+                result['class2_demo'] = spec.payload['class2_demo']
+                return result
+            # Preparing this immutable record never claims the simulator/client.
+            return web.json_response(await asyncio.to_thread(prepare), status=201)
+        except CommandError as exc:
+            status = 500 if exc.code == 'requirement_storage_failed' else 400
+            return web.json_response(self._error(exc.code, str(exc)), status=status)
+        except ValueError as exc:
+            return web.json_response(self._error('invalid_class2_demo', str(exc)), status=400)
 
     async def start(self) -> None:
         data_dir = os.environ.get("CROWDSIM_POST_DATA_DIR") or Path(__file__).resolve().parents[2] / "runs" / "postanalysis"
@@ -353,6 +390,11 @@ class OverlayServer:
                     f"location {location_id} is stored but cannot initialize the current SUMO scenario",
                 )
             current_requirement_id = getattr(self.simulator, "requirement_id", None)
+            class2 = requirement_record['requirement'].get('class2_demo')
+            if isinstance(class2, dict) and (artificial_society_record is not None or data.get('during_llm_model') is not None):
+                raise CommandError('class2_model_conflict', '第二类按冻结的人流配置执行，不接收第一类人工社会或个体模型绑定')
+            if isinstance(class2, dict) and seed is not None and seed != class2['seed']:
+                raise CommandError('class2_seed_mismatch', '第二类种子已冻结，请重新准备需求后再修改')
             if (
                 current_requirement_id != requirement_id
                 and not replace_run
@@ -416,6 +458,13 @@ class OverlayServer:
             self.simulator.configure_requirement(requirement_record)
         if artificial_society_record is not None:
             self.simulator.configure_artificial_society(artificial_society_record)
+        if data.get("during_llm_model") is not None:
+            if artificial_society_record is None:
+                raise CommandError("during_model_requires_society", "事中模型选择需要绑定人工社会")
+            self.simulator.configure_during_llm(data["during_llm_model"])
+        elif replace_run and getattr(self.simulator, "during_llm_model", None) is not None:
+            # A legacy/shared run without a provider binding uses launch defaults.
+            self.simulator.configure_during_llm(None)
         state = self.simulator.state
         if replace_run and seed is not None:
             await self._stop_loop()
@@ -440,13 +489,17 @@ class OverlayServer:
         await self._send_init(request_id, resumed=not replace_run and state in {
             RuntimeState.READY, RuntimeState.RUNNING, RuntimeState.PAUSED, RuntimeState.FINISHED})
 
-    def _accept_requirement(self, requirement, request_id=None, *, for_experiment=False) -> dict:
+    def _accept_requirement(self, requirement, request_id=None, *, for_experiment=False, reuse_identical=False) -> dict:
         try:
             spec = RequirementSpec.parse(
                 requirement, allow_empty_population=for_experiment,
             )
-            record = (self.requirements.create(spec, purpose="experiment") if for_experiment
-                      else self.requirements.create(spec))
+            if reuse_identical:
+                record = self.requirements.create(spec, purpose="experiment" if for_experiment else None,
+                                                  reuse_identical=True)
+            else:
+                record = (self.requirements.create(spec, purpose="experiment") if for_experiment
+                          else self.requirements.create(spec))
         except RequirementValidationError as exc:
             raise CommandError("invalid_requirement", str(exc)) from exc
         except OSError as exc:
@@ -545,7 +598,11 @@ class OverlayServer:
             elif action == "get_status":
                 await self._send({"type": "status", "request_id": request_id, **self.simulator.diagnostics()})
             elif action == "get_state":
-                await self._send(self.simulator.frame())
+                frame = self.simulator.frame()
+                if data.get("includeClass2Control") is True and getattr(self.simulator, "class2_flows", None) is not None:
+                    frame["class2_control_context"] = self.simulator.class2_flows.control.context(self.simulator)
+                    frame["request_id"] = request_id
+                await self._send(frame)
             elif action == "get_agent_state":
                 person_id = str(data.get("id", ""))
                 state = self.simulator.population.state_for(person_id)
@@ -569,7 +626,11 @@ class OverlayServer:
                 else:
                     result = run_routing_algorithm(algorithm, routes, **dict(data.get("parameters") or {}))
                 await self._send({"type": "routing_result", "request_id": request_id, "result": result})
-            elif action in {"update_flood_source", "set_event", "trigger_event", "event_decision", "set_policy", "apply_policy", "apply_action", "set_group"}:
+            elif action in {"update_flood_source", "set_event", "trigger_event", "event_decision", "set_policy", "apply_policy", "apply_action", "set_group", "install_class2_control_plan"}:
+                if action == "install_class2_control_plan":
+                    self._check_run(data, required=True)
+                    if self.simulator.state not in {RuntimeState.READY, RuntimeState.PAUSED}:
+                        raise ValueError("请暂停第二类推演后再装载策略")
                 queued = self.simulator.queue_command(action, data, request_id)
                 if self.simulator.state != RuntimeState.RUNNING:
                     self.simulator.process_pending_commands()
@@ -582,6 +643,14 @@ class OverlayServer:
                 if seed is not None and type(seed) is not int:
                     raise CommandError("invalid_seed", "seed must be an integer")
                 self._check_run(data)
+                if (getattr(getattr(self.simulator, 'generated_demand_spec', None), 'is_class2_demo', False)
+                        and not any(data.get(key) is not None for key in
+                                    ('requirement_id', 'during_preset_id', 'artificial_society_id'))):
+                    binding = self.simulator.requirement_record['requirement']['class2_demo']
+                    if seed is not None and seed != binding['seed']:
+                        raise CommandError('class2_seed_mismatch', '第二类种子已冻结，请重新准备需求后再修改')
+                    if data.get('count') is not None and data['count'] != binding['count']:
+                        raise CommandError('class2_count_mismatch', '第二类人数已冻结，请重新准备需求后再修改')
                 if (data.get("requirement_id") is not None or data.get("during_preset_id") is not None
                         or data.get("artificial_society_id") is not None):
                     await self._configure(data, request_id, replace_run=True, seed=seed)

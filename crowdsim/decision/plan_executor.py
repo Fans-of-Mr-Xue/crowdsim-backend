@@ -8,6 +8,7 @@ import math
 
 from traci import constants as tc
 from traci._simulation import Stage
+from traci.exceptions import FatalTraCIError
 
 from crowdsim.domain.crowdsim_models import AgentProfile, BehaviorPlan, MotionSnapshot, PlanExecutionResult
 from crowdsim.decision.route_provider import RouteProvider
@@ -23,9 +24,10 @@ class ItineraryPartialFailure(RuntimeError):
 
 
 class PlanExecutor:
-    def __init__(self, adapter: SumoAdapter, route_provider: RouteProvider) -> None:
+    def __init__(self, adapter: SumoAdapter, route_provider: RouteProvider, *, defer_speed_updates: bool = False) -> None:
         self.adapter = adapter
         self.route_provider = route_provider
+        self.defer_speed_updates = defer_speed_updates
         self.strategy_limits: Dict[str, float] = {}
         self.hazard_limits: Dict[str, float] = {}
         self.environment_limits: Dict[str, float] = {}
@@ -200,6 +202,8 @@ class PlanExecutor:
                 self.counters["route_plans_applied"] += 1
             result = PlanExecutionResult(plan.person_id, action, action, "applied", now, plan.reason)
         except Exception as exc:
+            if self.defer_speed_updates and isinstance(exc, (FatalTraCIError, OSError)):
+                raise
             partial = itinerary_applied or isinstance(exc, ItineraryPartialFailure)
             status = "partial_failure" if partial else "rejected"
             if action in {"reroute", "change_goal"} and self.route_ready(plan.person_id, now):
@@ -270,4 +274,5 @@ class PlanExecutor:
         return min(values)
 
     def _apply_effective_speed(self, person_id: str) -> None:
-        self.adapter.set_person_speed(person_id, self.effective_speed(person_id))
+        if not self.defer_speed_updates:
+            self.adapter.set_person_speed(person_id, self.effective_speed(person_id))

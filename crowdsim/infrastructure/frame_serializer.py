@@ -92,6 +92,8 @@ class FrameSerializer:
             "units": measured.get("units", {}),
         }
 
+        if "class2_flows" in measured:
+            metrics["class2_flows"] = deepcopy(measured["class2_flows"])
         sample = measured.get("observation")
         if getattr(runtime, "_hotspot_activity", None) and runtime.observation_end_reason:
             metrics["observation_completion"] = {

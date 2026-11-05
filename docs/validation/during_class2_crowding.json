@@ -1,0 +1,68 @@
+{
+  "verified_on": "2026-11-02",
+  "preset": {
+    "id": "memorial-tower-class2-crowding-v1",
+    "version": 1,
+    "fingerprint": "sha256:75fa3bb760da00434577c904107c35136add818e04f060d9f59492db2e701719",
+    "problemType": 2,
+    "locationId": "memorial-tower",
+    "name": "纪念塔直接聚集与离场演示",
+    "defaultCount": 600,
+    "countMin": 0,
+    "countMax": 1298,
+    "groupCapacities": {
+      "core": 552,
+      "entries": 81,
+      "park": 665
+    },
+    "nominalWeights": {
+      "core": 88,
+      "entries": 5,
+      "park": 7
+    },
+    "departure": "walk_to_reachable_outside_destination_on_start",
+    "requiresDatabase": false
+  },
+  "feature_tests": {
+    "passed": 36,
+    "log_kind": "local pytest; synthetic data; no external model/database"
+  },
+  "related_regression_tests": {
+    "passed": 495,
+    "existing_swig_warnings": 5
+  },
+  "final_http_reset_boundary_tests": {
+    "passed": 48,
+    "native_cases_deselected_already_verified": 8
+  },
+  "real_sumo_initialization_and_short_departure_counts": [
+    0,
+    1,
+    100,
+    300,
+    600,
+    700,
+    1000,
+    1298
+  ],
+  "full_exit_example": {
+    "count": 100,
+    "end_seconds": 889.0,
+    "state": "FINISHED",
+    "population": {
+      "planned": 100,
+      "departed": 100,
+      "active": 0,
+      "arrived": 100,
+      "explicitly_removed": 0,
+      "unknown_disappearances": [],
+      "conservation_error": 0
+    },
+    "elapsed_wall_seconds": 35.75
+  },
+  "limits": [
+    "Large populations were checked for insertion and short departure, not full completion time.",
+    "Engineering demonstration, not calibrated crowd safety capacity.",
+    "Raw test files were isolated in temporary directories and cleaned after the checks."
+  ]
+}
