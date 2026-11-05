@@ -173,7 +173,7 @@ class DuringArchiveReader:
                       "resultFiles": sorted(name for name in names if isinstance(name, str)),
                       "manifestArchived": "manifest.json" in names, "demandArchived": "demand.rou.xml" in names,
                       "geometryArchived": "observation_geometry.json" in names,
-                      "note": "已完成SUMO运行结果的归档状态；结果完整不代表原运行配置和初始化输入已一同归档。"}
+                      "note": "原运行记录仅作可选溯源；事后以观测分布重构事实组，不要求原运行配置或种子。"}
         return {"sourceKind": "mongodb_archive", "sourceVersion": self.version(document), "executionVersion": 0, "sourceRun": source_run,
                 "reportVersion": self.version(document), "observationIntervalSeconds": document.get("summary", {}).get("sample_interval_seconds"),
                 "sourceBinding": {"sourcePhase": "during", "sourceKind": "mongodb_archive", "collection": "during_results",

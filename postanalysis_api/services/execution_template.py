@@ -22,13 +22,13 @@ def execution_readiness(dataset, plan=None):
     if not metadata.get("sourceRecords"):
         missing.append("可重建源流量与人员初始化的工程输入；仅有观测曲线不足以重新运行仿真")
     if missing:
-        if metadata.get("sourceBinding", {}).get("sourcePhase") == "during":
-            return {"ready": False, "code": "SOURCE_RUN_INPUTS_NOT_LINKED",
-                    "message": "基线来自已完成的SUMO运行；事后尚未关联该轮原运行输入，已有观测和假设均已保留。",
-                    "missing": ["原运行manifest、场景/模型/路网与控制配置的关联", "原始人员初始化、需求文件和种子等可重跑输入", "事后对该运行场景的控制与测量适配"],
-                    "nextAction": "定位原事中运行目录并关联其输入与配置，再生成同场景的反事实执行请求；不需要把观测时窗改成19800秒。"}
-        return {"ready": False, "code": "SCENE_EXECUTION_MAPPING_REQUIRED", "message": "方案可继续设计和保存；当前基线尚未绑定可执行场景。",
-                "missing": missing, "nextAction": "返回需求界定核对措施与假设，补齐当前场景的工程执行映射后再运行。"}
+        from .distribution_targets import distribution_targets
+        targets = distribution_targets(dataset)
+        return {"ready": False, "code": "FACTUAL_RECONSTRUCTION_REQUIRED",
+                "message": "观测数据可用于事后重构；先用当前人工社会重构并校准事实组F-00，再设计和运行反事实。",
+                "reconstruction": targets,
+                "missing": targets["missing"] + ["事后事实组F-00的重构与校准结果，以及当前执行器下的实验配置"],
+                "nextAction": "使用时间、路口/空间单元ID和人数建立分布目标；空间对应及可干预动作由当前事后环境和后端capabilities提供，不索要事中的原运行配置。"}
     if plan and plan.get("counterfactualDesign", {}).get("schemaVersion") == 2:
         try:
             from postanalysis_api.schemas.unified_design import validate_unified_execution

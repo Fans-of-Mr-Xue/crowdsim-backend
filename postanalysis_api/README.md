@@ -4,6 +4,8 @@
 
 统一设计v2区分可保存的实验假设与可执行的工程矩阵。未映射组使用 `planningOnly=true`、`changeDescription` 和全为null的数值控制字段（保留 `referenceDesignId`）；可以新增、保存和预览，不能启动。`GET /review-plans/{id}/execution` 对未绑定场景返回HTTP200、`execution:null`、`requiresConfirmation:false`及`readiness={ready:false,code,message,missing,nextAction}`。只有当前场景、完整工程输入和组映射均就绪时才返回执行矩阵，不能仅凭时窗数值相同认定可执行。
 
+事实基线重构以逐step、逐路口人数分布为目标，来源最少只需`timeSeconds/regionId/population`，其余观测指标可选。原场景ID、代码commit、模型版本、种子和需求不是重构前提；个体、路线、行为及本次实验配置由事后当前人工社会建立。`GET /datasets/{id}/reconstruction`只检查目标覆盖及缺项，不运行拟合；`inputReady`不等于已完成F-00。执行查询对尚未完成重构返回`FACTUAL_RECONSTRUCTION_REQUIRED`，不再索要原轮输入。可干预动作以当前`GET /capabilities`为准，不能由事中数据中的动作清单定义。
+
 当前执行与分析字段以[事后共同契约](../docs/post_execution_analysis_contract.md)为准；该文件按真实workers执行路径核对，并由事后设计对话加载。待扩展的SUMO/TraCI、测量和后端工作见[对接清单](../docs/post_sumo_handoff.md)，不能视为已经接入。
 
 本目录提供挂载在 SUMO 8765 服务内的 HTTP 接口、字段校验、MongoDB 持久化及真实结果计算。现已接入 `workers/sumo_batch.py`，使用独立SUMO进程执行纪念塔 `memorial-post-test` 的F-00/CF批次，保留现有事中运行时。A→M1、B→M2、C→M3为已确认工程测试映射，M3不是真实北侧通道；其他场景仍须声明能力后才能执行。源数据未观测指标保持null，实际指标来自FCD/tripinfo，未校准误差单独展示。

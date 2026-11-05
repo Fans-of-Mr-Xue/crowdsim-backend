@@ -21,9 +21,13 @@ def handle(request: Request):
         if request.method == "GET":
             return response([request.app.dataset_metadata(item) for item in
                              request.app.repo.list("datasets", request.user, request.workspace)])
-    match = re.fullmatch(r"/datasets/([A-Za-z0-9_-]+)(?:/(timeline))?", path)
+    match = re.fullmatch(r"/datasets/([A-Za-z0-9_-]+)(?:/(timeline|reconstruction))?", path)
     if match and request.method == "GET":
-        if match.group(2):
+        if match.group(2) == "reconstruction":
+            from postanalysis_api.services.distribution_targets import distribution_targets
+            dataset = request.app.repo.get("datasets", match.group(1), request.user, request.workspace)
+            return response(distribution_targets(dataset))
+        if match.group(2) == "timeline":
             return response(request.app.timeline(match.group(1), request.user, request.workspace, request.query))
         return response(request.app.dataset_metadata(
             request.app.repo.get("datasets", match.group(1), request.user, request.workspace)))

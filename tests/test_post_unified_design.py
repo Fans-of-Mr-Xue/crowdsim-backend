@@ -62,9 +62,9 @@ class UnifiedDesignTests(unittest.TestCase):
         status, data, _ = handle(Request("GET", "/review-plans/p1/execution", {}, {}, {"X-CrowdSim-User": "u", "X-CrowdSim-Workspace": "w"}, app))
         self.assertEqual(200, status)
         self.assertIsNone(data["execution"])
-        self.assertEqual("SOURCE_RUN_INPUTS_NOT_LINKED", data["readiness"]["code"])
-        self.assertIn("已完成的SUMO运行", data["readiness"]["message"])
-        self.assertGreaterEqual(len(data["readiness"]["missing"]), 2)
+        self.assertEqual("FACTUAL_RECONSTRUCTION_REQUIRED", data["readiness"]["code"])
+        self.assertIn("重构", data["readiness"]["message"])
+        self.assertNotIn("manifest", str(data["readiness"]["missing"]))
         invalid = deepcopy(added); invalid["execution"]["startSeconds"] = 13800
         with self.assertRaises(ValueError):
             validate_reply("design", {"assistant_message": "不能混入其他场景数值", "group_updates": [invalid]}, context)
