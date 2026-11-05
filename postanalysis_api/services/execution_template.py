@@ -34,10 +34,10 @@ def execution_readiness(dataset, plan=None):
         from .distribution_targets import distribution_targets
         targets = distribution_targets(dataset)
         return {"ready": False, "code": "FACTUAL_RECONSTRUCTION_REQUIRED",
-                "message": "观测数据可用于事后重构；先用当前人工社会重构并校准事实组F-00，再设计和运行反事实。",
+                "message": "请补齐运行校验所列的数据。",
                 "reconstruction": targets,
-                "missing": targets["missing"] + ["事后事实组F-00的重构与校准结果，以及当前执行器下的实验配置"],
-                "nextAction": "使用时间、路口/空间单元ID和人数建立分布目标；空间对应及可干预动作由当前事后环境和后端capabilities提供，不索要事中的原运行配置。"}
+                "missing": targets["missing"] or ["事实基线运行配置"],
+                "nextAction": "补齐后重新校验。"}
     if plan and plan.get("counterfactualDesign", {}).get("schemaVersion") == 2:
         try:
             from postanalysis_api.schemas.unified_design import validate_unified_execution

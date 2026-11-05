@@ -63,7 +63,8 @@ class UnifiedDesignTests(unittest.TestCase):
         self.assertEqual(200, status)
         self.assertIsNone(data["execution"])
         self.assertEqual("FACTUAL_RECONSTRUCTION_REQUIRED", data["readiness"]["code"])
-        self.assertIn("重构", data["readiness"]["message"])
+        self.assertEqual("请补齐运行校验所列的数据。", data["readiness"]["message"])
+        self.assertNotIn("capabilities", data["readiness"]["nextAction"])
         self.assertNotIn("manifest", str(data["readiness"]["missing"]))
         invalid = deepcopy(added); invalid["execution"]["startSeconds"] = 13800
         with self.assertRaises(ValueError):

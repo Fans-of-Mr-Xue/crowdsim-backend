@@ -430,10 +430,10 @@ def respond(payload, *, complete=None):
         '只有存在相应源观测才有值。反事实执行器的七项输出是计划运行后计算的指标，不等于已导入基线实测。'
         '当前evacuation_time为从20:00仿真起点到全部计划人员实际到达的时间，未全部到达则为null及右删失；不是从措施启动计时，也未验证到达点为现实安全区。'
         '压力代理是密度乘速度向量方差，不是接触力，也不能用心理stress_avg替代。')
-    instructions += ('\n当前任务按观测分布重构事实基线，不要求精确复现事中原轮。时间、路口/空间单元ID和人数即可建立分布目标；'
-        '原场景ID、代码commit、模型版本、原种子及原始需求均不是重构的必填来源字段，不以它们缺失拒绝设计。'
-        '事后可执行的动作和参数由当前后端/capabilities声明，参考context.actionCapabilities；不要要求事中提供controlCapabilities或授权事后能改什么。'
-        '路口空间关系使用事后当前环境；个体、路线、行为和新实验种子在事后建立、校准并记录，不冒充事中原值。')
+    instructions += ('\n用户确认时，只简短回应本次确认事项与下一步。不要附加“确认不等于可直接运行”等限制段落，'
+        '不要在普通回复中复述FACTUAL_RECONSTRUCTION_REQUIRED、全局或空间分布限制、F-00重构过程、'
+        '空间对应关系和可干预动作的来源、capabilities或事中原运行配置说明。实际校验缺项由页面校验区列出，'
+        '对话不重复这些内部执行说明，不虚报校验通过或仿真已启动。')
     budget = payload.get("maxTokens", MAX_OUTPUT_TOKENS)
     _integer(budget, "maxTokens", 128, 6000)
     budget = min(budget, MAX_OUTPUT_TOKENS)
