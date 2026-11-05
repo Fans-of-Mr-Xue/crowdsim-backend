@@ -21,6 +21,15 @@ def execution_readiness(dataset, plan=None):
         missing.append("场景模型、路网与控制动作映射")
     if not metadata.get("sourceRecords"):
         missing.append("可重建源流量与人员初始化的工程输入；仅有观测曲线不足以重新运行仿真")
+    if not missing:
+        try:
+            from postanalysis_api.workers.memorial_scenario import source_cohorts
+            cohorts = source_cohorts(dataset)
+            if not cohorts or not any(person['depart'] < metadata['durationSeconds'] for person in cohorts):
+                raise ApiError('EXECUTION_INPUT_EMPTY', '运行时窗内需要至少一名行人', 422)
+        except ApiError as exc:
+            return {"ready": False, "code": exc.code, "message": exc.message, "missing": [exc.message],
+                    "nextAction": "修正运行输入后重新校验。"}
     if missing:
         from .distribution_targets import distribution_targets
         targets = distribution_targets(dataset)
@@ -36,7 +45,7 @@ def execution_readiness(dataset, plan=None):
         except ApiError as exc:
             return {"ready": False, "code": exc.code, "message": exc.message, "missing": [exc.message],
                     "nextAction": "返回需求界定补齐执行参数或模型映射，并重新确认方案。"}
-    return {"ready": True, "code": "READY", "message": "已绑定纪念塔工程执行模型，须核对确认后运行。", "missing": [], "nextAction": "核对并确认工程执行矩阵。"}
+    return {"ready": True, "code": "READY", "message": "数据与场景输入校验通过。", "missing": [], "nextAction": "确认实验方案并运行。"}
 
 
 def execution_template(dataset, plan=None):

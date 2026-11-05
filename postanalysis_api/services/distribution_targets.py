@@ -22,4 +22,4 @@ def distribution_targets(dataset):
             "missing": missing,
             "spatialMappingSource": "current_post_environment",
             "actionCapabilitiesSource": "/api/v1/post/capabilities",
-            "note": "用当前事后人工社会生成并校准F-00；无需事中的场景ID、代码commit、模型版本、原始种子或动作能力清单。输入就绪不代表已经完成重构和校准。"}
+            "note": "用当前事后人工社会生成并校准F-00，按空间单元与时刻匹配人数分布。"}
