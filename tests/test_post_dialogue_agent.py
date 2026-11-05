@@ -24,6 +24,15 @@ def request_payload(task="design"):
 
 
 class PostDialogueAgentTests(unittest.TestCase):
+    def test_society_confirmation_is_a_validated_action_instead_of_prose(self):
+        context = {"designStage": "society", "goalConfirmed": True}
+        reply = {"assistant_message": "将按当前设置继续。", "action": "confirm_society"}
+        self.assertEqual(reply, validate_reply("intake", reply, context))
+        with self.assertRaises(ValueError):
+            validate_reply("intake", {"assistant_message": "人工社会已确认，下一步设计"}, context)
+        with self.assertRaises(ValueError):
+            validate_reply("intake", reply, {**context, "goalConfirmed": False})
+
     def test_design_contract_is_loaded_from_the_shared_source_and_scoped_to_tasks(self):
         expected = EXECUTION_ANALYSIS_CONTRACT.read_text(encoding="utf-8").strip()
         for task in EXECUTION_CONTRACT_TASKS:

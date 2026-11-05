@@ -9,6 +9,11 @@ from .common import Request, response
 
 def handle(request: Request):
     path = request.path
+    if request.method == "GET" and (path == "/during-sources" or path.startswith("/during-sources/")):
+        from postanalysis_api.services.during_archives import DuringArchiveReader
+        user, _workspace = request.user, request.workspace
+        reader = DuringArchiveReader(request.app.repo.db)
+        return response(reader.catalog(user) if path == "/during-sources" else reader.report(path[len("/during-sources/"):], user))
     if path == "/datasets":
         if request.method == "POST":
             return request.mutation(lambda: (201, request.app.dataset_metadata(

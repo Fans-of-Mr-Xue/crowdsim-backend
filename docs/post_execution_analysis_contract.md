@@ -8,7 +8,7 @@
 
 需求界定按“上传数据（含基线核对）→明确用户目的→查看与修改人工社会→反事实方案设计”推进。当前工作台取消总览和内部导航，仅显示正在进行的流程。左侧“方案预览”是只读快照入口。
 
-新方案以 `reviewIntake.schemaVersion=2`、`counterfactualDesign.schemaVersion=2` 和统一 `groups` 数组保存；不要求观察、干预、机制三份设计或三次确认。每组保存 `id/name/hypothesis/method/factorSymbols/primaryMetricId/expectedDirection/decisionRule/execution`；method 为 `paired/ofat/ablation`，是实验方法而不是分析页面归属。记录实验单位、范围、共同控制条件、重复数和种子。参照可为F-00或本池其他完整策略组，禁止循环；实际改变的控制量须全部关联假设。旧版分类型字段及下文白名单只用于兼容历史v1快照。
+新方案以 `reviewIntake.schemaVersion=2`、`counterfactualDesign.schemaVersion=2` 和统一 `groups` 数组保存；不要求观察、干预、机制三份设计或三次确认。每组保存 `id/name/hypothesis/method/factorSymbols/primaryMetricId/expectedDirection/decisionRule/execution`。设计类型与比较方式分开：OFAT限定只改变一个因素，组合策略可改变多个，消融隔离一个模块；三者均使用共同随机种子的配对比较，OFAT与配对比较可以在同一组共同使用。为兼容既有快照，method字段仍为 `paired/ofat/ablation`，其中旧值paired表示组合策略设计，不代表只有该类型才配对，也不是分析页面归属。记录实验单位、范围、共同控制条件、重复数和种子。参照可为F-00或本池其他完整策略组，禁止循环；实际改变的控制量须全部关联假设。旧版分类型字段及下文白名单只用于兼容历史v1快照。
 
 `design` 对话在 `context.designSchemaVersion=2` 时，仅返回 `assistant_message`、可选完整 `groups` 与 `repeat_count`；后端校验全部变量、参照、方法及数值一致性。人工社会修改保存到 `artificialSociety.overrides`，作为共同配置进入快照。当前SUMO尚未实现任意主体/环境/规则的文本改写，因此非空修改在执行模板阶段以 `SOCIETY_MAPPING_REQUIRED` 阻止运行，不能静默忽略。
 

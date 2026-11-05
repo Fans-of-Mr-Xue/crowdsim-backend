@@ -87,27 +87,54 @@ def validate_reply(task, reply, context):
         raise ValueError("模型答复必须是 JSON 对象")
     _text(reply.get("assistant_message"), "assistant_message")
     if task == "design" and context.get("designSchemaVersion") == 2:
-        if set(reply) - {"assistant_message", "groups", "repeat_count"}:
+        if set(reply) - {"assistant_message", "action", "groups", "group_updates", "repeat_count"}:
             raise ValueError("统一设计答复包含未授权字段")
+        reply = dict(reply)
+        if reply.get("group_updates") == []:
+            reply.pop("group_updates")
+        if "groups" in reply and "group_updates" in reply:
+            raise ValueError("不能同时替换并增量修改统一实验组")
+        action = "update_design" if {"groups", "group_updates", "repeat_count"} & set(reply) else "answer"
+        if reply.get("action", action) != action:
+            raise ValueError("方案修改动作必须附带实际组配置或重复次数，未修改工作台")
         if "repeat_count" in reply:
             _integer(reply["repeat_count"], "repeat_count", 1, 50)
-        if "groups" in reply:
+        if "groups" in reply or "group_updates" in reply:
             from copy import deepcopy
             from postanalysis_api.schemas.unified_design import validate_unified_design
             from postanalysis_api.schemas.common import ApiError
             trial = deepcopy(context.get("counterfactualDesign") or {})
-            trial["groups"] = reply["groups"]
+            if "groups" in reply:
+                trial["groups"] = reply["groups"]
             fields = {"id", "name", "hypothesis", "method", "factorSymbols", "primaryMetricId", "expectedDirection", "decisionRule", "execution"}
-            if not isinstance(reply["groups"], list) or any(not isinstance(group, dict) or set(group) - fields for group in reply["groups"]):
+            proposed = reply.get("groups", reply.get("group_updates"))
+            if not isinstance(proposed, list) or not 1 <= len(proposed) <= 12 or any(not isinstance(group, dict) or set(group) - fields for group in proposed):
                 raise ValueError("统一实验组包含未授权字段")
+            if "group_updates" in reply:
+                seen = set()
+                for update in proposed:
+                    identity = update.get("id")
+                    if not isinstance(identity, str) or identity in seen or len(update) < 2:
+                        raise ValueError("增量修改须包含唯一编号及实际修改字段")
+                    seen.add(identity)
+                    existing = next((group for group in trial.get("groups", []) if group["id"] == identity), None)
+                    if existing is None:
+                        trial.setdefault("groups", []).append(update)
+                    else:
+                        execution = existing.get("execution", {})
+                        existing.update(update)
+                        if isinstance(update.get("execution"), dict):
+                            existing["execution"] = {**execution, **update["execution"]}
             if not context.get("executionCapabilities"):
                 raise ValueError("当前数据未绑定执行能力，不能由模型生成数值控制组；可继续讨论假设")
             try:
                 validate_unified_design(trial, context.get("variableDefinitions") or {})
             except ApiError as exc:
                 raise ValueError(exc.message) from None
-        return reply
+        return {**reply, "action": action}
     allowed = {"assistant_message"}
+    if task == "intake" and context.get("designStage") == "society":
+        allowed.add("action")
     allowed |= {
         "goal_review": {"action", "proposed_goal", "missing_fields"},
         "baseline_review": {"baseline_updates"},
@@ -119,6 +146,11 @@ def validate_reply(task, reply, context):
     }.get(task, set())
     if set(reply) - allowed:
         raise ValueError("模型答复包含本阶段未授权字段，已保留原草案")
+    if task == "intake" and context.get("designStage") == "society":
+        if reply.get("action") not in {"answer", "confirm_society", "clarify"}:
+            raise ValueError("人工社会核对缺少有效动作，请重新表达确认或提问")
+        if reply["action"] == "confirm_society" and (not context.get("goalConfirmed") or context.get("baselineConfirmed") is False):
+            raise ValueError("请先确认研究目的，再核对人工社会")
     if "parameters" in reply:
         _parameters(reply["parameters"])
     if task == "pc_defaults":
@@ -365,6 +397,19 @@ def respond(payload, *, complete=None):
                 '必须与用户文字方案一致；不确定时补问，不擅自确认。观察比较完整策略；干预相对参照组只改一个因素；'
                 '机制固定通道与时点，只将引导遵从比例设0或改变响应延迟中的一个。'
                 '这些设置只是建议，用户确认快照和工程执行矩阵后才由后端编译并运行。')
+    if task == "intake" and context.get("designStage") == "society":
+        instructions += ('\n本轮是人工社会核对。只输出{"assistant_message":"简短答复","action":"answer|confirm_society|clarify"}。'
+                         '结合对话语义识别“人工社会没问题”“不用修改，就这样继续”等明确认可当前模型的表达，返回confirm_society；'
+                         '询问模型含义、否定确认或尚需修改时不能确认，返回answer或clarify。'
+                         '只有前端应用确认动作后才真正锁定共同条件并进入设计，不要在answer中口头宣布已确认或跳转。'
+                         '不在此任务生成实验组、不声称CF-01已经补全，工作台会按当前已有数值生成可编辑的待验证建议。')
+    if task == "design" and context.get("designSchemaVersion") == 2:
+        instructions += ('\n必须返回action：纯解释为answer；实际新增、修改实验组或重复次数为update_design，并附带group_updates、groups或repeat_count。'
+                         '新增或编辑优先用group_updates数组：按id追加新组或合并已有组，未提及的组保持不变。新组必须返回完整字段；已有组可只给id和实际修改字段。'
+                         'groups仅用于完整替换，不能与group_updates同时返回，不能把仅新增的一组放进groups从而丢失其余组。新增组必须有非空名称、可检验假设、关联变量和判定规则。'
+                         '禁止只在assistant_message里描述新增CF组却不返回对应结构；前端只会应用经过校验的结构。'
+                         'method表示设计类型：ofat是单因素设计，ablation是单模块消融，paired是旧字段保留的组合策略设计。'
+                         '所有这些设计都使用共同随机种子的配对比较，因此OFAT和paired统计不是互斥方法。单因素只能改变一个控制量；组合策略可改变多个。')
     budget = payload.get("maxTokens", MAX_OUTPUT_TOKENS)
     _integer(budget, "maxTokens", 128, 6000)
     budget = min(budget, MAX_OUTPUT_TOKENS)
@@ -376,6 +421,8 @@ def respond(payload, *, complete=None):
               "mode": agent.mode, "phase": "post", "toolsExecuted": bool(research and research["sources"])}
     if task == "goal_review":
         result["goalReviewProtocolVersion"] = 2
+    if task == "intake" and context.get("designStage") == "society":
+        result["societyReviewProtocolVersion"] = 1
     if research is not None:
         result["research"] = {**research, "sources": [{key: value for key, value in item.items() if key != "excerpt"} for item in research["sources"]]}
     return result

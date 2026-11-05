@@ -121,6 +121,23 @@ class UnifiedDesignTests(unittest.TestCase):
             "context": {"designSchemaVersion": 2, "goalConfirmed": True, "baselineConfirmed": True, "executionCapabilities": True,
                 "counterfactualDesign": plan["counterfactualDesign"], "variableDefinitions": plan["variableDefinitions"]}}, complete=complete)
         self.assertEqual("PostAgent", result["agent"])
-        self.assertTrue(seen[0].endswith(UNIFIED_DESIGN_CONTRACT))
+        self.assertIn(UNIFIED_DESIGN_CONTRACT, seen[0])
         self.assertFalse(result["toolsExecuted"])
         self.assertEqual(4, len(result["reply"]["groups"]))
+
+    def test_incremental_group_addition_preserves_the_rest_of_the_pool(self):
+        _, plan = fixture()
+        context = {"designSchemaVersion": 2, "executionCapabilities": True, "counterfactualDesign": deepcopy(plan["counterfactualDesign"]), "variableDefinitions": plan["variableDefinitions"]}
+        new_group = {**deepcopy(context["counterfactualDesign"]["groups"][0]), "id": "CF-05", "name": "新增验证组"}
+        before = deepcopy(context)
+        reply = validate_reply("design", {"assistant_message": "新增验证组", "action": "update_design", "group_updates": [new_group]}, context)
+        self.assertEqual("update_design", reply["action"])
+        self.assertEqual(before, context)
+        validate_reply("design", {"assistant_message": "仅更新时点", "group_updates": [{"id": "CF-02", "execution": {"startSeconds": 13500}}]}, context)
+        self.assertEqual(before, context)
+        with self.assertRaises(ValueError):
+            validate_reply("design", {"assistant_message": "改变参照组导致消融不再单因素", "group_updates": [{"id": "CF-01", "execution": {"startSeconds": 13500}}]}, context)
+        with self.assertRaises(ValueError):
+            validate_reply("design", {"assistant_message": "已新增", "action": "update_design"}, context)
+        with self.assertRaises(ValueError):
+            validate_reply("design", {"assistant_message": "新增", "group_updates": [new_group, new_group]}, context)

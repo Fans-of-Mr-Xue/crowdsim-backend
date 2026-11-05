@@ -215,3 +215,10 @@ services/metric_calculator.py、result_service.py、causal_analysis.py保留另�
 事后PostBackendWorkflow已通过同一8765 HTTP接口载入执行矩阵、保存草稿并显式启动，读取真实进度、轨迹和结果；不通过旧式WebSocket start消息执行批次。前端与后端均核对能力、版本和输入；用户仍需确认工程参数。服务未提供能力时如实停止，不能回退到演示结果。
 
 尚待补齐模型校准与测量有效性、实际控制/机制证据、窗口区域终点、到达口径、软件/文件复现材料，以及后端部分结果和一致性恢复。负责层次、产物及验收标准见[SUMO与后端对接清单](../docs/post_sumo_handoff.md)。
+
+## 从数据库读取事中已完成实验
+
+- `GET /api/v1/post/during-sources`：读取 `during_results` 中 `run_status=completed`、`archive_status=ready`、`data_complete=true` 的来源目录。沿用事后接口的用户与工作区请求头；带所有者的记录仅向对应用户开放，未记录所有者的旧共享归档可只读使用。
+- `GET /api/v1/post/during-sources/{runId}`：核对 GridFS 文件的实验绑定及 SHA-256，读取 `during_result_files` 中的 `observation_global.csv.gz`。返回全局人数、密度、速度与原始采样时间，保留真实零值；压力代理和未归档随机种子保持为空，不伪造现实日期或区域名称。
+- 读取接口不修改源记录。事后页面在用户选择轮次后再次核验版本与采样，再通过已有数据集接口复制到当前事后工作区，并进入事实基线确认。大体积轨迹和局部网格仍保留在原归档，不在此接口展开。
+- 来源可读取不代表已接入反事实执行器；运行仍须满足实际场景与控制映射的执行校验。
