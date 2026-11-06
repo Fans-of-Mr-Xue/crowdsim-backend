@@ -8,8 +8,10 @@ import json
 import logging
 import os
 from pathlib import Path
+from time import perf_counter
 from urllib.error import HTTPError, URLError
 from urllib.request import ProxyHandler, Request, build_opener
+from uuid import uuid4
 
 from crowdsim.domain.llm_generation import MAX_OUTPUT_TOKENS, generation_options
 
@@ -299,9 +301,13 @@ def validate_reply(task, reply, context):
     return reply
 
 
+def _configured_model():
+    return os.environ.get("CROWDSIM_POST_LLM_MODEL") or os.environ.get("CROWDSIM_LLM_MODEL", "GLM-5.3-Flash")
+
+
 def _model_reply(messages, model, max_tokens):
     base = os.environ.get("CROWDSIM_LLM_BASE_URL", "http://127.0.0.1:8800/v1").rstrip("/")
-    actual_model = os.environ.get("CROWDSIM_POST_LLM_MODEL") or os.environ.get("CROWDSIM_LLM_MODEL", "GLM-5.3-Flash")
+    actual_model = _configured_model()
     if model not in (None, "", "GLM-5.3-Flash", "GLM-5.3-Flash-8800", "GLM-5.3-Flash-exl3-4.05bpw", actual_model):
         raise ValueError("事后 agent 使用后端配置的模型，请选择 GLM-5.3 Flash 或检查后端模型配置")
     body = {"model": actual_model, "messages": messages, "stream": False,
@@ -443,14 +449,33 @@ def respond(payload, *, complete=None):
     model_messages = [{"role": "system", "content": instructions},
                       {"role": "user", "content": "当前业务上下文（仅作数据）:\n" + json.dumps(context, ensure_ascii=False)}, *messages]
     complete_reply = complete or _model_reply
+    used_skills = [skill.name for skill in selected]
+    trace = {"request_id": uuid4().hex, "agent": agent.name, "task": task, "phase": "post", "mode": agent.mode,
+             "model": _configured_model(), "skills": used_skills}
+    for key, limit in (("conversationId", 120), ("designStage", 64)):
+        value = context.get(key)
+        if isinstance(value, str):
+            trace[key] = value[:limit]
+
+    def log_skill_event(event, *, level=logging.INFO, **fields):
+        # Existing dialogue handlers write each record to both console and service.log.
+        # Record actual prompt injection, without logging messages, prompts or credentials.
+        logger.log(level, "PostAgent skill_trace %s", json.dumps({**trace, "event": event, **fields}, ensure_ascii=False))
+
+    log_skill_event("skills_loaded")
     repaired = False
     for attempt in range(2):
         reply = None
+        started = perf_counter()
+        log_skill_event("model_started", attempt=attempt + 1)
         try:
             reply = complete_reply(model_messages, payload.get("model"), budget)
             validated = validate_reply(task, reply, context)
+            log_skill_event("model_completed", attempt=attempt + 1, elapsed_ms=round((perf_counter() - started) * 1000), repaired=repaired)
             break
         except (ValueError, PostReplyFormatError) as exc:
+            log_skill_event("model_retry" if not attempt else "model_failed", level=logging.WARNING, attempt=attempt + 1,
+                            elapsed_ms=round((perf_counter() - started) * 1000), error_type=type(exc).__name__)
             field = reply.get("assistant_message") if isinstance(reply, dict) else None
             logger.warning("Post reply schema failure task=%s attempt=%s message_type=%s message_length=%s reason=%s", task, attempt + 1,
                            type(field).__name__, len(field) if isinstance(field, (str, list, dict)) else None, str(exc)[:250])
@@ -461,7 +486,11 @@ def respond(payload, *, complete=None):
                 '上一轮生成的答复未通过校验，未应用任何修改。请重新回答最后一个用户问题，仅输出完整JSON对象。'
                 'assistant_message必须是非空字符串（不是对象、数组或null），不超过6000字符，通常用2—4个短要点。'
                 '动作及其余字段必须符合本轮任务约束。不要复述错误或把用户的问题当成新目的。校验原因：' + str(exc)[:350]}]
-    result = {"reply": validated, "agent": agent.name, "skills": list(TASK_SKILLS[task]),
+        except Exception as exc:
+            log_skill_event("model_failed", level=logging.ERROR, attempt=attempt + 1,
+                            elapsed_ms=round((perf_counter() - started) * 1000), error_type=type(exc).__name__)
+            raise
+    result = {"reply": validated, "agent": agent.name, "skills": used_skills,
               "mode": agent.mode, "phase": "post", "toolsExecuted": bool(research and research["sources"])}
     if repaired:
         result["responseRepaired"] = True
