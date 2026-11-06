@@ -17,6 +17,10 @@ def validate_unified_design(design, variables):
         if not isinstance(design.get(key), str) or not design[key].strip():
             fail("请明确共同控制条件、实验单位和分析范围")
     groups = design.get("groups")
+    baseline = design.get('baselineExecution', BASELINE)
+    if not isinstance(baseline, dict) or set(baseline) != set(CONTROL_FIELDS):
+        fail('事实组控制参数无效')
+    validate_group_execution({**baseline, 'referenceDesignId': 'F-00'})
     if not isinstance(groups, list) or not 1 <= len(groups) <= 12:
         fail("统一实验池需要1—12个组")
     import re
@@ -69,7 +73,7 @@ def validate_unified_design(design, variables):
             continue
         if any(item.get("planningOnly") and item["id"] == group["execution"]["referenceDesignId"] for item in groups):
             fail("数值执行组不能引用尚未完成工程映射的草案")
-        changes = changed_controls(group, groups)
+        changes = changed_controls(group, groups, baseline)
         if any(CONTROL_FIELDS[field] not in group["factorSymbols"] for field in changes):
             fail("实际改变的变量须全部关联到假设")
         if group["method"] == "ofat" and len(changes) > 1:
@@ -79,8 +83,8 @@ def validate_unified_design(design, variables):
     return design
 
 
-def changed_controls(group, groups):
-    reference = next((item["execution"] for item in groups if item["id"] == group["execution"]["referenceDesignId"]), BASELINE)
+def changed_controls(group, groups, baseline=None):
+    reference = next((item["execution"] for item in groups if item["id"] == group["execution"]["referenceDesignId"]), baseline or BASELINE)
     return [key for key in CONTROL_FIELDS if reference[key] != group["execution"][key]]
 
 

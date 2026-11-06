@@ -33,7 +33,7 @@ SCHEME_TYPES = {"observation", "intervention", "mechanism"}
 UNIFIED_DESIGN_CONTRACT = '''当前使用统一反事实设计v2，不按观察/干预/机制分组，也不要求三次确认。输出 {"assistant_message":"中文说明"}；需要实际修改时可选groups（完整替换统一实验池，1—12组）和repeat_count（1—50整数）。每组只包含id、name、hypothesis、method（paired/ofat/ablation）、factorSymbols（已定义变量符号列表）、primaryMetricId（已定义响应指标ID）、expectedDirection（increase/decrease/two_sided）、decisionRule、execution。execution必须恰好包含startSeconds、compliance、delaySeconds、referenceDesignId。参照可以是F-00或任意已定义完整策略组，禁止循环。沿用上下文中的数值和编号；缺少明确数值时先补问，不猜测工程参数。单因素对照最多改变一个变量，消融只改变遵从或延迟模块并引用完整策略。变量、假设、实验组名称是设计中心，三段分析从全部实验中按证据条件筛选。响应值不预填；不确认用户目标、不运行工具、不输出实测结论。人工社会的用户修改在单独流程保存，未接入的改动不得声称已在SUMO中生效。'''
 
 CONTRACTS = {
-    "pc_defaults": '根据已确认的实验目的、时间窗及可用指标，为干预分析建议 PC 特征。只输出 {"assistant_message":"中文说明","pcFeatures":[{"id":"英文唯一编号","metricId":"peak_density|mean_speed|peak_pressure_proxy","regionId":"global|A|B|C","windowStartSeconds":0,"windowEndSeconds":19800,"aggregation":"peak|mean|end"}]}。选择2至8个特征，每项引用已选指标；同一指标可用于不同区域或窗口，特征ID必须唯一。时间为20:00起的整数秒，窗口左闭右开且不超过19800。仅提出参数，不运行PC或虚构分析结果；独立F-00样本不足20或无方差时不能估计。',
+    "pc_defaults": '根据已确认的实验目的、时间窗及可用指标，为干预分析建议 PC 特征。只输出 {"assistant_message":"中文说明","pcFeatures":[{"id":"英文唯一编号","metricId":"peak_density|mean_speed|peak_pressure_proxy","regionId":"global|A|B|C","windowStartSeconds":0,"windowEndSeconds":600,"aggregation":"peak|mean|end"}]}。选择2至8个特征，每项引用已选指标；同一指标可用于不同区域或窗口，特征ID必须唯一。时间为20:00起的整数秒，窗口左闭右开且不超过context中的durationSeconds或counterfactualDesign.durationSeconds。仅提出参数，不运行PC或虚构分析结果；独立F-00样本不足20或无方差时不能估计。',
     "intake": '输出 {"assistant_message":"中文答复"}，围绕用户的问题解释流程或补问缺失信息。',
     "baseline_review": '输出 {"assistant_message":"核对结果及缺口","baseline_updates":{}}。baseline_updates 只允许 name、location、window、description 字符串；只采纳用户明确给出的元数据修正，不猜测。不能改变原始时序、数据版本、来源性质或代用户确认。window 是显示标签，不能转换原始时间口径。',
     "goal_review": '''先结合最近对话和context.brief判断用户本轮意图，不因为当前处于目的澄清阶段就把每句话当成实验目的。输出JSON对象，必须包含assistant_message和action。action只能是answer、propose_goal、confirm_goal、clarify：
@@ -169,7 +169,10 @@ def validate_reply(task, reply, context):
         settings = dict(context.get("executionSettings") or {})
         settings["pcFeatures"] = reply.get("pcFeatures")
         try:
-            reply["pcFeatures"] = validate_execution_settings(settings)["pcFeatures"]
+            duration = context.get('durationSeconds', context.get('counterfactualDesign', {}).get('durationSeconds', 19800))
+            if type(duration) is not int or not 2 <= duration <= 86400:
+                raise ValueError('分析时窗无效')
+            reply["pcFeatures"] = validate_execution_settings(settings, duration)["pcFeatures"]
         except ApiError as exc:
             raise ValueError(exc.message) from None
     if task == "baseline_review":

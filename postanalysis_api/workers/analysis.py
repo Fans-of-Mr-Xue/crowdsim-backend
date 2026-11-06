@@ -95,7 +95,8 @@ def summarize(task, runs):
         if group.get("experimentType") == "counterfactual":
             from .memorial_scenario import control_schedule
             other = next((item for item in task["groups"] if item["id"] == reference), None)
-            left, right = control_schedule(other["interventions"] if other else []), control_schedule(group["interventions"])
+            factual_controls = next((run.get('controls') for run in complete if run['planId'] == 'F-00' and run.get('controls')), None)
+            left, right = control_schedule(other["interventions"] if other else [], factual_controls), control_schedule(group["interventions"], factual_controls)
             changed = [key for key in left if left[key] != right[key]]
             timing_only = set(changed) == {"gateOpenSeconds", "guidanceStartSeconds"} and left["gateOpenSeconds"] - right["gateOpenSeconds"] == left["guidanceStartSeconds"] - right["guidanceStartSeconds"]
             sections["observation"].append(row)

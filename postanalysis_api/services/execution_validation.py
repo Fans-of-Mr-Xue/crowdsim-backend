@@ -9,12 +9,14 @@ from .execution_template import execution_readiness, execution_template
 
 
 def validate_execution_input(app, dataset, plan=None):
+    from .population_execution import prepare_execution_dataset, execution_context
     readiness = execution_readiness(dataset, plan)
     result = {**readiness, "datasetId": dataset["id"], "datasetVersion": dataset["version"],
               "checks": []}
     if not readiness["ready"]:
         return result
     try:
+        dataset = prepare_execution_dataset(dataset)
         task = execution_template(dataset, plan)
         # The same checks guard /experiments/{id}/start.
         app._check_start_capability(task)
@@ -33,7 +35,7 @@ def validate_execution_input(app, dataset, plan=None):
                                    capture_output=True, timeout=20, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
             if probe.returncode:
                 raise ApiError("SUMO_INPUT_REJECTED", "SUMO未能载入当前路网和人员输入，请检查运行程序与路网。", 422)
-        result.update(message="校验通过，可以进行仿真。", checks=["源流量与人员初始化", "场景与路网版本", "行人路径编译", "控制动作与指标", "SUMO运行器"])
+        result.update(message="校验通过，可以进行仿真。", executionContext=execution_context(dataset), checks=["源流量与人员初始化", "场景与路网版本", "行人路径编译", "控制动作与指标", "SUMO运行器"])
     except ApiError as exc:
         result.update(ready=False, code=exc.code, message=exc.message, missing=[exc.message],
                       nextAction="修正后重新校验。")

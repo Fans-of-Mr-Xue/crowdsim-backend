@@ -2,7 +2,7 @@
 from .common import ApiError
 
 
-def validate_execution_settings(value):
+def validate_execution_settings(value, duration_seconds=86400):
     """Reviewed settings for the current memorial executor, shared by intake/template."""
     from .common import object_, integer
     from .experiments import _metric_ids, _pc_features
@@ -10,7 +10,7 @@ def validate_execution_settings(value):
     seed = integer(data.get("seedStart"), "plan.executionSettings.seedStart", 0, 2147483647)
     parallelism = integer(data.get("parallelism"), "plan.executionSettings.parallelism", 1, 1)
     metric_ids = _metric_ids(data.get("metricIds"), "plan.executionSettings.metricIds")
-    features = _pc_features(data.get("pcFeatures"), 19800)
+    features = _pc_features(data.get("pcFeatures"), duration_seconds)
     if len(features) > 8 or any(feature["metricId"] not in {"peak_density", "mean_speed", "peak_pressure_proxy"}
                               or feature["metricId"] not in metric_ids or feature["regionId"] not in {"global", "A", "B", "C"}
                               for feature in features):
@@ -18,12 +18,12 @@ def validate_execution_settings(value):
     return {"seedStart": seed, "parallelism": parallelism, "metricIds": metric_ids, "pcFeatures": features}
 
 
-def validate_group_execution(value):
+def validate_group_execution(value, duration_seconds=86400):
     keys = {"startSeconds", "compliance", "delaySeconds", "referenceDesignId"}
     valid = isinstance(value, dict) and set(value) == keys
     if valid:
-        valid = (type(value["startSeconds"]) is int and 1 <= value["startSeconds"] < 19800
-                 and type(value["delaySeconds"]) is int and 0 <= value["delaySeconds"] <= 19800
+        valid = (type(value["startSeconds"]) is int and 1 <= value["startSeconds"] < duration_seconds
+                 and type(value["delaySeconds"]) is int and 0 <= value["delaySeconds"] <= duration_seconds
                  and type(value["compliance"]) in (int, float) and 0 <= value["compliance"] <= 1
                  and isinstance(value["referenceDesignId"], str) and 1 <= len(value["referenceDesignId"]) <= 64)
     if not valid:

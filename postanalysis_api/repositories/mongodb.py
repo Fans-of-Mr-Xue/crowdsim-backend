@@ -93,7 +93,7 @@ class MongoRepository:
 
     def begin_archive(self, run_id, experiment_type, user, workspace, configuration):
         """Mongo has no child tables: a catalog points to three per-run collections."""
-        allowed = {"simulation", "experiment", "observation", "intervention", "mechanism", "baseline"}
+        allowed = {"simulation", "experiment", "observation", "intervention", "mechanism", "baseline", "counterfactual"}
         if experiment_type not in allowed:
             raise ValueError("Unknown post experiment type")
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
