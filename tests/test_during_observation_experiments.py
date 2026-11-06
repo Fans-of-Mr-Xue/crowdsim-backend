@@ -39,6 +39,16 @@ def study(tmp_path, monkeypatch):
     return payload, record, model
 
 
+def test_adapter_freezes_the_during_provider_without_accepting_credentials(study):
+    payload, _, _ = study
+    config = observation_config({**payload, "llmModel": "deepseek-flash", "api_key": "must-not-be-persisted"}, "during-check")
+    assert config["duringObservation"]["llmModel"] == "deepseek-flash"
+    assert config["scenario"]["observationBinding"]["llmModel"] == "deepseek-flash"
+    assert "must-not-be-persisted" not in str(config)
+    with pytest.raises(ContractError):
+        observation_config({**payload, "llmModel": "unknown-model"}, "during-check")
+
+
 def test_adapter_uses_confirmed_config_and_rejects_bypasses(study):
     payload, record, model = study
     config = observation_config(payload, "during-check")

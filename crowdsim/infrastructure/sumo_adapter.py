@@ -12,9 +12,12 @@ from typing import Dict, Iterable, Optional
 import traci
 from traci import constants as tc
 from traci._simulation import Stage
+from traci.exceptions import TraCIException
 
 from crowdsim.domain.crowdsim_models import MotionSnapshot
 from crowdsim.infrastructure.performance_probe import timed
+
+UNKNOWN_PERSON_STAGE = -1
 
 
 @dataclass(frozen=True)
@@ -85,6 +88,7 @@ class SumoAdapter:
         self.close_error: str | None = None
         self._version: str | None = None
         self._last_normal_edge: Dict[str, str] = {}
+        self.allow_unknown_person_stage = False
 
     def start(self) -> SumoStepResult:
         if self.started and not self.closed:
@@ -227,8 +231,21 @@ class SumoAdapter:
             try:
                 stage = self.connection.person.getStage(person_id)
                 stage_type = int(stage.type)
-            except Exception:
-                stage_type = tc.STAGE_WAITING
+            except Exception as exc:
+                if self.allow_unknown_person_stage:
+                    # A failed read must not look like a real waiting stage.
+                    # Connection failures still abort the simulation.
+                    if not isinstance(exc, TraCIException):
+                        raise
+                    stage_type = UNKNOWN_PERSON_STAGE
+                else:
+                    stage_type = tc.STAGE_WAITING
+            try:
+                remaining_stage_count = self.connection.person.getRemainingStages(person_id)
+            except TraCIException:
+                if not self.allow_unknown_person_stage:
+                    raise
+                stage_type, remaining_stage_count = UNKNOWN_PERSON_STAGE, 0
             persons[person_id] = MotionSnapshot(
                 person_id=person_id,
                 time_seconds=time_seconds,
@@ -246,7 +263,7 @@ class SumoAdapter:
                 stage_index=0,
                 stage_type=stage_type,
                 departed=person_id in departed_set,
-                remaining_stage_count=int(self.connection.person.getRemainingStages(person_id)),
+                remaining_stage_count=int(remaining_stage_count),
             )
             if edge_id and not edge_id.startswith(":"):
                 self._last_normal_edge[person_id] = edge_id
@@ -277,6 +294,10 @@ class SumoAdapter:
     def set_person_speed(self, person_id: str, speed_limit: float) -> None:
         self._require_connection()
         self.connection.person.setSpeed(person_id, float(speed_limit))
+
+    def move_person_on_route(self, person_id: str, edge_id: str, x: float, y: float, angle: float) -> None:
+        self._require_connection()
+        self.connection.person.moveToXY(person_id, edge_id, x, y, angle=angle, keepRoute=1)
 
     def current_person_stage(self, person_id: str) -> Stage:
         self._require_connection()

@@ -150,7 +150,7 @@ class PopulationManager:
     def commit_states(self, states: Dict[str, AgentState]) -> None:
         self.states.update(states)
 
-    def prepare_demand(self, output_path: str | Path, count: int | None = None) -> Path:
+    def prepare_demand(self, output_path: str | Path, count: int | None = None, *, flow_speeds=None) -> Path:
         if len(self.route_files) != 1:
             raise ValueError("prepared pedestrian demand requires exactly one source route file")
         source = self.route_files[0]
@@ -183,7 +183,16 @@ class PopulationManager:
             self.profiles[person_id] = profile
             type_id = f"profile_{hashlib.sha1(person_id.encode('utf-8')).hexdigest()[:12]}"
             if type_id not in existing_types:
-                root.insert(0, ET.Element("vType", {"id": type_id, "vClass": "pedestrian", "maxSpeed": f"{profile.free_walking_speed * profile.mobility:.6f}"}))
+                attributes = {"id": type_id, "vClass": "pedestrian", "maxSpeed": f"{profile.free_walking_speed * profile.mobility:.6f}"}
+                if flow_speeds is not None:
+                    speed = flow_speeds[person_id]
+                    if not math.isfinite(speed) or not 0 < speed <= 2.5:
+                        raise ValueError('invalid class-two flow speed')
+                    # Insert at rest; the isolated flow controller restores this
+                    # exact free speed at READY without advancing SUMO.
+                    attributes.update(maxSpeed="1e-9", desiredMaxSpeed=str(speed), speedFactor="1", speedDev="0")
+                    person.set("speedFactor", "1")
+                root.insert(0, ET.Element("vType", attributes))
                 existing_types.add(type_id)
             person.set("type", type_id)
             root.append(person)

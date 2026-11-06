@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "problem_type": 2,
+  "default_seed": 20260908,
+  "duration_seconds": 1800,
+  "requirement_template": "config/during_presets/memorial_tower_v1.json",
+  "network": "scenarios/shanghai_bund/bund.net.xml",
+  "sumo_config": "scenarios/shanghai_bund/bund.hotspot.sumocfg",
+  "source_demand": "scenarios/shanghai_bund/bund_ped.rou.xml",
+  "preset_id": "memorial-tower-class2-flows-v1",
+  "name": "纪念塔用户配置人流",
+  "default_count": 0,
+  "flow_network": "config/during_presets/memorial_flow_network_v1.json",
+  "departure": "walk_to_configured_destination_and_hold_until_end"
+}

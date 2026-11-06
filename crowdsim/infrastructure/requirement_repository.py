@@ -25,14 +25,15 @@ class RequirementRepository:
         runs_root = Path(os.environ.get("CROWDSIM_RUNS_ROOT") or PROJECT_ROOT / "runs")
         self.root = Path(root) if root is not None else runs_root / "requirements"
 
-    def create(self, spec: RequirementSpec, *, purpose: str | None = None) -> dict:
+    def create(self, spec: RequirementSpec, *, purpose: str | None = None, reuse_identical: bool = False) -> dict:
         spec = RequirementSpec.parse(spec.payload, allow_empty_population=purpose == "experiment")
         self.root.mkdir(parents=True, exist_ok=True)
+        content_addressed = spec.payload["schema_version"] == 2 or reuse_identical
         for _ in range(4):
-            requirement_id = f"req-{spec.fingerprint[:32]}" if spec.payload["schema_version"] == 2 else f"req-{uuid.uuid4().hex}"
+            requirement_id = f"req-{spec.fingerprint[:32]}" if content_addressed else f"req-{uuid.uuid4().hex}"
             destination = self.root / f"{requirement_id}.json"
             if destination.exists():
-                if spec.payload["schema_version"] == 2:
+                if content_addressed:
                     return self.load(requirement_id)
                 continue
             now = datetime.now(timezone.utc).isoformat()
@@ -52,7 +53,7 @@ class RequirementRepository:
                 json.dumps(record, ensure_ascii=False, indent=2) + "\n",
                 encoding="utf-8",
             )
-            if spec.payload["schema_version"] == 2:
+            if content_addressed:
                 try:
                     os.link(temporary, destination)
                 except FileExistsError:

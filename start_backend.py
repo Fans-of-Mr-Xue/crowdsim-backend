@@ -250,7 +250,7 @@ def matches_service(process, service, *, owner=None):
     return bool(command) and (process.cwd / command[0]).resolve() == (ROOT / expected[0]).resolve()
 
 
-def restart_local_services(services):
+def restart_local_services(services, *, launcher_names=None):
     """Explicit local-only restart. Validate every target before stopping any."""
     windows = WindowsProcesses() if WINDOWS else None
     if not windows and not all(shutil.which(tool) for tool in ("ps", "lsof")):
@@ -281,7 +281,7 @@ def restart_local_services(services):
         if process.parent_pid > 1:
             parent = identity_of(process.parent_pid)
             if parent and parent.cwd == ROOT.resolve() and any(
-                (Path(arg).name.casefold() if WINDOWS else Path(arg).name) == "start_backend.py" for arg in parent.command[1:]
+                (Path(arg).name.casefold() if WINDOWS else Path(arg).name) in (launcher_names or {"start_backend.py"}) for arg in parent.command[1:]
             ):
                 raise StartupError("旧后端启动器仍在运行（run.sh / run.ps1），请先在其终端按 Ctrl+C；未停止任何服务")
         targets.append((service, process))
