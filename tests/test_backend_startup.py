@@ -222,6 +222,9 @@ class UnifiedStartupTests(unittest.TestCase):
 
 class SupervisorTests(unittest.TestCase):
     def setUp(self):
+        platform = patch('start_backend.WINDOWS', False)
+        platform.start()
+        self.addCleanup(platform.stop)
         self.output = contextlib.redirect_stdout(io.StringIO())
         self.output.__enter__()
         self.addCleanup(self.output.__exit__, None, None, None)

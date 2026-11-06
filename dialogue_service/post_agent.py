@@ -302,21 +302,36 @@ def validate_reply(task, reply, context):
 
 
 def _configured_model():
-    return os.environ.get("CROWDSIM_POST_LLM_MODEL") or os.environ.get("CROWDSIM_LLM_MODEL", "GLM-5.3-Flash")
+    from data_service.connectors.models import model_configs
+    return os.environ.get("CROWDSIM_POST_LLM_MODEL") or os.environ.get("CROWDSIM_LLM_MODEL") or model_configs()['GLM-5.3-Flash-8800']['model']
 
 
 def _model_reply(messages, model, max_tokens):
-    base = os.environ.get("CROWDSIM_LLM_BASE_URL", "http://127.0.0.1:8800/v1").rstrip("/")
-    actual_model = _configured_model()
-    if model not in (None, "", "GLM-5.3-Flash", "GLM-5.3-Flash-8800", "GLM-5.3-Flash-exl3-4.05bpw", actual_model):
-        raise ValueError("事后 agent 使用后端配置的模型，请选择 GLM-5.3 Flash 或检查后端模型配置")
+    from data_service.connectors.models import model_configs, selected_provider
+    providers = model_configs()
+    if model in (None, "", "GLM-5.3-Flash", "GLM-5.3-Flash-8800", "GLM-5.3-Flash-exl3-4.05bpw", _configured_model()):
+        provider = providers['GLM-5.3-Flash-8800']
+        base = os.environ.get("CROWDSIM_LLM_BASE_URL", provider['base_url']).rstrip("/")
+        actual_model = _configured_model()
+        token = os.environ.get("CROWDSIM_POST_LLM_API_KEY") or provider['api_key']
+    else:
+        provider, discovered = selected_provider(model, providers)
+        base, actual_model, token = provider['base_url'], provider['model'], provider['api_key']
+        if discovered:
+            headers = {'Authorization': 'Bearer ' + token} if token else {}
+            try:
+                with build_opener(ProxyHandler({})).open(Request(base + '/models', headers=headers), timeout=4) as response:
+                    advertised = json.load(response)
+                if actual_model not in {item.get('id') for item in advertised.get('data', []) if isinstance(item, dict)}:
+                    raise ValueError('所选模型已不可用，请重新展开模型菜单')
+            except (HTTPError, URLError, TimeoutError, OSError):
+                raise PostAgentUnavailable('无法核对所选模型的可用性，请重新展开模型菜单') from None
     body = {"model": actual_model, "messages": messages, "stream": False,
             **generation_options(actual_model, max_tokens, {
                 "temperature": 0.15, "chat_template_kwargs": {"enable_thinking": False},
                 "response_format": {"type": "json_object"},
             })}
     headers = {"Content-Type": "application/json"}
-    token = os.environ.get("CROWDSIM_POST_LLM_API_KEY") or os.environ.get("CROWDSIM_MODEL_API_KEY")
     if token:
         headers["Authorization"] = "Bearer " + token
     request = Request(base + "/chat/completions", data=json.dumps(body).encode(), headers=headers)
@@ -335,7 +350,7 @@ def _model_reply(messages, model, max_tokens):
     except PostAgentUnavailable:
         raise
     except (HTTPError, URLError, TimeoutError, OSError):
-        raise PostAgentUnavailable("事后模型服务不可用，请检查 8800 模型服务和后端模型配置") from None
+        raise PostAgentUnavailable(f"事后模型服务不可用，请检查 {provider['port']} 模型服务和后端模型配置") from None
     except (ValueError, KeyError, TypeError, IndexError):
         raise PostReplyFormatError("事后模型未返回完整的结构化答复，未应用修改") from None
 
@@ -451,7 +466,7 @@ def respond(payload, *, complete=None):
     complete_reply = complete or _model_reply
     used_skills = [skill.name for skill in selected]
     trace = {"request_id": uuid4().hex, "agent": agent.name, "task": task, "phase": "post", "mode": agent.mode,
-             "model": _configured_model(), "skills": used_skills}
+             "model": payload.get('model') or _configured_model(), "skills": used_skills}
     for key, limit in (("conversationId", 120), ("designStage", 64)):
         value = context.get(key)
         if isinstance(value, str):

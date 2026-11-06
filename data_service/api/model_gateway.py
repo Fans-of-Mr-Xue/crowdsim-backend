@@ -3,12 +3,14 @@ from __future__ import annotations
 
 import json
 import os
+import asyncio
 from typing import Any
 
 import aiohttp
 from aiohttp import web
 
 from ..config import load_database_env
+from ..connectors.models import model_configs, selected_provider
 
 PUBLIC_MODEL_ID = "GLM-5.3-Flash"
 UPSTREAM_MODEL_ID = "GLM-5.3-Flash"
@@ -42,9 +44,13 @@ def gateway_settings() -> tuple[str, str]:
 
 def resolve_model(model: Any) -> str:
     value = str(model or "").strip()
-    if value not in MODEL_ALIASES:
-        raise GatewayInputError("模型不可用，请选择 GLM-5.3-Flash")
-    return UPSTREAM_MODEL_ID
+    if value in MODEL_ALIASES:
+        return PUBLIC_MODEL_ID
+    try:
+        selected_provider(value, model_configs())
+    except ValueError:
+        raise GatewayInputError("模型不可用，请选择已配置的模型")
+    return value
 
 
 def validate_messages(value: Any) -> list[dict[str, Any]]:
@@ -78,11 +84,11 @@ def build_payload(body: dict[str, Any], model: str) -> dict[str, Any]:
     return payload
 
 
-def normalize_chat_response(value: Any) -> dict[str, Any]:
+def normalize_chat_response(value: Any, model=PUBLIC_MODEL_ID) -> dict[str, Any]:
     if not isinstance(value, dict) or not isinstance(value.get("choices"), list):
         raise GatewayUpstreamError(502, "模型服务返回格式无效")
     result = dict(value)
-    result["model"] = PUBLIC_MODEL_ID
+    result["model"] = model
     return result
 
 
@@ -110,6 +116,8 @@ class ModelGateway:
         self.api_key = configured_key if api_key is None else api_key
         self.session = session
         self.owns_session = session is None
+        self.providers = model_configs()
+        self.providers[PUBLIC_MODEL_ID].update(base_url=self.base_url, api_key=self.api_key)
 
     async def open(self) -> None:
         if self.session is None:
@@ -140,11 +148,25 @@ class ModelGateway:
                     "message": "模型服务不可达，请检查 8800 隧道", "port": 8800}
 
     async def chat(self, body: dict[str, Any], public_model: str) -> dict[str, Any]:
-        model = resolve_model(public_model)
-        payload = build_payload(body, model)
+        identifier = resolve_model(public_model)
+        provider, discovered = selected_provider(identifier, self.providers)
+        payload = build_payload(body, provider['model'])
+        if discovered:
+            try:
+                async with self.session.get(provider['base_url'] + '/models',
+                        headers=response_headers(provider['api_key']), timeout=aiohttp.ClientTimeout(total=4)) as response:
+                    if response.status != 200:
+                        raise GatewayUpstreamError(503, '无法核对所选模型的可用性')
+                    advertised = await response.json()
+                if provider['model'] not in {item.get('id') for item in advertised.get('data', []) if isinstance(item, dict)}:
+                    raise GatewayInputError('所选模型已不可用，请重新展开模型菜单')
+            except (aiohttp.ClientError, TimeoutError, ValueError, TypeError) as exc:
+                if isinstance(exc, GatewayInputError):
+                    raise
+                raise GatewayUpstreamError(503, '无法核对所选模型的可用性') from None
         try:
-            async with self.session.post(self.base_url + "/chat/completions", json=payload,
-                                         headers=response_headers(self.api_key)) as response:
+            async with self.session.post(provider['base_url'] + "/chat/completions", json=payload,
+                                         headers=response_headers(provider['api_key'])) as response:
                 raw = await response.text()
                 if response.status != 200:
                     raise GatewayUpstreamError(502, f"模型服务返回 HTTP {response.status}")
@@ -152,11 +174,47 @@ class ModelGateway:
                 value = json.loads(raw)
             except json.JSONDecodeError:
                 raise GatewayUpstreamError(502, "模型服务返回格式无效") from None
-            return normalize_chat_response(value)
+            return normalize_chat_response(value, identifier)
         except GatewayUpstreamError:
             raise
         except (aiohttp.ClientError, TimeoutError):
-            raise GatewayUpstreamError(503, "模型服务不可达或请求超时，请检查 8800 隧道") from None
+            raise GatewayUpstreamError(503, f"模型服务不可达或请求超时，请检查 {provider['port']} 端口映射") from None
+
+    async def statuses(self):
+        async def probe(identifier):
+            provider = self.providers[identifier]
+            try:
+                async with self.session.get(provider['base_url'] + '/models',
+                        headers=response_headers(provider['api_key']),
+                        timeout=aiohttp.ClientTimeout(total=4)) as response:
+                    if response.status != 200:
+                        raise ValueError('模型接口不可用')
+                    payload = await response.json()
+                names = {str(item.get('id', '')).casefold() for item in payload.get('data', []) if isinstance(item, dict)}
+                available = provider['model'].casefold() in names
+                message = '可用' if available else '接口可达，但未加载配置的模型'
+                configured_names = {item['model'].casefold() for item in self.providers.values()
+                                    if item['base_url'] == provider['base_url']}
+                extras = [{**{key: provider[key] for key in ('port',)}, 'id': identifier + '::' + item['id'],
+                           'label': item['id'], 'model': item['id'], 'available': True, 'message': '可用'}
+                          for item in payload.get('data', []) if isinstance(item, dict) and isinstance(item.get('id'), str)
+                          and item['id'] and item['id'].casefold() not in configured_names]
+            except (aiohttp.ClientError, TimeoutError, ValueError, TypeError, AttributeError):
+                available, message = False, '模型服务不可达，请检查服务和端口映射'
+                extras = []
+            return [{**{key: provider[key] for key in ('label', 'port', 'model')},
+                    'id': identifier, 'available': available, 'message': message}, *extras]
+        groups = await asyncio.gather(*(probe(identifier) for identifier in
+            (PUBLIC_MODEL_ID, 'Qwen3.8-Flash-Next', 'DiffusionGemma')))
+        rows, seen = [], set()
+        for group in groups:
+            for row in group:
+                endpoint = self.providers[row['id'].split('::', 1)[0]]['base_url']
+                key = (endpoint, row['model'].casefold())
+                if key not in seen:
+                    rows.append(row)
+                    seen.add(key)
+        return rows
 
 
 async def handle_gateway_error(operation):
@@ -179,7 +237,7 @@ def register_model_gateway_routes(app: web.Application, *, gateway: ModelGateway
         await gateway.close()
 
     async def status(request: web.Request) -> web.Response:
-        return web.json_response({"data": [await gateway.status()]})
+        return web.json_response({"data": await gateway.statuses()})
 
     async def chat(request: web.Request) -> web.Response:
         async def operation():

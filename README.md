@@ -360,8 +360,8 @@ D:\Anaconda\python.exe scripts\run_experiment.py --steps 3600
 
 ### 合并后的模型接口与启动行为
 
-共享 `/api/crowdSim/models/status`、`/models/{model}/chat/completions` 和 `/llm/chat` 保留远端 main 的契约；共享聊天中的 `GLM-5.3-Flash` 与 `GLM-5.3-Flash-8800` 均指向 8800。
+共享 `/api/crowdSim/models/status` 返回已配置模型的可用性，以及对应接口 `/v1/models` 实际公布的其他模型。`/models/{model}/chat/completions` 和 `/llm/chat` 保留原有请求结构；`GLM-5.3-Flash` 与 `GLM-5.3-Flash-8800` 均指向 8800。事后需求界定在展开原有模型菜单时检查可达性，独立保存选择；动态发现的模型通过“提供商 ID::实际模型 ID”指定已有端点，发起对话前重新核对其仍在模型列表中。
 
-事前多模型接口使用 `/api/crowdSim/pre/models/status` 与 `/pre/models/{model}/chat/completions`（也支持 `/crowdSim` 前缀），保留原始提供商 ID：`GLM-5.3-Flash-8800` 为 8800，`GLM-5.3-Flash` 为 Tabby 8899，Qwen 和 DiffusionGemma 同样保留。所有阶段的新请求和模型菜单统一使用共享 GLM 8800；业务接口收到 `X-CrowdSim-Model: GLM-5.3-Flash` 时也映射到 8800。已保存任务中的提供商 ID 保持原有含义，内部读取不迁移；旧多模型独立接口仅用于兼容。
+旧多模型接口 `/api/crowdSim/pre/models/status` 与 `/pre/models/{model}/chat/completions`（也支持 `/crowdSim` 前缀）继续可用；历史 GLM/Tabby 选择统一兼容到 8800，不再建立 8899 映射。Qwen 与 DiffusionGemma 的配置端点保留，事前与事中的模型菜单和选择偏好维持原状。业务接口收到 `X-CrowdSim-Model: GLM-5.3-Flash` 时也使用 8800。
 
-新闻采集 8769 与实验控制 8766 均为可选服务，单独启动失败不会关闭其他服务；已有健康进程继续复用。可选模型映射包括 8899 和 8500。`--restart-services` 对 8769 同样检查进程归属，仅停止本项目、本用户的服务。
+新闻采集 8769 与实验控制 8766 均为可选服务，单独启动失败不会关闭其他服务；可选模型映射为 8500。Windows 启动器会接管经用户、项目路径、启动命令与进程生存期核验的已有服务及 SSH 隧道，Ctrl+C 时连同新启动服务和派生 SUMO 子进程一起清理；其他项目或用户的进程不接管。启动输出沿用逐项启动、就绪及服务原始日志形式。`--restart-services` 对 8769 同样检查进程归属，仅停止本项目、本用户的服务。

@@ -10,19 +10,32 @@ from ..config import load_database_env
 MODEL_SPECS = (
     ('GLM-5.3-Flash-8800', 'GLM-5.3 Flash（8800）', 'GLM_MAIN', 8800, 'GLM-5.3-Flash'),
     ('Qwen3.8-Flash-Next', 'Qwen3.8 Flash Next', 'QWEN', 8800, 'qwen3.8-flash-next'),
-    ('GLM-5.3-Flash', 'GLM-5.3 Flash · Tabby（8899）', 'GLM', 8899, 'GLM-5.3-Flash-exl3-4.05bpw'),
     ('DiffusionGemma', 'DiffusionGemma 26B', 'DIFFUSIONGEMMA', 8500, 'diffusiongemma-26B-A4B-it:q4'),
 )
 
 
 def model_configs():
     load_database_env()
-    return {identifier: {
+    providers = {identifier: {
         'id': identifier, 'label': label, 'port': int(os.environ.get(f'CROWDSIM_{prefix}_LOCAL_PORT', port)),
         'model': os.environ.get(f'CROWDSIM_{prefix}_MODEL', name),
         'base_url': os.environ.get(f'CROWDSIM_{prefix}_BASE_URL', f"http://127.0.0.1:{os.environ.get(f'CROWDSIM_{prefix}_LOCAL_PORT', port)}/v1").rstrip('/'),
         'api_key': os.environ.get(f'CROWDSIM_{prefix}_API_KEY', os.environ.get('CROWDSIM_MODEL_API_KEY', '') if prefix in ('QWEN', 'GLM_MAIN') else ''),
     } for identifier, label, prefix, port, name in MODEL_SPECS}
+    # Historical GLM selections now use the main endpoint; no Tabby tunnel.
+    providers['GLM-5.3-Flash'] = {**providers['GLM-5.3-Flash-8800'], 'id': 'GLM-5.3-Flash'}
+    return providers
+
+
+def selected_provider(identifier, providers):
+    """A discovered model may only select an existing configured endpoint."""
+    if identifier in providers:
+        return providers[identifier], False
+    if isinstance(identifier, str) and '::' in identifier:
+        endpoint, model = identifier.split('::', 1)
+        if endpoint in providers and model and len(model) <= 256 and not any(ord(c) < 32 for c in model):
+            return {**providers[endpoint], 'id': identifier, 'label': model, 'model': model}, True
+    raise ValueError('请选择已配置或已发现的模型')
 
 
 class ModelGateway:
