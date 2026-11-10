@@ -46,6 +46,10 @@ class SumoVersionTests(unittest.TestCase):
 
 
 class DependencyTests(unittest.TestCase):
+    def test_pymupdf_precheck_uses_the_supported_module_name(self):
+        self.assertIn(("PyMuPDF", "pymupdf"), start_backend.SERVICE_DEPENDENCIES)
+        self.assertNotIn(("PyMuPDF", "fitz"), start_backend.SERVICE_DEPENDENCIES)
+
     def test_missing_data_service_dependencies_are_reported_together(self):
         def import_module(module):
             if module in ("pypdf", "bs4"):

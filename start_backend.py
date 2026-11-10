@@ -33,7 +33,7 @@ SERVICE_DEPENDENCIES = (
     ("pymongo", "pymongo"),
     ("python-dotenv", "dotenv"),
     ("pypdf", "pypdf"),
-    ("PyMuPDF", "fitz"),
+    ("PyMuPDF", "pymupdf"),
     ("beautifulsoup4", "bs4"),
     ("shapely", "shapely"),
     ("numpy", "numpy"),
