@@ -47,9 +47,11 @@ class SumoBatchExecutor:
 
     def submit(self, task, on_event):
         dataset = self.repo.get("datasets", task["datasetId"], task["ownerId"], task["workspaceId"])
+        from postanalysis_api.services.population_execution import prepare_execution_dataset
+        dataset = prepare_execution_dataset(dataset)
         source_cohorts(dataset)  # Fail synchronously before accepting an invalid job.
         for group in task.get("groups", []):
-            control_schedule(group["interventions"])
+            control_schedule(group["interventions"], dataset.get('metadata', {}).get('executionProfile', {}).get('baselineControl'))
         if task["scenario"]["durationSeconds"] > dataset.get("metadata", {}).get("durationSeconds", 0):
             raise ApiError("EXECUTION_INPUT_INVALID", "运行窗口不得超出已上传基线时间窗", 422)
         with self._lock:

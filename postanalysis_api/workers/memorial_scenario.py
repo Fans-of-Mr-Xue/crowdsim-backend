@@ -26,7 +26,7 @@ BASELINE_CONTROL = {"gateOpenSeconds": 14700, "guidanceStartSeconds": 14700,
 ACTION_SCHEMAS = {
     "open_gate": {},
     "guidance": {"compliance": {"type": "number", "minimum": 0, "maximum": 1, "required": True},
-                 "delaySeconds": {"type": "integer", "minimum": 0, "maximum": 19800, "required": True}},
+                 "delaySeconds": {"type": "integer", "minimum": 0, "maximum": 86400, "required": True}},
 }
 METRIC_IDS = ["peak_density", "mean_speed", "peak_pressure_proxy", "risk_exposed_unique",
               "risk_exposure", "congestion_duration", "evacuation_time"]
@@ -43,8 +43,8 @@ def geometry_version():
     return "memorial-test-map-v1-" + hashlib.sha256(NET_FILE.read_bytes()).hexdigest()[:16]
 
 
-def control_schedule(actions):
-    controls = dict(BASELINE_CONTROL)
+def control_schedule(actions, baseline=None):
+    controls = dict(baseline or BASELINE_CONTROL)
     used = set()
     for action in actions:
         if action["actionType"] in used:
@@ -64,7 +64,11 @@ def control_schedule(actions):
 
 
 def source_cohorts(dataset):
+    from postanalysis_api.services.population_execution import MODE, prepare_execution_dataset, population_cohorts
+    dataset = prepare_execution_dataset(dataset)
     profile = dataset.get("metadata", {}).get("executionProfile")
+    if isinstance(profile, dict) and profile.get('inputMode') == MODE:
+        return population_cohorts(dataset)
     if profile is not None:
         if not isinstance(profile, dict) or profile.get("scenarioId") != "memorial-post-test" or profile.get("baselineControl") != BASELINE_CONTROL:
             raise ApiError("EXECUTION_PROFILE_MISMATCH", "文件声明的场景或基线控制与当前版本不一致，不能静默替换", 422)
@@ -135,7 +139,11 @@ def holding_segments():
 
 
 def compile_routes(dataset, seed, actions, duration, output: Path):
-    controls = control_schedule(actions)
+    from postanalysis_api.services.population_execution import MODE, prepare_execution_dataset
+    dataset = prepare_execution_dataset(dataset)
+    profile = dataset.get('metadata', {}).get('executionProfile', {})
+    reconstructed = profile.get('inputMode') == MODE
+    controls = control_schedule(actions, profile.get('baselineControl'))
     cohorts = source_cohorts(dataset)
     rng = random.Random(seed)
     routes = ET.Element("routes")
@@ -168,6 +176,8 @@ def compile_routes(dataset, seed, actions, duration, output: Path):
         guidance_effective = controls["guidanceStartSeconds"] + controls["guidanceDelaySeconds"]
         if region in {"A", "B"} and release >= guidance_effective and follow < controls["compliance"]:
             destination = "C"
+            if reconstructed:
+                release = max(person['depart'] + 1, min(release, guidance_effective))
         if destination == "C":
             release = max(release, controls["gateOpenSeconds"])
         node = ET.SubElement(routes, "person", id=person["id"], type="post-ped", depart=f"{person['depart']:.3f}",
@@ -179,6 +189,7 @@ def compile_routes(dataset, seed, actions, duration, output: Path):
                          "holdingEdge": hold_edge, "holdingPosition": hold_position, "entryPosition": entry_position})
     output.write_bytes(ET.tostring(routes, encoding="utf-8", xml_declaration=True))
     return {"controls": controls, "cohortCount": len(manifest), "cohorts": manifest,
+            "reconstruction": dataset.get('metadata', {}).get('reconstruction'),
             "assumptions": ["A→M1、B→M2、C→M3 为已确认测试映射；M3 不是真实北侧通道",
                             "区间进入均匀分配、区间离开按 FIFO 重建停留时长，非原始个人轨迹",
                             "停留位置按共同随机数分散在纪念塔既有环道，避免单点排队伪影",

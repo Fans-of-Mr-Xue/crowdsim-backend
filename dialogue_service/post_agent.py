@@ -8,8 +8,10 @@ import json
 import logging
 import os
 from pathlib import Path
+from time import perf_counter
 from urllib.error import HTTPError, URLError
 from urllib.request import ProxyHandler, Request, build_opener
+from uuid import uuid4
 
 from crowdsim.domain.llm_generation import MAX_OUTPUT_TOKENS, generation_options
 
@@ -33,7 +35,7 @@ SCHEME_TYPES = {"observation", "intervention", "mechanism"}
 UNIFIED_DESIGN_CONTRACT = '''当前使用统一反事实设计v2，不按观察/干预/机制分组，也不要求三次确认。输出 {"assistant_message":"中文说明"}；需要实际修改时可选groups（完整替换统一实验池，1—12组）和repeat_count（1—50整数）。每组只包含id、name、hypothesis、method（paired/ofat/ablation）、factorSymbols（已定义变量符号列表）、primaryMetricId（已定义响应指标ID）、expectedDirection（increase/decrease/two_sided）、decisionRule、execution。execution必须恰好包含startSeconds、compliance、delaySeconds、referenceDesignId。参照可以是F-00或任意已定义完整策略组，禁止循环。沿用上下文中的数值和编号；缺少明确数值时先补问，不猜测工程参数。单因素对照最多改变一个变量，消融只改变遵从或延迟模块并引用完整策略。变量、假设、实验组名称是设计中心，三段分析从全部实验中按证据条件筛选。响应值不预填；不确认用户目标、不运行工具、不输出实测结论。人工社会的用户修改在单独流程保存，未接入的改动不得声称已在SUMO中生效。'''
 
 CONTRACTS = {
-    "pc_defaults": '根据已确认的实验目的、时间窗及可用指标，为干预分析建议 PC 特征。只输出 {"assistant_message":"中文说明","pcFeatures":[{"id":"英文唯一编号","metricId":"peak_density|mean_speed|peak_pressure_proxy","regionId":"global|A|B|C","windowStartSeconds":0,"windowEndSeconds":19800,"aggregation":"peak|mean|end"}]}。选择2至8个特征，每项引用已选指标；同一指标可用于不同区域或窗口，特征ID必须唯一。时间为20:00起的整数秒，窗口左闭右开且不超过19800。仅提出参数，不运行PC或虚构分析结果；独立F-00样本不足20或无方差时不能估计。',
+    "pc_defaults": '根据已确认的实验目的、时间窗及可用指标，为干预分析建议 PC 特征。只输出 {"assistant_message":"中文说明","pcFeatures":[{"id":"英文唯一编号","metricId":"peak_density|mean_speed|peak_pressure_proxy","regionId":"global|A|B|C","windowStartSeconds":0,"windowEndSeconds":600,"aggregation":"peak|mean|end"}]}。选择2至8个特征，每项引用已选指标；同一指标可用于不同区域或窗口，特征ID必须唯一。时间为20:00起的整数秒，窗口左闭右开且不超过context中的durationSeconds或counterfactualDesign.durationSeconds。仅提出参数，不运行PC或虚构分析结果；独立F-00样本不足20或无方差时不能估计。',
     "intake": '输出 {"assistant_message":"中文答复"}，围绕用户的问题解释流程或补问缺失信息。',
     "baseline_review": '输出 {"assistant_message":"核对结果及缺口","baseline_updates":{}}。baseline_updates 只允许 name、location、window、description 字符串；只采纳用户明确给出的元数据修正，不猜测。不能改变原始时序、数据版本、来源性质或代用户确认。window 是显示标签，不能转换原始时间口径。',
     "goal_review": '''先结合最近对话和context.brief判断用户本轮意图，不因为当前处于目的澄清阶段就把每句话当成实验目的。输出JSON对象，必须包含assistant_message和action。action只能是answer、propose_goal、confirm_goal、clarify：
@@ -169,7 +171,10 @@ def validate_reply(task, reply, context):
         settings = dict(context.get("executionSettings") or {})
         settings["pcFeatures"] = reply.get("pcFeatures")
         try:
-            reply["pcFeatures"] = validate_execution_settings(settings)["pcFeatures"]
+            duration = context.get('durationSeconds', context.get('counterfactualDesign', {}).get('durationSeconds', 19800))
+            if type(duration) is not int or not 2 <= duration <= 86400:
+                raise ValueError('分析时窗无效')
+            reply["pcFeatures"] = validate_execution_settings(settings, duration)["pcFeatures"]
         except ApiError as exc:
             raise ValueError(exc.message) from None
     if task == "baseline_review":
@@ -296,18 +301,37 @@ def validate_reply(task, reply, context):
     return reply
 
 
+def _configured_model():
+    from data_service.connectors.models import model_configs
+    return os.environ.get("CROWDSIM_POST_LLM_MODEL") or os.environ.get("CROWDSIM_LLM_MODEL") or model_configs()['GLM-5.3-Flash-8800']['model']
+
+
 def _model_reply(messages, model, max_tokens):
-    base = os.environ.get("CROWDSIM_LLM_BASE_URL", "http://127.0.0.1:8800/v1").rstrip("/")
-    actual_model = os.environ.get("CROWDSIM_POST_LLM_MODEL") or os.environ.get("CROWDSIM_LLM_MODEL", "GLM-5.3-Flash")
-    if model not in (None, "", "GLM-5.3-Flash", "GLM-5.3-Flash-8800", "GLM-5.3-Flash-exl3-4.05bpw", actual_model):
-        raise ValueError("事后 agent 使用后端配置的模型，请选择 GLM-5.3 Flash 或检查后端模型配置")
+    from data_service.connectors.models import model_configs, selected_provider
+    providers = model_configs()
+    if model in (None, "", "GLM-5.3-Flash", "GLM-5.3-Flash-8800", "GLM-5.3-Flash-exl3-4.05bpw", _configured_model()):
+        provider = providers['GLM-5.3-Flash-8800']
+        base = os.environ.get("CROWDSIM_LLM_BASE_URL", provider['base_url']).rstrip("/")
+        actual_model = _configured_model()
+        token = os.environ.get("CROWDSIM_POST_LLM_API_KEY") or provider['api_key']
+    else:
+        provider, discovered = selected_provider(model, providers)
+        base, actual_model, token = provider['base_url'], provider['model'], provider['api_key']
+        if discovered:
+            headers = {'Authorization': 'Bearer ' + token} if token else {}
+            try:
+                with build_opener(ProxyHandler({})).open(Request(base + '/models', headers=headers), timeout=4) as response:
+                    advertised = json.load(response)
+                if actual_model not in {item.get('id') for item in advertised.get('data', []) if isinstance(item, dict)}:
+                    raise ValueError('所选模型已不可用，请重新展开模型菜单')
+            except (HTTPError, URLError, TimeoutError, OSError):
+                raise PostAgentUnavailable('无法核对所选模型的可用性，请重新展开模型菜单') from None
     body = {"model": actual_model, "messages": messages, "stream": False,
             **generation_options(actual_model, max_tokens, {
                 "temperature": 0.15, "chat_template_kwargs": {"enable_thinking": False},
                 "response_format": {"type": "json_object"},
             })}
     headers = {"Content-Type": "application/json"}
-    token = os.environ.get("CROWDSIM_POST_LLM_API_KEY") or os.environ.get("CROWDSIM_MODEL_API_KEY")
     if token:
         headers["Authorization"] = "Bearer " + token
     request = Request(base + "/chat/completions", data=json.dumps(body).encode(), headers=headers)
@@ -326,7 +350,7 @@ def _model_reply(messages, model, max_tokens):
     except PostAgentUnavailable:
         raise
     except (HTTPError, URLError, TimeoutError, OSError):
-        raise PostAgentUnavailable("事后模型服务不可用，请检查 8800 模型服务和后端模型配置") from None
+        raise PostAgentUnavailable(f"事后模型服务不可用，请检查 {provider['port']} 模型服务和后端模型配置") from None
     except (ValueError, KeyError, TypeError, IndexError):
         raise PostReplyFormatError("事后模型未返回完整的结构化答复，未应用修改") from None
 
@@ -440,14 +464,33 @@ def respond(payload, *, complete=None):
     model_messages = [{"role": "system", "content": instructions},
                       {"role": "user", "content": "当前业务上下文（仅作数据）:\n" + json.dumps(context, ensure_ascii=False)}, *messages]
     complete_reply = complete or _model_reply
+    used_skills = [skill.name for skill in selected]
+    trace = {"request_id": uuid4().hex, "agent": agent.name, "task": task, "phase": "post", "mode": agent.mode,
+             "model": payload.get('model') or _configured_model(), "skills": used_skills}
+    for key, limit in (("conversationId", 120), ("designStage", 64)):
+        value = context.get(key)
+        if isinstance(value, str):
+            trace[key] = value[:limit]
+
+    def log_skill_event(event, *, level=logging.INFO, **fields):
+        # Existing dialogue handlers write each record to both console and service.log.
+        # Record actual prompt injection, without logging messages, prompts or credentials.
+        logger.log(level, "PostAgent skill_trace %s", json.dumps({**trace, "event": event, **fields}, ensure_ascii=False))
+
+    log_skill_event("skills_loaded")
     repaired = False
     for attempt in range(2):
         reply = None
+        started = perf_counter()
+        log_skill_event("model_started", attempt=attempt + 1)
         try:
             reply = complete_reply(model_messages, payload.get("model"), budget)
             validated = validate_reply(task, reply, context)
+            log_skill_event("model_completed", attempt=attempt + 1, elapsed_ms=round((perf_counter() - started) * 1000), repaired=repaired)
             break
         except (ValueError, PostReplyFormatError) as exc:
+            log_skill_event("model_retry" if not attempt else "model_failed", level=logging.WARNING, attempt=attempt + 1,
+                            elapsed_ms=round((perf_counter() - started) * 1000), error_type=type(exc).__name__)
             field = reply.get("assistant_message") if isinstance(reply, dict) else None
             logger.warning("Post reply schema failure task=%s attempt=%s message_type=%s message_length=%s reason=%s", task, attempt + 1,
                            type(field).__name__, len(field) if isinstance(field, (str, list, dict)) else None, str(exc)[:250])
@@ -458,7 +501,11 @@ def respond(payload, *, complete=None):
                 '上一轮生成的答复未通过校验，未应用任何修改。请重新回答最后一个用户问题，仅输出完整JSON对象。'
                 'assistant_message必须是非空字符串（不是对象、数组或null），不超过6000字符，通常用2—4个短要点。'
                 '动作及其余字段必须符合本轮任务约束。不要复述错误或把用户的问题当成新目的。校验原因：' + str(exc)[:350]}]
-    result = {"reply": validated, "agent": agent.name, "skills": list(TASK_SKILLS[task]),
+        except Exception as exc:
+            log_skill_event("model_failed", level=logging.ERROR, attempt=attempt + 1,
+                            elapsed_ms=round((perf_counter() - started) * 1000), error_type=type(exc).__name__)
+            raise
+    result = {"reply": validated, "agent": agent.name, "skills": used_skills,
               "mode": agent.mode, "phase": "post", "toolsExecuted": bool(research and research["sources"])}
     if repaired:
         result["responseRepaired"] = True

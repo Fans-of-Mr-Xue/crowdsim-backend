@@ -28,7 +28,7 @@ class ComposedGatewayTests(unittest.IsolatedAsyncioTestCase):
         self.providers.close = AsyncMock()
         self.providers.status = AsyncMock(return_value=[
             {'id': 'GLM-5.3-Flash-8800', 'port': 8800},
-            {'id': 'GLM-5.3-Flash', 'port': 8899},
+            {'id': 'GLM-5.3-Flash', 'port': 8800},
             {'id': 'Qwen3.8-Flash-Next', 'port': 8800},
             {'id': 'DiffusionGemma', 'port': 8500},
         ])
@@ -67,11 +67,12 @@ class ComposedGatewayTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue((await response.json())['success'])
         response = await self.client.get('/api/crowdSim/models/status')
         providers = {item['id']: item['port'] for item in (await response.json())['data']}
-        self.assertEqual(providers, {'GLM-5.3-Flash': 8800})
+        self.assertEqual(providers, {'GLM-5.3-Flash': 8800, 'Qwen3.8-Flash-Next': 8800,
+                                    'DiffusionGemma': 8500, 'DiffusionGemma::GLM-5.3-Flash': 8500})
         self.providers.status.assert_not_awaited()
         response = await self.client.get('/api/crowdSim/pre/models/status')
         providers = {item['id']: item['port'] for item in (await response.json())['data']}
-        self.assertEqual(providers, {'GLM-5.3-Flash-8800': 8800, 'GLM-5.3-Flash': 8899,
+        self.assertEqual(providers, {'GLM-5.3-Flash-8800': 8800, 'GLM-5.3-Flash': 8800,
                                     'Qwen3.8-Flash-Next': 8800, 'DiffusionGemma': 8500})
 
 

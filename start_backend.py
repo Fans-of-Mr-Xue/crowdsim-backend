@@ -344,6 +344,95 @@ class Supervisor:
         self.reuse_existing = reuse_existing
         self.optional_names = set()
         self.unavailable_services = set()
+        self.managed = {}
+
+    def manage_port(self, port, service=None):
+        """Adopt only verified services/tunnels from this project and user."""
+        if not WINDOWS:
+            return
+        processes = WindowsProcesses()
+        for pid in processes.listening_pids(port):
+            identity = processes.identity(pid)
+            if identity is None:
+                continue
+            if service is not None:
+                valid = matches_service(identity, service, owner=processes.owner)
+            else:
+                command = identity.command
+                forwards = [command[i + 1] for i, arg in enumerate(command[:-1]) if arg == '-L']
+                valid = (identity.cwd == ROOT.resolve() and identity.uid == processes.owner
+                         and Path(command[0]).name.casefold() in {'ssh', 'ssh.exe'} and '-N' in command
+                         and bool(forwards) and all(re.fullmatch(
+                             r'127\.0\.0\.1:(27018|8800|8899|8500):[^\s]+:\d+', value) for value in forwards))
+            if not valid:
+                if service is not None:
+                    raise StartupError(f'{port} 不属于本用户的当前项目服务，无法接管退出清理')
+                continue
+            parent = processes.identity(identity.parent_pid) if identity.parent_pid > 1 else None
+            if parent and parent.pid != os.getpid() and any(Path(arg).name.casefold() == 'start_backend.py' for arg in parent.command[1:]):
+                raise StartupError('旧后端启动器仍在运行，请先在其终端按 Ctrl+C')
+            process = processes.api.Process(pid)
+            if processes.lifetime(pid) != (identity.uid, identity.started):
+                raise StartupError(f'{port} 进程已变化，请重试')
+            self.managed[pid] = (service.name if service else 'SSH 隧道', process)
+
+    def close_windows(self):
+        api = importlib.import_module('psutil')
+        targets = dict(self.managed)
+        for name, child, _ in self.children:
+            if child.pid in targets or child.poll() is not None:
+                continue
+            try:
+                targets[child.pid] = (name, api.Process(child.pid))
+            except api.NoSuchProcess:
+                pass
+            except api.Error as exc:
+                report(f'读取进程 {child.pid} 失败：{exc}')
+        # Snapshot descendants before terminating parents, while ancestry exists.
+        descendants = {}
+        for name, process in targets.values():
+            try:
+                for descendant in process.children(recursive=True):
+                    descendants[descendant.pid] = descendant
+            except api.NoSuchProcess:
+                pass
+            except api.Error as exc:
+                report(f'读取子进程 {process.pid} 失败：{exc}')
+        pending = {pid: process for pid, (_, process) in targets.items()}
+        pending.update(descendants)
+        for name, process in reversed(list(targets.values())):
+            report(f'停止 {name}')
+            try:
+                process.terminate()
+            except api.NoSuchProcess:
+                pass
+            except api.Error as exc:
+                report(f'停止进程 {process.pid} 失败：{exc}')
+        for process in descendants.values():
+            try:
+                process.terminate()
+            except api.NoSuchProcess:
+                pass
+            except api.Error as exc:
+                report(f'停止子进程 {process.pid} 失败：{exc}')
+        _, alive = api.wait_procs(list(pending.values()), timeout=5)
+        for process in alive:
+            try:
+                process.kill()
+            except api.NoSuchProcess:
+                pass
+            except api.Error as exc:
+                report(f'强制停止进程 {process.pid} 失败：{exc}')
+        _, remaining = api.wait_procs(alive, timeout=5)
+        if remaining:
+            report('仍未退出的进程：' + ', '.join(str(process.pid) for process in remaining))
+        for _, child, _ in self.children:
+            try:
+                child.wait(timeout=1)
+            except subprocess.TimeoutExpired:
+                report(f'子进程 {child.pid} 仍未退出')
+        self.children.clear()
+        self.managed.clear()
 
     def spawn(self, name, command, *, interactive=False, critical=True):
         report(f"启动 {name}")
@@ -352,8 +441,15 @@ class Supervisor:
         owns_process_group = os.name != "nt" and not interactive
         child = subprocess.Popen(command, cwd=ROOT, env={**os.environ, "PYTHONUNBUFFERED": "1"},
                                  stdin=None if interactive else subprocess.DEVNULL,
+                                 creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if WINDOWS else 0,
                                  start_new_session=owns_process_group)
         self.children.append((name, child, owns_process_group))
+        if WINDOWS:
+            api = importlib.import_module('psutil')
+            try:
+                self.managed[child.pid] = (name, api.Process(child.pid))
+            except api.NoSuchProcess:
+                pass
         if not critical:
             self.optional_names.add(name)
         return child
@@ -412,7 +508,8 @@ class Supervisor:
                 raise StartupError(f"{service.port} 已被占用，但不是可用的 {service.name}；请检查该端口")
             if service.reuse_check is not None:
                 service.reuse_check()
-            report(f"复用已有 {service.name}（{service.port}），退出时不会关闭它")
+            self.manage_port(service.port, service)
+            report(f"{service.name} 已就绪（{service.port}）")
             return
         self.spawn(service.name, service.command)
         self.wait_ready(service.name, service.probe)
@@ -422,10 +519,17 @@ class Supervisor:
         cleanup = Supervisor()
         cleanup.children = list(children)
         removed = {child.pid for _, child, _ in children}
+        cleanup.managed = {pid: item for pid, item in self.managed.items() if pid in removed}
+        self.managed = {pid: item for pid, item in self.managed.items() if pid not in removed}
         self.children = [item for item in self.children if item[1].pid not in removed]
         cleanup.close()
 
     def close(self):
+        if not self.children and not self.managed:
+            return
+        if WINDOWS:
+            self.close_windows()
+            return
         # Only stop processes created by this launcher, including their descendants.
         for name, child, owns_process_group in reversed(self.children):
             report(f"停止 {name}")
@@ -506,7 +610,8 @@ def ensure_tunnels(supervisor, *, enabled=True):
         except Exception:
             database_ready = False
         if database_ready:
-            report("数据库连接已可用，复用现有连接")
+            supervisor.manage_port(27018)
+            report("DB 隧道 已就绪")
         else:
             if not enabled:
                 raise StartupError("数据库连接不可用，且已禁用自动 SSH 隧道")
@@ -526,7 +631,8 @@ def ensure_tunnels(supervisor, *, enabled=True):
                 continue
             port = target.port or provider["port"]
             if port_bound(port):
-                report(f"复用 {label} 本机端口（{port}），模型可达性在展开菜单时检查")
+                supervisor.manage_port(port)
+                report(f"{label} 隧道 已就绪")
                 continue
             if not enabled:
                 report(f"{label} 的 {port} 端口映射未建立，其他服务继续启动")
@@ -671,7 +777,7 @@ def main(argv=None):
                 crawler_ready = ready is not False
             if service.port == 8766:
                 control_ready = ready is not False
-        report("采集 8769：" + ("不可用，其他服务继续运行" if not crawler_ready else "就绪") + "；可选模型映射 8899 / 8500")
+        report("采集 8769：" + ("不可用，其他服务继续运行" if not crawler_ready else "就绪") + "；可选模型映射 8500")
         if control_ready:
             report("全部就绪：仿真 8765 / 实验控制 8766 / 对话 8767 / 数据 8768 / 模型 8800 / MongoDB 27018；Ctrl+C 退出")
         else:
@@ -686,6 +792,9 @@ def main(argv=None):
         report(f"启动失败：{exc}")
         return 1
     finally:
+        # A second Ctrl+C must not interrupt cleanup and leave SSH/SUMO alive.
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
         supervisor.close()
 
 
