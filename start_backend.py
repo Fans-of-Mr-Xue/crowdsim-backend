@@ -587,7 +587,9 @@ def port_bound(port):
         except api.Error as exc:
             raise StartupError("无法读取 Windows 本机端口监听状态，请检查系统权限") from exc
     with socket.socket() as candidate:
-        candidate.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # A reusable wildcard listener can coexist with a loopback bind on
+        # macOS when both sockets set SO_REUSEADDR. Do not reuse the probe
+        # address: an occupied port must never be reported as available.
         try:
             candidate.bind(("127.0.0.1", port))
             return False
