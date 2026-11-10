@@ -64,6 +64,9 @@ def control_schedule(actions, baseline=None):
 
 
 def source_cohorts(dataset):
+    from postanalysis_api.services.factual_context import is_spatial, spatial_cohorts
+    if is_spatial(dataset):
+        return spatial_cohorts(dataset)
     from postanalysis_api.services.population_execution import MODE, prepare_execution_dataset, population_cohorts
     dataset = prepare_execution_dataset(dataset)
     profile = dataset.get("metadata", {}).get("executionProfile")
@@ -139,6 +142,10 @@ def holding_segments():
 
 
 def compile_routes(dataset, seed, actions, duration, output: Path):
+    from postanalysis_api.services.factual_context import is_spatial
+    if is_spatial(dataset):
+        from .distribution_demand import compile_distribution
+        return compile_distribution(dataset, seed, actions, duration, output)
     from postanalysis_api.services.population_execution import MODE, prepare_execution_dataset
     dataset = prepare_execution_dataset(dataset)
     profile = dataset.get('metadata', {}).get('executionProfile', {})

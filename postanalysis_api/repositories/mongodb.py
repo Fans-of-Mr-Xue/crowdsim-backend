@@ -6,6 +6,8 @@ from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 import hashlib
 import json
+import gzip
+from bson import BSON, ObjectId
 import os
 from threading import RLock
 from uuid import uuid4
@@ -87,7 +89,20 @@ class MongoRepository:
         timestamp = now()
         document = {"id": item_id, "ownerId": user, "workspaceId": workspace,
                     "createdAt": timestamp, "updatedAt": timestamp, **deepcopy(payload)}
-        self._collection(kind).insert_one(document)
+        uploaded = None
+        if kind == 'datasets' and (len(document.get('observations', [])) > 50000 or len(BSON.encode(document)) > 8 * 1024 * 1024):
+            encoded = gzip.compress(json.dumps(document.pop('observations'), ensure_ascii=False,
+                                                allow_nan=False, separators=(',', ':')).encode('utf-8'))
+            uploaded = self.files.upload_from_stream('observations.json.gz', encoded,
+                metadata={'ownerId': user, 'workspaceId': workspace, 'datasetId': item_id, 'kind': 'dataset_observations'})
+            document['observationStorage'] = {'fileId': str(uploaded), 'sha256': hashlib.sha256(encoded).hexdigest(),
+                                               'count': payload['observationCount'], 'compression': 'gzip'}
+        try:
+            self._collection(kind).insert_one(document)
+        except Exception:
+            if uploaded is not None:
+                self.files.delete(uploaded)
+            raise
         document.pop("_id", None)
         return deepcopy(document)
 
@@ -122,6 +137,10 @@ class MongoRepository:
     def append_trajectory(self, archive, sequence, frames):
         self.db[archive["collections"]["trajectory"]].insert_one(
             {"runId": archive["runId"], "sequence": sequence, **encode_trajectory(frames)})
+
+    def append_observations(self, archive, sequence, observations):
+        self.db[archive['collections']['detail']].insert_one(
+            {'runId': archive['runId'], 'sequence': sequence + 2, 'observationChunk': observations})
 
     def archive_execution_inputs(self, archive, manifest_bytes, route_bytes, command):
         stored = []
@@ -197,6 +216,24 @@ class MongoRepository:
         if document.get("ownerId") != user or document.get("workspaceId") != workspace:
             raise ApiError("RESOURCE_FORBIDDEN", "当前工作区无权访问此资源", 403)
         document.pop("_id", None)
+        if kind == 'datasets' and document.get('observationStorage'):
+            reference = document['observationStorage']
+            with self.files.open_download_stream(ObjectId(reference['fileId'])) as stream:
+                metadata = stream.metadata or {}
+                if any(metadata.get(key) != value for key, value in
+                       (('ownerId', user), ('workspaceId', workspace), ('datasetId', item_id))):
+                    raise ApiError('DATASET_STORAGE_INVALID', '空间目标文件与工作区绑定不一致', 422)
+                encoded = stream.read(64 * 1024 * 1024 + 1)
+            if len(encoded) > 64 * 1024 * 1024 or hashlib.sha256(encoded).hexdigest() != reference['sha256']:
+                raise ApiError('DATASET_STORAGE_INVALID', '空间目标文件校验失败', 422)
+            import io
+            with gzip.GzipFile(fileobj=io.BytesIO(encoded)) as stream:
+                decoded = stream.read(256 * 1024 * 1024 + 1)
+            if len(decoded) > 256 * 1024 * 1024:
+                raise ApiError('DATASET_STORAGE_INVALID', '空间目标文件超过解压上限', 422)
+            document['observations'] = json.loads(decoded)
+            if len(document['observations']) != reference['count']:
+                raise ApiError('DATASET_STORAGE_INVALID', '空间目标文件记录不完整', 422)
         return document
 
     def update(self, kind: str, item_id: str, user: str, workspace: str, changes: dict) -> dict:

@@ -43,6 +43,9 @@ class SumoBatchExecutor:
                                     "effectiveAreaM2": regions[key].area} for key, edge in ENTRY_EDGES.items()},
                 "metricIds": METRIC_IDS, "maxParallelism": 1, "maxTotalRuns": 650,
                 "samplingSeconds": SAMPLE_SECONDS,
+                "factualReconstruction": {"inputMode": "spatial-distribution/2.0", "configurationSource": "verified_during_archive",
+                    "samplingSource": "source_observation_clock", "geometrySource": "source_checked_during_observation_cells",
+                    "initialization": "source_first_frame_spatial_distribution", "calibrated": False},
                 "mappingNote": "A→M1、B→M2、C→M3 为用户确认的工程测试映射；M3 不是真实北侧通道"}
 
     def submit(self, task, on_event):
@@ -220,6 +223,18 @@ class SumoBatchExecutor:
                        "--person-device.fcd.probability", "1", "--person-device.fcd.period", str(SAMPLE_SECONDS),
                        "--device.fcd.period", str(SAMPLE_SECONDS),
                        "--tripinfo-output", str(trips), "--tripinfo-output.write-unfinished", "true"]
+            from postanalysis_api.services.factual_context import is_spatial
+            if is_spatial(dataset):
+                from .distribution_demand import sumo_parameters
+                context = dataset['metadata']['factualContext']
+                overrides = sumo_parameters(context) + [
+                    '--person-device.fcd.period', str(context['samplingSeconds']),
+                    '--device.fcd.period', str(context['samplingSeconds']), '--precision', '8']
+                for key, value in zip(overrides[::2], overrides[1::2]):
+                    if key in command:
+                        command[command.index(key) + 1] = value
+                    else:
+                        command.extend([key, value])
             (folder / "command.json").write_text(json.dumps(command, indent=2), encoding="utf-8")
             command += ["--log", str(folder / "sumo.log")]
             actual_command = [self.binary, "-c", str(folder / "post.sumocfg"), "--start", "--quit-on-end", *command[5:]]
@@ -229,7 +244,12 @@ class SumoBatchExecutor:
             control_events = execute(self.binary, routes, folder, command[5:], manifest, duration, cancel.is_set,
                                      on_progress=lambda update: publish("running", update))
             publish("archiving", persist=True)
-            output = measure(fcd, duration, archive, self.repo, dataset["observations"], cancelled=cancel.is_set)
+            if is_spatial(dataset):
+                from .distribution_measurement import measure_distribution
+                output = measure_distribution(fcd, duration, archive, self.repo, dataset, cancelled=cancel.is_set,
+                                              control_events=control_events)
+            else:
+                output = measure(fcd, duration, archive, self.repo, dataset["observations"], cancelled=cancel.is_set)
             arrived = []
             for element in ET.parse(trips).getroot().findall("personinfo"):
                 walks = element.findall("walk")
@@ -238,10 +258,12 @@ class SumoBatchExecutor:
             censored = len(arrived) < manifest["cohortCount"]
             output["metrics"]["evacuation_time"] = None if censored or not arrived else max(arrived)
             output["measurement"].update(evacuationCensored=censored, arrivedCount=len(arrived),
-                                         metricDefinitionVersion=METRIC_VERSION,
+                                         metricDefinitionVersion='during-spatial-metrics/2.0' if is_spatial(dataset) else METRIC_VERSION,
                                          plannedPersonCount=manifest["cohortCount"])
             feature_values = {}
             fields = {"peak_density": "density", "mean_speed": "meanSpeed", "peak_pressure_proxy": "pressureProxy"}
+            if is_spatial(dataset):
+                fields['peak_density'] = 'peakDensity'
             for feature in task.get("pcFeatures", []):
                 rows = output["regionSamples"].get(feature["regionId"], [])
                 values = [row.get(fields.get(feature["metricId"])) for row in rows

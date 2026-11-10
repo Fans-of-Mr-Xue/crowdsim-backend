@@ -12,9 +12,23 @@ from test_post_unified_design import fixture
 
 
 def population_dataset(duration=600):
-    return {'id': 'ds-population', 'version': 'b' * 64, 'metadata': {}, 'observations': [
-        {'regionId': 'global', 'timeSeconds': second, 'population': count, 'density': .1, 'meanSpeed': .9, 'pressureProxy': None}
-        for second, count in ((.5, 20), (duration / 2, 30), (duration, 10))]}
+    from postanalysis_api.services.factual_context import MODE, current_context
+    from shapely.geometry import Point
+    collector, context = current_context()
+    position = {'edgeId': 'huangpu_park_p25', 'x': 18541.814301200175, 'y': 5845.03057322517}
+    region = collector._cell_for(Point(position['x'], position['y']))
+    times = [.5, duration / 2, duration]
+    regions = [cell['cell_id'] for cell in collector.cells.values()]
+    context.update(samplingSeconds=.5, startSeconds=.5, endSeconds=duration, expectedTimes=times,
+                   expectedRegionIds=regions, initialDistribution=[{**position, 'regionId': region} for _ in range(20)])
+    return {'id': 'ds-population', 'version': 'b' * 64,
+        'metadata': {'durationSeconds': duration, 'factualContext': context,
+            'executionProfile': {'scenarioId': 'memorial-post-test', 'inputMode': MODE,
+                'baselineControl': {'gateOpenSeconds': 1, 'guidanceStartSeconds': 1, 'guidanceDelaySeconds': 0, 'compliance': 0}},
+            'reconstruction': {'sourceDatasetVersion': 'b' * 64}},
+        'observations': [{'regionId': cell, 'timeSeconds': second, 'population': count if cell == region else 0,
+                          'density': None, 'meanSpeed': None, 'pressureProxy': None}
+                         for second, count in zip(times, (20, 30, 10)) for cell in regions]}
 
 
 class PopulationExecutionTests(unittest.TestCase):
@@ -42,15 +56,15 @@ class PopulationExecutionTests(unittest.TestCase):
                 self.assertTrue(all(action['atSeconds'] < duration for group in template['groups'] for action in group['interventions']))
                 self.assertEqual(before, dataset)
 
-    def test_population_changes_create_shared_deterministic_people_without_mutating_observations(self):
+    def test_initial_people_follow_first_frame_without_forcing_later_observation_counts(self):
         dataset = prepare_execution_dataset(population_dataset())
         cohorts = population_cohorts(dataset)
-        self.assertEqual(30, len(cohorts))
+        self.assertEqual(20, len(cohorts))
         self.assertEqual(20, sum(person['depart'] == 0 for person in cohorts))
-        self.assertEqual(20, sum(person['release'] == 600 for person in cohorts))
+        self.assertEqual(20, sum(person['release'] > 600 for person in cohorts))
         self.assertEqual(cohorts, population_cohorts(dataset))
         self.assertEqual('b' * 64, dataset['metadata']['reconstruction']['sourceDatasetVersion'])
-        invalid = population_dataset(); invalid['observations'][0]['population'] = 20001
+        invalid = population_dataset(); invalid['metadata']['factualContext']['initialDistribution'] *= 1001
         with self.assertRaises(ApiError):
             prepare_execution_dataset(invalid)
 
@@ -60,7 +74,7 @@ class PopulationExecutionTests(unittest.TestCase):
         plan['factualBaseline'].update(datasetId=dataset['id'], datasetVersion=dataset['version'])
         plan['counterfactualDesign'].update(baselineExecution=context['baselineExecution'], durationSeconds=600)
         groups = plan['counterfactualDesign']['groups'][:3]
-        for group, values, factors in zip(groups, ((300, .7, 0), (300, .4, 30), (360, .7, 30)),
+        for group, values, factors in zip(groups, ((300, .7, 0), (300, 0, 0), (1, .7, 0)),
                                           (['T_start', 'Compliance', 'Delay'], ['T_start'], ['Compliance'])):
             group['execution'].update(startSeconds=values[0], compliance=values[1], delaySeconds=values[2], referenceDesignId='F-00')
             group['factorSymbols'] = factors
@@ -81,10 +95,10 @@ class PopulationExecutionTests(unittest.TestCase):
         with TemporaryDirectory() as folder:
             baseline = compile_routes(dataset, 42, [], 600, Path(folder) / 'factual.xml')
             candidate = compile_routes(dataset, 42, task['groups'][1]['interventions'], 600, Path(folder) / 'earlier.xml')
-            self.assertEqual(360, baseline['controls']['gateOpenSeconds'])
-            self.assertEqual(30, baseline['controls']['guidanceDelaySeconds'])
+            self.assertEqual(1, baseline['controls']['gateOpenSeconds'])
+            self.assertEqual(0, baseline['controls']['guidanceDelaySeconds'])
             self.assertEqual(300, candidate['controls']['gateOpenSeconds'])
-            self.assertEqual(.4, candidate['controls']['compliance'])
+            self.assertEqual(0, candidate['controls']['compliance'])
             self.assertEqual([p['id'] for p in baseline['cohorts']], [p['id'] for p in candidate['cohorts']])
         plan['executionSettings']['pcFeatures'][0]['windowEndSeconds'] = 601
         with self.assertRaises(ApiError):

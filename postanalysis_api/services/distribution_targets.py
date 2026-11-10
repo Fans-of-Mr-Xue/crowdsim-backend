@@ -9,6 +9,17 @@ def distribution_targets(dataset):
     times = sorted({row["timeSeconds"] for row in spatial})
     coverage = Counter(row["regionId"] for row in spatial)
     missing = []
+    context = dataset.get('metadata', {}).get('factualContext')
+    if context:
+        expected_regions = set(context['expectedRegionIds'])
+        expected_times = set(context['expectedTimes'])
+        keys = {(row['timeSeconds'], row['regionId']) for row in spatial}
+        if (set(regions) != expected_regions or set(times) != expected_times or len(keys) != len(spatial) or
+                len(keys) != len(expected_regions) * len(expected_times)):
+            missing.append('原始期望网格/时间覆盖不完整或存在未知、重复标识，不得丢格、丢时刻或补零')
+        counts = Counter(row['regionId'] for row in context['initialDistribution'])
+        if times and any(counts[row['regionId']] != row['population'] for row in spatial if row['timeSeconds'] == times[0]):
+            missing.append('初始人群分布与首帧空间目标不一致')
     if not spatial:
         missing.append("按step保存的路口/空间单元人数分布；只有全局总人数不能确定空间分布")
     elif len(times) < 2:

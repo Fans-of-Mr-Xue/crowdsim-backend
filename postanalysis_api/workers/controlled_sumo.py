@@ -31,11 +31,15 @@ def execute(binary, routes, folder: Path, extra_args, manifest, duration, cancel
     tracking, held, releases, events = set(), {}, [], []
     last_publish = float("-inf")
     frame_error_logged = False
+    step_seconds = manifest.get('factualContext', {}).get('stepSeconds', 0.5)
+    step_count = round(duration / step_seconds)
+    if abs(step_count * step_seconds - duration) > 1e-8:
+        raise ValueError('Execution window must align with the simulation step')
     try:
         adapter.start()
         connection = adapter.connection
         connection.simulation.subscribe((tc.VAR_DEPARTED_PERSONS_IDS, tc.VAR_TIME))
-        for step in range(1, int(duration * 2) + 1):
+        for step in range(1, step_count + 1):
             if cancelled():
                 raise InterruptedError()
             connection.simulationStep()
@@ -72,12 +76,12 @@ def execute(binary, routes, folder: Path, extra_args, manifest, duration, cancel
                     connection.person.unsubscribe(person_id)
                     events.append({"timeSeconds": now, "personId": person_id, "type": "hold",
                                    "edgeId": person["holdingEdge"], "targetPosition": person["holdingPosition"]})
-            if step == int(duration * 2) and abs(adapter.time_seconds - duration) > 0.01:
+            if step == step_count and abs(adapter.time_seconds - duration) > 0.01:
                 raise RuntimeError("SUMO clock did not match the declared integration step")
             # The renderer polls a single latest frame; full FCD archival remains
             # in measurement.py. Do not write thousands of live frames to Mongo.
             wall_time = time.monotonic()
-            if on_progress is not None and (wall_time - last_publish >= 0.5 or step == int(duration * 2)):
+            if on_progress is not None and (wall_time - last_publish >= 0.5 or step == step_count):
                 update = {"stepSeconds": now}
                 try:
                     update["frame"] = capture_frame(connection, now)

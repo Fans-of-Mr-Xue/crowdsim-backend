@@ -29,8 +29,11 @@ def validate_execution_input(app, dataset, plan=None):
             binary = getattr(app.executor, "binary", None)
             if not binary:
                 raise ApiError("SUMO_BINARY_MISSING", "请配置可用的SUMO运行程序后重新校验。", 503)
-            probe = subprocess.run([binary, "--net-file", str(NET_FILE), "--route-files", str(output),
-                                    "--begin", "0", "--end", "0.5", "--step-length", "0.5",
+            from .factual_context import is_spatial
+            from postanalysis_api.workers.distribution_demand import sumo_parameters
+            parameters = sumo_parameters(dataset['metadata']['factualContext']) if is_spatial(dataset) else ['--step-length', '0.5']
+            probe = subprocess.run([binary, "--net-file", str(NET_FILE), "--route-files", str(output), *parameters,
+                                    "--begin", "0", "--end", "0.5",
                                     "--no-step-log", "true", "--no-warnings", "true"],
                                    capture_output=True, timeout=20, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
             if probe.returncode:

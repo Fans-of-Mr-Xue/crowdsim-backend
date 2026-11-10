@@ -14,7 +14,7 @@ from postanalysis_api.schemas.common import ApiError
 
 
 class DuringArchiveReader:
-    ROLES = {"observation_global", "observation_cells", "observation_boundaries", "observation_samples"}
+    ROLES = {"observation_global", "observation_cells", "observation_boundaries", "observation_samples", "trajectory"}
     def __init__(self, database, files=None):
         self.db = database
         self.files = files if files is not None else GridFS(database, collection="during_result_files")
@@ -49,9 +49,10 @@ class DuringArchiveReader:
             metadata = source.metadata or {}
             if metadata.get("run_id") != document["run_id"] or metadata.get("role") != role:
                 raise ValueError("观测文件与实验绑定不一致")
-            compressed = source.read(8 * 1024 * 1024 + 1)
+            limit = (64 if role == 'trajectory' else 8) * 1024 * 1024
+            compressed = source.read(limit + 1)
         digest = hashlib.sha256(compressed).hexdigest()
-        if len(compressed) > 8 * 1024 * 1024 or digest != descriptor.get("sha256") or digest != metadata.get("sha256"):
+        if len(compressed) > limit or digest != descriptor.get("sha256") or digest != metadata.get("sha256"):
             raise ValueError("观测归档大小或校验值异常")
         provenance.append({"role": role, "fileId": str(descriptor["file_id"]), "sha256": digest})
         return compressed

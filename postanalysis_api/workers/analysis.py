@@ -128,7 +128,9 @@ def summarize(task, runs):
                         "distributions": distributions, "runs": [{key: run.get(key) for key in
                 ("id", "planId", "seed", "status", "metrics", "archive", "measurement", "executionEvidence")} | {
                     "calibration": {"populationMAE": run.get("calibration", {}).get("populationMAE"),
-                                    "comparisonCount": len(run.get("calibration", {}).get("populationResiduals", []))}} for run in runs]},
+                                    "comparisonCount": run.get("calibration", {}).get("observationCount", len(run.get("calibration", {}).get("populationResiduals", []))),
+                                    "calibrated": run.get('calibration', {}).get('calibrated', False),
+                                    "status": run.get('calibration', {}).get('status')}} for run in runs]},
             "comparison": {"effects": comparison, "method": "paired seeds; 2000 bootstrap resamples; candidate minus reference"},
             **{key: {"experiments": value, "status": "computed" if value else "no_eligible_contrast" if unified else "not_designed", **({"causalGraph": causal_graph} if key == "intervention" else {})} for key, value in sections.items()},
             "causalGraph": causal_graph,
@@ -137,6 +139,18 @@ def summarize(task, runs):
                             "重复种子少于20时仅提供描述性估计；缺失和右删失指标不填零",
                             "机制结果是预定义模块消融的配对效应，不自动解释为自然间接效应"]}
     # Method boundaries stay in backend diagnostics, separate from user readings.
+    spatial = next((run.get('measurement') for run in runs
+                    if run.get('measurement', {}).get('metricDefinitionVersion') == 'during-spatial-metrics/2.0'), None)
+    if spatial:
+        from copy import deepcopy
+        definitions = deepcopy(result['metricCatalog'])
+        definitions.get('peak_pressure_proxy', {})['definition'] = '原事中裁剪网格密度乘速度向量方差的时空峰值；不是机械接触力'
+        definitions.get('congestion_duration', {})['definition'] = (
+            f"原网格密度>={spatial['riskDensityThreshold']}且非计划停留人员平均速度<{spatial['lowSpeedThreshold']}，"
+            f"连续至少{spatial['confirmationSeconds']}秒的累计网格时长")
+        result.update(metricDefinitionVersion='during-spatial-metrics/2.0', metricCatalog=definitions)
+        result['metrics']['catalog'] = definitions
+        result['limitations'][1] = '按原空间口径计算了残差；历史隐藏行为和事实控制未证实，F00拟合验收尚未通过'
     notes = [*result["limitations"], *causal_graph.get("assumptions", [])]
     if causal_graph.get("reason"):
         notes.append(causal_graph["reason"])

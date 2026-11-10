@@ -20,7 +20,8 @@ def execution_readiness(dataset, plan=None):
     profile = metadata.get("executionProfile")
     profile = profile if isinstance(profile, dict) else {}
     missing = []
-    reconstructed = profile.get('inputMode') == MODE
+    from .factual_context import is_spatial
+    reconstructed = profile.get('inputMode') == MODE or is_spatial(dataset)
     if metadata.get("durationSeconds") != 19800 and not reconstructed:
         missing.append("当前纪念塔执行器使用19800秒工程时窗；需提供当前事中场景自身的执行适配，不能拉伸观测时间")
     if profile.get("scenarioId") != "memorial-post-test":
@@ -59,7 +60,8 @@ def execution_template(dataset, plan=None):
     dataset = prepare_execution_dataset(dataset)
     from .population_execution import execution_context
     context = execution_context(dataset)
-    reconstructed = dataset.get('metadata', {}).get('executionProfile', {}).get('inputMode') == 'population-targets/1.0'
+    from .factual_context import is_spatial
+    reconstructed = dataset.get('metadata', {}).get('executionProfile', {}).get('inputMode') == 'population-targets/1.0' or is_spatial(dataset)
     duration = dataset.get("metadata", {}).get("durationSeconds")
     readiness = execution_readiness(dataset, plan)
     if not readiness["ready"]:

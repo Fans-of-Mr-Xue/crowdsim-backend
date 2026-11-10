@@ -62,12 +62,26 @@ class PostAnalysisApp:
 
     @staticmethod
     def dataset_metadata(document: dict) -> dict:
-        return {key: value for key, value in document.items() if key != "observations"}
+        result = {key: value for key, value in document.items() if key not in {"observations", "displayObservations"}}
+        if 'displayObservations' in document:
+            result.update(spatialObservationCount=document['observationCount'],
+                          observationCount=len(document['displayObservations']))
+        return result
 
     def create_dataset(self, user: str, workspace: str, body: dict) -> dict:
         raw_file = body.get("rawFile")
         dataset_body = {key: value for key, value in body.items() if key != "rawFile"}
         data = validate_dataset(dataset_body)
+        binding = data.get('metadata', {}).get('sourceBinding', {})
+        if binding.get('sourceKind') == 'mongodb_archive':
+            from .during_archives import DuringArchiveReader
+            from .factual_context import import_archive
+            observations, metadata = import_archive(DuringArchiveReader(self.repo.db), binding, user)
+            data['displayObservations'] = metadata.pop('displayTimeline')
+            # Resolve raw spatial data on the server, avoiding browser/metadata limits.
+            data.update(observations=observations, metadata=metadata)
+        elif data.get('metadata', {}).get('executionProfile', {}).get('inputMode') == 'spatial-distribution/2.0':
+            raise ApiError('DURING_SOURCE_REQUIRED', '同场景事实配置必须由后端读取并核验事中来源。', 422)
         version_input = data["observations"] if not data.get("metadata") else {"observations": data["observations"], "metadata": data["metadata"]}
         fingerprint = hashlib.sha256(json.dumps(version_input, sort_keys=True,
                                                  separators=(",", ":")).encode("utf-8")).hexdigest()
@@ -111,7 +125,9 @@ class PostAnalysisApp:
         offset = integer(int((query.get("offset") or [0])[0]), "offset", 0, 1000000)
         limit = integer(int((query.get("limit") or [500])[0]), "limit", 1, 1000)
         region = (query.get("regionId") or [None])[0]
-        rows = [row for row in dataset["observations"] if start <= row["timeSeconds"] <= end
+        spatial = (query.get('view') or [''])[0] == 'spatial' or region not in (None, 'global')
+        source_rows = dataset['observations'] if spatial else dataset.get('displayObservations', dataset['observations'])
+        rows = [row for row in source_rows if start <= row["timeSeconds"] <= end
                 and (region is None or row["regionId"] == region)]
         return {"datasetId": item_id, "datasetVersion": dataset["version"],
                 "sourceKind": dataset["sourceKind"], "total": len(rows),
