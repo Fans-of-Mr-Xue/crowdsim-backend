@@ -147,6 +147,24 @@ class ControlRequestHandler(BaseHTTPRequestHandler):
                 return self._send_json(200, self.bundle.repository.list_experiments(user_id, workspace_id, limit, offset,
                                       summary=query.get("summary") == ["1"]))
 
+            match = re.fullmatch(rf'{CONTROL_PREFIX}/experiments/([^/]+)/runs/([^/]+)/observation-images(?:/([0-9a-f]{{64}})/((?:scene|heatmap)-(?:start|middle|end)\.png))?', path)
+            if match:
+                expected = {'snapshotId': (query.get('snapshotId') or [''])[0],
+                            **{key: int((query.get(key) or ['-1'])[0]) for key in ('executionVersion', 'restartCount')}}
+                eid, rid, source_key, filename = match.groups()
+                service = self.bundle.observation_images
+                if not filename:
+                    return self._send_json(200, service.metadata(user_id, workspace_id, eid, rid, expected))
+                content = service.image(user_id, workspace_id, eid, rid, expected, source_key, filename)
+                self.send_response(200)
+                self._cors_headers()
+                self.send_header('Content-Type', 'image/png')
+                self.send_header('Content-Length', str(len(content)))
+                self.send_header('Cache-Control', 'no-store')
+                self.end_headers()
+                self.wfile.write(content)
+                return
+
             match = re.fullmatch(rf"{CONTROL_PREFIX}/experiments/([^/]+)/strategy-context", path)
             if match:
                 return self._send_json(200, self.bundle.during_strategies.context(user_id, workspace_id, match.group(1)))

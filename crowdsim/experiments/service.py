@@ -30,6 +30,8 @@ class ControlServiceBundle:
         self.events = EventBus()
         self.orchestrator = ExperimentOrchestrator(self.repository, self.gateway, self.registry, event_bus=self.events)
         self.reports = ReportService(self.repository)
+        from .during_observation_images import DuringObservationImages
+        self.observation_images = DuringObservationImages(self.repository)
         self.during_strategies = DuringStrategyService(self.repository, self.reports)
         self.routing = RoutingService(self.gateway, llm_client=llm_client)
         from dialog_storage.repository import ConversationRepository
