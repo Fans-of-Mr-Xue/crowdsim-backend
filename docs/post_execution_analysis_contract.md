@@ -111,6 +111,6 @@ PC 只使用成功的独立 F-00 种子，每次完整运行形成一行；至�
 
 数据集、快照、任务、runs、results 位于 `postanalysis_*`；`post` 索引连接每次运行的明细/轨迹/结果集合。上传原件及编译 manifest/routes 位于 GridFS；轨迹按 sequence 分块，通过 `/runs/{id}/trajectory` 分页；实际事件与校准明细通过 `/runs/{id}` 读取。原始 FCD/tripinfo/日志仍在本机输出目录，未提供统一文件下载 API。报告中分别写明可经 API 取回的证据和仅有文件路径的产物。
 
-读取保留 owner/workspace，按 datasetId/version、reviewPlanVersion、experimentId、planId、sourceGroupId、referenceGroupId、seed、runId、resultId 对齐。结果 API 接受 completed/partial 且有 resultId 的任务；当前真实执行器遇错/取消会停止，尚不产生部分分析封存，也不支持恢复补跑。重启仅标记 interrupted。不得承诺失败批次可自动继续分析、幂等请求能修复全部中间写入或存档已具备完整独立复现能力。
+读取保留 owner/workspace，按 datasetId/version、reviewPlanVersion、experimentId、planId、sourceGroupId、referenceGroupId、seed、runId、resultId 对齐。结果 API 接受 completed/partial 且有 resultId 的任务；当前真实执行器遇错/取消会停止，尚不产生部分分析封存。服务成功绑定监听端口后才将遗留任务标记 interrupted；中断、失败或已取消的实验批次支持用户显式续跑，保留已完成的组/种子记录，使用原批次冻结参数执行剩余运行，未完成单次运行按原种子从头执行。不得承诺单次仿真时间步断点恢复、失败批次可自动继续分析、幂等请求能修复全部中间写入或存档已具备完整独立复现能力。
 
 需要扩展时参照 [SUMO 与后端对接清单](post_sumo_handoff.md)。该清单中的拟新增字段、算法和恢复机制均不属于当前能力。

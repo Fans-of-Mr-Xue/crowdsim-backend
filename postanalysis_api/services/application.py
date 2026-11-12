@@ -13,6 +13,7 @@ from pathlib import Path
 import re
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
+from uuid import uuid4
 from pymongo.errors import PyMongoError
 
 from postanalysis_api.repositories.mongodb import MongoRepository
@@ -22,21 +23,26 @@ from postanalysis_api.schemas.review_intake import validate_review_intake
 from postanalysis_api.schemas.experiments import validate_experiment, validate_simulation
 from postanalysis_api.schemas.metrics import METRICS, catalog
 from postanalysis_api.workers.sumo_batch import SumoBatchExecutor
+from postanalysis_api.workers.batch_state import SupersededExecution, completed_batch_runs, restored_progress, run_matrix
 
 
 class PostAnalysisApp:
-    def __init__(self, data_dir: str | Path, executor=None, *, reconcile=True):
+    def __init__(self, data_dir: str | Path, executor=None, *, reconcile=False):
         # Post-review experiment records must survive outside the local runtime
         # directory. Connection details follow Crowdbackend/.env.example.
         self.repo = MongoRepository()
+        if reconcile:
+            self.recover_interrupted()
+        self.executor = executor or SumoBatchExecutor(self.repo, data_dir)
+
+    def recover_interrupted(self):
+        """Only the server that successfully bound the listener may recover jobs."""
         try:
-            if reconcile:
-                self.repo.reconcile_interrupted()
+            self.repo.reconcile_interrupted()
         except PyMongoError:
             logging.getLogger("postanalysis_api").warning(
                 "MongoDB is unavailable at startup; post-analysis storage requests will retry"
             )
-        self.executor = executor or SumoBatchExecutor(self.repo, data_dir)
 
     def close(self) -> None:
         if hasattr(self.executor, "close"):
@@ -353,21 +359,48 @@ class PostAnalysisApp:
         if dataset["version"] != item["datasetVersion"]:
             raise ApiError("DATASET_VERSION_MISMATCH", "数据集版本与任务创建时不同", 409)
         self._check_start_capability(item)
-        self.repo.transition_task(kind, item_id, user, workspace, "draft", {"status": "queued"})
+        attempt = uuid4().hex
+        self.repo.transition_task(kind, item_id, user, workspace, "draft", {"status": "queued", 'executionAttemptId': attempt})
         self.repo.event(kind, item_id, "queued", user=user, workspace=workspace)
         try:
-            self.executor.submit(item, lambda event: self.record_worker_event(kind, item_id, user, workspace, event))
+            self.executor.submit({**item, 'executionAttemptId': attempt}, lambda event: self.record_worker_event(kind, item_id, user, workspace, event, execution_attempt=attempt))
         except Exception:
             self.repo.transition_task(kind, item_id, user, workspace, "queued", {"status": "draft"})
             self.repo.event(kind, item_id, "submit_rejected", user=user, workspace=workspace)
             raise
         return self.repo.get(kind, item_id, user, workspace)
 
-    def record_worker_event(self, kind: str, item_id: str, user: str, workspace: str, event: dict) -> None:
+    def resume(self, kind: str, item_id: str, user: str, workspace: str) -> dict:
+        item = self.repo.get(kind, item_id, user, workspace)
+        if kind != 'experiments' or item['status'] not in {'interrupted', 'failed', 'cancelled'}:
+            raise ApiError('INVALID_TASK_STATE', '只有中断、失败或已取消的实验批次可以继续。', 409)
+        if self.executor.is_active(item_id):
+            raise ApiError('INVALID_TASK_STATE', '原执行线程仍在收尾，请稍后重试，未重复启动。', 409)
+        dataset = self._dataset(item['datasetId'], user, workspace)
+        if dataset['version'] != item['datasetVersion']:
+            raise ApiError('DATASET_VERSION_MISMATCH', '数据集版本已变化，不能混入原批次续跑。', 409)
+        self._check_start_capability(item)
+        completed = completed_batch_runs(self.repo, item)
+        changes = {'status': 'queued', 'progress': restored_progress(item, completed), 'error': None, 'activeRun': None,
+                   'resultId': None, 'executionAttemptId': uuid4().hex, 'resumeCount': (item.get('resumeCount') or 0) + 1}
+        updated = self.repo.transition_task(kind, item_id, user, workspace, item['status'], changes)
+        attempt = updated['executionAttemptId']
+        try:
+            self.repo.event(kind, item_id, 'resumed', {'previousStatus': item['status'], 'completedRuns': len(completed),
+                            'remainingRuns': len(run_matrix(item)) - len(completed)}, user, workspace)
+            self.executor.submit(updated, lambda event: self.record_worker_event(kind, item_id, user, workspace, event, execution_attempt=attempt))
+        except Exception:
+            self.repo.transition_execution(kind, item_id, user, workspace, 'queued', {key: item.get(key) for key in changes}, execution_attempt=attempt)
+            raise
+        return self.repo.get(kind, item_id, user, workspace)
+
+    def record_worker_event(self, kind: str, item_id: str, user: str, workspace: str, event: dict, *, execution_attempt=None) -> None:
         allowed = {"running", "completed", "failed", "cancelled", "partial"}
         if event.get("status") not in allowed:
             raise ApiError("INVALID_WORKER_EVENT", "执行器状态无效", 422)
         task = self.repo.get(kind, item_id, user, workspace)
+        if execution_attempt is not None and task.get('executionAttemptId') != execution_attempt:
+            raise SupersededExecution('原执行尝试已失效，停止旧线程回写。')
         transitions = {"queued": {"running", "failed", "cancelled"},
                        "running": {"running", "completed", "partial", "failed", "cancelled"},
                        "cancelling": {"running", "cancelled", "failed", "completed", "partial"}}
@@ -412,17 +445,25 @@ class PostAnalysisApp:
         if event["status"] in {"completed", "partial"} and not changes.get("resultId"):
             raise ApiError("RESULT_NOT_READY", "结果封存前不可报告任务完成", 409)
         try:
-            self.repo.transition_task(kind, item_id, user, workspace, task["status"], changes)
+            if execution_attempt is None:
+                self.repo.transition_task(kind, item_id, user, workspace, task['status'], changes)
+            else:
+                self.repo.transition_execution(kind, item_id, user, workspace, task['status'], changes, execution_attempt=execution_attempt)
         except ApiError as exc:
             # A cancellation can win the compare-and-set after the worker read
             # its task. Keep that state while retaining actual completed counts.
             if exc.code != "INVALID_TASK_STATE":
                 raise
             current = self.repo.get(kind, item_id, user, workspace)
+            if execution_attempt is not None and current.get('executionAttemptId') != execution_attempt:
+                raise SupersededExecution('原执行尝试已失效，停止旧线程回写。') from None
             if current["status"] != "cancelling":
                 raise
             retry_changes = {**changes, "status": "cancelling" if event["status"] == "running" else event["status"]}
-            self.repo.transition_task(kind, item_id, user, workspace, "cancelling", retry_changes)
+            if execution_attempt is None:
+                self.repo.transition_task(kind, item_id, user, workspace, 'cancelling', retry_changes)
+            else:
+                self.repo.transition_execution(kind, item_id, user, workspace, 'cancelling', retry_changes, execution_attempt=execution_attempt)
         self.repo.event(kind, item_id, event["status"],
                         {key: value for key, value in event.items() if key != "status"}, user, workspace)
 

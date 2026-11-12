@@ -250,8 +250,14 @@ class MongoRepository:
         return updated
 
     def transition_task(self, kind, item_id, user, workspace, expected_status, changes):
+        return self.transition_execution(kind, item_id, user, workspace, expected_status, changes)
+
+    def transition_execution(self, kind, item_id, user, workspace, expected_status, changes, *, execution_attempt=None):
+        query = {'id': item_id, 'ownerId': user, 'workspaceId': workspace, 'status': expected_status}
+        if execution_attempt is not None:
+            query['executionAttemptId'] = execution_attempt
         document = self._collection(kind).find_one_and_update(
-            {"id": item_id, "ownerId": user, "workspaceId": workspace, "status": expected_status},
+            query,
             {"$set": {**deepcopy(changes), "updatedAt": now()}}, return_document=ReturnDocument.AFTER)
         if document is None:
             self.get(kind, item_id, user, workspace)
@@ -263,7 +269,20 @@ class MongoRepository:
         return list(self._collection("runs").find(
             {"experimentId": item_id, "ownerId": user, "workspaceId": workspace},
             {"_id": 0, "timeline": 0, "controlEvents": 0, "calibration.populationResiduals": 0})
-            .sort([("createdAt", 1), ("id", 1)]).limit(650))
+            .sort([("createdAt", 1), ("id", 1)]))
+
+    def completed_runs_for_experiment(self, item_id, user, workspace):
+        return list(self._collection('runs').find(
+            {'experimentId': item_id, 'ownerId': user, 'workspaceId': workspace, 'status': 'completed'},
+            {'_id': 0, 'timeline': 0, 'controlEvents': 0, 'calibration.populationResiduals': 0})
+            .sort([('createdAt', 1), ('id', 1)]))
+
+    def reopen_archive(self, archive):
+        result = self.db['post'].update_one(
+            {'runId': archive['runId'], 'ownerId': archive['ownerId'], 'workspaceId': archive['workspaceId']},
+            {'$set': {'status': 'running', 'updatedAt': now()}})
+        if not result.matched_count:
+            raise ApiError('NOT_FOUND', '原批次归档不存在，未新建重复归档。', 404)
 
     def list(self, kind: str, user: str, workspace: str, *, limit: int = 50) -> list[dict]:
         items = self._collection(kind).find({"ownerId": user, "workspaceId": workspace}) \

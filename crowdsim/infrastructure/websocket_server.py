@@ -72,12 +72,14 @@ class OverlayServer:
 
     async def start(self) -> None:
         data_dir = os.environ.get("CROWDSIM_POST_DATA_DIR") or Path(__file__).resolve().parents[2] / "runs" / "postanalysis"
-        self.post_app = PostAnalysisApp(data_dir)
+        self.post_app = PostAnalysisApp(data_dir, reconcile=False)
         runner = web.AppRunner(self.create_app())
         await runner.setup()
         try:
             site = web.TCPSite(runner, self.host, self.port)
             await site.start()
+            # A second instance that fails to bind must never reset a live batch.
+            self.post_app.recover_interrupted()
             print(f"[CrowdSim] WebSocket and post API listening at {self.host}:{self.port}")
             await asyncio.Future()
         finally:

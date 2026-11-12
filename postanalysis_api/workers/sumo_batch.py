@@ -15,6 +15,7 @@ from postanalysis_api.schemas.common import ApiError
 from postanalysis_api.schemas.metrics import METRIC_VERSION
 from .analysis import summarize
 from .controlled_sumo import execute
+from .batch_state import SupersededExecution, completed_batch_runs, restored_progress, run_matrix
 from .measurement import SAMPLE_SECONDS, geometry, measure, region_cells
 from .memorial_scenario import (ACTION_SCHEMAS, ENTRY_EDGES, METRIC_IDS, MODEL_ID, MODEL_VERSION,
                                 NET_FILE, RULE_VERSION, compile_routes, control_schedule, geometry_version, source_cohorts)
@@ -73,6 +74,10 @@ class SumoBatchExecutor:
         with self._lock:
             return deepcopy(self._runtime.get(task_id))
 
+    def is_active(self, task_id):
+        with self._lock:
+            return task_id in self._jobs
+
     def _publish(self, task_id, **changes):
         with self._lock:
             state = self._runtime.setdefault(task_id, {"sequence": 0, "activeRun": None, "frame": None})
@@ -82,7 +87,7 @@ class SumoBatchExecutor:
             self._runtime.move_to_end(task_id)
             # Keep running/queued jobs, and at most 64 terminal display frames.
             terminal = [key for key, item in self._runtime.items()
-                        if item.get("status") in {"completed", "cancelled", "failed"}]
+                        if item.get("status") in {"completed", "cancelled", "failed", "interrupted"}]
             for key in terminal[:-64]:
                 self._runtime.pop(key, None)
 
@@ -107,25 +112,38 @@ class SumoBatchExecutor:
         runs = []
         progress = deepcopy(task["progress"])
         try:
+            completed = completed_batch_runs(self.repo, task) if task.get('resumeCount') else {}
+            if completed:
+                runs = list(completed.values())
+                progress = restored_progress(task, completed)
             while not acquired:
                 if cancel.is_set():
                     raise InterruptedError()
                 acquired = self._slot.acquire(timeout=0.5)
             if cancel.is_set():
                 raise InterruptedError()
-            on_event({"status": "running"})
+            on_event({"status": "running", 'progress': deepcopy(progress)})
             self._publish(task["id"], status="running")
-            archive = self.repo.begin_archive(task["id"], "experiment" if "groups" in task else "simulation", user, workspace, task)
+            archive = deepcopy(task.get('archive')) if task.get('resumeCount') else None
+            if task.get('resumeCount'):
+                try:
+                    archive = self.repo.archive_entry(task['id'], user, workspace)
+                except ApiError as exc:
+                    if exc.code != 'NOT_FOUND':
+                        raise
+                    archive = None
+            if archive:
+                self.repo.reopen_archive(archive)
+            else:
+                archive = self.repo.begin_archive(task["id"], "experiment" if "groups" in task else "simulation", user, workspace, task)
             self.repo.update("experiments" if "groups" in task else "simulations", task["id"], user, workspace, {"archive": archive})
             groups = task.get("groups", [])
-            count = max((group["repeatCount"] for group in groups), default=1)
-            seed_start = task.get("seedStart", task.get("seed", 0))
-            matrix = [("F-00", "baseline", seed_start + index, []) for index in range(count)]
-            matrix += [(group["id"], group["experimentType"], seed_start + index, group["interventions"])
-                       for group in groups for index in range(group["repeatCount"])]
+            matrix = run_matrix(task)
             for run_index, (plan_id, kind, seed, actions) in enumerate(matrix, start=1):
                 if cancel.is_set():
                     raise InterruptedError()
+                if (plan_id, seed) in completed:
+                    continue
                 run = self._one(task, dataset, plan_id, kind, seed, actions, cancel,
                                 on_event=on_event, run_index=run_index, total_runs=len(matrix))
                 runs.append(run)
@@ -147,6 +165,9 @@ class SumoBatchExecutor:
             self.repo.finish_archive(archive, "completed", result)
             on_event({"status": "completed", "progress": progress, "resultId": document["id"]})
             self._publish(task["id"], status="completed")
+        except SupersededExecution:
+            # A newer attempt owns the batch/archive; stop without overwriting it.
+            self._publish(task['id'], status='interrupted')
         except InterruptedError:
             if archive:
                 self.repo.finish_archive(archive, "cancelled", {"completedRuns": len(runs)})
@@ -180,6 +201,7 @@ class SumoBatchExecutor:
         duration = task["scenario"]["durationSeconds"]
         run = self.repo.create("runs", user, workspace, {"experimentId": task["id"], "planId": plan_id,
                                "experimentType": kind, "seed": seed, "status": "running",
+                               'executionAttemptId': task.get('executionAttemptId'),
                                "datasetVersion": task["datasetVersion"], "scenario": task["scenario"]})
         active = {"runId": run["id"], "planId": plan_id, "experimentType": kind, "seed": seed,
                   "runIndex": run_index, "totalRuns": total_runs, "stepSeconds": 0,
@@ -203,7 +225,7 @@ class SumoBatchExecutor:
             if persist and on_event is not None:
                 on_event({"status": "running", "activeRun": deepcopy(active)})
 
-        archive = None
+        archive, completed_run = None, None
         folder = self.data_dir / task["id"] / run["id"]
         try:
             publish("preparing", persist=True, reset_frame=True)
@@ -283,6 +305,10 @@ class SumoBatchExecutor:
             publish("completed", persist=True)
             return completed_run
         except Exception as exc:
+            if completed_run is not None:
+                # A late lifecycle callback cannot turn an already committed run
+                # into a failed attempt. Resume will recover this group/seed.
+                raise
             status = "cancelled" if isinstance(exc, InterruptedError) else "failed"
             if archive:
                 self.repo.finish_archive(archive, status, {"error": str(exc)[:2000], "outputDirectory": str(folder)})

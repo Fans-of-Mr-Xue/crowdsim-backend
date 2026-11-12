@@ -143,7 +143,7 @@ class PostLiveRuntimeTests(unittest.TestCase):
             self.assertEqual(200, response[0])
             app.runtime.assert_called_with(kind, identifier, "user", "workspace")
 
-    def batch(self, fail=None, fail_plan="F-00"):
+    def batch(self, fail=None, fail_plan="F-00", completed_callback_error=False):
         folder = tempfile.TemporaryDirectory()
         self.addCleanup(folder.cleanup)
         repo = MemoryRepository()
@@ -170,11 +170,16 @@ class PostLiveRuntimeTests(unittest.TestCase):
             path.write_text("<routes/>", encoding="utf-8")
             return {"cohortCount": 0, "cohorts": [], "controls": {}, "assumptions": []}
 
+        def on_event(event):
+            events.append(deepcopy(event))
+            if completed_callback_error and event.get('activeRun', {}).get('phase') == 'completed':
+                raise ApiError('INVALID_TASK_STATE', 'late lifecycle write failed', 409)
+
         with patch("postanalysis_api.workers.sumo_batch.compile_routes", side_effect=compile_routes), \
                 patch("postanalysis_api.workers.sumo_batch.execute", side_effect=execute), \
                 patch("postanalysis_api.workers.sumo_batch.measure", return_value={"metrics": {}, "measurement": {}, "regionSamples": {}}), \
                 patch("postanalysis_api.workers.sumo_batch.summarize", return_value={}):
-            executor._run(task, {"observations": []}, lambda event: events.append(deepcopy(event)), threading.Event())
+            executor._run(task, {"observations": []}, on_event, threading.Event())
         return executor, events, observed, repo
 
     def test_batch_frames_expose_real_run_index_without_persisting_each_frame(self):
@@ -214,6 +219,12 @@ class PostLiveRuntimeTests(unittest.TestCase):
         self.assertEqual(1, progress["failed"])
         self.assertEqual({"groupId": "OBS-01", "planned": 1, "completed": 0, "failed": 1}, progress["groups"][0])
         self.assertEqual("OBS-01", executor.runtime("exp_1")["activeRun"]["planId"])
+
+    def test_a_late_callback_error_does_not_overwrite_an_already_archived_completed_run(self):
+        _executor, events, _observed, repo = self.batch(completed_callback_error=True)
+        self.assertEqual('failed', events[-1]['status'])
+        self.assertEqual('completed', repo.records['runs_1']['status'])
+        self.assertNotIn(('runs_1', 'failed'), repo.archives)
 
 
 if __name__ == "__main__":
