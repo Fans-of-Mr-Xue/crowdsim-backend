@@ -44,15 +44,13 @@ def main(argv=None):
         check_service_dependencies()
         from crowdsim_overlay_server import parse_args, resolve_service_scenario
         from crowdsim.infrastructure.sumo_adapter import discover_sumo_binary
-        from crowdsim.during_models import DeepSeekSettings
         simulation_args = ["--scenario", args.scenario, "--mode", "rule", *extra]
         options = parse_args(simulation_args)
         if options.host not in {"127.0.0.1", "localhost"} or options.port != 8765 or options.mode != "rule":
             raise StartupError("事中独立入口固定使用本机8765及rule启动；个体LLM由每轮事中模型选择绑定")
         check_sumo_version(discover_sumo_binary(options.sumo_binary))
         resolve_service_scenario(options)
-        settings = DeepSeekSettings.load()
-        report("事中检查通过；DeepSeek：" + ("已配置" if settings.available else "未配置，请填写事中专用环境变量"))
+        report("事中检查通过；模型：GLM-5.3-Flash（本机8800）")
         if args.check:
             report("检查结束；未启动服务、未连接数据库或远程模型")
             return 0
@@ -61,7 +59,7 @@ def main(argv=None):
             restart_local_services(services, launcher_names={"start_backend.py", "start_during.py"})
         for service in services:
             supervisor.start_service(service)
-        report("事中就绪：仿真8765 / 实验8766 / 对话8767 / 模型8768；不依赖MongoDB或SSH。Ctrl+C退出")
+        report("事中就绪：仿真8765 / 实验8766 / 对话8767 / 模型8768；请保持GLM的8800连接可用。Ctrl+C退出")
         while True:
             supervisor.check_children()
             time.sleep(1)

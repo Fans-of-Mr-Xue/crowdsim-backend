@@ -119,6 +119,11 @@ def validate_binding(requirement):
 
 def record_initial_state(runtime, directory):
     """Archive real READY coordinates separately from the requested layout."""
+    from .class2_society import load_class2_society, society_binding
+    source = runtime.requirement_record['requirement']['class2_demo']['source']
+    model = load_class2_society(runtime.requirement_record['requirement_id'], source)
+    runtime.class2_artificial_society = society_binding(model)
+    runtime.recorder.update_manifest(scenario=runtime.scenario_diagnostics())
     state = {'run_id': runtime.run_id, 'time_seconds': runtime.time_seconds,
              'state': 'READY', 'population': runtime.population.diagnostics(),
              'class2_demo': runtime.requirement_record['requirement']['class2_demo'],
@@ -127,7 +132,7 @@ def record_initial_state(runtime, directory):
                             'speed': p.speed} for p in runtime.current.persons.values()]}
     path = Path(directory)/'class2_initial_state.json'
     path.write_text(json.dumps(state, ensure_ascii=False, indent=2)+'\n')
-    runtime.recorder.update_manifest(class2_demo={
+    runtime.recorder.update_manifest(class2_artificial_society=runtime.class2_artificial_society, class2_demo={
         **state['class2_demo'], 'initial_state_file': path.name,
         'initial_state_sha256': _sha(path), 'initial_time_seconds': runtime.time_seconds})
 

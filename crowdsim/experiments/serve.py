@@ -80,9 +80,12 @@ class ControlRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(encoded)
 
     def _send_error(self, exc: Exception) -> None:
+        from .class2_comparison import ComparisonConflict
         message = str(exc)
         status = HTTPStatus.BAD_REQUEST
-        if message in {"EXPERIMENT_NOT_FOUND", "RUN_NOT_FOUND"}:
+        if isinstance(exc, ComparisonConflict):
+            status = HTTPStatus.CONFLICT
+        elif message in {"EXPERIMENT_NOT_FOUND", "RUN_NOT_FOUND"}:
             status = HTTPStatus.NOT_FOUND
         elif message in {"EXPERIMENT_ALREADY_RUNNING", "SIMULATOR_BUSY", "RUN_NOT_ACTIVE"}:
             status = HTTPStatus.CONFLICT
@@ -101,6 +104,18 @@ class ControlRequestHandler(BaseHTTPRequestHandler):
         path, query = self._path()
         user_id, workspace_id = self._context()
         try:
+            match = re.fullmatch(rf'{CONTROL_PREFIX}/during-class2/conversations/([A-Za-z0-9_-]{{1,120}})/comparisons/evaluation', path)
+            if match:
+                return self._send_json(200, self.bundle.class2_comparisons.evaluation(user_id, workspace_id, match.group(1)))
+            match = re.fullmatch(rf'{CONTROL_PREFIX}/during-class2/conversations/([A-Za-z0-9_-]{{1,120}})/comparisons/events', path)
+            if match:
+                return self._stream_class2(user_id, workspace_id, match.group(1))
+            match = re.fullmatch(rf'{CONTROL_PREFIX}/during-class2/conversations/([A-Za-z0-9_-]{{1,120}})/comparisons/runtime', path)
+            if match:
+                return self._send_json(200, self.bundle.class2_comparisons.runtime(user_id, workspace_id, match.group(1)))
+            match = re.fullmatch(rf'{CONTROL_PREFIX}/during-class2/conversations/([A-Za-z0-9_-]{{1,120}})/comparisons', path)
+            if match:
+                return self._send_json(200, self.bundle.class2_comparisons.load(user_id, workspace_id, match.group(1)))
             if path == f"{CONTROL_PREFIX}/health":
                 data = self.bundle.orchestrator.health()
                 data.update({"storage": "jsonl", "controllerRegistry": "ready", "arde": "ready"})
@@ -178,6 +193,18 @@ class ControlRequestHandler(BaseHTTPRequestHandler):
         user_id, workspace_id = self._context()
         try:
             data = self._json_body()
+            match = re.fullmatch(rf'{CONTROL_PREFIX}/during-class2/conversations/([A-Za-z0-9_-]{{1,120}})/comparisons/evaluation', path)
+            if match:
+                return self._send_json(200, self.bundle.class2_comparisons.evaluation(user_id, workspace_id, match.group(1), data))
+            match = re.fullmatch(rf'{CONTROL_PREFIX}/during-class2/conversations/([A-Za-z0-9_-]{{1,120}})/comparisons(?:/(start|pause|resume|stop|retry|set_speed))?', path)
+            if match:
+                if match.group(2) == 'start':
+                    result = self.bundle.class2_comparisons.start(user_id, workspace_id, match.group(1), data)
+                elif match.group(2):
+                    result = self.bundle.class2_comparisons.control(user_id, workspace_id, match.group(1), match.group(2), data)
+                else:
+                    result = self.bundle.class2_comparisons.configure(user_id, workspace_id, match.group(1), data)
+                return self._send_json(202, result)
             if path == f"{CONTROL_PREFIX}/requirements":
                 requirement = data.get("requirement")
                 source = data.get("source")
@@ -256,6 +283,39 @@ class ControlRequestHandler(BaseHTTPRequestHandler):
         except Exception as exc:
             self._send_error(exc)
 
+    def _stream_class2(self, user_id, workspace_id, cid):
+        service = self.bundle.class2_comparisons
+        with service._condition:
+            snapshot = service.runtime(user_id, workspace_id, cid)  # Validate ownership before headers.
+            events = service.events.after(0, run_id=cid)
+            sequence = events[-1]['sequence'] if events else 0
+        self.send_response(200)
+        self._cors_headers()
+        self.send_header('Content-Type', 'text/event-stream; charset=utf-8')
+        self.send_header('Cache-Control', 'no-cache')
+        self.send_header('X-Accel-Buffering', 'no')
+        self.send_header('Connection', 'keep-alive')
+        self.end_headers()
+        try:
+            self.wfile.write(('data: ' + json.dumps({'type': 'snapshot', 'payload': snapshot}, ensure_ascii=False) + '\n\n').encode())
+            self.wfile.flush()
+            if not snapshot or snapshot['record']['status'] not in {'queued', 'running', 'paused', 'pause_requested', 'stop_requested'}:
+                self.close_connection = True
+                return
+            while True:
+                events = service.events.wait_after(sequence, run_id=cid, timeout=15)
+                if not events:
+                    self.wfile.write(b': keepalive\n\n')
+                for event in events:
+                    sequence = event['sequence']
+                    self.wfile.write(('data: ' + json.dumps(event, ensure_ascii=False) + '\n\n').encode())
+                self.wfile.flush()
+                if any(e['type'] == 'state' and e['payload']['status'] in {'completed', 'failed', 'stopped', 'interrupted', 'completed_with_failures'} for e in events):
+                    self.close_connection = True
+                    return
+        except (BrokenPipeError, ConnectionResetError):
+            return
+
     def _stream_events(self, user_id: str, workspace_id: str, run_id: str, sequence: int) -> None:
         if not self.bundle.repository.get_run(user_id, workspace_id, run_id):
             raise LookupError("RUN_NOT_FOUND")
@@ -290,6 +350,7 @@ class ControlHttpServer(ThreadingHTTPServer):
         self.bundle = bundle
 
     def server_close(self) -> None:
+        self.bundle.class2_comparisons.close()
         self.bundle.gateway.close()
         super().server_close()
 

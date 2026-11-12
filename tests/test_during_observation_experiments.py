@@ -41,12 +41,14 @@ def study(tmp_path, monkeypatch):
 
 def test_adapter_freezes_the_during_provider_without_accepting_credentials(study):
     payload, _, _ = study
-    config = observation_config({**payload, "llmModel": "deepseek-flash", "api_key": "must-not-be-persisted"}, "during-check")
-    assert config["duringObservation"]["llmModel"] == "deepseek-flash"
-    assert config["scenario"]["observationBinding"]["llmModel"] == "deepseek-flash"
+    config = observation_config({**payload, "llmModel": "GLM-5.3-Flash", "api_key": "must-not-be-persisted"}, "during-check")
+    assert config["duringObservation"]["llmModel"] == "GLM-5.3-Flash"
+    assert config["scenario"]["observationBinding"]["llmModel"] == "GLM-5.3-Flash"
     assert "must-not-be-persisted" not in str(config)
     with pytest.raises(ContractError):
         observation_config({**payload, "llmModel": "unknown-model"}, "during-check")
+    with pytest.raises(ContractError):
+        observation_config({**payload, "llmModel": "deepseek-flash"}, "during-check")
 
 
 def test_adapter_uses_confirmed_config_and_rejects_bypasses(study):
@@ -436,12 +438,12 @@ def test_stop_group_cancels_queued_rounds_without_resetting_or_touching_another_
     repo, gateway, orchestrator, payload = setup(study, monkeypatch)
     exp = orchestrator.create_observation_experiment('u', 'during-check', payload)
     runs = orchestrator.start_experiment('u', 'during-check', exp['experiment_id'])
-    other = orchestrator.create_observation_experiment('u', 'during-check', {**payload, 'clientRequestId': 'another'})
+    other = orchestrator.create_observation_experiment('u', 'during-other', {**payload, 'conversationId': 'other', 'clientRequestId': 'another'})
     repo.update_run('u', 'during-check', runs[0]['run_id'], {'status': 'completed'})
     status, _, _ = request(SimpleNamespace(orchestrator=orchestrator), f"/experiments/{exp['experiment_id']}/stop", {}, workspace='during-check')
     assert status == 200
     assert [r['status'] for r in repo.list_runs('u', 'during-check', exp['experiment_id'])] == ['completed', 'cancelled', 'cancelled']
-    assert repo.get_experiment('u', 'during-check', other['experiment_id'])['status'] == 'draft'
+    assert repo.get_experiment('u', 'during-other', other['experiment_id'])['status'] == 'draft'
     for _ in range(3):
         item = orchestrator._queue.get()
         if item['run']['run_id'] != runs[0]['run_id']:

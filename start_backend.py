@@ -96,10 +96,10 @@ def listening(port):
         return False
 
 
-def get_json(port, path, api_key=""):
+def get_json(port, path, api_key="", *, timeout=2):
     headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
     # Local probes must not be sent to the user's HTTP/SOCKS proxy.
-    with build_opener(ProxyHandler({})).open(Request(f"http://127.0.0.1:{port}{path}", headers=headers), timeout=2) as response:
+    with build_opener(ProxyHandler({})).open(Request(f"http://127.0.0.1:{port}{path}", headers=headers), timeout=timeout) as response:
         return json.load(response)
 
 
@@ -630,7 +630,9 @@ def main(argv=None):
             return 0
         ensure_tunnels(supervisor, enabled=not args.no_tunnels)
         def data_ready():
-            status = get_json(8768, "/api/crowdSim/database/status").get("data", {})
+            # Authentication and paged collection metadata cross the SSH tunnel;
+            # the first healthy response can exceed the other services' 2s probe.
+            status = get_json(8768, "/api/crowdSim/database/status", timeout=15).get("data", {})
             return status.get("connected") is True and status.get("database") == os.environ.get("CROWDSIM_MONGO_DATABASE", "crowdsim")
 
         services = [

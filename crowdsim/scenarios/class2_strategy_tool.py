@@ -15,10 +15,20 @@ ACTIONS = frozenset(ACTION_GUIDE)
 
 
 def strategy_tool(available, flow_aliases):
+    effects = {
+        'publish_guidance': '仅发送和记录消息；不会按文字自动靠右、分侧、改变路宽、速度或路线。',
+        'set_edge_capacity': '仅设置行人速度上限倍率，不改变路宽或物理容量，不保证降低密度；已有速度更低时可能不起约束作用。',
+        'reroute_group': '按指定避让或代价规则从各人当前位置重算路线，保留原终点；不保证存在替代道路。',
+        'set_route_distribution': '按比例分配路线规则，保留原终点，不扩容道路。',
+        'release_flow': '暂缓并分批起步，会在起点形成等待；不消除人数。',
+        'set_inflow_rate': '按方向控制入口放行能力，会形成上游等待；不减少总人数。',
+        'observe_only': '只记录观测，不改变运动。',
+    }
     return {
         'name': 'submit_class2_strategy',
         'flowAliases': flow_aliases.copy(),
         'commands': {name: guide for name, guide in ACTION_GUIDE.items() if name in available},
+        'effects': {name: effect for name, effect in effects.items() if name in available},
         'routePolicy': 'keep 保留原路线（仅分流可用），avoid:路段,路段 避让，risk:路段=权重,路段=权重 调整选路代价（0.1～10）。避让与权重可用+连接。',
     }
 

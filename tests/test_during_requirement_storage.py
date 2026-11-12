@@ -11,15 +11,19 @@ import unittest
 from unittest.mock import patch
 
 from dialog_storage.during_requirements import DuringRequirementRepository, RequirementConflict
+from dialog_storage.during_workflow import experiment_group_id
 from dialog_storage.repository import ConversationRepository
 from dialogue_service.server import DialogueHandler, _allowed_origins
 
 
-def state(title="test"):
+def state(note="test"):
+    requirement = {"schema_version": 2, "research": {"problem_type": 1}, "project": {"title": "test"}}
+    modeling = {"version": 1, "population": {}}
     return {"requirement": {"version": 3, "view": "requirement", "draft": {
-        "id": "draft-one", "revision": 15, "requirement": {"schema_version": 2, "project": {"title": title}},
+        "id": "draft-one", "revision": 15, "requirement": requirement,
         "confirmation": {"id": "snapshot-one"}, "savedSnapshotId": "snapshot-one"},
-        "snapshots": [{"id": "snapshot-one", "draftId": "draft-one", "revision": 15, "requirement": {"schema_version": 2}}],
+        "snapshots": [{"id": "snapshot-one", "draftId": "draft-one", "revision": 15, "requirement": deepcopy(requirement), "modeling_requirements": modeling}],
+        "modelingRequirements": deepcopy(modeling), "assistantTurns": [{"role": "assistant", "content": note}],
         "submissions": {"snapshot-one": {"requirement_id": "req-one", "fingerprint": "sha256:one"}}},
         "observation": {"entries": [{"conversationId": "study", "clientRequestId": "request-one", "snapshotId": "snapshot-one", "modelId": "model-one", "experimentId": None}], "selectedId": "request-one", "preparedModels": {}}, "legacy": None}
 
@@ -51,7 +55,7 @@ class DuringStorageTests(unittest.TestCase):
         self.assertEqual(accepted, reopened.load("study"))
         self.assertIsNone(reopened.load("another-study"))
 
-    def test_hotspot_times_and_open_end_survive_with_their_frozen_snapshot(self):
+    def test_hotspot_times_are_frozen_and_open_end_is_supported_in_a_separate_conversation(self):
         value = state()
         requirement = value["requirement"]["draft"]["requirement"]
         requirement.update(research={"problem_type": 1}, scenario={"hotspot_start_seconds": 900, "hotspot_end_seconds": 1200},
@@ -60,13 +64,17 @@ class DuringStorageTests(unittest.TestCase):
         self.save(value)
         requirement["scenario"]["hotspot_end_seconds"] = None
         value["requirement"]["draft"].update(revision=16, confirmation=None, savedSnapshotId=None)
-        self.save(value, 1, "open-end")
+        with self.assertRaises(ValueError):
+            self.save(value, 1, "open-end")
         restored = DuringRequirementRepository(self.repo.root).load("study")["state"]["requirement"]
-        self.assertIsNone(restored["draft"]["requirement"]["scenario"]["hotspot_end_seconds"])
+        self.assertEqual(1200, restored["draft"]["requirement"]["scenario"]["hotspot_end_seconds"])
         self.assertEqual(1200, restored["snapshots"][0]["requirement"]["scenario"]["hotspot_end_seconds"])
         self.assertEqual(60, restored["draft"]["requirement"]["experiment"]["duration_seconds"])
-        with self.assertRaises(RequirementConflict):
-            self.save(state(), 1, "stale-times")
+        value["requirement"]["draft"].update(confirmation={"id": "snapshot-one"}, savedSnapshotId="snapshot-one")
+        value["requirement"]["snapshots"][0]["requirement"] = deepcopy(requirement)
+        value["observation"]["entries"][0]["conversationId"] = "open-study"
+        self.repo.save("open-study", state=value, expected_revision=0, mutation_id="open-end")
+        self.assertIsNone(self.repo.load("open-study")["state"]["requirement"]["snapshots"][0]["requirement"]["scenario"]["hotspot_end_seconds"])
 
     def test_same_mutation_is_idempotent_but_cannot_change_its_payload(self):
         accepted = self.save()
@@ -103,7 +111,7 @@ class DuringStorageTests(unittest.TestCase):
             value = state(); mutation(value)
             with self.assertRaises(ValueError):
                 self.save(value, 1, "invalid")
-        value = state(); value["observation"]["entries"][0]["experimentId"] = "experiment-one"
+        value = state(); value["observation"]["entries"][0]["experimentId"] = experiment_group_id("study")
         self.save(value, 1, "receipt")
         value["observation"]["entries"][0]["experimentId"] = "wrong"
         with self.assertRaises(ValueError):

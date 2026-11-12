@@ -14,6 +14,7 @@ from urllib.parse import urlsplit, parse_qs
 from dialog_storage.repository import ConversationRepository
 from dialog_storage.during_requirements import DuringRequirementRepository, RequirementConflict
 from dialog_storage.during_artifacts import DuringArtifactRepository, ArtifactConflict
+from dialog_storage.during_workflow import DuringWorkflowRepository, WorkspaceConflict
 from dialog_storage.during_empty_conversations import delete_empty_during_conversation
 from dialogue_service.logging_setup import configure_logging
 
@@ -42,6 +43,7 @@ class DialogueHttpServer(ThreadingHTTPServer):
         self.workbench_repository = ConversationRepository(self.repository.root / "workbench")
         self.during_requirements = DuringRequirementRepository(self.repository.root / "during-requirements")
         self.during_artifacts = DuringArtifactRepository(self.repository.root / "during-artifacts", self.during_requirements)
+        self.during_workflows = DuringWorkflowRepository(self.repository.root / 'during-workflows', self.during_requirements, self.during_artifacts)
         self.repository.root.mkdir(parents=True, exist_ok=True)
         self.workbench_repository.root.mkdir(parents=True, exist_ok=True)
         self.allowed_origins = _allowed_origins()
@@ -123,6 +125,12 @@ class DialogueHandler(BaseHTTPRequestHandler):
                 raise ValueError(f"无效的分页参数 {name}")
 
         try:
+            workflow = re.fullmatch(r'/during/conversations/([A-Za-z0-9_-]{1,120})/workflow', path)
+            if workflow:
+                try:
+                    return self._send(200, {'record': self.server.during_workflows.load(workflow.group(1))})
+                except (OSError, ValueError):
+                    return self._send(503, {'message': '本会话的工作流档案无法读取，未创建空白记录'})
             artifacts = re.fullmatch(r"/during/conversations/([A-Za-z0-9_-]{1,120})/artifacts", path)
             if artifacts:
                 try:
@@ -180,6 +188,12 @@ class DialogueHandler(BaseHTTPRequestHandler):
             return
         path = urlsplit(self.path).path
         try:
+            workflow = re.fullmatch(r'/during/conversations/([A-Za-z0-9_-]{1,120})/workflow', path)
+            if workflow:
+                try:
+                    return self._send(200, {'record': self.server.during_workflows.save(workflow.group(1), self._json_body())})
+                except WorkspaceConflict as exc:
+                    return self._send(409, {'message': str(exc), 'record': exc.record})
             artifacts = re.fullmatch(r"/during/conversations/([A-Za-z0-9_-]{1,120})/artifacts", path)
             if artifacts:
                 try:

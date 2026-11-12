@@ -69,7 +69,12 @@ class DuringArtifactRepository:
         if receipt.get('requirement_id') != requirement_id or receipt.get('requirement', {}).get('class2_demo', {}).get('source') != source:
             raise ValueError('仿真需求与方案来源不一致')
         receipt['class2_demo'] = receipt['requirement']['class2_demo']
+        from crowdsim.scenarios.class2_society import load_class2_society, society_binding
+        model = load_class2_society(requirement_id, source, root=self.receipts_root.parent)
+        receipt['class2_artificial_society'] = society_binding(model)
+        receipt['experimentId'] = model['experimentId']
         return {'runId': run_id, 'snapshotId': sid, 'requirementId': requirement_id,
+                'experimentId': model['experimentId'], 'artificialSociety': society_binding(model),
                 'receipt': receipt, 'archive': run_id,
                 'files': sorted(path.name for path in directory.iterdir() if path.is_file()),
                 'createdAt': manifest.get('started_at') or manifest.get('created_at') or datetime.fromtimestamp((directory / 'manifest.json').stat().st_mtime, timezone.utc).isoformat(),

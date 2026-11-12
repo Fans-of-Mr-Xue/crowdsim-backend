@@ -2,7 +2,7 @@ import asyncio
 import json
 from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 
 from crowdsim.core.simulation_runtime import RuntimeState
 from crowdsim.infrastructure.performance_probe import PerformanceProbe
@@ -10,6 +10,54 @@ from crowdsim.infrastructure.websocket_server import OverlayServer
 
 
 class WebsocketPacingTests(unittest.IsolatedAsyncioTestCase):
+    async def test_start_boundary_is_opt_in_class2_only_and_does_not_replace_the_normal_loop(self):
+        runtime = SimpleNamespace(state=RuntimeState.PAUSED, time_seconds=.5, step_length=.5, timeline_end_seconds=10,
+                                  run_id='run', generated_demand_spec=SimpleNamespace(is_class2_demo=True))
+        runtime.start = lambda: setattr(runtime, 'state', RuntimeState.RUNNING)
+        server = OverlayServer(runtime, 'unused', 0)
+        messages = []
+        async def send(payload): messages.append(payload)
+        server._send = send
+        server._command_result = AsyncMock()
+        server._run_loop = AsyncMock()
+        for invalid in [True, .5, 1.25, 10, float('nan')]:
+            await server._handle_message(json.dumps({'action': 'start', 'run_id': 'run', 'pauseAtSeconds': invalid}))
+            self.assertEqual(messages[-1]['type'], 'error')
+            self.assertEqual(runtime.state, RuntimeState.PAUSED)
+        await server._handle_message(json.dumps({'action': 'start', 'run_id': 'run', 'pauseAtSeconds': 2.5}))
+        await server.task
+        self.assertEqual(server._class2_pause_at, 2.5)
+        server._run_loop.assert_awaited_once()
+        runtime.state = RuntimeState.PAUSED
+        runtime.generated_demand_spec.is_class2_demo = False
+        await server._handle_message(json.dumps({'action': 'start', 'run_id': 'run', 'pauseAtSeconds': 2.5}))
+        self.assertEqual(messages[-1]['type'], 'error')
+        await server._handle_message(json.dumps({'action': 'start', 'run_id': 'run'}))
+        await server.task
+        self.assertIsNone(server._class2_pause_at)
+
+    async def test_class2_loading_boundary_uses_normal_paced_loop_and_publishes_every_step(self):
+        frames = []
+        runtime = SimpleNamespace(state=RuntimeState.RUNNING, time_seconds=.5, real_step_interval=.01,
+                                  performance=PerformanceProbe('class2-boundary', enabled=False))
+        async def tick():
+            runtime.time_seconds += .5
+        runtime.tick_async = tick
+        runtime.pause = lambda: setattr(runtime, 'state', RuntimeState.PAUSED)
+        runtime.take_command_results = lambda: []
+        runtime.frame = lambda: {'type': 'update', 'step_seconds': runtime.time_seconds, 'runtime_state': runtime.state.value}
+        server = OverlayServer(runtime, 'unused', 0)
+        server._class2_pause_at = 2.5
+        async def send(payload):
+            frames.append(json.loads(payload))
+            if runtime.state == RuntimeState.PAUSED:
+                server.client = None
+        server.client = SimpleNamespace(send=send)
+        await server._run_loop()
+        self.assertEqual([f['step_seconds'] for f in frames], [1, 1.5, 2, 2.5])
+        self.assertEqual(frames[-1]['runtime_state'], 'PAUSED')
+        self.assertIsNone(server._class2_pause_at)
+
     async def test_tick_write_failure_notifies_owner_without_building_final_frame(self):
         frames = []
         runtime = SimpleNamespace(state=RuntimeState.RUNNING, time_seconds=3.0,

@@ -7,6 +7,7 @@ import unittest
 
 from dialog_storage.during_artifacts import DuringArtifactRepository, ArtifactConflict
 from dialog_storage.during_requirements import DuringRequirementRepository
+from crowdsim.scenarios.class2_society import publish_class2_society
 
 
 class ArtifactTests(unittest.TestCase):
@@ -16,19 +17,25 @@ class ArtifactTests(unittest.TestCase):
         self.root = Path(directory.name)
         self.requirements = DuringRequirementRepository(self.root / 'requirements-state')
         self.sid = 'snapshot-one'
-        requirement = {'schema_version': 2, 'research': {'problem_type': 2}, 'population': {'total': 100}, 'experiment': {'duration_seconds': 300}}
+        requirement = {'schema_version': 2, 'research': {'problem_type': 2}, 'population': {'total': 100, 'distributions': {}},
+                       'experiment': {'duration_seconds': 300}, 'observation': {'metric_ids': ['crowd_density']},
+                       'class2': {'flow_design': {'network_sha256': 'network', 'flows': []}}}
         self.state = {'requirement': {'version': 3, 'draft': {'id': 'draft', 'revision': 1, 'requirement': requirement},
-                                    'snapshots': [{'id': self.sid, 'requirement': deepcopy(requirement)}], 'submissions': {}}}
+                                    'snapshots': [{'id': self.sid, 'requirement': deepcopy(requirement), 'modeling_requirements': {}}], 'submissions': {}}}
         self.requirements.save('study', state=self.state, expected_revision=0, mutation_id='initial')
         self.run = 'run-' + 'a' * 32
         self.req = 'req-' + 'b' * 32
         self.runs = self.root / 'runs'
         (self.runs / self.run).mkdir(parents=True)
         (self.runs / 'requirements').mkdir()
-        binding = {'source': {'conversationId': 'study', 'snapshotId': self.sid}, 'count': 100, 'duration_seconds': 300}
+        binding = {'source': {'conversationId': 'study', 'snapshotId': self.sid}, 'count': 100, 'duration_seconds': 300,
+                   'flow_design': deepcopy(requirement['class2']['flow_design']), 'layout_sha256': 'layout'}
         self.manifest = self.runs / self.run / 'manifest.json'
         self.manifest.write_text(json.dumps({'run_id': self.run, 'class2_demo': binding, 'requirement': {'requirement_id': self.req}, 'scenario': {'network_sha256': 'network'}}))
-        (self.runs / 'requirements' / (self.req + '.json')).write_text(json.dumps({'requirement_id': self.req, 'requirement': {'class2_demo': binding}}))
+        receipt = {'requirement_id': self.req, 'fingerprint': 'sha256:test', 'class2_demo': binding,
+                   'requirement': {**deepcopy(requirement), 'class2_demo': binding}}
+        publish_class2_society(receipt, requirements=self.requirements, root=self.runs)
+        (self.runs / 'requirements' / (self.req + '.json')).write_text(json.dumps(receipt))
         self.repo = DuringArtifactRepository(self.root / 'derived', self.requirements, self.runs)
         self.scene = {'snapshotId': self.sid, 'runId': self.run, 'requirementId': self.req, 'networkSha256': 'network',
                       'step': 60, 'capturedAt': '2026-11-05T00:00:00Z', 'observations': {'time_seconds': 60}}

@@ -276,6 +276,8 @@ class Class2Control:
     def _receipt(row):
         receipt = {**row['action'], 'status': row['status'], 'matchedAgents': len(row['seen']),
                    'heldAgents': len(row['held']), **row['detail']}
+        if 'statusChangedAtSeconds' in row:
+            receipt['statusChangedAtSeconds'] = row['statusChangedAtSeconds']
         if row['action']['actionType'] == 'set_edge_capacity':
             receipt['appliedAgents'] = len(row['confirmed'])
         if row['speedErrors']:
@@ -283,6 +285,8 @@ class Class2Control:
         return receipt
 
     def _record(self, runtime, row, status):
+        if row['status'] != status or 'statusChangedAtSeconds' not in row:
+            row['statusChangedAtSeconds'] = runtime.time_seconds
         row['status'] = status
         if runtime.recorder is not None:
             runtime.recorder.record_command({'action': 'class2_control', 'planId': self.plan['planId']},

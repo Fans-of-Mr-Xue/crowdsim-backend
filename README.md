@@ -45,7 +45,7 @@ ARDE 算法和 SUMO 仿真全部由本仓库提供，运行时不依赖 MACE。
 
 ## 启动
 
-机房停电时可使用事中专用入口 `./run_during.sh`（先激活已安装依赖的 `sumo` 环境）。它不依赖 MongoDB、SSH 或事后应用；前端事中菜单可切换独立配置的 DeepSeek，GLM 及事前/事后默认行为不变。配置、检查和恢复方式见[事中备用模型与独立启动](docs/during_deepseek.md)。
+事中模型使用 GLM-5.3-Flash，经本机 8800 接口访问。通常使用统一入口 `./run.sh` 管理连接；只需启动事中服务时可使用 `./run_during.sh`（先激活已安装依赖的 `sumo` 环境，并保持 8800 模型连接可用）。独立入口不连接 MongoDB、不建立 SSH 隧道、不启动事后应用。详见[事中模型与独立启动](docs/during_models.md)。
 
 日常使用在仓库根目录按当前终端选择入口。Windows PowerShell（包括提示符含 `PS` 的 Cursor 终端）：
 

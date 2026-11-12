@@ -9,6 +9,7 @@ import tempfile
 import threading
 
 from .repository import CONVERSATION_ID
+from .during_workflow import confirmed_workflow, preserve_confirmed_content
 
 
 class RequirementConflict(Exception):
@@ -97,6 +98,12 @@ class DuringRequirementRepository:
         if not isinstance(mutation_id, str) or not CONVERSATION_ID.fullmatch(mutation_id):
             raise ValueError("invalid mutationId")
         validate_state(state, conversation_id)
+        workflow = confirmed_workflow(conversation_id, state['requirement'])
+        entries = (state.get('observation') or {}).get('entries', [])
+        if len(entries) > 1 or any(entry.get('snapshotId') != workflow['snapshotId'] for entry in entries):
+            raise ValueError('一个事中会话仅能关联其固定方案和实验组')
+        if any(entry.get('experimentId') and entry['experimentId'] != workflow['experimentId'] for entry in entries):
+            raise ValueError('实验组不属于此会话')
         with self._lock:
             previous = self.load(conversation_id)
             if previous and previous.get("mutationId") == mutation_id:
@@ -107,8 +114,9 @@ class DuringRequirementRepository:
             if revision != expected_revision:
                 raise RequirementConflict(previous)
             if previous:
+                preserve_confirmed_content(previous['state']['requirement'], state['requirement'])
                 _preserve_bindings(previous["state"], state)
-            record = {"schemaVersion": 1, "recordType": "draft_recovery_checkpoint",
+            record = {"schemaVersion": 1, "recordType": "confirmed_during_workflow", "workflow": workflow,
                       "conversationId": conversation_id, "revision": revision + 1,
                       "mutationId": mutation_id, "updatedAt": datetime.now(timezone.utc).isoformat(),
                       "state": deepcopy(state)}

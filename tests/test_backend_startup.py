@@ -1,5 +1,6 @@
 import contextlib
 import io
+import json
 import os
 import signal
 import subprocess
@@ -59,6 +60,16 @@ class DependencyTests(unittest.TestCase):
         self.assertIn(sys.executable, message)
 
 
+class HealthProbeTests(unittest.TestCase):
+    def test_database_probe_can_wait_longer_without_changing_other_probe_timeouts(self):
+        for timeout in (None, 15):
+            with self.subTest(timeout=timeout), patch('start_backend.build_opener') as build:
+                build.return_value.open.return_value.__enter__.return_value = io.BytesIO(json.dumps({'ok': True}).encode())
+                kwargs = {} if timeout is None else {'timeout': timeout}
+                self.assertEqual({'ok': True}, start_backend.get_json(8768, '/health', **kwargs))
+                self.assertEqual(2 if timeout is None else timeout, build.return_value.open.call_args.kwargs['timeout'])
+
+
 class UnifiedStartupTests(unittest.TestCase):
     def setUp(self):
         stack = contextlib.ExitStack()
@@ -101,6 +112,18 @@ class UnifiedStartupTests(unittest.TestCase):
         )
         self.supervisor.close.assert_called_once()
         self.restart.assert_not_called()
+
+    def test_data_readiness_allows_ssh_latency_and_still_requires_the_correct_live_database(self):
+        self.supervisor.check_children.side_effect = KeyboardInterrupt
+        self.assertEqual(0, start_backend.main([]))
+        data_service = self.supervisor.start_service.call_args_list[0].args[0]
+        database = os.environ.get('CROWDSIM_MONGO_DATABASE', 'crowdsim')
+        for status, expected in [({'connected': True, 'database': database}, True),
+                                 ({'connected': False, 'database': database}, False),
+                                 ({'connected': True, 'database': database+'-wrong'}, False)]:
+            with self.subTest(status=status), patch('start_backend.get_json', return_value={'data': status}) as get_json:
+                self.assertEqual(expected, data_service.probe())
+                get_json.assert_called_once_with(8768, '/api/crowdSim/database/status', timeout=15)
 
     def test_unavailable_control_service_does_not_abort_original_services(self):
         self.supervisor.start_service.side_effect = lambda service: service.port != 8766

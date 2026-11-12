@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from statistics import mean
 from pathlib import Path
 
 import traci.constants as tc
@@ -26,6 +27,13 @@ class Class2FlowController:
         self.confirmed_speeds = {}
         self.speed_retries = {}
         self.control = Class2Control(self)
+        self._map_geometry = None
+
+    def map_geometry(self, runtime):
+        if self._map_geometry is None:
+            from .class2_map_geometry import build_map_geometry
+            self._map_geometry = build_map_geometry(runtime, self.layout)
+        return self._map_geometry
 
     @property
     def at_or_approaching_retention(self):
@@ -141,13 +149,39 @@ class Class2FlowController:
             self.control.confirm_speed(pid, motion.edge_id, actual, limit)
         self.control.finish_speed_restoration(runtime)
 
-    def metrics(self):
+    def metrics(self, runtime=None):
         flows = []
         for f in self.layout['flow_design']['flows']:
             ids = {pid for pid, p in self.people.items() if p['flow_id'] == f['id']}
             flows.append({'id': f['id'], 'name': f['name'], 'count': f['count'],
                           'dwelling': len(ids & self.dwelling), 'walking': len(ids - self.dwelling),
                           'configured_speed_mps': f['speed']})
-        return {'total': len(self.people), 'dwelling': len(self.dwelling),
+        result = {'total': len(self.people), 'dwelling': len(self.dwelling),
                 'walking': len(self.people)-len(self.dwelling), 'flows': flows,
                 'flow_design_sha256': self.layout['flow_design_sha256']}
+        if runtime is not None:
+            result['evaluation'] = capture_flow_state(runtime, self)
+        return result
+
+
+def capture_flow_state(runtime, flows):
+    """Class-two-only measurement; no commands, navigation or person state mutations."""
+    planned = set(runtime.plan_executor.flow_hold_reasons) | set(runtime.plan_executor.activity_hold_until)
+    arrived = flows.dwelling
+    pending = set(flows.retention_pending)
+    threshold = runtime.visual_policy.low_speed_threshold_mps
+    duration = runtime.visual_policy.confirmation_duration_seconds
+    rows = []
+    for flow in flows.layout['flow_design']['flows']:
+        ids = {pid for pid, p in flows.people.items() if p['flow_id'] == flow['id']}
+        travelling = [runtime.current.persons[pid] for pid in ids-arrived-pending-planned if pid in runtime.current.persons]
+        rows.append({'id': flow['id'], 'name': flow['name'], 'total': flow['count'], 'arrived': len(ids & arrived),
+                     'plannedWaiting': len(ids & (planned-arrived-pending)),
+                     'slowWaiting': sum(m.speed < threshold and runtime.population.states[m.person_id].low_speed_duration >= duration for m in travelling),
+                     'meanTravelSpeedMps': mean(m.speed for m in travelling) if travelling else None,
+                     'travelCount': len(travelling)})
+    count = sum(r['travelCount'] for r in rows)
+    return {'flows': rows, 'total': sum(r['total'] for r in rows), 'arrived': sum(r['arrived'] for r in rows),
+            'plannedWaiting': sum(r['plannedWaiting'] for r in rows), 'slowWaiting': sum(r['slowWaiting'] for r in rows),
+            'meanTravelSpeedMps': sum((r['meanTravelSpeedMps'] or 0)*r['travelCount'] for r in rows)/count if count else None,
+            'lowSpeedThresholdMps': threshold, 'lowSpeedDurationSeconds': duration}

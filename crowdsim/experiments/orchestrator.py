@@ -443,7 +443,7 @@ class ExperimentOrchestrator:
                 current = self.repository.get_run(item["user_id"], item["workspace_id"], run["run_id"])
                 if current and current["status"] == "cancelled":
                     finish = False
-                    if item["experiment"].get("duringObservation") and self._queue.empty():
+                    if item.get('gatewayLeaseAcquired') and item["experiment"].get("duringObservation") and self._queue.empty():
                         self.gateway.close()
                     continue
                 if item["experiment"].get("duringObservation") or item["experiment"]["scenario"].get("presetId"):
@@ -461,7 +461,6 @@ class ExperimentOrchestrator:
                 self.events.publish("run_failed", {"error": f"{type(exc).__name__}: {exc}"}, run_id=run["run_id"])
                 self.logger.exception("CrowdSim run failed")
             finally:
-                self.repository.release_gateway_lease(self.owner_id)
                 close_gateway = False
                 with self._start_lock, self._lock:
                     self._request_actions = {
@@ -487,8 +486,14 @@ class ExperimentOrchestrator:
                         if item["experiment"].get("duringObservation") and self._queue.empty():
                             close_gateway = True
                     self._processing = None
-                if close_gateway:
-                    self.gateway.close()
+                # A comparison may hold the same gateway under another lease.
+                # Failed acquisition must never disconnect that owner's engine.
+                if item.get('gatewayLeaseAcquired'):
+                    try:
+                        if close_gateway:
+                            self.gateway.close()
+                    finally:
+                        self.repository.release_gateway_lease(self.owner_id)
 
     def _execute_run(self, item: dict[str, Any]) -> None:
         user_id, workspace_id, experiment, run = item["user_id"], item["workspace_id"], item["experiment"], item["run"]
@@ -496,6 +501,7 @@ class ExperimentOrchestrator:
             return
         if not self.repository.acquire_gateway_lease(self.owner_id, ttl_seconds=90):
             raise RuntimeError("SIMULATOR_BUSY")
+        item['gatewayLeaseAcquired'] = True
         if not self.gateway.start(wait_seconds=10):
             raise RuntimeError("CROWDSIM_UNAVAILABLE")
         if experiment.get("duringObservation"):

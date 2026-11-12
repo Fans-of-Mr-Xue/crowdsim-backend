@@ -128,6 +128,18 @@ class CrowdSimRepository:
         # A browser may lose the create response. Retrying the same confirmed
         # draft must recover its experiment, including after a service restart.
         with self._lock:
+            binding = config.get('duringObservation')
+            group_id = None
+            if binding:
+                from dialog_storage.during_workflow import experiment_group_id
+                if workspace_id != 'during-' + binding['conversationId']:
+                    raise ValueError('实验组与会话工作区不一致')
+                group_id = experiment_group_id(binding['conversationId'])
+                existing = self.get_experiment(user_id, workspace_id, group_id)
+                if existing:
+                    if any(existing.get(key) != value for key, value in config.items() if key != 'clientRequestId'):
+                        raise ValueError('此会话的实验组已经绑定其他配置')
+                    return existing
             request_id = config.get("clientRequestId")
             if request_id:
                 existing = self._find_one("experiments", {
@@ -139,7 +151,7 @@ class CrowdSimRepository:
                     return existing
             now = _now()
             return self._insert("experiments", {
-                **deepcopy(config), "experiment_id": f"exp_{uuid.uuid4().hex}", "user_id": str(user_id),
+                **deepcopy(config), "experiment_id": group_id or f"exp_{uuid.uuid4().hex}", "user_id": str(user_id),
                 "workspace_id": str(workspace_id), "status": "draft", "created_at": now, "updated_at": now,
             })
 
@@ -306,6 +318,20 @@ class CrowdSimRepository:
 
     def get_report(self, user_id, workspace_id, experiment_id):
         return self._find_one("reports", {"user_id": str(user_id), "workspace_id": str(workspace_id), "experiment_id": str(experiment_id)})
+
+    def recover_during_observations(self):
+        """A process-local controller cannot survive a restart. Preserve evidence, not a false RUNNING state."""
+        with self._lock:
+            groups = {row['experiment_id']: row for row in self._memory['experiments'] if row.get('duringObservation')}
+            changed = set()
+            for run in self._memory['runs']:
+                if run.get('experiment_id') in groups and run.get('status') in {'running', 'paused', 'preparing'}:
+                    run.update(status='failed', error='实验控制服务已重启，原执行已中断，可重新运行本轮。', completed_at=_now(), updated_at=_now())
+                    changed.add(run['experiment_id'])
+            for identity in changed:
+                groups[identity].update(status='failed', updated_at=_now())
+            if changed:
+                self._flush('runs'); self._flush('experiments')
 
     def acquire_gateway_lease(self, owner_id: str, *, ttl_seconds: float = 60.0, lease_key: str = "default") -> bool:
         now, expires = _now(), _now() + timedelta(seconds=max(5.0, float(ttl_seconds)))

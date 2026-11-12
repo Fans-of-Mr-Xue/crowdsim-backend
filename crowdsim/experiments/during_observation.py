@@ -89,7 +89,7 @@ def observation_config(payload, workspace_id, requirements=None, models=None):
         "modelId": model["model_id"], "modelFingerprint": model["fingerprint"],
     }
     if payload.get("llmModel") is not None:
-        if not isinstance(payload["llmModel"], str) or payload["llmModel"] not in {"GLM-5.3-Flash", "deepseek-flash"}:
+        if not isinstance(payload["llmModel"], str) or payload["llmModel"] != "GLM-5.3-Flash":
             raise ContractError("不支持的事中决策模型")
         binding["llmModel"] = payload["llmModel"]
     return validate_experiment_config({

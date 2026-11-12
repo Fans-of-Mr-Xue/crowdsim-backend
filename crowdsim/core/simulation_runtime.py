@@ -89,6 +89,7 @@ class SimulationRuntime:
         random_seed: int | None = None,
         performance_options: PerformanceOptions | None = None,
         during_preset: dict | None = None,
+        archive_root: str | Path | None = None,
     ) -> None:
         if demand_mode not in {"configurable", "fixed", "generated_hotspot", "generated_network"}:
             raise ValueError("unknown demand_mode")
@@ -99,6 +100,7 @@ class SimulationRuntime:
         if timeline_end_seconds is not None and float(timeline_end_seconds) <= 0:
             raise ValueError("timeline_end_seconds must be positive")
         self.config_path = Path(config_path).resolve()
+        self.archive_root = Path(archive_root) if archive_root is not None else None
         self._pedestrian_route_files = tuple(Path(path).resolve() for path in pedestrian_route_files)
         self._sumo_binary = sumo_binary
         self._extra_sumo_args = tuple(extra_sumo_args or ())
@@ -301,7 +303,7 @@ class SimulationRuntime:
                         or not self.requirement_record
                         or self.requirement_record["requirement"] != RequirementSpec.parse(preset["requirement"]).payload):
                     raise ValueError("runtime configuration no longer matches the during preset")
-            run_directory = PROJECT_ROOT / "runs" / self.run_id
+            run_directory = (self.archive_root or PROJECT_ROOT / "runs") / self.run_id
             run_directory.mkdir(parents=True, exist_ok=True)
             if self.requirement_record is not None:
                 (run_directory / "requirement.json").write_text(
@@ -354,7 +356,7 @@ class SimulationRuntime:
                 # Empty baseline runs must still replace the preset route file.
                 self.prepared_demand_path = source
             if self.population.ledger.planned_ids:
-                self.prepared_demand_path = PROJECT_ROOT / "runs" / self.run_id / "demand.rou.xml"
+                self.prepared_demand_path = run_directory / "demand.rou.xml"
                 self.population.prepare_demand(
                     self.prepared_demand_path,
                     None if self.generated_demand_spec is not None else self.demand_count,
@@ -393,7 +395,8 @@ class SimulationRuntime:
             self._refresh_initial_visual_states()
             self._measure_observations()
             self._measure_during()
-            self.recorder = ExperimentRecorder(self.run_id, self.config_path, self.adapter.diagnostics)
+            recorder_options = {"root": self.archive_root} if self.archive_root is not None else {}
+            self.recorder = ExperimentRecorder(self.run_id, self.config_path, self.adapter.diagnostics, **recorder_options)
             self.recorder.performance = self.performance
             self.recorder.decision_writer.performance = self.performance
             self.recorder.attach_observations(self.observation_collector)
@@ -687,7 +690,7 @@ class SimulationRuntime:
 
     def _measure_observations(self) -> None:
         if getattr(self, 'class2_flows', None) is not None:
-            self.latest_metrics['class2_flows'] = self.class2_flows.metrics()
+            self.latest_metrics['class2_flows'] = self.class2_flows.metrics(self)
         if self.observation_collector is not None:
             with self.performance.measure('observation_metrics'):
                 self.latest_metrics["observation"] = self.observation_collector.measure(
@@ -1069,21 +1072,18 @@ class SimulationRuntime:
 
     def configure_during_llm(self, identifier: str | None) -> None:
         """Opt-in, per-run provider binding; shared launch defaults are untouched."""
-        if identifier is not None and (not isinstance(identifier, str) or identifier not in {"GLM-5.3-Flash", "deepseek-flash"}):
+        if identifier is not None and (not isinstance(identifier, str) or identifier != "GLM-5.3-Flash"):
             raise ValueError("unsupported during model")
         if self.state not in {RuntimeState.CREATED, RuntimeState.CLOSED, RuntimeState.ERROR}:
             raise ValueError("changing the during model requires a runtime reset")
         from crowdsim.modeling_algorithm.individual_model.decision.llm_driven import LLMDrivenDecisionModel
-        if identifier == "deepseek-flash":
-            from crowdsim.during_models import DeepSeekSettings
-            settings = DeepSeekSettings.load()
-            if not settings.available:
-                raise ValueError("DeepSeek 未启用或未配置后端 Key")
-            llm = LLMDrivenDecisionModel(timeout_seconds=float(os.environ.get("CROWDSIM_DURING_DEEPSEEK_DECISION_TIMEOUT", "8")))
-            llm.base_url, llm.model, llm.api_key = settings.base_url, settings.model, settings.api_key
-            llm.extra_body = {"thinking": {"type": "disabled"}}
+        if identifier == "GLM-5.3-Flash":
+            llm = LLMDrivenDecisionModel()
+            # Bind only this During run; shared/pre/post environment stays intact.
+            llm.base_url = "http://127.0.0.1:8800/v1"
+            llm.model = "GLM-5.3-Flash"
             self.decision_engine.llm = llm
-        elif self.during_llm_model == "deepseek-flash":
+        elif self.during_llm_model is not None:
             self.decision_engine.llm = LLMDrivenDecisionModel()
         self.decision_engine.model = self.decision_engine.llm.model
         self.during_llm_model = identifier
@@ -1288,6 +1288,7 @@ class SimulationRuntime:
             frame['observation_geometry'] = observation_map_geometry(self.network, frame['observation_geometry'])
         if self.class2_flows is not None:
             frame['class2_control_version'] = 1
+            frame['class2_map_geometry'] = self.class2_flows.map_geometry(self)
             if self.class2_flows.control.plan is not None:
                 frame['class2_control'] = self.class2_flows.control.status()
         return {
@@ -1781,6 +1782,8 @@ class SimulationRuntime:
             "timeline_step_count": steps,
             **({'class2_demo': dict(self.requirement_record['requirement']['class2_demo'])}
                if getattr(self.generated_demand_spec, 'is_class2_demo', False) and self.requirement_record else {}),
+            **({'class2_artificial_society': self.class2_artificial_society}
+               if getattr(self, 'class2_artificial_society', None) and getattr(self.generated_demand_spec, 'is_class2_demo', False) else {}),
             **({"hotspot_activity": dict(self._hotspot_activity)} if self._hotspot_activity else {}),
         }
 

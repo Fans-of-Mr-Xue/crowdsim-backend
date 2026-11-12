@@ -16,6 +16,7 @@ from .report_service import ReportService
 from .repository import CrowdSimRepository
 from .routing_service import RoutingService
 from .during_strategy import DuringStrategyService
+from .class2_comparison import Class2ComparisonService
 
 
 class ControlServiceBundle:
@@ -23,6 +24,7 @@ class ControlServiceBundle:
         default_data_dir = Path(__file__).resolve().parents[2] / "runs" / "control_experiments"
         storage = data_dir or os.environ.get("CROWDSIM_EXPERIMENT_DIR") or str(default_data_dir)
         self.repository = CrowdSimRepository(data_dir=storage)
+        self.repository.recover_during_observations()
         self.gateway = CrowdSimGateway(gateway_url or os.environ.get("CROWDSIM_WS_URL", "ws://127.0.0.1:8765"))
         self.registry = ControllerRegistry(llm_client=llm_client)
         self.events = EventBus()
@@ -30,6 +32,26 @@ class ControlServiceBundle:
         self.reports = ReportService(self.repository)
         self.during_strategies = DuringStrategyService(self.repository, self.reports)
         self.routing = RoutingService(self.gateway, llm_client=llm_client)
+        from dialog_storage.repository import ConversationRepository
+        from dialog_storage.during_requirements import DuringRequirementRepository
+        from dialog_storage.during_artifacts import DuringArtifactRepository
+        requirements = DuringRequirementRepository(ConversationRepository().root / 'during-requirements')
+        artifacts = DuringArtifactRepository(ConversationRepository().root / 'during-artifacts', requirements)
+        self.class2_comparisons = Class2ComparisonService(Path(storage) / 'class2_comparisons', self.repository,
+                                                        self.gateway, requirements, artifacts, self.prepare_class2_requirement)
+
+    def prepare_class2_requirement(self, request):
+        parsed = urlsplit(self.gateway.url)
+        if parsed.scheme not in {'ws', 'wss'} or not parsed.hostname:
+            raise RuntimeError('CROWDSIM_UNAVAILABLE')
+        url = urlunsplit(('https' if parsed.scheme == 'wss' else 'http', parsed.netloc,
+                         '/api/v1/during/class2/requirements', '', ''))
+        response = httpx.post(url, json=request, timeout=120,
+                              trust_env=parsed.hostname not in {'localhost', '127.0.0.1', '::1'})
+        result = response.json()
+        if not response.is_success or result.get('type') != 'requirement_accepted':
+            raise RuntimeError(result.get('message') or '第二类实验需求未被后端确认')
+        return result
 
     def submit_requirement(self, requirement: dict, *, timeout: float = 20.0) -> dict:
         """Save through the simulator's HTTP API without acquiring its WebSocket."""

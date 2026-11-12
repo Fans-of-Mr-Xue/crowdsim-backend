@@ -6,6 +6,7 @@ import asyncio
 from contextlib import nullcontext
 from dataclasses import asdict
 import json
+import math
 import os
 from pathlib import Path
 import time
@@ -54,12 +55,14 @@ class OverlayServer:
         self.request_results: dict[str, dict] = {}
         self._request_run_id = getattr(simulator, "run_id", None)
         self._loop_stop = asyncio.Event()
+        self._class2_pause_at = None
         self.requirements = requirement_repository or RequirementRepository()
         self.runtime_factory = runtime_factory
         self.artificial_societies = artificial_society_repository or ArtificialSocietyRepository(
             requirements=self.requirements
         )
         self.post_app: PostAnalysisApp | None = None
+        self._class2_forecast_service = None
 
     def create_app(self) -> web.Application:
         app = web.Application()
@@ -72,9 +75,37 @@ class OverlayServer:
         return app
 
     def _register_class2_routes(self, app):
+        from crowdsim.scenarios.class2_map_locations import register_map_location_routes
+        register_map_location_routes(app)
         app.router.add_get('/api/v1/during/class2/preset', self._class2_preset_http)
         app.router.add_post('/api/v1/during/class2/requirements', self._class2_requirement_http)
         app.router.add_post('/api/v1/during/class2/control-preview', self._class2_control_preview)
+        app.router.add_post('/api/v1/during/class2/baseline-preview', self._class2_baseline_preview)
+        app.on_shutdown.append(self._close_class2_forecast)
+
+    async def _close_class2_forecast(self, app):
+        if self._class2_forecast_service is not None:
+            await self._class2_forecast_service.close()
+
+    async def _class2_baseline_preview(self, request):
+        from crowdsim.scenarios.class2_forecast import Class2ForecastService
+        try:
+            source = await request.json()
+            runtime = self.simulator
+            flows = getattr(runtime, 'class2_flows', None)
+            if flows is None or source != flows.control.binding(runtime):
+                raise ValueError('预演来源与当前第二类会话、快照或现场不一致，请重新采样')
+            if runtime.state != RuntimeState.READY:
+                return web.json_response({'source': source, 'baseline': {'status': 'unavailable',
+                    'reason': '仅初始化现场支持无干预预演；暂停或结束后请使用当前道路观测，不能沿用初始化预测。'}})
+            if self._class2_forecast_service is None:
+                self._class2_forecast_service = Class2ForecastService()
+            result = await self._class2_forecast_service.forecast(runtime)
+            if self.simulator is not runtime or source != flows.control.binding(runtime) or runtime.state != RuntimeState.READY:
+                raise ValueError('预演期间现场已变化，请重新采样')
+            return web.json_response({'source': source, 'baseline': result})
+        except ValueError as exc:
+            return web.json_response(self._error('stale_class2_forecast', str(exc)), status=409)
 
     async def _class2_control_preview(self, request):
         try:
@@ -98,6 +129,11 @@ class OverlayServer:
                 spec = prepare_requirement(body)
                 result = self._accept_requirement(spec.payload, for_experiment=True, reuse_identical=True)
                 result['class2_demo'] = spec.payload['class2_demo']
+                from crowdsim.scenarios.class2_society import publish_class2_society, society_binding
+                result['requirement'] = spec.payload
+                model = publish_class2_society(result)
+                result['class2_artificial_society'] = society_binding(model)
+                result['experimentId'] = model['experimentId']
                 return result
             # Preparing this immutable record never claims the simulator/client.
             return web.json_response(await asyncio.to_thread(prepare), status=201)
@@ -421,7 +457,10 @@ class OverlayServer:
             requirement_record is not None
             and requirement_record["requirement"] != self.simulator.requirement_record["requirement"]
         )
-        if requirement_record is not None and (leaves_during_preset or not self.simulator.supports_requirement(requirement_record)):
+        changes_class2 = bool((requirement_record or {}).get('requirement', {}).get('class2_demo')) and (
+            requirement_record['requirement']['class2_demo'] !=
+            (getattr(self.simulator, 'requirement_record', None) or {}).get('requirement', {}).get('class2_demo'))
+        if requirement_record is not None and (changes_class2 or leaves_during_preset or not self.simulator.supports_requirement(requirement_record)):
             if self.runtime_factory is None:
                 raise CommandError("unsupported_runtime_scenario", "the current backend configuration does not support this location")
             candidate = self.runtime_factory(requirement_record)
@@ -581,7 +620,16 @@ class OverlayServer:
                     raise CommandError("batch_adapter_unavailable", "事后批量实验需通过 /api/v1/post/experiments 提交；当前执行器尚未接入")
                 if self.simulator.state == RuntimeState.CREATED:
                     await self._prepare(request_id, None)
+                pause_at = data.get('pauseAtSeconds')
+                if pause_at is not None:
+                    step = self.simulator.step_length
+                    if (not getattr(getattr(self.simulator, 'generated_demand_spec', None), 'is_class2_demo', False)
+                            or type(pause_at) not in (int, float) or not math.isfinite(pause_at)
+                            or not self.simulator.time_seconds < pause_at < self.simulator.timeline_end_seconds
+                            or abs((pause_at - self.simulator.time_seconds) / step - round((pause_at - self.simulator.time_seconds) / step)) > 1e-6):
+                        raise ValueError('第二类决策装载时刻须在当前时刻之后、结束之前，且与仿真步长对齐')
                 self.simulator.start()
+                self._class2_pause_at = pause_at
                 await self._command_result(action, request_id, "applied")
                 if self.task is None or self.task.done():
                     self._loop_stop.clear()
@@ -700,6 +748,11 @@ class OverlayServer:
                 if running:
                     with probe.measure('tick_total'):
                         await self.simulator.tick_async()
+                    pause_at = getattr(self, '_class2_pause_at', None)
+                    if pause_at is not None and self.simulator.time_seconds >= pause_at - 1e-7:
+                        self._class2_pause_at = None
+                        if self.simulator.state == RuntimeState.RUNNING:
+                            self.simulator.pause()
                     await self._send_command_results()
                     await self._send(self.simulator.frame())
                 terminal = self.simulator.state in {RuntimeState.FINISHED, RuntimeState.ERROR, RuntimeState.CLOSED}
