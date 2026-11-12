@@ -8,6 +8,16 @@ from .common import Request, response
 
 
 def handle(request: Request):
+    if request.path == '/experiments/history' and request.method == 'GET':
+        from postanalysis_api.schemas.common import ApiError
+        try:
+            limit = int((request.query.get('limit') or ['100'])[0])
+        except (ValueError, TypeError):
+            raise ApiError('INVALID_QUERY', '任务记录每页数量无效', 400) from None
+        cursor = (request.query.get('cursor') or [''])[0]
+        if not 1 <= limit <= 100 or len(cursor) > 512:
+            raise ApiError('INVALID_QUERY', '任务记录分页参数无效', 400)
+        return response(request.app.repo.experiment_history(request.user, limit=limit, cursor=cursor))
     run_match = re.fullmatch(r"/runs/([A-Za-z0-9_-]+)(?:/(trajectory|archive))?", request.path)
     if run_match and request.method == "GET":
         run_id, action = run_match.groups()

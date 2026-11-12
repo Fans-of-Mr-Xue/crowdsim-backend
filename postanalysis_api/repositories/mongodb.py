@@ -280,6 +280,36 @@ class MongoRepository:
             result.append(item)
         return result
 
+    def experiment_history(self, user: str, *, limit: int = 100, cursor: str = '') -> dict:
+        """Read this owner's post batches across conversations, without heavy snapshots."""
+        query = {'ownerId': user}
+        if cursor:
+            try:
+                decoded = json.loads(cursor)
+                if not isinstance(decoded, list) or len(decoded) != 2:
+                    raise ValueError()
+                created_at, identity = decoded
+                if not isinstance(created_at, str) or not isinstance(identity, str) or not created_at or not identity:
+                    raise ValueError()
+            except (ValueError, TypeError):
+                raise ApiError('INVALID_QUERY', '任务记录分页游标无效', 400) from None
+            query['$or'] = [{'createdAt': {'$lt': created_at}},
+                            {'createdAt': created_at, 'id': {'$gt': identity}}]
+        fields = {key: 1 for key in ('id', 'name', 'workspaceId', 'conversationId', 'createdAt', 'updatedAt',
+                  'status', 'progress', 'error', 'reviewPlanId', 'datasetId', 'datasetVersion', 'reviewSnapshot.conversationId')}
+        fields['_id'] = 0
+        collection = self._collection('experiments')
+        rows = list(collection.find(query, fields).sort([('createdAt', -1), ('id', 1)]).limit(limit + 1))
+        more = len(rows) > limit
+        rows = rows[:limit]
+        for row in rows:
+            snapshot = row.pop('reviewSnapshot', {})
+            row['conversationId'] = row.get('conversationId') or snapshot.get('conversationId') or (
+                row.get('workspaceId', '')[5:] if row.get('workspaceId', '').startswith('post-') else '')
+        next_cursor = json.dumps([rows[-1]['createdAt'], rows[-1]['id']], separators=(',', ':')) if more else None
+        return {'items': rows, 'nextCursor': next_cursor,
+                'total': collection.count_documents({'ownerId': user})}
+
     def event(self, kind: str, item_id: str, event_type: str, detail: dict | None = None,
               user: str = "", workspace: str = "") -> None:
         self._ensure_indexes()
