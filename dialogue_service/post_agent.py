@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 from pathlib import Path
 from time import perf_counter
 from urllib.error import HTTPError, URLError
@@ -105,6 +106,26 @@ def validate_reply(task, reply, context):
         action = "update_design" if {"groups", "group_updates", "repeat_count"} & set(reply) else "answer"
         if reply.get("action", action) != action:
             raise ValueError("方案修改动作必须附带实际组配置或重复次数，未修改工作台")
+        operation = context.get('designOperation')
+        claims_addition = re.search(r'(?:已|我)(?:经|为你|帮你)?(?:新增|添加|追加)(?:了)?', reply['assistant_message'])
+        current_ids = {group['id'] for group in context.get('counterfactualDesign', {}).get('groups', [])}
+        proposed_groups = reply.get('groups', reply.get('group_updates', []))
+        if not isinstance(proposed_groups, list) or any(not isinstance(group, dict) or not isinstance(group.get('id'), str) for group in proposed_groups):
+            raise ValueError('实验组配置必须为带有字符串编号的对象数组')
+        proposed_ids = {group['id'] for group in proposed_groups}
+        if (operation == 'add_group' or claims_addition) and not proposed_ids - current_ids:
+            raise ValueError('新增实验组必须返回实际group_updates配置；不能只在文字中声称已新增，也不能只修改已有组')
+        if (operation == 'add_group' or claims_addition) and 'groups' in reply and not current_ids <= proposed_ids:
+            raise ValueError('新增实验组须保留已有实验组，请返回group_updates增量配置')
+        if operation == 'initial_group' and (action != 'update_design' or proposed_ids != {'CF-01'}):
+            raise ValueError('必须返回CF-01的完整可执行配置，不得只作文字说明')
+        if operation == 'initial_group':
+            supplied = proposed_groups
+            required = {'id', 'name', 'hypothesis', 'method', 'factorSymbols', 'primaryMetricId', 'expectedDirection', 'decisionRule', 'execution'}
+            if (len(supplied) != 1 or not required <= set(supplied[0])
+                    or not isinstance(supplied[0].get('execution'), dict)
+                    or set(supplied[0]['execution']) != {'startSeconds', 'compliance', 'delaySeconds', 'referenceDesignId'}):
+                raise ValueError('初始CF-01须由模型完整给出全部字段和数值，不继承占位组配置')
         if "repeat_count" in reply:
             _integer(reply["repeat_count"], "repeat_count", 1, 50)
         if "groups" in reply or "group_updates" in reply:
@@ -112,6 +133,8 @@ def validate_reply(task, reply, context):
             from postanalysis_api.schemas.unified_design import validate_unified_design
             from postanalysis_api.schemas.common import ApiError
             trial = deepcopy(context.get("counterfactualDesign") or {})
+            if "repeat_count" in reply:
+                trial['repeatCount'] = reply['repeat_count']
             if "groups" in reply:
                 trial["groups"] = reply["groups"]
             fields = {"id", "name", "hypothesis", "method", "factorSymbols", "primaryMetricId", "expectedDirection", "decisionRule", "execution", "planningOnly", "changeDescription"}
@@ -139,6 +162,18 @@ def validate_reply(task, reply, context):
                     raise ValueError("未绑定执行场景时请保存planningOnly=true的措施与假设草案，数值控制量须为null")
             try:
                 validate_unified_design(trial, context.get("variableDefinitions") or {})
+                if operation == 'initial_group':
+                    from postanalysis_api.schemas.unified_design import changed_controls
+                    group = trial['groups'][0]
+                    duration = trial.get('durationSeconds', 19800)
+                    if (len(trial['groups']) != 1 or group['id'] != 'CF-01' or group.get('planningOnly')
+                            or group['execution']['referenceDesignId'] != 'F-00'
+                            or not 1 <= group['execution']['startSeconds'] < duration
+                            or not 0 <= group['execution']['delaySeconds'] <= duration
+                            or not changed_controls(group, trial['groups'], trial.get('baselineExecution'))
+                            or len(changed_controls(group, trial['groups'], trial.get('baselineExecution'))) != len(group['factorSymbols'])
+                            or trial.get('repeatCount', 0) < 20):
+                        raise ValueError('CF-01须有明确数值水平、实际改变的因素和至少20对共同种子，不能返回占位或待映射草案')
             except ApiError as exc:
                 raise ValueError(exc.message) from None
         return {**reply, "action": action}
@@ -434,7 +469,7 @@ def respond(payload, *, complete=None):
                          '结合对话语义识别“人工社会没问题”“不用修改，就这样继续”等明确认可当前模型的表达，返回confirm_society；'
                          '询问模型含义、否定确认或尚需修改时不能确认，返回answer或clarify。'
                          '只有前端应用确认动作后才真正锁定共同条件并进入设计，不要在answer中口头宣布已确认或跳转。'
-                         '不在此任务生成实验组、不声称CF-01已经补全，工作台会按当前已有数值生成可编辑的待验证建议。')
+                         '不在此任务生成实验组、不声称CF-01已经补全；工作台会另行请求design任务生成初始方案。')
     if task == "design" and context.get("designSchemaVersion") == 2:
         instructions += ('\n必须返回action：纯解释为answer；实际新增、修改实验组或重复次数为update_design，并附带group_updates、groups或repeat_count。'
                          '新增或编辑优先用group_updates数组：按id追加新组或合并已有组，未提及的组保持不变。新组必须返回完整字段；已有组可只给id和实际修改字段。'
@@ -442,6 +477,16 @@ def respond(payload, *, complete=None):
                          '禁止只在assistant_message里描述新增CF组却不返回对应结构；前端只会应用经过校验的结构。'
                          'method表示设计类型：ofat是单因素设计，ablation是单模块消融，paired是旧字段保留的组合策略设计。'
                          '所有这些设计都使用共同随机种子的配对比较，因此OFAT和paired统计不是互斥方法。单因素只能改变一个控制量；组合策略可改变多个。')
+        if context.get('designOperation') == 'initial_group':
+            instructions += ('\n本轮为人工社会确认后生成初始CF-01。必须返回action=update_design和完整group_updates，恰好一组CF-01；'
+                '结合goal、人工社会、当前durationSeconds和baselineExecution，设计可执行、可检验的对照，数值全部明确，不得planningOnly或待映射。'
+                '优先选择一个有意义且确实不同于F-00的可干预因素，固定其他水平；只使用actionCapabilities支持的动作。'
+                '例如基线遵从比例为0且延迟为0时，可以只提高遵从比例，不能声称提前已经为1秒的启动或缩短已经为0的延迟。'
+                '名称、假设、factorSymbols、execution数值、主要指标、预期方向和判定规则必须相互一致；至少20对共同随机种子，报告配对差值和95%区间，不预填结果。'
+                'assistant_message说明F-00与CF-01的具体策略差异，告知CF-01由大模型设计，用户可保留或修改；不声称已经运行或已保存。')
+        elif context.get('designOperation') == 'add_group':
+            instructions += ('\n用户本轮明确要求新增实验组：必须通过group_updates返回至少一个未使用的新编号及完整配置，保留全部已有组；只作文字说明或只修改已有组不满足请求。'
+                '以当前baselineExecution为准，措施描述的增减方向必须与数值一致；例如从1秒改为300秒是延后，不能称提前。选取确有作用且可改变的因素，未改变的控制量保持参照水平。')
         if not context.get("executionCapabilities"):
             instructions += ('\n当前基线仅完成观测导入，未绑定工程执行器。这不妨碍设计、追加、保存实验假设。'
                 '本轮优先使用group_updates实际追加用户要求的组，保留原组；完整填写名称、假设、参照、主要指标、方向和判定规则。'
