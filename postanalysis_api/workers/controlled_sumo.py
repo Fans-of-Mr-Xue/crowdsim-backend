@@ -18,7 +18,7 @@ from .memorial_scenario import NET_FILE
 from .live_frames import capture_frame
 
 
-def execute(binary, routes, folder: Path, extra_args, manifest, duration, cancelled, *, on_progress=None):
+def execute(binary, routes, folder: Path, extra_args, manifest, duration, cancelled, *, on_progress=None, before_step=None):
     config = ET.Element("configuration")
     inputs = ET.SubElement(config, "input")
     ET.SubElement(inputs, "net-file", value=str(NET_FILE))
@@ -40,6 +40,8 @@ def execute(binary, routes, folder: Path, extra_args, manifest, duration, cancel
         connection = adapter.connection
         connection.simulation.subscribe((tc.VAR_DEPARTED_PERSONS_IDS, tc.VAR_TIME))
         for step in range(1, step_count + 1):
+            if before_step is not None:
+                before_step()
             if cancelled():
                 raise InterruptedError()
             connection.simulationStep()

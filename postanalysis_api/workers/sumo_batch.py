@@ -26,6 +26,7 @@ class SumoBatchExecutor:
         self.repo, self.data_dir = repository, Path(data_dir)
         self._lock, self._slot = threading.RLock(), threading.Semaphore(1)
         self._jobs, self._threads = {}, {}
+        self._pause_requests = {}
         self._runtime = OrderedDict()
         try:
             self.binary, self.unavailable = discover_sumo_binary(), None
@@ -63,6 +64,7 @@ class SumoBatchExecutor:
                 raise ApiError("INVALID_TASK_STATE", "任务已经提交", 409)
             cancel = threading.Event()
             self._jobs[task["id"]] = cancel
+            self._pause_requests[task['id']] = threading.Event()
             self._publish(task["id"], status="queued", activeRun=None, frame=None)
             worker = threading.Thread(target=self._run, args=(deepcopy(task), dataset, on_event, cancel), daemon=True,
                                       name="post-sumo-" + task["id"])
@@ -77,6 +79,35 @@ class SumoBatchExecutor:
     def is_active(self, task_id):
         with self._lock:
             return task_id in self._jobs
+
+    def set_paused(self, task_id, paused, transition):
+        """Serialize database control transitions with the worker's pause gate."""
+        with self._lock:
+            request = self._pause_requests.get(task_id)
+            if task_id not in self._jobs or request is None:
+                raise ApiError('INVALID_TASK_STATE', '原执行线程已退出，请从任务记录恢复剩余实验。', 409)
+            updated = transition()
+            if paused:
+                request.set()
+            else:
+                request.clear()
+                self._publish(task_id, status=updated['status'])
+            return updated
+
+    def _checkpoint(self, task, on_event, cancel):
+        if cancel.is_set():
+            raise InterruptedError()
+        with self._lock:
+            request = getattr(self, '_pause_requests', {}).get(task['id'])
+            if request is None or not request.is_set():
+                return
+            on_event({'status': 'paused'})
+            self._publish(task['id'], status='paused')
+        while request.is_set():
+            if cancel.wait(0.1):
+                raise InterruptedError()
+        if cancel.is_set():
+            raise InterruptedError()
 
     def _publish(self, task_id, **changes):
         with self._lock:
@@ -117,11 +148,13 @@ class SumoBatchExecutor:
                 runs = list(completed.values())
                 progress = restored_progress(task, completed)
             while not acquired:
+                self._checkpoint(task, on_event, cancel)
                 if cancel.is_set():
                     raise InterruptedError()
                 acquired = self._slot.acquire(timeout=0.5)
             if cancel.is_set():
                 raise InterruptedError()
+            self._checkpoint(task, on_event, cancel)
             on_event({"status": "running", 'progress': deepcopy(progress)})
             self._publish(task["id"], status="running")
             archive = deepcopy(task.get('archive')) if task.get('resumeCount') else None
@@ -140,6 +173,7 @@ class SumoBatchExecutor:
             groups = task.get("groups", [])
             matrix = run_matrix(task)
             for run_index, (plan_id, kind, seed, actions) in enumerate(matrix, start=1):
+                self._checkpoint(task, on_event, cancel)
                 if cancel.is_set():
                     raise InterruptedError()
                 if (plan_id, seed) in completed:
@@ -156,6 +190,7 @@ class SumoBatchExecutor:
                 else:
                     progress["completed"] = 1
                 on_event({"status": "running", "progress": deepcopy(progress), "activePlanId": plan_id, "runId": run["id"]})
+            self._checkpoint(task, on_event, cancel)
             result = summarize(task, runs)
             if cancel.is_set():
                 raise InterruptedError()
@@ -194,6 +229,7 @@ class SumoBatchExecutor:
             with self._lock:
                 self._jobs.pop(task["id"], None)
                 self._threads.pop(task["id"], None)
+                getattr(self, '_pause_requests', {}).pop(task['id'], None)
 
     def _one(self, task, dataset, plan_id, kind, seed, actions, cancel, *,
              on_event=None, run_index=1, total_runs=1):
@@ -263,8 +299,11 @@ class SumoBatchExecutor:
             if hasattr(self.repo, "archive_execution_inputs"):
                 self.repo.archive_execution_inputs(archive, (folder / "input.json").read_bytes(), routes.read_bytes(), actual_command)
             publish("running")
+            self._checkpoint(task, on_event, cancel)
             control_events = execute(self.binary, routes, folder, command[5:], manifest, duration, cancel.is_set,
-                                     on_progress=lambda update: publish("running", update))
+                                     on_progress=lambda update: publish("running", update),
+                                     before_step=lambda: self._checkpoint(task, on_event, cancel))
+            self._checkpoint(task, on_event, cancel)
             publish("archiving", persist=True)
             if is_spatial(dataset):
                 from .distribution_measurement import measure_distribution

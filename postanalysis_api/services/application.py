@@ -370,8 +370,24 @@ class PostAnalysisApp:
             raise
         return self.repo.get(kind, item_id, user, workspace)
 
+    def pause(self, kind: str, item_id: str, user: str, workspace: str) -> dict:
+        item = self.repo.get(kind, item_id, user, workspace)
+        if kind != 'experiments' or item['status'] not in {'queued', 'running'}:
+            raise ApiError('INVALID_TASK_STATE', '只有排队或运行中的实验批次可以暂停。', 409)
+        updated = self.executor.set_paused(item_id, True, lambda: self.repo.transition_execution(
+            kind, item_id, user, workspace, item['status'],
+            {'status': 'pausing', 'pausedFromStatus': item['status']}, execution_attempt=item.get('executionAttemptId')))
+        self.repo.event(kind, item_id, 'pause_requested', user=user, workspace=workspace)
+        return updated
+
     def resume(self, kind: str, item_id: str, user: str, workspace: str) -> dict:
         item = self.repo.get(kind, item_id, user, workspace)
+        if kind == 'experiments' and item['status'] == 'paused':
+            status = 'queued' if item.get('pausedFromStatus') == 'queued' else 'running'
+            updated = self.executor.set_paused(item_id, False, lambda: self.repo.transition_execution(
+                kind, item_id, user, workspace, 'paused', {'status': status}, execution_attempt=item.get('executionAttemptId')))
+            self.repo.event(kind, item_id, 'continued', user=user, workspace=workspace)
+            return updated
         if kind != 'experiments' or item['status'] not in {'interrupted', 'failed', 'cancelled'}:
             raise ApiError('INVALID_TASK_STATE', '只有中断、失败或已取消的实验批次可以继续。', 409)
         if self.executor.is_active(item_id):
@@ -395,7 +411,7 @@ class PostAnalysisApp:
         return self.repo.get(kind, item_id, user, workspace)
 
     def record_worker_event(self, kind: str, item_id: str, user: str, workspace: str, event: dict, *, execution_attempt=None) -> None:
-        allowed = {"running", "completed", "failed", "cancelled", "partial"}
+        allowed = {"running", "paused", "completed", "failed", "cancelled", "partial"}
         if event.get("status") not in allowed:
             raise ApiError("INVALID_WORKER_EVENT", "执行器状态无效", 422)
         task = self.repo.get(kind, item_id, user, workspace)
@@ -403,11 +419,16 @@ class PostAnalysisApp:
             raise SupersededExecution('原执行尝试已失效，停止旧线程回写。')
         transitions = {"queued": {"running", "failed", "cancelled"},
                        "running": {"running", "completed", "partial", "failed", "cancelled"},
-                       "cancelling": {"running", "cancelled", "failed", "completed", "partial"}}
+                       "pausing": {"running", "paused", "completed", "partial", "failed", "cancelled"},
+                       "paused": {"running", "failed", "cancelled"},
+                       "cancelling": {"running", "paused", "cancelled", "failed", "completed", "partial"}}
         if event["status"] not in transitions.get(task["status"], set()):
             raise ApiError("INVALID_TASK_STATE", "执行器请求的状态转移无效", 409)
-        changes = {"status": "cancelling" if task["status"] == "cancelling" and event["status"] == "running"
-                   else event["status"]}
+        changes = {'status': event['status']}
+        if task['status'] in {'pausing', 'paused', 'cancelling'} and event['status'] == 'running':
+            changes['status'] = task['status']
+        if task['status'] == 'cancelling' and event['status'] == 'paused':
+            changes['status'] = 'cancelling'
         if "activeRun" in event:
             # Only lifecycle boundaries are persisted. Live display frames are
             # held by the post executor, not duplicated in task/event documents.
@@ -450,20 +471,23 @@ class PostAnalysisApp:
             else:
                 self.repo.transition_execution(kind, item_id, user, workspace, task['status'], changes, execution_attempt=execution_attempt)
         except ApiError as exc:
-            # A cancellation can win the compare-and-set after the worker read
-            # its task. Keep that state while retaining actual completed counts.
+            # A control request can win after the worker read its task. Keep
+            # that state while retaining the worker's actual completed counts.
             if exc.code != "INVALID_TASK_STATE":
                 raise
             current = self.repo.get(kind, item_id, user, workspace)
             if execution_attempt is not None and current.get('executionAttemptId') != execution_attempt:
                 raise SupersededExecution('原执行尝试已失效，停止旧线程回写。') from None
-            if current["status"] != "cancelling":
+            if current['status'] not in {'cancelling', 'pausing', 'paused'} or event['status'] not in transitions[current['status']]:
                 raise
-            retry_changes = {**changes, "status": "cancelling" if event["status"] == "running" else event["status"]}
+            retry_status = event['status']
+            if event['status'] == 'running' or current['status'] == 'cancelling' and event['status'] == 'paused':
+                retry_status = current['status']
+            retry_changes = {**changes, 'status': retry_status}
             if execution_attempt is None:
-                self.repo.transition_task(kind, item_id, user, workspace, 'cancelling', retry_changes)
+                self.repo.transition_task(kind, item_id, user, workspace, current['status'], retry_changes)
             else:
-                self.repo.transition_execution(kind, item_id, user, workspace, 'cancelling', retry_changes, execution_attempt=execution_attempt)
+                self.repo.transition_execution(kind, item_id, user, workspace, current['status'], retry_changes, execution_attempt=execution_attempt)
         self.repo.event(kind, item_id, event["status"],
                         {key: value for key, value in event.items() if key != "status"}, user, workspace)
 
@@ -472,6 +496,8 @@ class PostAnalysisApp:
         state = self.executor.runtime(item_id) if hasattr(self.executor, "runtime") else None
         state = state or {}
         active = deepcopy(state.get("activeRun") or task.get("activeRun"))
+        if active and task['status'] == 'paused':
+            active['phase'] = 'paused'
         if active and task["status"] in {"interrupted", "cancelled", "failed"}:
             if active.get("phase") != "completed":
                 active["phase"] = task["status"]
@@ -491,9 +517,9 @@ class PostAnalysisApp:
 
     def cancel(self, kind: str, item_id: str, user: str, workspace: str) -> dict:
         item = self.repo.get(kind, item_id, user, workspace)
-        if item["status"] not in {"draft", "queued", "running"}:
+        if item["status"] not in {"draft", "queued", "running", "pausing", "paused"}:
             raise ApiError("INVALID_TASK_STATE", "任务当前状态不可取消", 409)
-        if item["status"] in {"queued", "running"}:
+        if item["status"] in {"queued", "running", "pausing", "paused"}:
             status = "cancelling"
         else:
             status = "cancelled"

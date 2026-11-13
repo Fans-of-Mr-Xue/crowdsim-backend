@@ -157,8 +157,10 @@ class PostLiveRuntimeTests(unittest.TestCase):
         executor, events, observed = self.executor(repo, folder.name), [], []
         executor._publish(task["id"], status="queued")
 
-        def execute(binary, routes, directory, arguments, manifest, duration, cancelled, *, on_progress):
+        def execute(binary, routes, directory, arguments, manifest, duration, cancelled, *, on_progress, before_step=None):
             for second in (1, 5, 10):
+                if before_step:
+                    before_step()
                 on_progress({"stepSeconds": second, "frame": {"timeSeconds": second, "persons": [], "totalPersons": 0}})
                 observed.append(executor.runtime(task["id"]))
                 if fail and executor.runtime(task["id"])["activeRun"]["planId"] == fail_plan:

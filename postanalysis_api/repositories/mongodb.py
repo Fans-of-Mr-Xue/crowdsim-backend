@@ -418,7 +418,7 @@ class MongoRepository:
             {"status": {"$in": ["queued", "running", "cancelling"]}},
             {"$set": {"status": "interrupted", "updatedAt": now()}})
         self.db[self.COLLECTIONS["experiments"]].update_many(
-            {"status": {"$in": ["queued", "running", "cancelling"]}},
+            {"status": {"$in": ["queued", "running", "cancelling", "pausing", "paused"]}},
             {"$set": {"status": "interrupted", "updatedAt": now()}})
         self.db[self.COLLECTIONS["runs"]].update_many(
             {"status": {"$in": ["queued", "running"]}},
