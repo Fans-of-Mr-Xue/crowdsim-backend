@@ -135,6 +135,14 @@ class SumoBatchExecutor:
             workers = list(self._threads.values())
         for worker in workers:
             worker.join(timeout=15)
+        alive = [worker.name for worker in workers if worker.is_alive()]
+        if alive:
+            raise RuntimeError('事后执行线程未退出：' + ', '.join(alive))
+        with self._lock:
+            self._runtime.clear()
+            self._jobs.clear()
+            self._threads.clear()
+            getattr(self, '_pause_requests', {}).clear()
 
     def _run(self, task, dataset, on_event, cancel):
         user, workspace = task["ownerId"], task["workspaceId"]

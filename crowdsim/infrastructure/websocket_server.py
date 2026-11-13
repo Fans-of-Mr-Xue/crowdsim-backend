@@ -73,9 +73,10 @@ class OverlayServer:
     async def start(self) -> None:
         data_dir = os.environ.get("CROWDSIM_POST_DATA_DIR") or Path(__file__).resolve().parents[2] / "runs" / "postanalysis"
         self.post_app = PostAnalysisApp(data_dir, reconcile=False)
-        runner = web.AppRunner(self.create_app())
-        await runner.setup()
+        runner = None
         try:
+            runner = web.AppRunner(self.create_app())
+            await runner.setup()
             site = web.TCPSite(runner, self.host, self.port)
             await site.start()
             # A second instance that fails to bind must never reset a live batch.
@@ -84,7 +85,8 @@ class OverlayServer:
             await asyncio.Future()
         finally:
             try:
-                await runner.cleanup()
+                if runner is not None:
+                    await runner.cleanup()
             finally:
                 try:
                     await self._stop_runtime()

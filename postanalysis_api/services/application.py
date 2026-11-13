@@ -31,9 +31,13 @@ class PostAnalysisApp:
         # Post-review experiment records must survive outside the local runtime
         # directory. Connection details follow Crowdbackend/.env.example.
         self.repo = MongoRepository()
-        if reconcile:
-            self.recover_interrupted()
-        self.executor = executor or SumoBatchExecutor(self.repo, data_dir)
+        try:
+            if reconcile:
+                self.recover_interrupted()
+            self.executor = executor or SumoBatchExecutor(self.repo, data_dir)
+        except BaseException:
+            self.repo.close()
+            raise
 
     def recover_interrupted(self):
         """Only the server that successfully bound the listener may recover jobs."""
@@ -45,9 +49,11 @@ class PostAnalysisApp:
             )
 
     def close(self) -> None:
-        if hasattr(self.executor, "close"):
-            self.executor.close()
-        self.repo.close()
+        try:
+            if hasattr(self.executor, "close"):
+                self.executor.close()
+        finally:
+            self.repo.close()
 
     def capabilities(self) -> dict:
         return {"contractVersion": "post-api/1.0", "simulation": self.executor.capabilities(),

@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import asyncio
-from contextlib import suppress
 import hashlib
 import json
 import tempfile
@@ -46,16 +45,18 @@ def register_document_routes(app, database, profile, *, model=None):
         worker = asyncio.create_task(work())
         synchronizer = asyncio.create_task(AssetSynchronizer(repository).run()) if profile.prompt_prefix == "research_document" else None
         yield
-        if synchronizer:
-            synchronizer.cancel()
-            with suppress(asyncio.CancelledError):
-                await synchronizer
-        worker.cancel()
-        with suppress(asyncio.CancelledError):
-            await worker
-        app[key] -= 1
-        if app[key] == 0:
-            await model.close()
+        background = [worker, *([synchronizer] if synchronizer else [])]
+        for task in background:
+            task.cancel()
+        try:
+            outcomes = await asyncio.gather(*background, return_exceptions=True)
+        finally:
+            app[key] -= 1
+            if app[key] == 0:
+                await model.close()
+        for outcome in outcomes:
+            if isinstance(outcome, Exception):
+                raise outcome
 
     app.cleanup_ctx.append(lifecycle)
 

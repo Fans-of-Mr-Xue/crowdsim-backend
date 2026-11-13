@@ -12,6 +12,7 @@ import re
 import shlex
 import shutil
 import signal
+from backend_process_job import WindowsProcessJob
 import socket
 import subprocess
 import sys
@@ -345,6 +346,18 @@ class Supervisor:
         self.optional_names = set()
         self.unavailable_services = set()
         self.managed = {}
+        self.jobs = {}
+
+    def bind_job(self, process):
+        if process.pid in self.jobs:
+            return
+        job = WindowsProcessJob()
+        try:
+            job.assign_tree(process)
+        except BaseException:
+            job.close()
+            raise
+        self.jobs[process.pid] = job
 
     def manage_port(self, port, service=None):
         """Adopt only verified services/tunnels from this project and user."""
@@ -375,10 +388,18 @@ class Supervisor:
             if processes.lifetime(pid) != (identity.uid, identity.started):
                 raise StartupError(f'{port} 进程已变化，请重试')
             self.managed[pid] = (service.name if service else 'SSH 隧道', process)
+            self.bind_job(process)
 
     def close_windows(self):
         api = importlib.import_module('psutil')
         targets = dict(self.managed)
+        for job in self.jobs.values():
+            for pid in job.pids():
+                if pid not in targets:
+                    try:
+                        targets[pid] = ('项目子进程', api.Process(pid))
+                    except api.NoSuchProcess:
+                        pass
         for name, child, _ in self.children:
             if child.pid in targets or child.poll() is not None:
                 continue
@@ -431,8 +452,11 @@ class Supervisor:
                 child.wait(timeout=1)
             except subprocess.TimeoutExpired:
                 report(f'子进程 {child.pid} 仍未退出')
-        self.children.clear()
-        self.managed.clear()
+        # Keep failed cleanup targets available for a later close() retry.
+        remaining_ids = {process.pid for process in remaining}
+        self.children = [item for item in self.children if item[1].pid in remaining_ids]
+        self.managed = {process.pid: (targets.get(process.pid, ('关联子进程', process))[0], process)
+                        for process in remaining}
 
     def spawn(self, name, command, *, interactive=False, critical=True):
         report(f"启动 {name}")
@@ -441,13 +465,16 @@ class Supervisor:
         owns_process_group = os.name != "nt" and not interactive
         child = subprocess.Popen(command, cwd=ROOT, env={**os.environ, "PYTHONUNBUFFERED": "1"},
                                  stdin=None if interactive else subprocess.DEVNULL,
-                                 creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if WINDOWS else 0,
+                                 # Assign ownership before the service can spawn children.
+                                 creationflags=(subprocess.CREATE_NEW_PROCESS_GROUP | 0x00000004) if WINDOWS else 0,
                                  start_new_session=owns_process_group)
         self.children.append((name, child, owns_process_group))
         if WINDOWS:
             api = importlib.import_module('psutil')
             try:
                 self.managed[child.pid] = (name, api.Process(child.pid))
+                self.bind_job(self.managed[child.pid][1])
+                self.managed[child.pid][1].resume()
             except api.NoSuchProcess:
                 pass
         if not critical:
@@ -520,16 +547,30 @@ class Supervisor:
         cleanup.children = list(children)
         removed = {child.pid for _, child, _ in children}
         cleanup.managed = {pid: item for pid, item in self.managed.items() if pid in removed}
+        cleanup.jobs = {pid: job for pid, job in self.jobs.items() if pid in removed}
+        self.jobs = {pid: job for pid, job in self.jobs.items() if pid not in removed}
         self.managed = {pid: item for pid, item in self.managed.items() if pid not in removed}
         self.children = [item for item in self.children if item[1].pid not in removed]
-        cleanup.close()
+        try:
+            cleanup.close()
+        except BaseException:
+            self.children.extend(cleanup.children)
+            self.managed.update(cleanup.managed)
+            self.jobs.update(cleanup.jobs)
+            raise
 
     def close(self):
-        if not self.children and not self.managed:
+        if not self.children and not self.managed and not self.jobs:
             return
         if WINDOWS:
-            self.close_windows()
-            return
+            for _ in range(2):
+                self.close_windows()
+                if not self.managed:
+                    for pid, job in list(self.jobs.items()):
+                        job.close()
+                        del self.jobs[pid]
+                    return
+            raise StartupError('退出清理未完成，仍存活的受管进程：' + ', '.join(map(str, self.managed)))
         # Only stop processes created by this launcher, including their descendants.
         for name, child, owns_process_group in reversed(self.children):
             report(f"停止 {name}")

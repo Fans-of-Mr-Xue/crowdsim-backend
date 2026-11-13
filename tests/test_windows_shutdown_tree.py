@@ -19,6 +19,8 @@ class WindowsShutdownTreeTests(unittest.TestCase):
         self.addCleanup(stack.close)
         stack.enter_context(contextlib.redirect_stdout(io.StringIO()))
         stack.enter_context(patch('start_backend.WINDOWS', True))
+        jobs = stack.enter_context(patch('start_backend.WindowsProcessJob'))
+        jobs.return_value.pids.return_value = []
 
     def test_spawn_isolates_ctrl_c_but_keeps_ssh_password_input(self):
         child = Mock(pid=101)
@@ -27,9 +29,10 @@ class WindowsShutdownTreeTests(unittest.TestCase):
         with patch('start_backend.subprocess.Popen', return_value=child) as popen, patch(
                 'start_backend.importlib.import_module', return_value=api):
             supervisor.spawn('SSH', ['ssh', '-N'], interactive=True)
-        self.assertEqual(subprocess.CREATE_NEW_PROCESS_GROUP, popen.call_args.kwargs['creationflags'])
+        self.assertEqual(subprocess.CREATE_NEW_PROCESS_GROUP | 0x00000004, popen.call_args.kwargs['creationflags'])
         self.assertIsNone(popen.call_args.kwargs['stdin'])
         self.assertIs(supervisor.managed[101][1], api.Process.return_value)
+        api.Process.return_value.resume.assert_called_once()
 
     def test_shutdown_snapshots_children_before_parents_and_escalates_survivors(self):
         events = []
@@ -92,6 +95,37 @@ class WindowsShutdownTreeTests(unittest.TestCase):
             with self.assertRaises(start_backend.StartupError):
                 supervisor.manage_port(8768, service)
             self.assertEqual({}, supervisor.managed)
+
+    def test_survivors_remain_managed_for_a_second_cleanup_attempt(self):
+        service = Mock(pid=201)
+        service.children.return_value = []
+        api = Mock(NoSuchProcess=psutil.NoSuchProcess, Error=psutil.Error)
+        api.wait_procs.side_effect = [([], [service])] * 4 + [([service], []), ([], [])]
+        supervisor = start_backend.Supervisor()
+        supervisor.managed = {201: ('service', service)}
+        with patch('start_backend.importlib.import_module', return_value=api):
+            with self.assertRaisesRegex(start_backend.StartupError, '退出清理未完成'):
+                supervisor.close()
+            self.assertIn(201, supervisor.managed)
+            supervisor.close()
+        self.assertFalse(supervisor.managed)
+        self.assertEqual(3, service.terminate.call_count)
+        self.assertEqual(2, service.kill.call_count)
+
+    def test_optional_cleanup_failure_returns_ownership_to_launcher(self):
+        supervisor = start_backend.Supervisor()
+        child = Mock(pid=301)
+        process, job = Mock(pid=301), Mock()
+        supervisor.children = [('optional', child, False)]
+        supervisor.managed = {301: ('optional', process)}
+        supervisor.jobs = {301: job}
+        cleanup = Mock(close=Mock(side_effect=RuntimeError('cleanup failed')))
+        with patch('start_backend.Supervisor', return_value=cleanup):
+            with self.assertRaisesRegex(RuntimeError, 'cleanup failed'):
+                supervisor._discard_children(list(supervisor.children))
+        self.assertEqual([('optional', child, False)], supervisor.children)
+        self.assertIs(job, supervisor.jobs[301])
+        self.assertIs(process, supervisor.managed[301][1])
 
 
 if __name__ == '__main__':

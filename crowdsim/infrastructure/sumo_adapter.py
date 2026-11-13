@@ -363,6 +363,7 @@ class SumoAdapter:
         self.connection = None
         self.closed = True
         self.close_error = None
+        self._last_normal_edge.clear()
 
     def _close_after_failure(self) -> None:
         try:

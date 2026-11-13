@@ -22,6 +22,36 @@ from ..connectors.geography import GeographyError
 logger = logging.getLogger(__name__)
 
 
+def shutdown_pool(pool):
+    """Stop this pool's owned workers, including computations already running.
+
+    Python 3.10--3.13 cannot cancel a running ProcessPoolExecutor future. Keep
+    a snapshot of its owned processes before shutdown clears the registry.
+    """
+    processes = list((getattr(pool, '_processes', None) or {}).values())
+    for process in processes:
+        if process.is_alive():
+            try:
+                process.terminate()
+            except OSError:
+                logger.exception('Unable to terminate forecasting worker %s', process.pid)
+    for process in processes:
+        process.join(timeout=5)
+        if process.is_alive():
+            try:
+                process.kill()
+            except OSError:
+                logger.exception('Unable to kill forecasting worker %s', process.pid)
+            process.join(timeout=5)
+    alive = [process.pid for process in processes if process.is_alive()]
+    if alive:
+        pool.shutdown(wait=False, cancel_futures=True)
+        raise RuntimeError('预测计算子进程未退出：' + ', '.join(map(str, alive)))
+    pool.shutdown(wait=True, cancel_futures=True)
+    for process in processes:
+        process.close()
+
+
 def compute(task, roads, settings, methods, progress_path=None):
     # Heavy optional libraries only load in the computation process.
     from ..prediction.solver import compute_comparison
@@ -68,7 +98,7 @@ def register_pre_assessment_routes(app, database, *, task_roads=None):
             job.cancel()
         await asyncio.gather(*pending, return_exceptions=True)
         await asyncio.gather(initialization, return_exceptions=True)
-        await asyncio.to_thread(workers['pool'].shutdown, wait=True, cancel_futures=True)
+        await asyncio.to_thread(shutdown_pool, workers['pool'])
         try:
             await asyncio.to_thread(runs.interrupt_owner, owner)
         except PyMongoError:
