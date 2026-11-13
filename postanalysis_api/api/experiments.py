@@ -36,9 +36,14 @@ def handle(request: Request):
             return request.mutation(lambda: (201, request.app.create_experiment(request.user, request.workspace, request.body)))
         if request.method == "GET":
             return response(request.app.repo.list("experiments", request.user, request.workspace))
-    match = re.fullmatch(r"/experiments/([A-Za-z0-9_-]+)(?:/(start|resume|cancel|events|runs|runtime))?", request.path)
+    match = re.fullmatch(r"/experiments/([A-Za-z0-9_-]+)(?:/(start|resume|cancel|events|runs|runtime|knowledge))?", request.path)
     if match:
         item_id, action = match.groups()
+        if request.method == 'GET' and action == 'knowledge':
+            from postanalysis_api.services.analysis_knowledge import read_context
+            selected = (request.query.get('libraries') or [''])[0]
+            return response(read_context(request.app.repo, item_id, request.user, request.workspace,
+                                         selected.split(',') if selected else []))
         if request.method == "GET" and not action:
             return response(request.app.repo.get("experiments", item_id, request.user, request.workspace))
         if request.method == "GET" and action == "runtime":

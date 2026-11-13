@@ -89,6 +89,8 @@ class MongoRepository:
         timestamp = now()
         document = {"id": item_id, "ownerId": user, "workspaceId": workspace,
                     "createdAt": timestamp, "updatedAt": timestamp, **deepcopy(payload)}
+        if kind == 'experiments':
+            self.name_experiment(document)
         uploaded = None
         if kind == 'datasets' and (len(document.get('observations', [])) > 50000 or len(BSON.encode(document)) > 8 * 1024 * 1024):
             encoded = gzip.compress(json.dumps(document.pop('observations'), ensure_ascii=False,
@@ -234,6 +236,27 @@ class MongoRepository:
             document['observations'] = json.loads(decoded)
             if len(document['observations']) != reference['count']:
                 raise ApiError('DATASET_STORAGE_INVALID', '空间目标文件记录不完整', 422)
+        if kind == 'experiments':
+            self.name_experiment(document)
+        return document
+
+    def name_experiment(self, document, dataset=None):
+        """Render old and new batches with the same local, minute-level name."""
+        try:
+            stamp = datetime.fromisoformat(document['createdAt'].replace('Z', '+00:00'))
+            stamp = stamp.replace(tzinfo=stamp.tzinfo or timezone.utc).astimezone(timezone(timedelta(hours=8)))
+            date = stamp.strftime('%Y年%m月%d日%H点%M分')
+        except (KeyError, ValueError, TypeError):
+            date = '日期未记录'
+        count = document.get('groupCount', len(document.get('groups', document.get('progress', {}).get('groups', []))))
+        if dataset is None:
+            dataset = self._collection('datasets').find_one(
+                {'id': document.get('datasetId'), 'ownerId': document.get('ownerId'), 'workspaceId': document.get('workspaceId')},
+                {'metadata.sourceBinding': 1, 'originalFile': 1}) or {}
+        binding = dataset.get('metadata', {}).get('sourceBinding', {}) or {}
+        during = binding.get('sourcePhase') == 'during' or binding.get('sourceKind') == 'mongodb_archive'
+        source = '基于事中数据' if during else '基于上传数据' if dataset.get('originalFile') else '数据来源未记录'
+        document['name'] = f'{date}-{count}组反事实-{source}'
         return document
 
     def update(self, kind: str, item_id: str, user: str, workspace: str, changes: dict) -> dict:
@@ -296,6 +319,8 @@ class MongoRepository:
                 item.pop("timeline", None)
                 item.pop("controlEvents", None)
                 item.get("calibration", {}).pop("populationResiduals", None)
+            if kind == 'experiments':
+                self.name_experiment(item)
             result.append(item)
         return result
 
@@ -315,13 +340,19 @@ class MongoRepository:
             query['$or'] = [{'createdAt': {'$lt': created_at}},
                             {'createdAt': created_at, 'id': {'$gt': identity}}]
         fields = {key: 1 for key in ('id', 'name', 'workspaceId', 'conversationId', 'createdAt', 'updatedAt',
-                  'status', 'progress', 'error', 'reviewPlanId', 'datasetId', 'datasetVersion', 'reviewSnapshot.conversationId')}
+                  'status', 'progress', 'error', 'reviewPlanId', 'datasetId', 'datasetVersion', 'reviewSnapshot.conversationId', 'groups.id', 'ownerId')}
         fields['_id'] = 0
         collection = self._collection('experiments')
         rows = list(collection.find(query, fields).sort([('createdAt', -1), ('id', 1)]).limit(limit + 1))
         more = len(rows) > limit
         rows = rows[:limit]
+        datasets = {(item['id'], item['workspaceId']): item for item in self._collection('datasets').find(
+            {'ownerId': user, 'id': {'$in': [row.get('datasetId') for row in rows]}},
+            {'id': 1, 'workspaceId': 1, 'metadata.sourceBinding': 1, 'originalFile': 1})}
         for row in rows:
+            self.name_experiment(row, datasets.get((row.get('datasetId'), row.get('workspaceId')), {}))
+            row.pop('groups', None)
+            row.pop('ownerId', None)
             snapshot = row.pop('reviewSnapshot', {})
             row['conversationId'] = row.get('conversationId') or snapshot.get('conversationId') or (
                 row.get('workspaceId', '')[5:] if row.get('workspaceId', '').startswith('post-') else '')
