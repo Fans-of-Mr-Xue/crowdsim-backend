@@ -1,0 +1,46 @@
+{
+  "upstream_version": "1.4.2",
+  "patched_distribution": "1.4.2+crowdsim.sfmfix2",
+  "source_archive_sha256": "a59c6bbd388cfd572fc8eb3b276f0cf41fdbc5c813b795a5a408b3f5f4950dc3",
+  "patch": [
+    "ObstacleForce passes -model.velocity instead of model.velocity",
+    "Semi-implicit local-velocity contact friction for wall and agent interactions"
+  ],
+  "reference": "https://github.com/PedestrianDynamics/jupedsim/blob/996a7d0229b2ed28325accc2a318d9b78bba6068/libsimulator/src/operational_models/social_force_model/social_force_model.cpp",
+  "original_failure_second": 168.78,
+  "original_velocity_samples_mps": [
+    [
+      58.69615893209277,
+      -0.09910649361259782
+    ],
+    [
+      -51.33422775465981,
+      -21.218597539693068
+    ]
+  ],
+  "native_friction_check": {
+    "initial_velocity_mps": [
+      1,
+      0
+    ],
+    "timestep_seconds": 0.001,
+    "corrected_velocity_mps": [
+      0.8695652173913044,
+      0
+    ]
+  },
+  "scope": "Correct wall-relative-velocity sign and stabilize local contact friction integration; preserve force coefficients, timestep, people, duration, arrival curve, road network. No coordinate clipping, speed cap or substitute model.",
+  "integration": {
+    "method": "IMEX Euler, 2x2 local velocity solve",
+    "equation": "(I + dt*D) v_new = v_old + dt*(a_old + D*v_old)",
+    "D": "sum(kappa*overlap/mass * tangent*tangent^T)",
+    "upstream_backport": false,
+    "step_seconds": 0.01
+  },
+  "sign_only_failure": {
+    "run_id": "809a5e35d4494155887342f73fd515e2",
+    "second": 291.34,
+    "outside_distance_m": 0.088286,
+    "velocity_mps_over": 40
+  }
+}

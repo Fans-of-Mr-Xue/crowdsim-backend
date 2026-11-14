@@ -1,0 +1,196 @@
+{
+  "title": "纪念塔 · 领域客流贯通 · 30分钟高客流（情景假设）",
+  "task_id": "b86bf8f67a024911845f34b338b82499",
+  "task_revision": 2,
+  "run_id": "63b823f3fe474c0f8c5aac245ad4a8d2",
+  "status": "partial_completed",
+  "time_window": {
+    "start": "2026-12-31T23:45:00",
+    "end": "2027-01-01T00:15:00",
+    "timezone": "Asia/Shanghai"
+  },
+  "scenario_note": "高客流演示情景：历史资料及人数换算假设用于验证链路；初始人数、驻留和倒计时额外到访均非实测。",
+  "domain_estimate": {
+    "historical_mean": 557000.0,
+    "base_arrivals_after_weather": 1200,
+    "activity_additional_arrivals": 600,
+    "total_new_arrivals": 1800,
+    "initial_crowd": 900,
+    "dwell_minutes": 10,
+    "forecast_inputs": {
+      "arrival_rate_per_minute": 60.0,
+      "arrival_interpolation": "step",
+      "arrival_schedule": [
+        {
+          "minute": 0.0,
+          "rate": 40.0
+        },
+        {
+          "minute": 10.0,
+          "rate": 100.0
+        },
+        {
+          "minute": 20.0,
+          "rate": 40.0
+        }
+      ]
+    }
+  },
+  "chain_checks": {
+    "domain_and_control_curve_identical": true,
+    "control_and_run_curve_identical": true,
+    "all_completed_models_counted_1800_new_arrivals": true,
+    "all_completed_models_finished_30_minutes": true,
+    "all_completed_models_mass_balanced": true,
+    "old_results_unchanged": true
+  },
+  "completed_models": [
+    {
+      "model": "分区流量守恒",
+      "status": "completed",
+      "duration_minutes": 30.0,
+      "initial_crowd": 900,
+      "cumulative_arrivals": 1800.0,
+      "final_crowd": 2220.25,
+      "final_outside_queue": 183.26,
+      "departed": 296.49,
+      "mass_balance_error": 0.0,
+      "summary": {
+        "peak_crowd": 2220.25,
+        "peak_density_p_m2": 6.0,
+        "peak_time": "2026-12-31T23:56:00",
+        "peak_risk_index": 89.64,
+        "peak_pressure_s2": 1.171567,
+        "max_outside_queue": 183.26,
+        "warning_at": "2026-12-31T23:46:00",
+        "departed": 296.49,
+        "remaining_crowd": 2220.25,
+        "mean_queue_wait_minutes": 0.579,
+        "mass_balance_error": 0.0
+      }
+    },
+    {
+      "model": "CFS 无碰撞速度模型",
+      "status": "completed",
+      "duration_minutes": 30.0,
+      "initial_crowd": 900,
+      "cumulative_arrivals": 1800,
+      "final_crowd": 1833,
+      "final_outside_queue": 572,
+      "departed": 295,
+      "mass_balance_error": 0,
+      "summary": {
+        "peak_crowd": 1833,
+        "peak_density_p_m2": 7.3376,
+        "peak_time": "2027-01-01T00:15:00",
+        "peak_risk_index": 100.0,
+        "peak_pressure_s2": 2.655601,
+        "max_outside_queue": 572,
+        "warning_at": "2026-12-31T23:48:00",
+        "departed": 295,
+        "remaining_crowd": 1833,
+        "mean_queue_wait_minutes": 3.115,
+        "mass_balance_error": 0
+      }
+    }
+  ],
+  "failed_models": [
+    {
+      "method": {
+        "id": "social_force",
+        "name": "社会力模型 SFM",
+        "version": "1.1.1",
+        "recommended": true,
+        "engine": "JuPedSim 1.4.2",
+        "description": "逐人计算目标驱动和人与人、人与障碍物的排斥作用，模拟速度变化与绕行。",
+        "equation": "m·dv/dt=m(v₀e−v)/τ+Σf人与人+Σf人与墙",
+        "source": "https://doi.org/10.1103/PhysRevE.51.4282",
+        "implementation_source": "https://www.jupedsim.org/stable/pedestrian_models/index.html",
+        "boundary": "调用 JuPedSim SocialForceModel（平滑排斥实现），采用 0.01 秒积分步长；不用于计算踩踏、人体伤害或真实挤压力。资源预算同 CFS，参数尚未进行现场标定。",
+        "principle": "把“想往目标走”和“想与别人、墙体保持距离”写成速度变化规则，每一步更新人的速度和位置。它与 CFS 用不同机制描述避让，适合比较同一场地的绕行、减速和聚集位置是否一致。",
+        "suitable_for": "作为第二种个体运动机制，与 CFS 和守恒基线并排比较；检验结论对模型选择是否敏感。",
+        "required_inputs": "与 CFS 共用可行走面、障碍物、初始人数、到达过程、入口和目的地，不另向用户索要一套场地资料。",
+        "outputs": [
+          "逐人的采样位置和速度变化",
+          "按共同网格汇总的密度与人数",
+          "入口外排队、通道流量和累计离场量；不输出可信的人体挤压力或伤害预测"
+        ],
+        "parameter_keys": [
+          "agent_radius_m",
+          "sfm_reaction_time_s"
+        ],
+        "tradeoff": "参数对局部运动影响较大，复杂不代表更准确。本版使用 JuPedSim 的平滑排斥实现；“社会力”不能解释成真实接触力，不能据此预测踩踏伤亡。",
+        "citation": "Helbing & Molnár (1995), Social force model for pedestrian dynamics, Physical Review E 51, 4282–4286."
+      },
+      "message": "Point (45.2542682484523, 59.40083319622582) is outside of accessible area"
+    }
+  ],
+  "input_provenance": {
+    "mode": "domain",
+    "status": "ready",
+    "task_revision": 2,
+    "fingerprint": "18a93db077f0ae1aa079",
+    "method": "historical-weather-road-context-v1+activity-arrivals-v1",
+    "total_visits": 1800,
+    "forecast_inputs": {
+      "arrival_rate_per_minute": 60.0,
+      "arrival_interpolation": "step",
+      "arrival_schedule": [
+        {
+          "minute": 0.0,
+          "rate": 40.0
+        },
+        {
+          "minute": 10.0,
+          "rate": 100.0
+        },
+        {
+          "minute": 20.0,
+          "rate": 40.0
+        }
+      ]
+    },
+    "initial_crowd": 900,
+    "dwell_minutes": 10
+  },
+  "pages": {
+    "领域模型": "http://localhost:8080/home/crowdsim/preAnal/domainModel?task=b86bf8f67a024911845f34b338b82499",
+    "实验控制": "http://localhost:8080/home/crowdsim/preAnal/experimentControl?task=b86bf8f67a024911845f34b338b82499",
+    "态势研判": "http://localhost:8080/home/crowdsim/preAnal/resultOutput?task=b86bf8f67a024911845f34b338b82499&run=63b823f3fe474c0f8c5aac245ad4a8d2"
+  },
+  "evidence_files": [
+    "task-request.json",
+    "task-created.json",
+    "domain-snapshot.json",
+    "domain-estimate.json",
+    "control-context.json",
+    "control-save-request.json",
+    "control-saved.json",
+    "run-request.json",
+    "run-submitted.json",
+    "run-completed.json",
+    "result-metrics.csv"
+  ],
+  "full_result": {
+    "storage": "任务库中的不可变实验结果，包含网格、逐人采样位置、路网及输入快照",
+    "api": "/api/crowdSim/pre-assessments/63b823f3fe474c0f8c5aac245ad4a8d2/result",
+    "download_sha256": "ec64fa78c1a8ed04eef6dc5e82bc2cb7bf4d9927c59b0c9420f575c12ebe111d"
+  },
+  "usage": [
+    "在后端目录执行 bash run.sh --restart-services，再刷新前端。",
+    "打开领域模型并选择本任务，查看新增1800人次的推断依据。",
+    "进入实验控制，客流来源为领域模型推断，核对初始900人与40/100/40人每分钟的曲线。",
+    "进入态势研判，拖动至00:15查看守恒/CFS对比；SFM失败原因单独显示。",
+    "修改领域估计后重新保存并运行，已有结果不会被修改。"
+  ],
+  "validation": {
+    "backend_regression_passed": 33,
+    "frontend_js_tests_passed": 18,
+    "frontend_build_run": false,
+    "final_resolver_tests_passed": 4
+  },
+  "limitations": [
+    "SFM在本次复杂路网高客流计算中出现越界错误，未完成；未将不完整数据作为30分钟预测结果。",
+    "密度值是各模型的共同网格统计；守恒模型的6人/平方米是配置的拥挤上限，CFS不按此上限截断。"
+  ]
+}

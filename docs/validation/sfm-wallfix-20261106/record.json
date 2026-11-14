@@ -1,0 +1,191 @@
+{
+  "title": "纪念塔 · 领域客流贯通 · 30分钟高客流（情景假设）",
+  "task_id": "b86bf8f67a024911845f34b338b82499",
+  "task_revision": 2,
+  "run_id": "0762dff80cc64b7684da889fe05124b3",
+  "original_run_id": "63b823f3fe474c0f8c5aac245ad4a8d2",
+  "status": "all_completed",
+  "time_window": {
+    "start": "2026-12-31T23:45:00",
+    "end": "2027-01-01T00:15:00",
+    "timezone": "Asia/Shanghai"
+  },
+  "scenario_note": "沿用同一份高客流情景假设，非现场实测。只调整模型执行顺序以优先验证 SFM，不改变输入。",
+  "chain_checks": {
+    "task_revision_equal": true,
+    "settings_equal": true,
+    "domain_provenance_equal": true,
+    "road_snapshot_equal": true,
+    "time_window_equal": true,
+    "selected_model_set_equal": true,
+    "all_three_complete": true,
+    "micro_initial_positions_identical": true,
+    "conservation_series_unchanged": true,
+    "collision_free_speed_series_unchanged": true,
+    "live_service_can_read_full_result": true,
+    "production_recent_lookup_passed": true
+  },
+  "completed_models": [
+    {
+      "model_id": "social_force",
+      "model": "社会力模型 SFM",
+      "version": "1.2.0",
+      "status": "completed",
+      "sample_count": 31,
+      "duration_minutes": 30.0,
+      "initial_crowd": 900,
+      "new_arrivals": 1800,
+      "final_crowd": 2315,
+      "final_outside_queue": 0,
+      "departed": 385,
+      "peak_crowd": 2315,
+      "peak_density_p_m2": 8.2359,
+      "mass_balance_max_error": 0,
+      "saved_positions_checked": 47754,
+      "outside_positions": 0
+    },
+    {
+      "model_id": "conservation",
+      "model": "分区流量守恒",
+      "version": "1.1.0",
+      "status": "completed",
+      "sample_count": 31,
+      "duration_minutes": 30.0,
+      "initial_crowd": 900.0,
+      "new_arrivals": 1800.0,
+      "final_crowd": 2220.25,
+      "final_outside_queue": 183.26,
+      "departed": 296.49,
+      "peak_crowd": 2220.25,
+      "peak_density_p_m2": 6.0,
+      "mass_balance_max_error": 0.01,
+      "saved_positions_checked": 0,
+      "outside_positions": 0
+    },
+    {
+      "model_id": "collision_free_speed",
+      "model": "CFS 无碰撞速度模型",
+      "version": "1.1.0",
+      "status": "completed",
+      "sample_count": 31,
+      "duration_minutes": 30.0,
+      "initial_crowd": 900,
+      "new_arrivals": 1800,
+      "final_crowd": 1833,
+      "final_outside_queue": 572,
+      "departed": 295,
+      "peak_crowd": 1833,
+      "peak_density_p_m2": 7.3376,
+      "mass_balance_max_error": 0,
+      "saved_positions_checked": 43827,
+      "outside_positions": 0
+    }
+  ],
+  "failed_models": [],
+  "domain_input_provenance": {
+    "mode": "domain",
+    "status": "ready",
+    "task_revision": 2,
+    "fingerprint": "18a93db077f0ae1aa079",
+    "method": "historical-weather-road-context-v1+activity-arrivals-v1",
+    "total_visits": 1800,
+    "forecast_inputs": {
+      "arrival_rate_per_minute": 60.0,
+      "arrival_interpolation": "step",
+      "arrival_schedule": [
+        {
+          "minute": 0.0,
+          "rate": 40.0
+        },
+        {
+          "minute": 10.0,
+          "rate": 100.0
+        },
+        {
+          "minute": 20.0,
+          "rate": 40.0
+        }
+      ]
+    },
+    "initial_crowd": 900,
+    "dwell_minutes": 10
+  },
+  "sfm_diagnostics": {
+    "engine": "JuPedSim",
+    "engine_version": "1.4.2",
+    "operational_model": "SocialForceModelState",
+    "distribution_version": "1.4.2+crowdsim.sfmfix2",
+    "wall_friction_check": "passed",
+    "contact_friction_integration": "semi_implicit_local_velocity",
+    "wall_friction_velocity_after_mps": 0.8695652173913042,
+    "step_seconds": 0.01,
+    "cell_count": 191,
+    "seed": 42,
+    "population_representation": "integer_agents",
+    "wall_seconds": 902.098,
+    "actual_agent_steps": 276805263,
+    "peak_active_agents": 2315,
+    "saved_positions": 47754,
+    "complete_time_window": true,
+    "routing_policy": "cached_native_waypoints",
+    "waypoint_advance_distance_m": 1.0,
+    "max_waypoint_segment_m": 2.0,
+    "resource_budget": {
+      "max_active_agents": 3000,
+      "max_agent_steps": 2000000000,
+      "max_runtime_seconds": 1800,
+      "max_saved_positions": 500000
+    },
+    "arrival_interpolation": "step",
+    "expected_new_arrivals": 1800.0,
+    "realized_new_arrivals": 1800,
+    "fractional_arrival_remainder": 0.0,
+    "calibration_status": "scenario_assumptions_not_site_fitted",
+    "sample_time_tolerance_seconds": 0.005,
+    "gate_boundary": "absorbing_gate_cell_with_external_service_limit",
+    "initial_velocity_mps": 0,
+    "agent_radius_m": 0.2,
+    "cfs_time_gap_s": null,
+    "sfm_reaction_time_s": 0.5,
+    "sfm_defaults": {
+      "mass_kg": 80,
+      "agent_scale": 2000,
+      "obstacle_scale": 2000,
+      "force_distance_m": 0.08
+    },
+    "repetition": 1
+  },
+  "result_url": "http://localhost:8080/home/crowdsim/preAnal/resultOutput?task=b86bf8f67a024911845f34b338b82499&run=0762dff80cc64b7684da889fe05124b3",
+  "restart_required": "正式后端现已加载新版，prefer=recent 接口及三模型结果读取验证通过；用户刷新页面即可，无需再次重启。",
+  "domain_estimate": {
+    "historical_mean": 557000.0,
+    "base_arrivals_after_weather": 1200,
+    "activity_additional_arrivals": 600,
+    "total_new_arrivals": 1800,
+    "initial_crowd": 900,
+    "dwell_minutes": 10,
+    "forecast_inputs": {
+      "arrival_rate_per_minute": 60.0,
+      "arrival_interpolation": "step",
+      "arrival_schedule": [
+        {
+          "minute": 0.0,
+          "rate": 40.0
+        },
+        {
+          "minute": 10.0,
+          "rate": 100.0
+        },
+        {
+          "minute": 20.0,
+          "rate": 40.0
+        }
+      ]
+    }
+  },
+  "pages": {
+    "domain": "http://localhost:8080/home/crowdsim/preAnal/domainModel?task=b86bf8f67a024911845f34b338b82499",
+    "control": "http://localhost:8080/home/crowdsim/preAnal/experimentControl?task=b86bf8f67a024911845f34b338b82499",
+    "results": "http://localhost:8080/home/crowdsim/preAnal/resultOutput?task=b86bf8f67a024911845f34b338b82499&run=0762dff80cc64b7684da889fe05124b3"
+  }
+}

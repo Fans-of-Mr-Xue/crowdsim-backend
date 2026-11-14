@@ -1,0 +1,88 @@
+{
+  "method": "historical-weather-road-context-v1+activity-arrivals-v1",
+  "fingerprint": "18a93db077f0ae1aa079",
+  "status": "ready",
+  "transport_use": "context",
+  "timing_note": "分时到达暂按研究时段均匀分配，再应用各时段天气系数；可在实验控制中调整到达曲线。 活动新增到访在设置的抵达时段内均匀分配，按用户填写的新增比例处理与基准的重叠。",
+  "total_visits": 1800,
+  "unit": "人次 / 研究时段",
+  "historical_mean": 557000.0,
+  "base_visits": 1333.3333333333333,
+  "transport_total": 1333.3333333333333,
+  "transport_factor": 1,
+  "weather_factor": 0.9,
+  "transport_delta": 0.0,
+  "weather_delta": -133.33333333333326,
+  "bins": [
+    {
+      "start": "2026-12-31T23:45:00",
+      "end": "2026-12-31T23:55:00",
+      "passages": 720.0,
+      "reference_passages": 600.0,
+      "temperature_c": 8,
+      "precipitation_mm": 0,
+      "factor": 0.9,
+      "minute": 0.0,
+      "minutes": 10.0,
+      "visits": 400.0,
+      "rate": 40.0,
+      "activity_visits": 0.0
+    },
+    {
+      "start": "2026-12-31T23:55:00",
+      "end": "2027-01-01T00:05:00",
+      "passages": 720.0,
+      "reference_passages": 600.0,
+      "temperature_c": 8,
+      "precipitation_mm": 0,
+      "factor": 0.9,
+      "minute": 10.0,
+      "minutes": 10.0,
+      "visits": 1000.0,
+      "rate": 100.0,
+      "activity_visits": 600.0
+    },
+    {
+      "start": "2027-01-01T00:05:00",
+      "end": "2027-01-01T00:15:00",
+      "passages": 720.0,
+      "reference_passages": 600.0,
+      "temperature_c": 8,
+      "precipitation_mm": 0,
+      "factor": 0.9,
+      "minute": 20.0,
+      "minutes": 10.0,
+      "visits": 400.0,
+      "rate": 40.0,
+      "activity_visits": 0.0
+    }
+  ],
+  "forecast_inputs": {
+    "arrival_rate_per_minute": 60.0,
+    "arrival_interpolation": "step",
+    "arrival_schedule": [
+      {
+        "minute": 0.0,
+        "rate": 40.0
+      },
+      {
+        "minute": 10.0,
+        "rate": 100.0
+      },
+      {
+        "minute": 20.0,
+        "rate": 40.0
+      }
+    ]
+  },
+  "scope": {
+    "start": "2026-12-31T23:45:00",
+    "end": "2027-01-01T00:15:00",
+    "timezone": "Asia/Shanghai",
+    "geometry_hash": "1a4d689d2ebb6cb8c43e"
+  },
+  "limitation": "情景估计，尚未标定。总量为研究时段新增到达需求人次，不含起始在场人数，也不是去重人数、入场保证或场内峰值。",
+  "activity_delta": 600,
+  "activity_count": 1,
+  "baseline_visits": 1200
+}

@@ -1,0 +1,75 @@
+{
+  "task_id": "b86bf8f67a024911845f34b338b82499",
+  "task_revision": 2,
+  "settings": {
+    "initial_crowd": 900,
+    "arrival_rate_per_minute": 60.0,
+    "free_speed_mps": 1.34,
+    "jam_density_p_m2": 6,
+    "warning_density_p_m2": 4,
+    "dwell_minutes": 10,
+    "path_width_m": 2,
+    "grid_m": 12,
+    "sample_minutes": 1,
+    "emergency_open_minute": -1,
+    "response_delay_minutes": 5,
+    "familiarity": 0.5,
+    "guidance_compliance": 0.7,
+    "route_sensitivity": 0.1,
+    "friction_probability": 0.2,
+    "counterflow_penalty": 0.35,
+    "initial_stationary_fraction": 0.5,
+    "seed": 42,
+    "gate_capacity_per_m_s": 1.3,
+    "backward_wave_speed_mps": 0.6,
+    "agent_radius_m": 0.2,
+    "cfs_time_gap_s": 1.0,
+    "sfm_reaction_time_s": 0.5,
+    "allow_boundary_walkable": false,
+    "attraction_point": [
+      121.4869337,
+      31.2442744
+    ],
+    "exit_points": {
+      "A": [
+        121.48569687963426,
+        31.24477907728788
+      ],
+      "B": [
+        121.48619597895775,
+        31.242789649169875
+      ]
+    },
+    "exit_labels": {
+      "A": "西北侧步道连接",
+      "B": "南侧步道连接"
+    },
+    "exit_points_note": "既有模拟接入点吸附到高德步行路线核对版，非实测园门；来流比例和宽度仍为任务假设。",
+    "arrival_interpolation": "step",
+    "entrance_shares": [
+      0.6,
+      0.4
+    ],
+    "arrival_schedule": [
+      {
+        "minute": 0.0,
+        "rate": 40.0
+      },
+      {
+        "minute": 10.0,
+        "rate": 100.0
+      },
+      {
+        "minute": 20.0,
+        "rate": 40.0
+      }
+    ],
+    "repetitions": 1
+  },
+  "methods": [
+    "social_force",
+    "conservation",
+    "collision_free_speed"
+  ],
+  "force": true
+}
