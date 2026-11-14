@@ -482,6 +482,19 @@ def port_bound(port):
                        for connection in api.net_connections(kind="tcp4"))
         except api.Error as exc:
             raise StartupError("无法读取 Windows 本机端口监听状态，请检查系统权限") from exc
+    if sys.platform == "darwin":
+        # A wildcard listener with SO_REUSEADDR may permit a second loopback bind.
+        # Read the kernel listener table without opening a forwarded SSH channel.
+        result = subprocess.run(["netstat", "-an", "-p", "tcp"], capture_output=True, text=True)
+        if result.returncode:
+            raise StartupError("无法读取 macOS 本机 TCP 监听状态")
+        addresses = {f"127.0.0.1.{port}", f"*.{port}", f"0.0.0.0.{port}"}
+        for line in result.stdout.splitlines():
+            fields = line.split()
+            if (len(fields) >= 6 and fields[0] in {"tcp4", "tcp46"}
+                    and fields[3] in addresses and fields[5] == "LISTEN"):
+                return True
+        return False
     with socket.socket() as candidate:
         candidate.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
