@@ -1,0 +1,336 @@
+{
+  "id": "809a5e35d4494155887342f73fd515e2",
+  "task_id": "b86bf8f67a024911845f34b338b82499",
+  "task_revision": 2,
+  "task_title": "纪念塔 · 领域客流贯通 · 30分钟高客流（情景假设）",
+  "methods": [
+    "conservation",
+    "collision_free_speed",
+    "social_force"
+  ],
+  "settings": {
+    "initial_crowd": 900,
+    "arrival_rate_per_minute": 60.0,
+    "free_speed_mps": 1.34,
+    "jam_density_p_m2": 6,
+    "warning_density_p_m2": 4,
+    "dwell_minutes": 10,
+    "path_width_m": 2,
+    "grid_m": 12,
+    "sample_minutes": 1,
+    "emergency_open_minute": -1,
+    "response_delay_minutes": 5,
+    "familiarity": 0.5,
+    "guidance_compliance": 0.7,
+    "route_sensitivity": 0.1,
+    "friction_probability": 0.2,
+    "counterflow_penalty": 0.35,
+    "initial_stationary_fraction": 0.5,
+    "seed": 42,
+    "gate_capacity_per_m_s": 1.3,
+    "backward_wave_speed_mps": 0.6,
+    "agent_radius_m": 0.2,
+    "cfs_time_gap_s": 1.0,
+    "sfm_reaction_time_s": 0.5,
+    "allow_boundary_walkable": false,
+    "attraction_point": [
+      121.4869337,
+      31.2442744
+    ],
+    "exit_points": {
+      "A": [
+        121.48569687963426,
+        31.24477907728788
+      ],
+      "B": [
+        121.48619597895775,
+        31.242789649169875
+      ]
+    },
+    "exit_labels": {
+      "A": "西北侧步道连接",
+      "B": "南侧步道连接"
+    },
+    "exit_points_note": "既有模拟接入点吸附到高德步行路线核对版，非实测园门；来流比例和宽度仍为任务假设。",
+    "arrival_interpolation": "step",
+    "entrance_shares": [
+      0.6,
+      0.4
+    ],
+    "arrival_schedule": [
+      {
+        "minute": 0.0,
+        "rate": 40.0
+      },
+      {
+        "minute": 10.0,
+        "rate": 100.0
+      },
+      {
+        "minute": 20.0,
+        "rate": 40.0
+      }
+    ],
+    "repetitions": 1
+  },
+  "input_provenance": {
+    "mode": "domain",
+    "status": "ready",
+    "task_revision": 2,
+    "fingerprint": "18a93db077f0ae1aa079",
+    "method": "historical-weather-road-context-v1+activity-arrivals-v1",
+    "total_visits": 1800,
+    "forecast_inputs": {
+      "arrival_rate_per_minute": 60.0,
+      "arrival_interpolation": "step",
+      "arrival_schedule": [
+        {
+          "minute": 0.0,
+          "rate": 40.0
+        },
+        {
+          "minute": 10.0,
+          "rate": 100.0
+        },
+        {
+          "minute": 20.0,
+          "rate": 40.0
+        }
+      ]
+    },
+    "initial_crowd": 900,
+    "dwell_minutes": 10
+  },
+  "input_key": "a560be7efa632be4b5344cb312a26325016f19df07a6317d96c8d160ce746d3c",
+  "road_source": {
+    "task_id": "b86bf8f67a024911845f34b338b82499",
+    "boundary_key": "440b18888062275452368ac7d52d665eab8f9a1a7f54b56fb93d6f1300a70dde",
+    "region_binding": {
+      "mode": "custom",
+      "environment_id": "shanghai-monument-portrait-region",
+      "environment_revision": 9
+    },
+    "road_binding": {
+      "environment_id": "shanghai-monument-portrait-region",
+      "environment_revision": 9
+    },
+    "source": {
+      "provider": "environment",
+      "environments": [
+        {
+          "environment_id": "shanghai-monument-portrait-region",
+          "environment_revision": 9,
+          "label": "上海人民英雄纪念塔区域画像",
+          "contains_environment": true,
+          "road_source": {
+            "provider": "amap_walking",
+            "label": "高德步行路线与底图补绘",
+            "coordinateSystem": "WGS84",
+            "originalCoordinateSystem": "GCJ02",
+            "scope": "boundary_clipped",
+            "url": "https://lbs.amap.com/api/javascript-api-v2/guide/services/navigation",
+            "retrievedAt": "2026-10-29T12:04:29.977284+00:00",
+            "query_count": 60,
+            "successful_query_count": 60,
+            "used_route_count": 37,
+            "coverage_note": "已按底图核对园内支路与滨江步道；区分接口路线与人工补绘，不代表实测完整路网。",
+            "width_status": "missing_use_task_assumption",
+            "consecutive_step_seams": {
+              "count": 30,
+              "maximum_m": 0.891,
+              "policy": "仅连接同一高德路线连续步骤中不超过1米的坐标舍入缝隙"
+            },
+            "supplement_count": 3,
+            "boundary_note": "原研究边界补入查询/补绘步道及两侧3米研究覆盖余量；非公园权属边界，非道路实测宽度。"
+          }
+        }
+      ],
+      "primary_environment_id": "shanghai-monument-portrait-region",
+      "label": "上海人民英雄纪念塔区域画像",
+      "coverage_fraction": 1.0,
+      "coordinateSystem": "WGS84",
+      "builder_version": "pedestrian-assets-2"
+    },
+    "feature_count": 110,
+    "created_at": "2026-11-05T16:43:07.308865+00:00",
+    "id": "0e83a634a288446f91c72fd2861b17f1"
+  },
+  "method_definitions": [
+    {
+      "id": "conservation",
+      "name": "分区流量守恒",
+      "version": "1.1.0",
+      "recommended": true,
+      "engine": "NetworkSolver",
+      "description": "三角基本图、发送/接收能力与同步流量守恒，计算入口排队和路网积累。",
+      "equation": "Nᵢ(t+Δt)=Nᵢ(t)+ΣFⱼᵢ−ΣFᵢⱼ；q=min(v₀ρ,w(ρmax−ρ))",
+      "source": "https://doi.org/10.1016/0191-2615(94)90002-7",
+      "boundary": "采用 CTM 的守恒离散思路构建行人路网模型，属于工程适配，不模拟人体接触。",
+      "principle": "把可行走区域分成相连的小区，每一步计算流入、流出和剩余人数。相邻小区拥挤或通道能力不足时，人会积累、排队。它计算每个小区有多少人，不生成每个人的真实轨迹。",
+      "suitable_for": "先看人数何时累积、哪段通道形成瓶颈，作为容易解释和核查的比较基线。",
+      "required_inputs": "共同场地与客流资料；可用步道中心线加有效宽度生成可行走面，也可直接提供可行走面。需有连接关系、出入口和目的地。",
+      "outputs": [
+        "分区人数、密度和平均速度随时间的变化",
+        "入口外排队人数、累计离场人数、通道流量",
+        "同一统计网格上的密度图；不输出个体轨迹"
+      ],
+      "parameter_keys": [
+        "jam_density_p_m2",
+        "backward_wave_speed_mps",
+        "counterflow_penalty"
+      ],
+      "tradeoff": "快、可检查人数守恒，适合宏观基线；看不到个体避让。本平台借用车辆 CTM 的离散守恒思路作行人适配，不是已标定的行人 CTM 标准实现。",
+      "citation": "Daganzo (1994), The cell transmission model: A dynamic representation of highway traffic consistent with the hydrodynamic theory."
+    },
+    {
+      "id": "collision_free_speed",
+      "name": "CFS 无碰撞速度模型",
+      "version": "1.1.0",
+      "recommended": true,
+      "engine": "JuPedSim 1.4.2",
+      "description": "在可行走面内逐人行走，根据前方间距调整速度，输出位置、密度与离场量。",
+      "equation": "v=min(v₀,max(0,(前方净间距)/T))；方向由目标与避让共同决定",
+      "source": "https://arxiv.org/abs/1512.05597",
+      "implementation_source": "https://www.jupedsim.org/stable/pedestrian_models/index.html",
+      "boundary": "调用 JuPedSim CollisionFreeSpeedModel；支持单层连通场地，保留完整研究时段。采用缓存航点引导，身体运动步长 0.05 秒；按实际在场人数、计算量、运行耗时和输出量管理预算。",
+      "principle": "把每个人放进可行走空间，朝目标移动。前方空间足够就按期望速度走，前方有人就根据净间距减速；还会调整方向避让人和边界。可以观察同样的客流在狭窄步道怎样排队和通过。",
+      "suitable_for": "关注人如何走、窄通道怎样排队，以及避让机制带来的密度变化时使用。",
+      "required_inputs": "共同资料之外，必须能构成连续可行走面并扣除障碍物；入口、目标点应落在可达空间。只有地图上的一条线或场地外框不够。已有步道及宽度可由后端转换，不必重复上传。",
+      "outputs": [
+        "逐人的采样位置，可播放移动过程",
+        "按共同网格汇总的密度、人数和速度",
+        "入口外排队、通道流量和累计离场量"
+      ],
+      "parameter_keys": [
+        "agent_radius_m",
+        "cfs_time_gap_s"
+      ],
+      "tradeoff": "比守恒法更细，但更依赖几何和个人空间参数。间距时间越大通常越保守；“无碰撞”是模型设计目标，不代表已验证现场安全。",
+      "citation": "Tordeux, Chraibi & Seyfried (2015), Collision-free speed model for pedestrian dynamics, TGF’15, arXiv:1512.05597."
+    },
+    {
+      "id": "social_force",
+      "name": "社会力模型 SFM",
+      "version": "1.1.2",
+      "recommended": true,
+      "engine": "JuPedSim 1.4.2 + wallfix1",
+      "description": "逐人计算目标驱动和人与人、人与障碍物的排斥作用，模拟速度变化与绕行。",
+      "equation": "m·dv/dt=m(v₀e−v)/τ+Σf人与人+Σf人与墙",
+      "source": "https://doi.org/10.1103/PhysRevE.51.4282",
+      "implementation_source": "https://www.jupedsim.org/stable/pedestrian_models/index.html",
+      "boundary": "调用 JuPedSim SocialForceModel，已回移墙体摩擦方向修复，采用 0.01 秒积分步长；不用于计算踩踏、人体伤害或真实挤压力。资源预算同 CFS，参数尚未进行现场标定。",
+      "principle": "把“想往目标走”和“想与别人、墙体保持距离”写成速度变化规则，每一步更新人的速度和位置。它与 CFS 用不同机制描述避让，适合比较同一场地的绕行、减速和聚集位置是否一致。",
+      "suitable_for": "作为第二种个体运动机制，与 CFS 和守恒基线并排比较；检验结论对模型选择是否敏感。",
+      "required_inputs": "与 CFS 共用可行走面、障碍物、初始人数、到达过程、入口和目的地，不另向用户索要一套场地资料。",
+      "outputs": [
+        "逐人的采样位置和速度变化",
+        "按共同网格汇总的密度与人数",
+        "入口外排队、通道流量和累计离场量；不输出可信的人体挤压力或伤害预测"
+      ],
+      "parameter_keys": [
+        "agent_radius_m",
+        "sfm_reaction_time_s"
+      ],
+      "tradeoff": "参数对局部运动影响较大，复杂不代表更准确。本版使用 JuPedSim 的平滑排斥实现；“社会力”不能解释成真实接触力，不能据此预测踩踏伤亡。",
+      "citation": "Helbing & Molnár (1995), Social force model for pedestrian dynamics, Physical Review E 51, 4282–4286."
+    }
+  ],
+  "status": "completed",
+  "created_at": "2026-11-06T01:28:21.157562+00:00",
+  "updated_at": "2026-11-06T01:35:38.793905+00:00",
+  "lease_expires_at": "2026-11-06T01:38:36.833604+00:00",
+  "progress": {
+    "method": "social_force",
+    "method_name": "社会力模型 SFM",
+    "repetition": 1,
+    "repetitions": 1,
+    "duration_minutes": 30.0,
+    "minute": 4.72,
+    "active_agents": 974,
+    "wall_seconds": 69.9
+  },
+  "summaries": [
+    {
+      "method": {
+        "id": "conservation",
+        "name": "分区流量守恒",
+        "version": "1.1.0",
+        "recommended": true,
+        "engine": "NetworkSolver",
+        "description": "三角基本图、发送/接收能力与同步流量守恒，计算入口排队和路网积累。",
+        "equation": "Nᵢ(t+Δt)=Nᵢ(t)+ΣFⱼᵢ−ΣFᵢⱼ；q=min(v₀ρ,w(ρmax−ρ))",
+        "source": "https://doi.org/10.1016/0191-2615(94)90002-7",
+        "boundary": "采用 CTM 的守恒离散思路构建行人路网模型，属于工程适配，不模拟人体接触。",
+        "principle": "把可行走区域分成相连的小区，每一步计算流入、流出和剩余人数。相邻小区拥挤或通道能力不足时，人会积累、排队。它计算每个小区有多少人，不生成每个人的真实轨迹。",
+        "suitable_for": "先看人数何时累积、哪段通道形成瓶颈，作为容易解释和核查的比较基线。",
+        "required_inputs": "共同场地与客流资料；可用步道中心线加有效宽度生成可行走面，也可直接提供可行走面。需有连接关系、出入口和目的地。",
+        "outputs": [
+          "分区人数、密度和平均速度随时间的变化",
+          "入口外排队人数、累计离场人数、通道流量",
+          "同一统计网格上的密度图；不输出个体轨迹"
+        ],
+        "parameter_keys": [
+          "jam_density_p_m2",
+          "backward_wave_speed_mps",
+          "counterflow_penalty"
+        ],
+        "tradeoff": "快、可检查人数守恒，适合宏观基线；看不到个体避让。本平台借用车辆 CTM 的离散守恒思路作行人适配，不是已标定的行人 CTM 标准实现。",
+        "citation": "Daganzo (1994), The cell transmission model: A dynamic representation of highway traffic consistent with the hydrodynamic theory."
+      },
+      "summary": {
+        "peak_crowd": 2220.25,
+        "peak_density_p_m2": 6.0,
+        "peak_time": "2026-12-31T23:56:00",
+        "peak_risk_index": 89.64,
+        "peak_pressure_s2": 1.171567,
+        "max_outside_queue": 183.26,
+        "warning_at": "2026-12-31T23:46:00",
+        "departed": 296.49,
+        "remaining_crowd": 2220.25,
+        "mean_queue_wait_minutes": 0.579,
+        "mass_balance_error": 0.0
+      }
+    },
+    {
+      "method": {
+        "id": "collision_free_speed",
+        "name": "CFS 无碰撞速度模型",
+        "version": "1.1.0",
+        "recommended": true,
+        "engine": "JuPedSim 1.4.2",
+        "description": "在可行走面内逐人行走，根据前方间距调整速度，输出位置、密度与离场量。",
+        "equation": "v=min(v₀,max(0,(前方净间距)/T))；方向由目标与避让共同决定",
+        "source": "https://arxiv.org/abs/1512.05597",
+        "implementation_source": "https://www.jupedsim.org/stable/pedestrian_models/index.html",
+        "boundary": "调用 JuPedSim CollisionFreeSpeedModel；支持单层连通场地，保留完整研究时段。采用缓存航点引导，身体运动步长 0.05 秒；按实际在场人数、计算量、运行耗时和输出量管理预算。",
+        "principle": "把每个人放进可行走空间，朝目标移动。前方空间足够就按期望速度走，前方有人就根据净间距减速；还会调整方向避让人和边界。可以观察同样的客流在狭窄步道怎样排队和通过。",
+        "suitable_for": "关注人如何走、窄通道怎样排队，以及避让机制带来的密度变化时使用。",
+        "required_inputs": "共同资料之外，必须能构成连续可行走面并扣除障碍物；入口、目标点应落在可达空间。只有地图上的一条线或场地外框不够。已有步道及宽度可由后端转换，不必重复上传。",
+        "outputs": [
+          "逐人的采样位置，可播放移动过程",
+          "按共同网格汇总的密度、人数和速度",
+          "入口外排队、通道流量和累计离场量"
+        ],
+        "parameter_keys": [
+          "agent_radius_m",
+          "cfs_time_gap_s"
+        ],
+        "tradeoff": "比守恒法更细，但更依赖几何和个人空间参数。间距时间越大通常越保守；“无碰撞”是模型设计目标，不代表已验证现场安全。",
+        "citation": "Tordeux, Chraibi & Seyfried (2015), Collision-free speed model for pedestrian dynamics, TGF’15, arXiv:1512.05597."
+      },
+      "summary": {
+        "peak_crowd": 1833,
+        "peak_density_p_m2": 7.3376,
+        "peak_time": "2027-01-01T00:15:00",
+        "peak_risk_index": 100.0,
+        "peak_pressure_s2": 2.655601,
+        "max_outside_queue": 572,
+        "warning_at": "2026-12-31T23:48:00",
+        "departed": 295,
+        "remaining_crowd": 1833,
+        "mean_queue_wait_minutes": 3.115,
+        "mass_balance_error": 0
+      }
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 """Asynchronous CPU workers; task definitions are read from Mongo, never the UI."""
 import asyncio
+import copy
 import logging
 import multiprocessing
 import json
@@ -11,8 +12,9 @@ from uuid import uuid4
 from aiohttp import web
 from pymongo.errors import PyMongoError
 from .datasets import parse_json
+from ..services.forecast_demand import resolve_forecast_inputs
 from ..prediction.catalog import method_catalog
-from ..prediction.inputs import default_settings, normalize_methods, normalize_settings
+from ..prediction.inputs import normalize_methods
 from ..repositories.analysis_tasks import AnalysisTaskRepository
 from ..repositories.datasets import DatasetConflictError
 from ..repositories.pre_assessments import PreAssessmentRepository, input_key
@@ -107,7 +109,8 @@ def register_pre_assessment_routes(app, database, *, task_roads=None):
             logger.exception('Forecast run %s failed', identifier)
             message = str(exc) if isinstance(exc, ValueError) else '预测计算失败，请检查数据服务日志后重新计算'
             try:
-                await asyncio.to_thread(runs.update, identifier, 'failed', error=message)
+                await asyncio.to_thread(runs.update, identifier, 'failed', error=message,
+                                       method_errors=getattr(exc, 'method_errors', []))
             except PyMongoError:
                 logger.exception('Unable to persist forecasting failure')
         finally:
@@ -159,7 +162,9 @@ def register_pre_assessment_routes(app, database, *, task_roads=None):
                     raise KeyError(payload['task_id'])
                 if type(payload.get('task_revision')) is not int or payload['task_revision'] != task['revision']:
                     raise DatasetConflictError('任务版本已变化，请重新读取任务再计算')
-                settings = normalize_settings(task, payload.get('settings'))
+                settings, provenance = resolve_forecast_inputs(task, payload.get('settings'), strict=True)
+                task = copy.deepcopy(task)
+                task.setdefault('components', {})['forecast_input_provenance'] = provenance
                 selected = task.get('components', {}).get('research_plan', {}).get('experiment', {}).get('model_ids')
                 methods = normalize_methods(payload.get('methods', selected), task)
                 async with submissions:
@@ -184,17 +189,18 @@ def register_pre_assessment_routes(app, database, *, task_roads=None):
                 if task is None:
                     raise KeyError('task')
                 road_status = await road_service.describe(task)
-                data = {'task': {**task, 'road_network': road_status}, 'settings': default_settings(task), 'roads': road_status, 'methods': method_catalog(task), 'selected_methods': task.get('components', {}).get('research_plan', {}).get('experiment', {}).get('model_ids', [])}
+                settings, provenance = resolve_forecast_inputs(task)
+                data = {'task': {**task, 'road_network': road_status}, 'settings': settings, 'input_provenance': provenance, 'roads': road_status, 'methods': method_catalog(task), 'selected_methods': task.get('components', {}).get('research_plan', {}).get('experiment', {}).get('model_ids', [])}
             elif request.path.endswith('/latest'):
                 scope = request.query.get('scope', 'task')
                 prefer = request.query.get('prefer', 'active')
-                if scope not in ('task', 'current') or prefer not in ('active', 'completed'):
-                    raise ValueError('scope 仅接受 task/current，prefer 仅接受 active/completed')
+                if scope not in ('task', 'current') or prefer not in ('active', 'completed', 'recent'):
+                    raise ValueError('scope 仅接受 task/current，prefer 仅接受 active/completed/recent')
                 task = await asyncio.to_thread(tasks.get, request.query.get('task_id', ''))
                 if task is None:
                     raise KeyError('task')
                 data = await asyncio.to_thread(runs.latest, task['id'], task['revision'] if scope == 'current' else None,
-                                               prefer_completed=prefer == 'completed')
+                                               prefer_completed=prefer == 'completed', prefer_recent=prefer == 'recent')
             elif request.path.endswith('/result'):
                 data = await asyncio.to_thread(runs.read_result, identifier)
             else:

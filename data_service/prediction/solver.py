@@ -357,7 +357,8 @@ def compute_comparison(task, roads, settings, methods, progress=None):
             detail = f'第 {len(repetitions) + 1}/{len(seeds)} 次未完成，未将不完整批次纳入比较：' if len(seeds) > 1 else ''
             method_errors.append({'method': catalog[method], 'message': (detail + str(exc))[:600]})
     if not results:
-        raise ValueError('；'.join(f"{item['method']['name']}：{item['message']}" for item in method_errors))
+        from .errors import AllMethodsFailed
+        raise AllMethodsFailed(method_errors)
     return {'task': task, 'settings': settings, 'road_snapshot': roads, 'network': network['public'], 'results': results,
         'selected_methods': list(methods), 'method_errors': method_errors,
         'time_window': {'start': start.isoformat(), 'end': end.isoformat(), 'timezone': 'Asia/Shanghai'},

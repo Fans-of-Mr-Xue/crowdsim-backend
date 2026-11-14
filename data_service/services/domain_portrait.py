@@ -13,6 +13,8 @@ from ..prediction.inputs import default_settings, normalize_settings
 from ..repositories.analysis_tasks import AnalysisTaskRepository
 from ..repositories.datasets import DatasetConflictError
 from ..schemas.environments import coordinate
+from .activity_evidence import validate_notice
+from .evidence_strength import portrait_strengths
 from . import domain_demand, domain_relations
 
 DEFINITION = '有证据支持的场地、人群与活动关系模型'
@@ -113,6 +115,11 @@ def build_portrait(task, roads=None, metadata=None, news=()):
                          'note': '任务通用场景设定与缺省值，非实测；保存参数后供当前任务的实验使用。',
                          'population_note': '当前任务的人群画像假设；没有观测依据时，不据此推算空间人数。'}
     portrait['demand'] = domain_demand.project(task, portrait)
+    portrait['evidence_strengths'] = portrait_strengths(portrait, roads)
+    try:
+        portrait['gate_count_scope'] = domain_demand.gate_scope(task)
+    except ValueError:
+        portrait['gate_count_scope'] = None
     portrait['activities'] = domain_relations.activity_records(task, portrait, news)
     portrait['model_inputs'] = domain_relations.model_inputs(task, portrait, roads)
     portrait['occupancy'] = domain_relations.occupancy_estimate(task, portrait['demand'], settings)
@@ -164,6 +171,15 @@ class DomainPortraitService:
         elif section == 'demand':
             domain_demand.estimate(current, value)
             portrait['demand_inputs'] = domain_demand.validate(current, value)
+        elif section == 'gate_counts':
+            if value is None:
+                portrait.pop('gate_counts', None)
+            else:
+                if not isinstance(value, dict) or set(value) != {'source','kind','observed_start','records','scope'}:
+                    raise ValueError('入口计数的字段不完整')
+                portrait['gate_counts'] = value
+                domain_demand.effective_estimate(current, portrait)
+                data['components']['forecast_demand_source'] = {'mode': 'domain'}
         elif section == 'demand_source':
             if not isinstance(value, dict) or set(value) != {'source', 'dataset'} or value['source'] not in ('history', 'transport', 'weather') or not portrait.get('demand_inputs'):
                 raise ValueError('请提供 history、transport 或 weather 数据源及完整 dataset；须先建立多源估计')
@@ -175,8 +191,9 @@ class DomainPortraitService:
             if demand['status'] != 'ready' or value != {'fingerprint': demand['fingerprint']}:
                 raise ValueError('估计已经变化或资料未对齐，请重新读取后再使用')
             data['components']['forecast_setup'] = normalize_settings(current, demand['forecast_inputs'])
+            data['components']['forecast_demand_source'] = {'mode': 'domain'}
             portrait['demand_application'] = {'fingerprint': demand['fingerprint'], 'task_revision': current['revision'] + 1,
-                                             'method': demand['method'], 'inputs': copy.deepcopy(portrait['demand_inputs']),
+                                             'method': demand['method'], 'inputs': copy.deepcopy(portrait.get('gate_counts') or portrait.get('demand_inputs')),
                                              'outputs': demand['forecast_inputs'], 'total_visits': demand['total_visits']}
         elif section == 'evidence':
             if not isinstance(value, dict) or set(value) != {'evidence', 'candidates'}:
@@ -187,6 +204,8 @@ class DomainPortraitService:
                     raise ValueError('资料和线索须包含有效标识与标题，最多 500 条')
                 if len({row['id'] for row in rows}) != len(rows):
                     raise ValueError('资料和线索标识不能重复')
+            for row in value['evidence']:
+                validate_notice(row)
             portrait.update(value)
         elif section == 'settings':
             if not isinstance(value, dict) or set(value) != set(EDITABLE_SETTINGS):
@@ -219,7 +238,7 @@ class DomainPortraitService:
             data['population'] = portrait['scene']['population']
             if section != 'settings':
                 data['components']['forecast_setup'] = normalize_settings(data, portrait['scene']['settings'])
-        for derived in ('activities', 'model_inputs', 'occupancy'):
+        for derived in ('activities', 'model_inputs', 'occupancy', 'gate_count_scope', 'evidence_strengths'):
             portrait.pop(derived, None)
         portrait.pop('demand', None)  # Derived on read; never persist a stale result.
         data['components']['domain_portrait'] = portrait

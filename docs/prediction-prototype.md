@@ -29,6 +29,7 @@ JuPedSim 的上游发行包会同时安装桌面可视化依赖。只运行本�
 ```sh
 python -m pip install 'numpy>=2.2,<3' 'shapely>=2,<3' 'pyproj>=3.6,<4'
 python -m pip install --no-deps 'jupedsim==1.4.2'
+python scripts/install_sfm_wallfix.py
 ```
 
 脚本默认使用上海人民英雄纪念塔场地，生成 `outputs/three-model-demo.json` 与可离线打开的 `outputs/three-model-demo.html`。它执行与正式接口相同的 `compute_comparison`，不需要 MongoDB、联网取地图或调用大模型。`--scene synthetic` 仅保留给简单障碍物回归测试。
@@ -99,7 +100,7 @@ python -m pip install --no-deps 'jupedsim==1.4.2'
 
 - 守恒离散思想：[Daganzo, Cell Transmission Model](https://escholarship.org/uc/item/0b6612tk)，当前为行人场景的工程适配。
 - CFS：[Tordeux、Chraibi、Seyfried，2015，Collision-free speed model for pedestrian dynamics](https://arxiv.org/abs/1512.05597)，TGF’15。引擎为 JuPedSim `CollisionFreeSpeedModel`。原先登记的 PRE 94, 012312 是另一篇年龄组成实验论文，已纠正。
-- 社会力思想：[Helbing & Molnár, 1995, Phys. Rev. E 51, 4282](https://doi.org/10.1103/PhysRevE.51.4282)。使用 JuPedSim 的平滑排斥 `SocialForceModel` 实现，不宣称原论文所有扩展项均已复现。
+- 社会力思想：[Helbing & Molnár, 1995, Phys. Rev. E 51, 4282](https://doi.org/10.1103/PhysRevE.51.4282)。JuPedSim `SocialForceModel` 的具体实现还包含接触力与切向摩擦，官方对应依据为 [Helbing、Farkas、Vicsek，2000](https://doi.org/10.1038/35035023)；系统不输出人体伤害预测。
 - [JuPedSim 官方文档](https://www.jupedsim.org/stable/)，本适配固定版本 1.4.2。
 
 ## 验证
@@ -111,3 +112,26 @@ python -m pytest tests/test_prediction_models.py tests/test_prediction_api.py -q
 ```
 
 前端生产构建通过；现有 `analysisConsole` 的 56 个检查通过。另运行的 `analysisTaskCollection` 有两项既有失败，涉及任务采集表单的 `analysisTaskLink` 与环境继承期望，相关实现未在本次修改。页面已实际检查时间切换、三模型地图和离场流量指标切换。
+
+## 2026-11-06：SFM 接触摩擦与积分修复
+
+此次发现两层问题：
+
+1. 原 JuPedSim 1.4.2 的 `ObstacleForce` 将行人自身速度作为相对速度传入摩擦项，接触墙体时会沿运动方向加速。纪念塔高客流原记录在第 168.78 秒失败，靠墙个体速度超过 50 m/s。将墙体相对速度改为负的自身速度，与[上游当前源码](https://github.com/PedestrianDynamics/jupedsim/blob/996a7d0229b2ed28325accc2a318d9b78bba6068/libsimulator/src/operational_models/social_force_model/social_force_model.cpp)一致。
+2. 只修正符号仍在第 291.34 秒出现接触摩擦的显式积分不稳定：速度超过 40 m/s，越界约 8.8 cm。因此进一步对人与墙、人与人接触摩擦中的自身速度项使用半隐式积分。这个数值改动是本项目的工程适配，不是声称上游已经采用同一积分器。
+
+对局部接触计算 `D = Σ κ·overlap/m · t·tᵀ`，每步解二维方程 `(I + Δt D) v_new = v_old + Δt(a_old + D v_old)`。邻居速度、法向力和驱动力仍取旧时刻。摩擦系数、力模型、0.01 秒步长、人数、客流曲线、研究时段和路网均保持不变；没有把越界坐标强行拉回地图、截断速度或换成其他模型。
+
+后端原生依赖使用本地版本 `1.4.2+crowdsim.sfmfix2`。换机器或重建 Python 环境时，安装预测依赖后，用同一个解释器运行：
+
+```sh
+python scripts/install_sfm_wallfix.py
+```
+
+安装脚本校验官方 v1.4.2 源码归档 SHA-256、应用物理符号与数值积分补丁并编译本平台 wheel；需要 C++20 编译工具。可用 `--archive /path/to/v1.4.2.tar.gz` 复用下载，pip 的 SOCKS 代理缺少依赖时可明确使用 `--direct-network`。修复包的本地版本号满足原 `jupedsim==1.4.2` 依赖约束。安装完成后必须重启数据服务以卸载旧原生库；日常重启不需要重新编译。
+
+每个计算进程首次运行 SFM 前做原生单人贴墙检查：初始切向速度 1 m/s、无驱动加速度和法向力，1 ms 后应减至 `1/1.15 ≈ 0.869565 m/s`。旧引擎或仅修正符号的引擎会被拒绝，并给出安装命令。原生回归另覆盖高刚度墙角接触与两人相对滑动，检查摩擦耗散、两人总动量。引擎包版本、积分方式与检查结果随新实验保存，SFM 模型版本升至 1.2.0，旧缓存不复用。
+
+失败模型保留名称、运行状态与原因，成功结果才参与指标对比。全部模型失败时，后台也逐项保存 `method_errors`，前端不依赖存在成功结果才能显示失败卡。旧失败记录仍可查看，重新运行创建新记录。实验控制与态势研判无指定运行 ID 时读取最新一次尝试（`prefer=recent`），刷新后也不会用旧成功记录隐藏新失败；显式的旧运行链接仍读取原快照。此次没有运行前端构建。
+
+本次完整高客流复跑记录：`docs/validation/sfm-wallfix-20261106/record.json`。同一任务第 2 版、初始 900 人、后续 1800 人次、30 分钟、种子 42，三种方法均保存 31 个切片。SFM 保存的 47,754 个位置无越界；CFS 与守恒模型的全部时序和修复前完整结果一致。新运行 ID：`0762dff80cc64b7684da889fe05124b3`。
