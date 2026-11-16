@@ -223,11 +223,10 @@ class HotspotCatalogTests(unittest.TestCase):
                 self.assertIsNotNone(lane)
                 self.assertGreaterEqual(float(lane.attrib["width"]), 4.0)
 
-    def test_hotspot_jam_squeezing_stays_disabled_for_the_full_timeline(self):
+    def test_hotspot_jam_squeezing_starts_after_sixty_seconds(self):
         config = ET.parse(
             ROOT / "scenarios" / "shanghai_bund" / "bund.hotspot.sumocfg"
         ).getroot()
-        timeline_end = float(config.find("./time/end").attrib["value"])
 
         for option in (
             "pedestrian.striping.jamtime",
@@ -236,7 +235,7 @@ class HotspotCatalogTests(unittest.TestCase):
         ):
             with self.subTest(option=option):
                 threshold = float(config.find(f"./processing/{option}").attrib["value"])
-                self.assertGreater(threshold, timeline_end)
+                self.assertEqual(threshold, 60)
 
     def test_existing_single_edge_hotspot_remains_compatible(self):
         hotspot = self.catalog.hotspots["chen_yi_square"]

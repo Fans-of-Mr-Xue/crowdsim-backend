@@ -84,75 +84,11 @@ class DuringObservationImages:
             directory, geometry, manifest, key = self._archive(experiment, run, identity)
         except FileNotFoundError:
             return {**identity, 'moments': [], 'message': '本轮原始图像数据未归档'}
-        target = self.cache_root / key
-        with RENDER_LOCK:
-            # Check the attempt again after waiting for another render.
-            self._assert_current(user, workspace, eid, rid, expected, key)
-            index = target / 'index.json'
-            if index.is_file():
-                saved = json.loads(index.read_text())
-                if saved.get('sourceKey') == key and all(saved.get(k) == v for k, v in identity.items()) and all((target / name).is_file()
-                        for m in saved['moments'] for name in m.get('images', {}).values()):
-                    return saved
-            samples = [json.loads(line) for line in (directory / 'observation_samples.jsonl').read_text().splitlines() if line.strip()]
-            times = [s.get('time_seconds') for s in samples]
-            if (not times or any(type(t) not in (float, int) or not math.isfinite(t) for t in times)
-                    or any(b <= a for a, b in zip(times, times[1:]))):
-                return {**identity, 'moments': [], 'message': '本轮没有完整的时刻记录'}
-            completed = run['status'] == 'completed'
-            midpoint = (times[0] + times[-1]) / 2 if completed else float(experiment['scenario']['durationSeconds']) / 2
-            chosen = [samples[0], min(samples, key=lambda s: (abs(s['time_seconds'] - midpoint), s['time_seconds']))
-                      if completed or times[-1] >= midpoint else None, samples[-1] if completed else None]
-            frames = {s['snapshot_id']: {} for s in chosen if s}
-            with (directory / 'trajectory.csv').open() as handle:
-                for row in csv.DictReader(handle):
-                    if row.get('snapshot_id') in frames:
-                        frames[row['snapshot_id']][row['person_id']] = row
-            globals_ = {}
-            with (directory / 'observation_global.csv').open() as handle:
-                for row in csv.DictReader(handle):
-                    if row.get('snapshot_id') in frames:
-                        globals_[row['snapshot_id']] = row
-            moments = []
-            for name, sample in zip(MOMENTS, chosen):
-                moment = {'key': name, 'timeSeconds': sample['time_seconds'] if sample else None, 'images': {}}
-                if sample:
-                    sid, time = sample['snapshot_id'], sample['time_seconds']
-                    people = list(frames[sid].values())
-                    count = globals_.get(sid, {}).get('network_person_count')
-                    valid = count is not None and float(count) == len(people)
-                    valid = valid and all(float(p['time']) == time and all(math.isfinite(float(p[k])) for k in ('x', 'y')) for p in people)
-                    if valid:
-                        moment.update(personCount=len(people), snapshotId=sid, images={kind: f'{kind}-{name}.png' for kind in ('scene', 'heatmap')})
-                    else:
-                        moment['message'] = '该时刻的位置记录不完整'
-                else:
-                    moment['message'] = '未记录该时刻'
-                moments.append(moment)
-            result = {**identity, 'sourceKey': key, 'moments': moments}
-            self.cache_root.mkdir(parents=True, exist_ok=True)
-            temporary = Path(tempfile.mkdtemp(prefix='render-', dir=self.cache_root))
-            try:
-                if self.renderer:
-                    renderer = self.renderer
-                else:
-                    from .during_observation_image_render import render_images
-                    renderer = render_images
-                if any(m['images'] for m in moments):
-                    renderer(temporary, geometry, manifest, moments, frames,
-                             title=experiment['duringObservation']['requirement'].get('project', {}).get('title', '实验'),
-                             round_number=next(i + 1 for i, r in enumerate(self.repository.list_runs(user, workspace, eid)) if r['run_id'] == rid))
-                self._assert_current(user, workspace, eid, rid, expected, key)
-                (temporary / 'index.json').write_text(json.dumps(result, ensure_ascii=False))
-                # Only a complete manifest makes an image set visible.
-                target.mkdir(parents=True, exist_ok=True)
-                for p in temporary.iterdir():
-                    if p.name != 'index.json':
-                        p.replace(target / p.name)
-                (temporary / 'index.json').replace(index)
-                return result
-            finally:
-                shutil.rmtree(temporary)
+        return render_archive_images(directory, geometry, manifest, identity, key,
+            cache_root=self.cache_root, status=run['status'], duration=experiment['scenario']['durationSeconds'],
+            title=experiment['duringObservation']['requirement'].get('project', {}).get('title', '实验'),
+            round_number=next(i + 1 for i, r in enumerate(self.repository.list_runs(user, workspace, eid)) if r['run_id'] == rid),
+            renderer=self.renderer, assert_current=lambda: self._assert_current(user, workspace, eid, rid, expected, key))
 
     def _assert_current(self, user, workspace, eid, rid, expected, key):
         experiment, run, identity = self._context(user, workspace, eid, rid, expected)
@@ -168,3 +104,74 @@ class DuringObservationImages:
         if not any(filename in m.get('images', {}).values() for m in metadata['moments']):
             raise ContractError('该时刻没有归档图像。')
         return (directory / filename).read_bytes()
+
+
+def render_archive_images(directory, geometry, manifest, identity, key, *, cache_root, status, duration,
+                          title, round_number, renderer=None, assert_current):
+    """Render the same six pictures for either during-experiment archive."""
+    target = cache_root / key
+    with RENDER_LOCK:
+        # Check the attempt again after waiting for another render.
+        assert_current()
+        index = target / 'index.json'
+        if index.is_file():
+            saved = json.loads(index.read_text())
+            if saved.get('sourceKey') == key and all(saved.get(k) == v for k, v in identity.items()) and all((target / name).is_file()
+                    for m in saved['moments'] for name in m.get('images', {}).values()):
+                return saved
+        samples = [json.loads(line) for line in (directory / 'observation_samples.jsonl').read_text().splitlines() if line.strip()]
+        times = [s.get('time_seconds') for s in samples]
+        if (not times or any(type(t) not in (float, int) or not math.isfinite(t) for t in times)
+                or any(b <= a for a, b in zip(times, times[1:]))):
+            return {**identity, 'moments': [], 'message': '本轮没有完整的时刻记录'}
+        completed = status == 'completed'
+        midpoint = (times[0] + times[-1]) / 2 if completed else float(duration) / 2
+        chosen = [samples[0], min(samples, key=lambda s: (abs(s['time_seconds'] - midpoint), s['time_seconds']))
+                  if completed or times[-1] >= midpoint else None, samples[-1] if completed else None]
+        frames = {s['snapshot_id']: {} for s in chosen if s}
+        with (directory / 'trajectory.csv').open() as handle:
+            for row in csv.DictReader(handle):
+                if row.get('snapshot_id') in frames:
+                    frames[row['snapshot_id']][row['person_id']] = row
+        globals_ = {}
+        with (directory / 'observation_global.csv').open() as handle:
+            for row in csv.DictReader(handle):
+                if row.get('snapshot_id') in frames:
+                    globals_[row['snapshot_id']] = row
+        moments = []
+        for name, sample in zip(MOMENTS, chosen):
+            moment = {'key': name, 'timeSeconds': sample['time_seconds'] if sample else None, 'images': {}}
+            if sample:
+                sid, time = sample['snapshot_id'], sample['time_seconds']
+                people = list(frames[sid].values())
+                count = globals_.get(sid, {}).get('network_person_count')
+                valid = count is not None and float(count) == len(people)
+                valid = valid and all(float(p['time']) == time and all(math.isfinite(float(p[k])) for k in ('x', 'y')) for p in people)
+                if valid:
+                    moment.update(personCount=len(people), snapshotId=sid, images={kind: f'{kind}-{name}.png' for kind in ('scene', 'heatmap')})
+                else:
+                    moment['message'] = '该时刻的位置记录不完整'
+            else:
+                moment['message'] = '未记录该时刻'
+            moments.append(moment)
+        result = {**identity, 'sourceKey': key, 'moments': moments}
+        cache_root.mkdir(parents=True, exist_ok=True)
+        temporary = Path(tempfile.mkdtemp(prefix='render-', dir=cache_root))
+        try:
+            if renderer is None:
+                from .during_observation_image_render import render_images
+                renderer = render_images
+            if any(m['images'] for m in moments):
+                renderer(temporary, geometry, manifest, moments, frames,
+                         title=title, round_number=round_number)
+            assert_current()
+            (temporary / 'index.json').write_text(json.dumps(result, ensure_ascii=False))
+            # Only a complete manifest makes an image set visible.
+            target.mkdir(parents=True, exist_ok=True)
+            for p in temporary.iterdir():
+                if p.name != 'index.json':
+                    p.replace(target / p.name)
+            (temporary / 'index.json').replace(index)
+            return result
+        finally:
+            shutil.rmtree(temporary)

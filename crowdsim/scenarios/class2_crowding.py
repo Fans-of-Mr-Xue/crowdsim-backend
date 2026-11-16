@@ -8,6 +8,8 @@ from __future__ import annotations
 from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass
+from functools import lru_cache
+from threading import RLock
 import hashlib
 import json
 import math
@@ -55,7 +57,7 @@ def preset_capabilities():
 def prepare_requirement(body):
     from .class2_flow_layout import validate_design, build_flow_layout, flow_network, digest
     allowed = {'problemType', 'count', 'phenomenon', 'requestedLocation', 'seed', 'durationSeconds', 'source',
-               'flowDesign', 'mapFingerprint', 'populationDistributions', 'metricIds', 'projectTitle'}
+               'flowDesign', 'mapFingerprint', 'populationDistributions', 'metricIds', 'projectTitle', 'backgroundCount'}
     if not isinstance(body, dict) or set(body)-allowed:
         raise ValueError('第二类人流请求包含不支持的字段')
     if type(body.get('problemType')) is not int or body['problemType'] != 2:
@@ -68,13 +70,18 @@ def prepare_requirement(body):
         raise ValueError('请提供已确认的纪念塔研究地点')
     preset, fingerprint, resources = load_preset()
     count = body.get('count')
-    design = validate_design(body.get('flowDesign'), count)
+    background = body.get('backgroundCount', 0)
+    if type(background) is not int or background < 0 or type(count) is not int or not 1 <= count <= 10000 or background >= count:
+        raise ValueError('背景行人与活动人流总人数无效')
+    design = validate_design(body.get('flowDesign'), count - background)
     if body.get('mapFingerprint') != flow_network()['geometrySha256']:
         raise ValueError('人流地图版本已变化，请刷新地图并重新确认方案')
     layout = build_flow_layout(design)  # Capacity and deterministic layout; no SUMO process.
     seed = body.get('seed', preset['default_seed'])
     if type(seed) is not int or not 0 <= seed <= 2147483647:
         raise ValueError('seed must be an integer between 0 and 2147483647')
+    if background:
+        layout = background_layout(layout, background, seed, ROOT/preset['network'])
     duration = body.get('durationSeconds')
     if type(duration) not in (int, float) or not 1 <= duration <= 1800 or not math.isfinite(duration):
         raise ValueError('durationSeconds must be between 1 and 1800')
@@ -92,6 +99,8 @@ def prepare_requirement(body):
                'phenomenon': phenomenon.strip(), 'requested_location': location, 'source': dict(source),
                'flow_design': design, 'flow_design_sha256': digest(design), 'layout_sha256': digest(layout),
                'map_fingerprint': flow_network()['geometrySha256'], 'resources': resources}
+    if 'backgroundCount' in body:
+        binding['background_count'] = background
     requirement = deepcopy(json.loads((ROOT/preset['requirement_template']).read_text())['requirement'])
     requirement.update(schema_version=1, research={'problem_type': 2}, class2_demo=binding)
     requirement['project'] = {'title': body.get('projectTitle'), 'description': phenomenon.strip()}
@@ -111,10 +120,39 @@ def validate_binding(requirement):
         'source': binding.get('source'), 'flowDesign': binding.get('flow_design'),
         'mapFingerprint': binding.get('map_fingerprint'), 'projectTitle': requirement.get('project', {}).get('title'),
         'populationDistributions': requirement.get('population', {}).get('distributions'),
-        'metricIds': requirement.get('observation', {}).get('metric_ids')})
+        'metricIds': requirement.get('observation', {}).get('metric_ids'),
+        **({'backgroundCount': binding['background_count']} if 'background_count' in binding else {})})
     if binding != rebuilt.payload['class2_demo'] or requirement != rebuilt.payload:
         raise ValueError('第二类人流配置或路网资源已变化，请重新准备需求')
     return binding
+
+
+_background_layout_lock = RLock()
+
+
+@lru_cache(maxsize=4)
+def _background_positions(count, seed, network_path, network_sha, geometry_sha):
+    import sumolib
+    from crowdsim.decision.position_aware_router import PositionAwarePedestrianRouter
+    from .class2_background import add_background
+    from .class2_flow_layout import flow_network
+    network = sumolib.net.readNet(network_path, withInternal=True, withPedestrianConnections=True)
+    # Random targets use both endpoints of every study-area edge. The default
+    # 64-tree cache evicts them between pedestrians and repeatedly searches the
+    # full Bund network.
+    router = PositionAwarePedestrianRouter(network, cache_limit=2 * len(flow_network()['lanes']))
+    return add_background({'positions': []}, count, seed, router)['positions']
+
+
+def background_layout(layout, count, seed, network_path):
+    from .class2_flow_layout import flow_network
+    # Validation, initialization and reconnects must use the same deterministic
+    # positions. Resource hashes keep changed maps from reusing stale results.
+    with _background_layout_lock:
+        people = _background_positions(count, seed, str(Path(network_path).resolve()),
+                                       _sha(network_path), flow_network()['geometrySha256'])
+    layout['positions'].extend(deepcopy(people))
+    return layout
 
 
 def record_initial_state(runtime, directory):
@@ -144,6 +182,7 @@ class Class2CrowdingDemandSpec(HotspotDemandSpec):
     expected_fingerprint: str | None = None
     flow_design: dict | None = None
     duration_seconds: float = 300
+    background_count: int = 0
     is_class2_demo: ClassVar[bool] = True
 
     def configuration(self):
@@ -158,7 +197,8 @@ class Class2CrowdingDemandSpec(HotspotDemandSpec):
             raise ValueError('count differs from the frozen class-two requirement')
 
     def capabilities(self):
-        return {**super().capabilities(), 'class2_demo': True, 'requires_flow_design': True}
+        return {**super().capabilities(), 'class2_demo': True, 'requires_flow_design': True,
+                'background_count': self.background_count}
 
     def generate(self, directory, network_path, requested_count=None, **kwargs):
         import sumolib
@@ -171,8 +211,10 @@ class Class2CrowdingDemandSpec(HotspotDemandSpec):
             raise ValueError('seed differs from the frozen class-two requirement')
         if _sha(network_path) != _sha(ROOT/preset['network']):
             raise ValueError('class-two layout requires its frozen monument network')
-        design = validate_design(self.flow_design, count)
+        design = validate_design(self.flow_design, count - self.background_count)
         layout = build_flow_layout(design)
+        if self.background_count:
+            layout = background_layout(layout, self.background_count, self.seed, network_path)
         requested_layout_sha = digest(layout)
         network = sumolib.net.readNet(str(network_path), withInternal=True, withPedestrianConnections=True)
         router = PositionAwarePedestrianRouter(network)
@@ -180,18 +222,22 @@ class Class2CrowdingDemandSpec(HotspotDemandSpec):
         for flow in design['flows']:
             ET.SubElement(root, 'vType', {'id': 'class2.flow.' + flow['id'], 'vClass': 'pedestrian',
                 'maxSpeed': '1e-9', 'desiredMaxSpeed': str(flow['speed']), 'speedFactor': '1', 'speedDev': '0'})
+        if self.background_count:
+            ET.SubElement(root, 'vType', {'id': 'class2.flow.__background.random__', 'vClass': 'pedestrian',
+                'maxSpeed': '1e-9', 'desiredMaxSpeed': '1.3', 'speedFactor': '1', 'speedDev': '0'})
         for person in layout['positions']:
             target = person['destination']
-            route = router.route(EdgePosition(person['edge'], person['position']),
-                                 EdgePosition(target['edge'], target['position']))
-            person['route'] = list(route.edges)
+            route_edges = (person['route'] if person.get('cohort') == 'background' else
+                           router.route(EdgePosition(person['edge'], person['position']),
+                                        EdgePosition(target['edge'], target['position'])).edges)
+            person['route'] = list(route_edges)
             element = ET.SubElement(root, 'person', {'id': person['person_id'], 'depart': '0',
                 'type': 'class2.flow.' + person['flow_id'], 'speedFactor': '1',
                 'departPos': f"{person['position']:.9f}"})
-            for key, value in [(ITINERARY_LOCK_PARAM, 'true'), ('crowdsim.cohort', 'class2_flow'),
+            for key, value in [(ITINERARY_LOCK_PARAM, 'true'), ('crowdsim.cohort', person.get('cohort', 'class2_flow')),
                                ('crowdsim.flow_id', person['flow_id']), ('crowdsim.flow_speed', str(person['speed']))]:
                 ET.SubElement(element, 'param', {'key': key, 'value': value})
-            ET.SubElement(element, 'walk', {'edges': ' '.join(route.edges), 'arrivalPos': f"{target['position']:.9f}",
+            ET.SubElement(element, 'walk', {'edges': ' '.join(route_edges), 'arrivalPos': f"{target['position']:.9f}",
                 'departPosLat': f"{person['lateral']:.9f}"})
             length = network.getLane(target['source_lane_id']).getLength()
             guard_edge = target['edge']
@@ -228,7 +274,7 @@ class Class2CrowdingDemandSpec(HotspotDemandSpec):
         layout_path = directory/'class2_initial_layout.json'
         layout_path.write_text(json.dumps(layout, ensure_ascii=False, indent=2)+'\n')
         report = {'generation_version': 'class2-flows/1', 'initial_population': True,
-            'hotspot_id': PRESET_ID, 'visitor_count': count, 'total_count': count, 'background_count': 0,
+            'hotspot_id': PRESET_ID, 'visitor_count': count - self.background_count, 'total_count': count, 'background_count': self.background_count,
             'requested_count': requested_count, 'effective_count': count, 'seed': self.seed,
             'spawn_distribution': 'class2_user_flows', 'flow_counts': {f['id']: f['count'] for f in design['flows']},
             'spawn_edge_counts': dict(Counter(p['edge'] for p in layout['positions'])),

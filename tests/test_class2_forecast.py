@@ -163,10 +163,10 @@ async def test_http_rejects_stale_sources_and_does_not_preview_paused_or_first_c
     source = {'runId': 'run-one', 'frameId': 'frame-one'}
     runtime = fixture()
     runtime.class2_flows.control = NS(binding=lambda r: source.copy())
-    async def forecast(r):
+    def preview(r):
         r.state = RuntimeState.PAUSED
         return {'status': 'available'}
-    server = NS(simulator=runtime, _class2_forecast_service=NS(forecast=forecast), _error=OverlayServer._error)
+    server = NS(simulator=runtime, _class2_forecast_service=NS(preview=preview), _error=OverlayServer._error)
     async def body():
         return source.copy()
     request = NS(json=body)
@@ -176,3 +176,60 @@ async def test_http_rejects_stale_sources_and_does_not_preview_paused_or_first_c
     assert json.loads(response.body)['baseline']['status'] == 'unavailable'
     server.simulator = NS(class2_flows=None)
     assert (await OverlayServer._class2_baseline_preview(server, request)).status == 409
+
+
+@async_test
+async def test_background_preview_returns_progress_reuses_worker_and_caches_result(monkeypatch, tmp_path):
+    release = asyncio.Event()
+    calls = []
+    async def start(*args, **kwargs):
+        folder = Path(args[-1])
+        calls.append(folder)
+        (folder/'progress.txt').write_text('42.5')
+        async def communicate():
+            await release.wait()
+            (folder/'result.json').write_text(json.dumps({'status': 'available', 'populationConserved': True, 'roads': []}))
+            return b'', b''
+        return NS(returncode=0, communicate=communicate)
+    monkeypatch.setattr(asyncio, 'create_subprocess_exec', start)
+    service = Class2ForecastService()
+    runtime = NS(requirement_record={'fingerprint': 'one'}, random_seed=1,
+                 adapter=NS(sumo_binary='sumo'), timeline_end_seconds=300)
+    assert service.preview(runtime) == {'status': 'running', 'currentSeconds': 0, 'endSeconds': 300}
+    await asyncio.sleep(0)
+    assert service.preview(runtime)['currentSeconds'] == 42.5
+    assert len(calls) == 1
+    import pytest
+    other = NS(**{**vars(runtime), 'requirement_record': {'fingerprint': 'other'}})
+    with pytest.raises(ValueError, match='另一份方案'):
+        service.preview(other)
+    release.set()
+    await service.task
+    result = service.preview(runtime)
+    assert result['status'] == 'available' and result['currentSeconds'] == 300
+    result['roads'].append('foreign')
+    assert service.preview(runtime)['roads'] == [] and len(calls) == 1
+    await service.close()
+
+
+@async_test
+async def test_shutdown_cancels_background_worker(monkeypatch):
+    kills = []
+    proc = NS(returncode=None, pid=123)
+    async def communicate():
+        await asyncio.Event().wait()
+    async def wait():
+        proc.returncode = -15
+    proc.communicate, proc.wait = communicate, wait
+    async def start(*args, **kwargs):
+        return proc
+    monkeypatch.setattr(asyncio, 'create_subprocess_exec', start)
+    monkeypatch.setattr('os.killpg', lambda *args: kills.append(args))
+    service = Class2ForecastService()
+    runtime = NS(requirement_record={'fingerprint': 'one'}, random_seed=1,
+                 adapter=NS(sumo_binary='sumo'), timeline_end_seconds=300)
+    service.preview(runtime)
+    await asyncio.sleep(0)
+    await service.close()
+    assert service.task.cancelled() and kills[0][0] == 123
+    assert service.process is None

@@ -150,7 +150,7 @@ class PopulationManager:
     def commit_states(self, states: Dict[str, AgentState]) -> None:
         self.states.update(states)
 
-    def prepare_demand(self, output_path: str | Path, count: int | None = None, *, flow_speeds=None) -> Path:
+    def prepare_demand(self, output_path: str | Path, count: int | None = None, *, flow_speeds=None, profile_groups=None) -> Path:
         if len(self.route_files) != 1:
             raise ValueError("prepared pedestrian demand requires exactly one source route file")
         source = self.route_files[0]
@@ -173,7 +173,7 @@ class PopulationManager:
                 if index >= len(people):
                     person.set("id", f"{person.get('id')}__rep{index // len(people)}")
                 selected.append(person)
-        self.profile_sampler.prepare_population(person.get("id") for person in selected)
+        self.profile_sampler.prepare_population((person.get("id") for person in selected), groups=profile_groups)
         for person in people:
             root.remove(person)
         existing_types = {element.get("id") for element in root.findall("vType")}

@@ -214,7 +214,7 @@ def build_requirement_runtime(args: argparse.Namespace, record: dict) -> Simulat
                 PROJECT_ROOT / preset['source_demand'], PRESET_PATH,
                 seed=binding['seed'], bound_seed=binding['seed'], bound_count=binding['count'],
                 expected_fingerprint=binding['fingerprint'], flow_design=binding['flow_design'],
-                duration_seconds=binding['duration_seconds']),
+                duration_seconds=binding['duration_seconds'], background_count=binding.get('background_count', 0)),
             requirement_record=record, random_seed=binding['seed'],
             performance_options=performance_options(args),
         )

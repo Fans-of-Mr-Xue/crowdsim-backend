@@ -49,6 +49,9 @@ def publish_class2_society(receipt, *, requirements=None, root=None):
     design = deepcopy(r.get('class2', {}).get('flow_design'))
     if design:
         design['flows'] = [{key: flow.get(key) for key in ('id', 'name', 'count', 'density', 'speed', 'origin', 'destination')} for flow in design.get('flows', [])]
+    background = r.get('class2', {}).get('background_population', {}).get('count', 0) if r.get('class2', {}).get('mode') == 'automated_context' else 0
+    if background != binding.get('background_count', 0):
+        raise ValueError('背景人数与确认快照不一致')
     if (r.get('population', {}).get('total') != binding['count'] or design != binding['flow_design']
             or r.get('population', {}).get('distributions') != receipt['requirement']['population']['distributions']
             or r.get('experiment', {}).get('duration_seconds') != binding['duration_seconds']
@@ -60,6 +63,8 @@ def publish_class2_society(receipt, *, requirements=None, root=None):
                'population': r['population'], 'flowDesign': design,
                'networkSha256': design['network_sha256'], 'layoutSha256': binding['layout_sha256'],
                'engine': 'class2-flow-runtime-v1'}
+    if 'background_count' in binding:
+        payload['background'] = {'count': background, 'dwellSeconds': 5, 'destination': 'random'}
     digest = hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode()).hexdigest()
     model = {'model_id': 'asm-' + digest[:32], 'fingerprint': 'sha256:' + digest,
              'status': 'published', 'requirement_id': receipt['requirement_id'], 'source': source,

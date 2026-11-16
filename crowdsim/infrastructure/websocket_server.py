@@ -100,7 +100,7 @@ class OverlayServer:
                     'reason': '仅初始化现场支持无干预预演；暂停或结束后请使用当前道路观测，不能沿用初始化预测。'}})
             if self._class2_forecast_service is None:
                 self._class2_forecast_service = Class2ForecastService()
-            result = await self._class2_forecast_service.forecast(runtime)
+            result = self._class2_forecast_service.preview(runtime)
             if self.simulator is not runtime or source != flows.control.binding(runtime) or runtime.state != RuntimeState.READY:
                 raise ValueError('预演期间现场已变化，请重新采样')
             return web.json_response({'source': source, 'baseline': result})

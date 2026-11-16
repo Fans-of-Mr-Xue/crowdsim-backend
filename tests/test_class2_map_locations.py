@@ -5,8 +5,8 @@ from unittest.mock import patch
 import pytest
 from shapely.geometry import LineString, Point, Polygon
 
-from crowdsim.scenarios.class2_flow_layout import flow_network
-from crowdsim.scenarios.class2_map_locations import MemorialMapTool, _geometry
+from crowdsim.scenarios.class2_flow_layout import flow_network, build_flow_layout
+from crowdsim.scenarios.class2_map_locations import MemorialMapTool, _geometry, _in_region, _intent
 
 
 @pytest.fixture
@@ -46,6 +46,40 @@ def test_real_walkable_candidates_and_200_person_layout_stay_on_the_map(sample):
     for group in results:
         assert len(group['candidates']) == 3
         assert all(Polygon(flow_network()['scope']).covers(Point(c['point'])) for c in group['candidates'])
+
+
+@pytest.mark.parametrize('candidate_index', [0, 1, 2])
+def test_south_destination_allows_population_to_spread_beyond_direction_region(sample, candidate_index):
+    service, body, _, request = sample
+    rows = service.resolve({**body, 'queries': [
+        {'key': 'origin', 'description': '黄浦公园南侧'},
+        {'key': 'destination', 'description': '纪念塔南侧'}]})['results']
+    origin = rows[0]['candidates'][0]
+    destination = rows[1]['candidates'][candidate_index]
+    request['design']['flows'][0].update(count=200, density=1.5, speed=1,
+                                       origin=origin['anchor'], destination=destination['anchor'])
+    request['pointRefs'][0]['ref'] = origin['ref']
+    request['pointRefs'][1]['ref'] = destination['ref']
+    intent = service.candidates[destination['ref']]['intent']
+    assert _in_region(destination['point'], intent)
+    layout = build_flow_layout(request['design'])['flows'][0]['destination_layout']
+    assert any(not _in_region((p['local_x'], p['local_y']), intent) for p in layout['points'])
+    with patch('subprocess.Popen', side_effect=AssertionError('No services or simulator allowed')):
+        result = service.preview(request)
+    assert result['valid'], result['issues']
+    assert result['routes'][0]['verifiedPeople'] == 200
+    assert result['checks'][0]['destinationAreaM2'] == pytest.approx(200/1.5, abs=.001)
+
+
+@pytest.mark.parametrize('kind,description', [('origin', '纪念塔东侧'), ('destination', '纪念塔北侧')])
+def test_direction_validation_still_rejects_an_anchor_outside_its_region(sample, kind, description):
+    service, _, _, request = sample
+    ref = next(item['ref'] for item in request['pointRefs'] if item['kind'] == kind)
+    _, _, _, scope, center, _ = _geometry(flow_network()['geometrySha256'])
+    service.candidates[ref]['intent'] = _intent(description, scope, center)
+    result = service.preview(request)
+    assert not result['valid']
+    assert '起终点标记超出所描述方位' in result['issues'][0]
 
 
 @pytest.mark.parametrize('description', ['纪念塔西门', '博物馆地下入口', '南京东路', '江边', '不存在的咖啡馆', '世纪公园东侧'])

@@ -16,8 +16,13 @@ def run(folder):
         raise ValueError('预演只接受已冻结的第二类人流配置与种子')
     runtime = build_requirement_runtime(parse_args(['--scenario', 'hotspot', '--sumo-binary', request['sumoBinary']]), record)
     runtime.archive_root = folder/'runs'
+    def progress():
+        temporary = folder/'progress.tmp'
+        temporary.write_text(str(runtime.time_seconds))
+        temporary.replace(folder/'progress.txt')
     try:
         runtime.initialize()
+        progress()
         references = runtime.class2_flows.control.context(runtime)['predictedOverlaps']
         collector = BaselineCollector(runtime, [row['edgeId'] for row in references])
         collector.sample(runtime)
@@ -27,9 +32,12 @@ def run(folder):
             if len(runtime.current.persons) != len(runtime.class2_flows.people):
                 raise ValueError('预演人数不守恒')
             collector.sample(runtime)
+            if collector.samples % 4 == 0:
+                progress()
         if runtime.time_seconds != runtime.timeline_end_seconds:
             raise ValueError('基线预演未到达方案结束时刻')
         result = collector.result(runtime)
+        progress()
         result['seed'] = runtime.random_seed
         result['networkSha256'] = runtime.network_sha256
         result['engineVersion'] = runtime.adapter.diagnostics['sumo_version']

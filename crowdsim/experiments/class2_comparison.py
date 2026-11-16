@@ -237,6 +237,8 @@ class Class2ComparisonService:
                    'requestedLocation': r['spatial_scope']['name'], 'projectTitle': r['project']['title'],
                    'durationSeconds': r['experiment']['duration_seconds'], 'populationDistributions': r['population']['distributions'],
                    'metricIds': r['observation']['metric_ids'], 'flowDesign': design, 'mapFingerprint': flow_network()['geometrySha256']}
+        if r['class2'].get('mode') == 'automated_context':
+            request['backgroundCount'] = r['class2']['background_population']['count']
         warmup = origin.get('timeSeconds')
         if type(warmup) not in (int, float) or not math.isfinite(warmup) or not 0 <= warmup < request['durationSeconds']:
             raise ValueError('候选决策采样时刻已超出实验窗口')

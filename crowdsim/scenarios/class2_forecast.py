@@ -33,6 +33,9 @@ class BaselineCollector:
         self.end = runtime.timeline_end_seconds
         self.step = runtime.step_length
         self.flow_order = [f['id'] for f in runtime.class2_flows.layout['flows']]
+        if getattr(runtime.class2_flows, 'background_ids', None):
+            from .class2_background import BACKGROUND_FLOW
+            self.flow_order.append(BACKGROUND_FLOW)
         self.flow_indices = {fid: i for i, fid in enumerate(self.flow_order)}
         self.reference_edges = set(reference_edges)
         self.roads = {}
@@ -129,8 +132,43 @@ class Class2ForecastService:
         self.cached_key = None
         self.cached = None
         self.process = None
+        self.task = None
+        self.task_key = None
+        self.progress_path = None
+        self.progress = 0
+
+    def preview(self, runtime):
+        key = (runtime.requirement_record['fingerprint'], runtime.random_seed, runtime.adapter.sumo_binary)
+        if key == self.cached_key:
+            return {**deepcopy(self.cached), 'currentSeconds': runtime.timeline_end_seconds,
+                    'endSeconds': runtime.timeline_end_seconds}
+        if self.task is not None and not self.task.done() and key != self.task_key:
+            raise ValueError('另一份方案的基线预演尚未结束，请稍后重试')
+        if self.task is None or key != self.task_key:
+            self.task_key = key
+            self.progress = 0
+            self.task = asyncio.create_task(self.forecast(runtime))
+        if self.task.done():
+            result = deepcopy(self.task.result())
+            result['currentSeconds'] = runtime.timeline_end_seconds if result['status'] == 'available' else self.progress
+            if result['status'] != 'available':
+                self.task = None  # A later entry may retry a failed preview.
+        else:
+            if self.progress_path is not None:
+                try:
+                    self.progress = float(self.progress_path.read_text())
+                except (OSError, ValueError):
+                    pass
+            result = {'status': 'running', 'currentSeconds': self.progress}
+        return {**result, 'endSeconds': runtime.timeline_end_seconds}
 
     async def close(self):
+        if self.task is not None and self.task is not asyncio.current_task() and not self.task.done():
+            self.task.cancel()
+            try:
+                await self.task
+            except asyncio.CancelledError:
+                pass
         proc = self.process
         if proc is None or proc.returncode is not None:
             return
@@ -155,6 +193,7 @@ class Class2ForecastService:
                 return deepcopy(self.cached)
             with tempfile.TemporaryDirectory(prefix='crowdsim-class2-forecast-') as directory:
                 folder = Path(directory)
+                self.progress_path = folder/'progress.txt'
                 (folder/'request.json').write_text(json.dumps({'requirement': record,
                     'sumoBinary': runtime.adapter.sumo_binary, 'seed': runtime.random_seed}, ensure_ascii=False))
                 try:
@@ -176,3 +215,4 @@ class Class2ForecastService:
                 finally:
                     await self.close()
                     self.process = None
+                    self.progress_path = None

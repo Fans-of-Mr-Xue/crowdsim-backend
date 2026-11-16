@@ -104,6 +104,24 @@ class ControlRequestHandler(BaseHTTPRequestHandler):
         path, query = self._path()
         user_id, workspace_id = self._context()
         try:
+            match = re.fullmatch(rf'{CONTROL_PREFIX}/during-class2/conversations/([A-Za-z0-9_-]{{1,120}})/comparisons/runs/(c2r-[0-9a-f]{{32}})/images(?:/([0-9a-f]{{64}})/((?:scene|heatmap)-(?:start|middle|end)\.png))?', path)
+            if match:
+                from .class2_images import Class2ComparisonImages
+                expected = {'snapshotId': (query.get('snapshotId') or [''])[0],
+                            **{k: int((query.get(k) or ['-1'])[0]) for k in ('executionVersion', 'attempt')}}
+                cid, rid, source_key, filename = match.groups()
+                service = Class2ComparisonImages(self.bundle.class2_comparisons)
+                if not filename:
+                    return self._send_json(200, service.metadata(user_id, workspace_id, cid, rid, expected))
+                content = service.image(user_id, workspace_id, cid, rid, expected, source_key, filename)
+                self.send_response(200)
+                self._cors_headers()
+                self.send_header('Content-Type', 'image/png')
+                self.send_header('Content-Length', str(len(content)))
+                self.send_header('Cache-Control', 'no-store')
+                self.end_headers()
+                self.wfile.write(content)
+                return
             match = re.fullmatch(rf'{CONTROL_PREFIX}/during-class2/conversations/([A-Za-z0-9_-]{{1,120}})/comparisons/evaluation', path)
             if match:
                 return self._send_json(200, self.bundle.class2_comparisons.evaluation(user_id, workspace_id, match.group(1)))

@@ -65,9 +65,16 @@ class PopulationProfileSampler:
             configured[role_id] = attributes
         self.agent_type_attributes = configured
 
-    def prepare_population(self, person_ids) -> None:
+    def prepare_population(self, person_ids, *, groups=None) -> None:
         """Allocate exact integer category counts with deterministic shuffling."""
         people = sorted(str(person_id) for person_id in person_ids)
+        if groups:
+            assignments = {}
+            for group in sorted(set(groups.get(pid, '') for pid in people)):
+                self.prepare_population(pid for pid in people if groups.get(pid, '') == group)
+                assignments.update(self._assignments)
+            self._assignments = assignments
+            return
         self._assignments = {person_id: {} for person_id in people}
         for dimension, rows in self.distributions.items():
             if not rows or not people:

@@ -60,7 +60,7 @@ def summarize_paths(runtime, flows):
                     and pid not in runtime.plan_executor.flow_hold_reasons
                     and pid not in runtime.plan_executor.activity_hold_until):
                 stats['slowWaitingReference'] += 1
-        if pid in flows.dwelling or motion.edge_id.startswith(':'):
+        if person.get('cohort') == 'background' or pid in flows.dwelling or motion.edge_id.startswith(':'):
             continue
         stage = tuple(runtime.adapter.current_person_stage(pid).edges)
         if stage.count(motion.edge_id) != 1:

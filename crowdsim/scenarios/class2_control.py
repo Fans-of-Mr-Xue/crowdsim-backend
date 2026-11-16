@@ -73,7 +73,7 @@ class Class2Control:
         eligible = set()
         for pid, motion in runtime.current.persons.items():
             person = self.flows.people[pid]
-            spans = self.origins[person['flow_id']].get(motion.edge_id, ())
+            spans = self.origins.get(person['flow_id'], {}).get(motion.edge_id, ())
             margin = self.flows.tolerance
             if (pid not in self.flows.dwelling and pid not in self.flows.retention_pending
                     and motion.stage_type == tc.STAGE_WALKING

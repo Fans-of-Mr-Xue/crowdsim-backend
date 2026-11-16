@@ -8,6 +8,7 @@ import hashlib
 import json
 import math
 import os
+import time
 from pathlib import Path
 from typing import Any, Iterable, Optional
 import uuid
@@ -223,6 +224,7 @@ class SimulationRuntime:
         self.requirement_record: dict | None = None
         self._hotspot_activity = None
         self.class2_flows = None
+        self.class2_local_pedestrians = None
         self._hotspot_exit_applied: set[str] = set()
         self.requirement_id: str | None = None
         self.during_preset = json.loads(json.dumps(during_preset)) if during_preset else None
@@ -360,7 +362,7 @@ class SimulationRuntime:
                 self.population.prepare_demand(
                     self.prepared_demand_path,
                     None if self.generated_demand_spec is not None else self.demand_count,
-                    **({'flow_speeds': self.class2_flows.speeds} if self.class2_flows is not None else {}),
+                    **({'flow_speeds': self.class2_flows.speeds, 'profile_groups': {pid: p.get('cohort', 'activity') for pid, p in self.class2_flows.people.items()} if self.class2_flows.background_ids else None} if self.class2_flows is not None else {}),
                 )
             if self.prepared_demand_path is not None:
                 # Replay and specialised experiments may already provide a complete
@@ -385,6 +387,12 @@ class SimulationRuntime:
                 self.plan_executor.register_profile(self.population.profile_for(person_id))
             if self.class2_flows is not None:
                 self.current = self.class2_flows.bind(self)
+                # Presence (including zero) is the existing automated-class-two
+                # protocol marker; legacy class two omits background_count.
+                binding = (self.requirement_record or {}).get('requirement', {}).get('class2_demo', {})
+                if 'background_count' in binding:
+                    from crowdsim.scenarios.class2_local_pedestrian import LocalPedestrianController, LocalPedestrianModel
+                    self.class2_local_pedestrians = LocalPedestrianController(self, LocalPedestrianModel())
             self._update_hotspot_activity(self.current)
             self.metrics_collector = MetricsCollector(
                 self.network,
@@ -406,8 +414,9 @@ class SimulationRuntime:
             if demand_source is not None:
                 self.recorder.archive_demand(demand_source)
             self.recorder.update_manifest(
-                mode="llm" if self.use_llm else "rule",
-                model_id=self.decision_engine.model if self.use_llm else None,
+                mode="llm" if self.use_llm or self.class2_local_pedestrians is not None else "rule",
+                model_id=(self.class2_local_pedestrians.model.model if self.class2_local_pedestrians is not None
+                          else self.decision_engine.model if self.use_llm else None),
                 step_length=self.step_length,
                 profile_seed=self.population.profile_sampler.seed,
                 crowd_visual_state=self.visual_policy.metadata(),
@@ -504,7 +513,20 @@ class SimulationRuntime:
         if self.state != RuntimeState.RUNNING:
             raise RuntimeError(f"tick is invalid in state {self.state.value}")
         try:
+            local = self.class2_local_pedestrians
+            if local is not None:
+                local.before_tick()
             due = self._prepare_boundary()
+            if local is not None:
+                with self.performance.measure('class2_local_llm'):
+                    started = time.perf_counter()
+                    records = await local.decide_round()
+                    local.last_round_seconds = time.perf_counter() - started if records else 0.0
+                    if records and self.recorder is not None:
+                        self.recorder.record_command({'action': 'class2_local_llm_round'}, {
+                            'timeSeconds': self.time_seconds, 'wallSeconds': local.last_round_seconds,
+                            'decisions': [{key: row[key] for key in ('person_id', 'decision', 'fallback_error', 'model_seconds', 'execution')} for row in records],
+                        })
             with self.performance.measure('decision_resolve'):
                 plans = await self.decision_scheduler.resolve(due, self.population.profiles, self.population.states, self.observations, use_llm=self.use_llm, candidates=self.decision_candidates)
             if self.state != RuntimeState.RUNNING:
@@ -1784,6 +1806,12 @@ class SimulationRuntime:
                if getattr(self.generated_demand_spec, 'is_class2_demo', False) and self.requirement_record else {}),
             **({'class2_artificial_society': self.class2_artificial_society}
                if getattr(self, 'class2_artificial_society', None) and getattr(self.generated_demand_spec, 'is_class2_demo', False) else {}),
+            **({'class2_local_llm': {'enabled': True, 'model': self.class2_local_pedestrians.model.model,
+                                    'period_seconds': self.class2_local_pedestrians.period_seconds,
+                                    'concurrency': self.class2_local_pedestrians.concurrency,
+                                    'timeout_seconds': self.class2_local_pedestrians.model.timeout_seconds,
+                                    'controlled_count': len(self.class2_local_pedestrians.ids)}}
+               if self.class2_local_pedestrians is not None else {}),
             **({"hotspot_activity": dict(self._hotspot_activity)} if self._hotspot_activity else {}),
         }
 

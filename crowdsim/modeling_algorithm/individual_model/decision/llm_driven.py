@@ -24,7 +24,8 @@ class LLMDrivenDecisionModel:
 
     method_name = METHOD_NAME
 
-    def __init__(self, *, timeout_seconds: float | None = None) -> None:
+    def __init__(self, *, timeout_seconds: float | None = None, trust_env: bool = True) -> None:
+        self.trust_env = trust_env
         self.base_url = os.environ.get("CROWDSIM_LLM_BASE_URL", "http://127.0.0.1:8800/v1").rstrip("/")
         self.model = os.environ.get("CROWDSIM_LLM_MODEL", "GLM-5.3-Flash")
         self.api_key = os.environ.get("CROWDSIM_MODEL_API_KEY", "")
@@ -86,7 +87,7 @@ class LLMDrivenDecisionModel:
             "response_format": {"type": "json_object"},
             **self.extra_body,
         }
-        async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
+        async with httpx.AsyncClient(timeout=self.timeout_seconds, trust_env=self.trust_env) as client:
             response = await client.post(f"{self.base_url}/chat/completions", headers=headers, json=payload)
         response.raise_for_status()
         content = response.json()["choices"][0]["message"]["content"]

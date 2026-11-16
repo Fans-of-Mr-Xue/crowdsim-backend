@@ -276,8 +276,9 @@ class MemorialMapTool:
                         if any(math.dist(p, center) > 45 for p in points):
                             raise ValueError(f"{flow['name']}：{kind}布置延伸超过45米，请提高密度、减少人数或调整位置。")
                         intent = intents.get((flow['id'], kind))
-                        if intent and any(not _in_region(p, intent) for p in points):
-                            raise ValueError(f"{flow['name']}：布置范围超出所描述方位，请选择更合适的候选点或调整人数／密度。")
+                        # 方位描述约束起终点锚点，不要求整股人流的分布都位于该方位内。
+                        if intent and not _in_region(center, intent):
+                            raise ValueError(f"{flow['name']}：起终点标记超出所描述方位，请重新选择候选点。")
                     checks.append({'flowId': flow['id'], 'name': flow['name'], 'count': flow['count'],
                         'density': flow['density'], 'speed': flow['speed'], 'requiredAreaM2': flow['count']/flow['density'],
                         'originLabel': intents.get((flow['id'],'origin'),{}).get('label','已有起点'),

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import random
 from statistics import mean
 from pathlib import Path
 
@@ -11,6 +12,7 @@ from traci.exceptions import TraCIException
 
 from crowdsim.infrastructure.sumo_adapter import UNKNOWN_PERSON_STAGE
 from .class2_control import Class2Control
+from .class2_background import DWELL_SECONDS, BackgroundTripPlanner
 
 
 class Class2FlowController:
@@ -21,6 +23,10 @@ class Class2FlowController:
         self.layout = json.loads(Path(layout_file).read_text())
         self.people = {p['person_id']: p for p in self.layout['positions']}
         self.speeds = {pid: p['speed'] for pid, p in self.people.items()}
+        self.background_ids = {pid for pid, p in self.people.items() if p.get('cohort') == 'background'}
+        self.background_rng = random.Random(self.layout.get('seed', 0))
+        self.background_departures = {}
+        self.background_planner = None
         self.dwelling = set()
         self.retention_pending = {}
         self.unknown_stages = set()
@@ -42,6 +48,8 @@ class Class2FlowController:
     def bind(self, runtime):
         if set(runtime.current.persons) != set(self.people):
             raise RuntimeError('第二类初始化行人与冻结人流配置不一致')
+        if self.background_ids:
+            self.background_planner = BackgroundTripPlanner(runtime.route_provider.position_router)
         runtime.plan_executor.base_limits.update(self.speeds)
         self.update(runtime, runtime.current)
         for pid, motion in runtime.current.persons.items():
@@ -63,6 +71,8 @@ class Class2FlowController:
         if self.write_speed(runtime, motion, 0.0, operation='destination_hold') or self.confirmed_speeds[pid] == 0:
             self.retention_pending.pop(pid, None)
             self.dwelling.add(pid)
+            if pid in self.background_ids:
+                self.background_departures.setdefault(pid, motion.time_seconds + DWELL_SECONDS)
             runtime.population.states[pid].activity_state = 'class2_dwelling'
         else:
             self.retention_pending.setdefault(pid, 0)
@@ -135,7 +145,44 @@ class Class2FlowController:
             limit = min(limit, max(0, (distance-self.margin)/runtime.step_length))
         return limit
 
+    def _resume_background(self, runtime, pid, motion):
+        target, route = self.background_planner.next_trip(self.background_rng,
+                                  {'edge': motion.edge_id, 'position': motion.lane_position})
+        length = runtime.network.edges[target['edge']].getLength()
+        guard = .001 if target['position'] > length / 2 else length - .001
+        adapter = runtime.adapter
+        original = adapter.remaining_person_stages(pid)
+        try:
+            adapter.remove_future_person_stages(pid)
+            adapter.anchor_current_person_stage(pid)
+            adapter.replace_current_person_stage(pid, Stage(
+                type=tc.STAGE_WALKING, edges=list(route.edges),
+                departPos=motion.lane_position, arrivalPos=target['position']))
+            adapter.append_walking_stage(pid, [target['edge']], guard)
+            adapter.append_waiting_stage(pid, runtime.timeline_end_seconds + 2, 'class2_background_guard')
+        except Exception:
+            # Match the existing itinerary replacement rollback: never leave a
+            # partial trip that could remove an identified pedestrian.
+            adapter.remove_future_person_stages(pid)
+            adapter.anchor_current_person_stage(pid)
+            original[0].departPos = motion.lane_position
+            if motion.edge_id in original[0].edges:
+                original[0].edges = list(original[0].edges[original[0].edges.index(motion.edge_id):])
+            adapter.replace_current_person_stage(pid, original[0])
+            for stage in original[1:]:
+                adapter.append_person_stage(pid, stage)
+            raise
+        self.people[pid]['destination'] = target
+        self.people[pid]['route'] = list(route.edges)
+        self.dwelling.remove(pid)
+        self.background_departures.pop(pid)
+        runtime.plan_executor.release_activity_hold(pid)
+        runtime.population.states[pid].activity_state = 'walking'
+
     def before_step(self, runtime):
+        for pid, departure in list(self.background_departures.items()):
+            if runtime.time_seconds >= departure and pid not in self.unknown_stages:
+                self._resume_background(runtime, pid, runtime.current.persons[pid])
         for pid, motion in runtime.current.persons.items():
             limit = self.speed_for(runtime, motion)
             previous_limit, attempts = self.speed_retries.get(pid, (None, 0))
