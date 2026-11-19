@@ -49,7 +49,8 @@ def activity_records(task, portrait, news=()):
                             location='用户设置的本场地到访情景', reported_attendance=activity['attendance'],
                             fact=activity['note'], model_use='按参与人数、场地到访份额与新增比例换算到达需求',
                             time_matches=True, applicability='用户设置 · 数值依据见说明', counted=False))
-    used = {a['source_id'] for a in configured if a['enabled']}
+    decisions = {row['activity_id']: row for row in portrait.get('demand', {}).get('activity_decisions', [])}
+    used = {a['source_id'] for a in configured if decisions.get(a['id'], {}).get('included')}
     for row in records:
         row['counted'] = row['source_id'] in used
     return {'records': records, 'configured_count': len(used), 'note': '报道人数先换算为到访本场地的新增需求；重复报道或已含在基准中的人群不重复计入。'}
@@ -99,7 +100,7 @@ def occupancy_estimate(task, demand, settings):
 
 def model_inputs(task, portrait, roads=None):
     settings, demand = portrait['scene']['settings'], portrait['demand']
-    activity_count = len([a for a in (portrait.get('demand_inputs') or {}).get('activities', []) if a['enabled']])
+    activity_count = demand.get('activity_count', 0)
     exits = settings.get('exit_points', {})
     shares = settings.get('entrance_shares', [])
     records = [
@@ -122,6 +123,13 @@ def model_inputs(task, portrait, roads=None):
         dict(id='availability', name='开放时段与外部条件', value='实时路况 + 历史公告', basis='高德当前路况、往年亮灯与地铁公告', status='待核对本次安排',
              assumption='历史启闭时刻未确认适用于本次，暂不自动封路或修改研究时间。', output='活动阶段、时段约束的待确认项', target=None, evidence_ids=['amap_traffic','lighting_nye_2025','metro_nye_2025'], edit='clues'),
     ]
+    counts = demand.get('gate_counts')
+    if counts:
+        records[0].update(basis=counts['source'], status=counts['kind'], evidence_ids=[],
+                          assumption='已覆盖各入口全部到访，活动人数不另加。')
+        if counts['entered']:
+            records[3].update(value=' / '.join(f'{g} {n/counts["entered"]:.0%}' for g,n in counts['by_gate'].items()),
+                              basis=counts['source'], status='全时段进入人数占比', evidence_ids=[])
     valid = {e['id'] for e in portrait.get('evidence', [])}
     for record in records:
         record['evidence_ids'] = [eid for eid in record['evidence_ids'] if eid in valid]

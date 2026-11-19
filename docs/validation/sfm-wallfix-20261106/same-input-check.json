@@ -1,0 +1,12 @@
+{
+  "task_revision_equal": true,
+  "settings_equal": true,
+  "domain_provenance_equal": true,
+  "road_snapshot_equal": true,
+  "time_window_equal": true,
+  "selected_model_set_equal": true,
+  "all_three_complete": true,
+  "micro_initial_positions_identical": true,
+  "conservation_series_unchanged": true,
+  "collision_free_speed_series_unchanged": true
+}

@@ -1,0 +1,14 @@
+{
+  "old_run_id": "63b823f3fe474c0f8c5aac245ad4a8d2",
+  "new_run_id": "809a5e35d4494155887342f73fd515e2",
+  "task_id": "b86bf8f67a024911845f34b338b82499",
+  "task_revision": 2,
+  "settings_equal": true,
+  "domain_provenance_equal": true,
+  "methods_equal": true,
+  "road_snapshot_id_equal": true,
+  "initial_crowd": 900,
+  "new_arrivals": 1800,
+  "duration_minutes": 30,
+  "native_patch": "1.4.2+crowdsim.wallfix1"
+}

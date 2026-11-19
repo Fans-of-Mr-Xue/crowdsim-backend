@@ -15,8 +15,9 @@ def input_key(task, settings, methods, road_id):
     catalog = {item['id']: item for item in method_catalog(task, include_legacy=True)}
     versions = [(method, catalog[method]['version'], catalog[method]['formula_hash']) if catalog[method].get('custom') else (method, catalog[method]['version']) for method in methods]
     payload = {'task_id': task['id'], 'revision': task['revision'], 'settings': settings,
+               'input_provenance': task.get('components', {}).get('forecast_input_provenance'),
                'methods': sorted(versions),
-               'road_id': road_id, 'solver_version': '3.2.1-full-window-stable-force', 'runtime_budget': runtime_budget()}
+               'road_id': road_id, 'solver_version': '3.3.0-sfm-contact-integration', 'runtime_budget': runtime_budget()}
     return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
 
 
@@ -42,6 +43,7 @@ class PreAssessmentRepository:
     def create(self, task, settings, methods, owner, key, road_source):
         doc = {'_id': uuid4().hex, 'task_id': task['id'], 'task_revision': task['revision'],
                'task_title': task['title'], 'methods': methods, 'settings': settings,
+               'input_provenance': task.get('components', {}).get('forecast_input_provenance'),
                'input_key': key, 'road_source': road_source, 'method_definitions': [item for item in method_catalog(task, include_legacy=True) if item['id'] in methods],
                'status': 'queued', 'owner': owner, 'created_at': now(), 'updated_at': now(), 'lease_expires_at': lease_expiry()}
         self.collection.insert_one(doc)
@@ -53,10 +55,14 @@ class PreAssessmentRepository:
         doc = self.collection.find_one({'_id': identifier})
         return self.public(doc) if doc else None
 
-    def latest(self, task_id, revision=None, *, prefer_completed=False):
+    def latest(self, task_id, revision=None, *, prefer_completed=False, prefer_recent=False):
         query = {'task_id': task_id}
         if revision is not None:
             query['task_revision'] = revision
+        if prefer_recent:
+            # A newer failed attempt must not disappear behind an older success.
+            doc = self.collection.find_one(query, sort=[('created_at', -1)])
+            return self.get(doc['_id']) if doc else None
         # Task edits create a revision, not a new task. Keep completed experiments
         # discoverable without relabelling their immutable task/road snapshots.
         # Results pages show a completed run while the console follows active work.

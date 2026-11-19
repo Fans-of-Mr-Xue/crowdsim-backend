@@ -37,6 +37,10 @@ class MicroscopicSolver:
         if jps.__version__ != '1.4.2':
             raise ValueError('本版适配 JuPedSim 1.4.2，请安装该版本以保证结果可复现。')
         self.jps = jps
+        self.engine_fix = {}
+        if method == 'social_force':
+            from .sfm_engine import verified_sfm_engine
+            self.engine_fix = verified_sfm_engine()
         model = jps.CollisionFreeSpeedModel() if method == 'collision_free_speed' else jps.SocialForceModel()
         self.sim = jps.Simulation(model=model, geometry=network['walkable_geometry'], dt=self.dt)
         self.rng = np.random.default_rng(settings['seed'])
@@ -304,7 +308,10 @@ class MicroscopicSolver:
                 if progress and step % 100 == 0:
                     progress({'minute': round(step * self.dt / 60, 2), 'duration_minutes': self.duration,
                               'active_agents': len(self.people), 'wall_seconds': round(time.monotonic() - self.started, 1)})
-                self.step(step * self.dt)
+                try:
+                    self.step(step * self.dt)
+                except RuntimeError as exc:
+                    raise RuntimeError(f'在研究第 {step * self.dt / 60:.2f}/{self.duration:g} 分钟计算失败：{exc}') from exc
                 step += 1
             self.snapshot(minute)
         peak = max(self.snapshots, key=lambda row: row['max_density_p_m2'])
@@ -316,6 +323,7 @@ class MicroscopicSolver:
                 'max_outside_queue': max(row['outside_queue'] for row in self.snapshots), 'warning_at': warning['timestamp'] if warning else None,
                 'departed': self.departed, 'remaining_crowd': tail['crowd'], 'mean_queue_wait_minutes': round(self.wait_integral / max(1, self.requested) / 60, 3), 'mass_balance_error': 0},
             'diagnostics': {'engine': 'JuPedSim', 'engine_version': self.jps.__version__, 'operational_model': type(self.sim.agent(next(iter(self.people))).model).__name__ if self.people else self.method,
+                **self.engine_fix,
                 'step_seconds': self.dt, 'cell_count': self.n, 'seed': self.s['seed'], 'population_representation': 'integer_agents',
                 'wall_seconds': round(time.monotonic() - self.started, 3), 'actual_agent_steps': self.agent_steps,
                 'peak_active_agents': self.peak_active, 'saved_positions': self.saved_positions, 'complete_time_window': True,

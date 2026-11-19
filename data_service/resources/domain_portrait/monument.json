@@ -7,6 +7,34 @@
   },
   "evidence": [
     {
+      "id": "bund_nye_2023_peak",
+      "title": "2023 跨年夜 · 外滩客流峰值",
+      "date": "2023-12-31 至 2024-01-01",
+      "content": "23:55 瞬时峰值约 6.5 万人。截至次日 00:05 累计约 52.8 万人次。",
+      "source": "澎湃新闻现场报道，引自黄浦警方",
+      "url": "https://www.thepaper.cn/newsDetail_forward_25864495",
+      "kind": "往年跨年通报",
+      "scope": "外滩滨水区",
+      "applicability": "用于对照同类夜晚的区域规模和时刻。纪念塔局部到达率须另有入口计数。",
+      "dimensions": [
+        "demand"
+      ]
+    },
+    {
+      "id": "bund_nye_2025_evening",
+      "title": "2025 跨年夜 · 外滩 18 时客流",
+      "date": "2025-12-31 18:00",
+      "content": "18 时瞬时客流约 2.5 万人，截至当时累计约 18.2 万人次。",
+      "source": "黄浦区新闻中心，资料来自黄浦公安分局",
+      "url": "https://m.thepaper.cn/newsDetail_forward_32294702",
+      "kind": "往年跨年通报",
+      "scope": "外滩滨水区",
+      "applicability": "用于对照同类夜晚的区域规模和时刻。纪念塔局部到达率须另有入口计数。",
+      "dimensions": [
+        "demand"
+      ]
+    },
+    {
       "id": "official_monument",
       "title": "纪念塔的官方地点与功能介绍",
       "kind": "官方资料",

@@ -1,0 +1,4 @@
+﻿model_id,model,version,status,sample_count,duration_minutes,initial_crowd,new_arrivals,final_crowd,final_outside_queue,departed,peak_crowd,peak_density_p_m2,mass_balance_max_error,saved_positions_checked,outside_positions
+social_force,社会力模型 SFM,1.2.0,completed,31,30.0,900,1800,2315,0,385,2315,8.2359,0,47754,0
+conservation,分区流量守恒,1.1.0,completed,31,30.0,900.0,1800.0,2220.25,183.26,296.49,2220.25,6.0,0.01,0,0
+collision_free_speed,CFS 无碰撞速度模型,1.1.0,completed,31,30.0,900,1800,1833,572,295,1833,7.3376,0,43827,0

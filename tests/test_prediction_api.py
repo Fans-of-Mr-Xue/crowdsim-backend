@@ -101,6 +101,19 @@ class PredictionLookupTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((await self.latest(prefer='completed'))['id'], 'saved-v1')
         self.assertEqual((await self.latest(scope='current'))['id'], 'failed-v2')
 
+    async def test_recent_lookup_keeps_new_failure_visible_after_reload(self):
+        self.add_run('failed-v2', 2, 'failed', '2026-10-22T11:00:00+00:00',
+                     method_errors=[{'method': {'id': 'social_force'}, 'message': '越界'}])
+        self.add_run('unrelated', 1, 'completed', '2026-10-22T12:00:00+00:00', task_id='other')
+        latest = await self.latest(prefer='recent')
+        self.assertEqual(latest['id'], 'failed-v2')
+        self.assertEqual(latest['method_errors'][0]['message'], '越界')
+        self.add_run('retry', 2, 'running', '2026-10-22T13:00:00+00:00',
+                     lease_expires_at='2000-01-01T00:00:00+00:00')
+        latest = await self.latest(prefer='recent')
+        self.assertEqual(latest['id'], 'retry')
+        self.assertEqual(latest['status'], 'failed')
+
     async def test_no_completed_result_resumes_active_run_and_expired_leases_are_not_polled(self):
         self.db.pre_assessment_runs.delete_one({'_id': 'saved-v1'})
         self.assertIsNone(await self.latest(prefer='completed'))

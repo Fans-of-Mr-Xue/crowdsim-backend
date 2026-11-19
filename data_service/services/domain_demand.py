@@ -11,6 +11,8 @@ import math
 from datetime import datetime, timedelta
 from urllib.parse import urlparse
 
+from .gate_counts import from_counts
+from .activity_evidence import resolve_activity
 from ..prediction.inputs import default_settings, task_times
 
 VERSION = 'historical-transport-weather-v1'
@@ -132,9 +134,21 @@ def validate(task, value):
     activities = value.get('activities', [])
     if not isinstance(activities, list) or len(activities) > 30:
         raise ValueError('活动设置最多 30 项')
+    value = copy.deepcopy(value)
+    activities = value.get('activities', [])
     used_ids, used_sources = set(), set()
     for activity in activities:
-        _keys(activity, ['id','source_id','source_label','source_url','title','start','end','attendance','visit_share','additional_share','note','enabled'], '活动设置')
+        _keys(activity, ['id','source_id','source_label','source_url','title','start','end','attendance','visit_share','additional_share','note','enabled'] + [k for k in ('assume_if_pending', 'timing') if k in activity], '活动设置')
+        if 'assume_if_pending' in activity and type(activity['assume_if_pending']) is not bool:
+            raise ValueError('待核对活动须明确是否作为情景假设')
+        if 'timing' in activity:
+            timing = activity['timing']
+            _keys(timing, ['event_at', 'lead_minutes', 'lag_minutes'], '活动时间')
+            _number(timing['lead_minutes'], 0, 1440, '提前抵达分钟')
+            _number(timing['lag_minutes'], 0, 1440, '延后抵达分钟')
+            event = datetime.fromisoformat(timing['event_at'])
+            activity['start'] = (event - timedelta(minutes=timing['lead_minutes'])).isoformat()
+            activity['end'] = (event + timedelta(minutes=timing['lag_minutes'])).isoformat()
         for field in ['id','source_id','source_label','title','note']:
             _text(activity[field], '活动 ' + field)
         url = activity['source_url']
@@ -155,7 +169,7 @@ def validate(task, value):
         _number(activity['attendance'], 0, 10000000, '活动参与人数')
         _number(activity['visit_share'], 0, 1, '到访本场地比例')
         _number(activity['additional_share'], 0, 1, '未含在基准中的新增比例')
-    return copy.deepcopy(value)
+    return value
 
 
 def estimate(task, config):
@@ -204,7 +218,15 @@ def estimate(task, config):
 
 
 def _activity_arrivals(task, config, result):
-    enabled = [row for row in config.get('activities', []) if row['enabled']]
+    activities = config.get('activities', [])
+    evidence = task.get('components', {}).get('domain_portrait', {}).get('evidence', [])
+    decisions = [resolve_activity(row, evidence, config['scope']) for row in activities]
+    enabled = [row for row, decision in zip(activities, decisions) if decision['included']]
+    result['activity_decisions'] = decisions
+    fingerprint_inputs = {'inputs': config}
+    if any(row['notices'] for row in decisions):
+        fingerprint_inputs['activity_decisions'] = decisions
+        result['fingerprint'] = digest({'method': result['method'], **fingerprint_inputs})
     result['activity_delta'] = 0
     result['activity_count'] = len(enabled)
     result['baseline_visits'] = result['total_visits']
@@ -231,7 +253,7 @@ def _activity_arrivals(task, config, result):
         bins.append({**base, 'start':(start+timedelta(minutes=lo)).isoformat(), 'end':(start+timedelta(minutes=hi)).isoformat(),
                      'minute':lo, 'minutes':hi-lo, 'visits':rate*(hi-lo), 'rate':rate, 'activity_visits':extra*(hi-lo)*scale})
     method = result['method'] + '+activity-arrivals-v1'
-    return {**result, 'method':method, 'fingerprint':digest({'method':method,'inputs':config}),
+    return {**result, 'method':method, 'fingerprint':digest({'method':method, **fingerprint_inputs}),
             'bins':bins, 'total_visits':total, 'activity_delta':total-result['baseline_visits'],
             'forecast_inputs':{'arrival_rate_per_minute':total/duration, 'arrival_interpolation':'step',
                                'arrival_schedule':[{'minute':b['minute'],'rate':b['rate']} for b in bins]},
@@ -258,19 +280,32 @@ def _previous_estimate(task, config):
     return result
 
 
+def gate_scope(task):
+    return {**scope(task), 'exit_points': default_settings(task)['exit_points']}
+
+
+def effective_estimate(task, portrait):
+    if portrait.get('gate_counts') is not None:
+        dataset = portrait['gate_counts']
+        result = from_counts(task, dataset, gate_scope(task))
+        result['fingerprint'] = digest({'method': result['method'], 'inputs': dataset})
+        return result
+    return estimate(task, portrait['demand_inputs'])
+
+
 def project(task, portrait):
     config = portrait.get('demand_inputs')
-    if not config:
+    if not config and portrait.get('gate_counts') is None:
         return {'status': 'empty', 'can_initialize': bool(portrait.get('visualizations', {}).get('history', {}).get('records'))}
     try:
-        result = estimate(task, config)
+        result = effective_estimate(task, portrait)
     except (ValueError, TypeError, KeyError) as exc:
         try:
             current_scope = scope(task)
         except (ValueError, TypeError, KeyError):
             current_scope = None
         stale = {'status': 'stale', 'message': str(exc), 'current_scope': current_scope}
-        if current_scope and config.get('scope') != current_scope:
+        if current_scope and config and portrait.get('gate_counts') is None and config.get('scope') != current_scope:
             try:
                 stale['previous_estimate'] = _previous_estimate(task, config)
             except (ValueError, TypeError, KeyError):
@@ -281,6 +316,8 @@ def project(task, portrait):
     result['applied'] = applied.get('fingerprint') == result['fingerprint'] and all(settings.get(k) == v for k, v in result['forecast_inputs'].items())
     result['applied_task_revision'] = applied.get('task_revision') if result['applied'] else None
     result['initial_crowd'] = settings['initial_crowd']
+    if result.get('gate_counts'):
+        return result
     result['relations'] = [
         {'id': 'history', 'from': '历史客流', 'to': '到访规模', 'label': '确定规模参考', 'status': '历史资料 + 换算假设',
          'evidence_ids': [config['history']['evidence_id']], 'point_ids': [],
