@@ -6,6 +6,8 @@ from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 import hashlib
 import json
+import gzip
+from bson import BSON, ObjectId
 import os
 from threading import RLock
 from uuid import uuid4
@@ -87,13 +89,28 @@ class MongoRepository:
         timestamp = now()
         document = {"id": item_id, "ownerId": user, "workspaceId": workspace,
                     "createdAt": timestamp, "updatedAt": timestamp, **deepcopy(payload)}
-        self._collection(kind).insert_one(document)
+        if kind == 'experiments':
+            self.name_experiment(document)
+        uploaded = None
+        if kind == 'datasets' and (len(document.get('observations', [])) > 50000 or len(BSON.encode(document)) > 8 * 1024 * 1024):
+            encoded = gzip.compress(json.dumps(document.pop('observations'), ensure_ascii=False,
+                                                allow_nan=False, separators=(',', ':')).encode('utf-8'))
+            uploaded = self.files.upload_from_stream('observations.json.gz', encoded,
+                metadata={'ownerId': user, 'workspaceId': workspace, 'datasetId': item_id, 'kind': 'dataset_observations'})
+            document['observationStorage'] = {'fileId': str(uploaded), 'sha256': hashlib.sha256(encoded).hexdigest(),
+                                               'count': payload['observationCount'], 'compression': 'gzip'}
+        try:
+            self._collection(kind).insert_one(document)
+        except Exception:
+            if uploaded is not None:
+                self.files.delete(uploaded)
+            raise
         document.pop("_id", None)
         return deepcopy(document)
 
     def begin_archive(self, run_id, experiment_type, user, workspace, configuration):
         """Mongo has no child tables: a catalog points to three per-run collections."""
-        allowed = {"simulation", "experiment", "observation", "intervention", "mechanism", "baseline"}
+        allowed = {"simulation", "experiment", "observation", "intervention", "mechanism", "baseline", "counterfactual"}
         if experiment_type not in allowed:
             raise ValueError("Unknown post experiment type")
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
@@ -122,6 +139,10 @@ class MongoRepository:
     def append_trajectory(self, archive, sequence, frames):
         self.db[archive["collections"]["trajectory"]].insert_one(
             {"runId": archive["runId"], "sequence": sequence, **encode_trajectory(frames)})
+
+    def append_observations(self, archive, sequence, observations):
+        self.db[archive['collections']['detail']].insert_one(
+            {'runId': archive['runId'], 'sequence': sequence + 2, 'observationChunk': observations})
 
     def archive_execution_inputs(self, archive, manifest_bytes, route_bytes, command):
         stored = []
@@ -197,6 +218,45 @@ class MongoRepository:
         if document.get("ownerId") != user or document.get("workspaceId") != workspace:
             raise ApiError("RESOURCE_FORBIDDEN", "当前工作区无权访问此资源", 403)
         document.pop("_id", None)
+        if kind == 'datasets' and document.get('observationStorage'):
+            reference = document['observationStorage']
+            with self.files.open_download_stream(ObjectId(reference['fileId'])) as stream:
+                metadata = stream.metadata or {}
+                if any(metadata.get(key) != value for key, value in
+                       (('ownerId', user), ('workspaceId', workspace), ('datasetId', item_id))):
+                    raise ApiError('DATASET_STORAGE_INVALID', '空间目标文件与工作区绑定不一致', 422)
+                encoded = stream.read(64 * 1024 * 1024 + 1)
+            if len(encoded) > 64 * 1024 * 1024 or hashlib.sha256(encoded).hexdigest() != reference['sha256']:
+                raise ApiError('DATASET_STORAGE_INVALID', '空间目标文件校验失败', 422)
+            import io
+            with gzip.GzipFile(fileobj=io.BytesIO(encoded)) as stream:
+                decoded = stream.read(256 * 1024 * 1024 + 1)
+            if len(decoded) > 256 * 1024 * 1024:
+                raise ApiError('DATASET_STORAGE_INVALID', '空间目标文件超过解压上限', 422)
+            document['observations'] = json.loads(decoded)
+            if len(document['observations']) != reference['count']:
+                raise ApiError('DATASET_STORAGE_INVALID', '空间目标文件记录不完整', 422)
+        if kind == 'experiments':
+            self.name_experiment(document)
+        return document
+
+    def name_experiment(self, document, dataset=None):
+        """Render old and new batches with the same local, minute-level name."""
+        try:
+            stamp = datetime.fromisoformat(document['createdAt'].replace('Z', '+00:00'))
+            stamp = stamp.replace(tzinfo=stamp.tzinfo or timezone.utc).astimezone(timezone(timedelta(hours=8)))
+            date = stamp.strftime('%Y年%m月%d日%H点%M分')
+        except (KeyError, ValueError, TypeError):
+            date = '日期未记录'
+        count = document.get('groupCount', len(document.get('groups', document.get('progress', {}).get('groups', []))))
+        if dataset is None:
+            dataset = self._collection('datasets').find_one(
+                {'id': document.get('datasetId'), 'ownerId': document.get('ownerId'), 'workspaceId': document.get('workspaceId')},
+                {'metadata.sourceBinding': 1, 'originalFile': 1}) or {}
+        binding = dataset.get('metadata', {}).get('sourceBinding', {}) or {}
+        during = binding.get('sourcePhase') == 'during' or binding.get('sourceKind') == 'mongodb_archive'
+        source = '基于事中数据' if during else '基于上传数据' if dataset.get('originalFile') else '数据来源未记录'
+        document['name'] = f'{date}-{count}组反事实-{source}'
         return document
 
     def update(self, kind: str, item_id: str, user: str, workspace: str, changes: dict) -> dict:
@@ -213,8 +273,14 @@ class MongoRepository:
         return updated
 
     def transition_task(self, kind, item_id, user, workspace, expected_status, changes):
+        return self.transition_execution(kind, item_id, user, workspace, expected_status, changes)
+
+    def transition_execution(self, kind, item_id, user, workspace, expected_status, changes, *, execution_attempt=None):
+        query = {'id': item_id, 'ownerId': user, 'workspaceId': workspace, 'status': expected_status}
+        if execution_attempt is not None:
+            query['executionAttemptId'] = execution_attempt
         document = self._collection(kind).find_one_and_update(
-            {"id": item_id, "ownerId": user, "workspaceId": workspace, "status": expected_status},
+            query,
             {"$set": {**deepcopy(changes), "updatedAt": now()}}, return_document=ReturnDocument.AFTER)
         if document is None:
             self.get(kind, item_id, user, workspace)
@@ -226,7 +292,20 @@ class MongoRepository:
         return list(self._collection("runs").find(
             {"experimentId": item_id, "ownerId": user, "workspaceId": workspace},
             {"_id": 0, "timeline": 0, "controlEvents": 0, "calibration.populationResiduals": 0})
-            .sort([("createdAt", 1), ("id", 1)]).limit(650))
+            .sort([("createdAt", 1), ("id", 1)]))
+
+    def completed_runs_for_experiment(self, item_id, user, workspace):
+        return list(self._collection('runs').find(
+            {'experimentId': item_id, 'ownerId': user, 'workspaceId': workspace, 'status': 'completed'},
+            {'_id': 0, 'timeline': 0, 'controlEvents': 0, 'calibration.populationResiduals': 0})
+            .sort([('createdAt', 1), ('id', 1)]))
+
+    def reopen_archive(self, archive):
+        result = self.db['post'].update_one(
+            {'runId': archive['runId'], 'ownerId': archive['ownerId'], 'workspaceId': archive['workspaceId']},
+            {'$set': {'status': 'running', 'updatedAt': now()}})
+        if not result.matched_count:
+            raise ApiError('NOT_FOUND', '原批次归档不存在，未新建重复归档。', 404)
 
     def list(self, kind: str, user: str, workspace: str, *, limit: int = 50) -> list[dict]:
         items = self._collection(kind).find({"ownerId": user, "workspaceId": workspace}) \
@@ -240,8 +319,46 @@ class MongoRepository:
                 item.pop("timeline", None)
                 item.pop("controlEvents", None)
                 item.get("calibration", {}).pop("populationResiduals", None)
+            if kind == 'experiments':
+                self.name_experiment(item)
             result.append(item)
         return result
+
+    def experiment_history(self, user: str, *, limit: int = 100, cursor: str = '') -> dict:
+        """Read this owner's post batches across conversations, without heavy snapshots."""
+        query = {'ownerId': user}
+        if cursor:
+            try:
+                decoded = json.loads(cursor)
+                if not isinstance(decoded, list) or len(decoded) != 2:
+                    raise ValueError()
+                created_at, identity = decoded
+                if not isinstance(created_at, str) or not isinstance(identity, str) or not created_at or not identity:
+                    raise ValueError()
+            except (ValueError, TypeError):
+                raise ApiError('INVALID_QUERY', '任务记录分页游标无效', 400) from None
+            query['$or'] = [{'createdAt': {'$lt': created_at}},
+                            {'createdAt': created_at, 'id': {'$gt': identity}}]
+        fields = {key: 1 for key in ('id', 'name', 'workspaceId', 'conversationId', 'createdAt', 'updatedAt',
+                  'status', 'progress', 'error', 'reviewPlanId', 'datasetId', 'datasetVersion', 'reviewSnapshot.conversationId', 'groups.id', 'ownerId')}
+        fields['_id'] = 0
+        collection = self._collection('experiments')
+        rows = list(collection.find(query, fields).sort([('createdAt', -1), ('id', 1)]).limit(limit + 1))
+        more = len(rows) > limit
+        rows = rows[:limit]
+        datasets = {(item['id'], item['workspaceId']): item for item in self._collection('datasets').find(
+            {'ownerId': user, 'id': {'$in': [row.get('datasetId') for row in rows]}},
+            {'id': 1, 'workspaceId': 1, 'metadata.sourceBinding': 1, 'originalFile': 1})}
+        for row in rows:
+            self.name_experiment(row, datasets.get((row.get('datasetId'), row.get('workspaceId')), {}))
+            row.pop('groups', None)
+            row.pop('ownerId', None)
+            snapshot = row.pop('reviewSnapshot', {})
+            row['conversationId'] = row.get('conversationId') or snapshot.get('conversationId') or (
+                row.get('workspaceId', '')[5:] if row.get('workspaceId', '').startswith('post-') else '')
+        next_cursor = json.dumps([rows[-1]['createdAt'], rows[-1]['id']], separators=(',', ':')) if more else None
+        return {'items': rows, 'nextCursor': next_cursor,
+                'total': collection.count_documents({'ownerId': user})}
 
     def event(self, kind: str, item_id: str, event_type: str, detail: dict | None = None,
               user: str = "", workspace: str = "") -> None:
@@ -301,7 +418,7 @@ class MongoRepository:
             {"status": {"$in": ["queued", "running", "cancelling"]}},
             {"$set": {"status": "interrupted", "updatedAt": now()}})
         self.db[self.COLLECTIONS["experiments"]].update_many(
-            {"status": {"$in": ["queued", "running", "cancelling"]}},
+            {"status": {"$in": ["queued", "running", "cancelling", "pausing", "paused"]}},
             {"$set": {"status": "interrupted", "updatedAt": now()}})
         self.db[self.COLLECTIONS["runs"]].update_many(
             {"status": {"$in": ["queued", "running"]}},

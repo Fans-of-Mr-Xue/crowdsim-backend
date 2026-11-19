@@ -1,16 +1,24 @@
 # 事后 SUMO 执行与分析共同契约
 
-契约标识：`post-execution-analysis/2.0`。核对日期：2026-10-30。本标识用于指引文档，不是 HTTP 响应新增字段。当前采用统一实验池，并兼容历史v1分类型方案。适用于现有纪念塔执行器；其他场景必须另有实际能力声明。
+契约标识：`post-execution-analysis/2.0`。核对日期：2026-11-05。本标识用于指引文档，不是 HTTP 响应新增字段。当前采用统一实验池，并兼容历史v1分类型方案。适用于现有纪念塔执行器；其他场景必须另有实际能力声明。
 
 ## 1. 实现依据和调用边界
+
+### 观测分布重构与动作职责
+
+本次事后目标是重构/校准事实基线，不是精确复现事中原轮。最少来源字段为timeSeconds、regionId（路口/空间单元ID）和population；可选密度、速度等辅助观测。旧场景ID、旧代码commit、旧模型版本、旧种子及原始需求不作为前提。空间对应和微观模型由当前事后环境提供，F-00及本次实验的配置由事后生成、校准并记录。
+
+反事实允许动作及参数范围来自当前后端/api/v1/post/capabilities，不要求也不信任事中数据提供的controlCapabilities。GET /datasets/{id}/reconstruction检查目标覆盖；输入可用不表示拟合已经完成。尚未完成F-00时返回FACTUAL_RECONSTRUCTION_REQUIRED。下文纪念塔19800秒、原合成文件sourceRecords和固定动作属于既有案例执行路径，不能外推为所有事中数据接入的必填条件。
 
 ### 当前需求界定与统一设计 v2
 
 需求界定按“上传数据（含基线核对）→明确用户目的→查看与修改人工社会→反事实方案设计”推进。当前工作台取消总览和内部导航，仅显示正在进行的流程。左侧“方案预览”是只读快照入口。
 
-新方案以 `reviewIntake.schemaVersion=2`、`counterfactualDesign.schemaVersion=2` 和统一 `groups` 数组保存；不要求观察、干预、机制三份设计或三次确认。每组保存 `id/name/hypothesis/method/factorSymbols/primaryMetricId/expectedDirection/decisionRule/execution`；method 为 `paired/ofat/ablation`，是实验方法而不是分析页面归属。记录实验单位、范围、共同控制条件、重复数和种子。参照可为F-00或本池其他完整策略组，禁止循环；实际改变的控制量须全部关联假设。旧版分类型字段及下文白名单只用于兼容历史v1快照。
+新方案以 `reviewIntake.schemaVersion=2`、`counterfactualDesign.schemaVersion=2` 和统一 `groups` 数组保存；不要求观察、干预、机制三份设计或三次确认。每组保存 `id/name/hypothesis/method/factorSymbols/primaryMetricId/expectedDirection/decisionRule/execution`。设计类型与比较方式分开：OFAT限定只改变一个因素，组合策略可改变多个，消融隔离一个模块；三者均使用共同随机种子的配对比较，OFAT与配对比较可以在同一组共同使用。为兼容既有快照，method字段仍为 `paired/ofat/ablation`，其中旧值paired表示组合策略设计，不代表只有该类型才配对，也不是分析页面归属。记录实验单位、范围、共同控制条件、重复数和种子。参照可为F-00或本池其他完整策略组，禁止循环；实际改变的控制量须全部关联假设。旧版分类型字段及下文白名单只用于兼容历史v1快照。
 
-`design` 对话在 `context.designSchemaVersion=2` 时，仅返回 `assistant_message`、可选完整 `groups` 与 `repeat_count`；后端校验全部变量、参照、方法及数值一致性。人工社会修改保存到 `artificialSociety.overrides`，作为共同配置进入快照。当前SUMO尚未实现任意主体/环境/规则的文本改写，因此非空修改在执行模板阶段以 `SOCIETY_MAPPING_REQUIRED` 阻止运行，不能静默忽略。
+`design` 对话在 `context.designSchemaVersion=2` 时返回字符串 `assistant_message` 和 `action=answer/update_design`；更新可使用按ID增量合并/追加的 `group_updates`，或完整替换的 `groups`，二者互斥，另可返回 `repeat_count`。后端校验全部变量、参照、方法及配置一致性。人工社会修改保存到 `artificialSociety.overrides`，作为共同配置进入快照。当前SUMO尚未实现任意主体/环境/规则的文本改写，因此非空修改在执行条件检查中以 `SOCIETY_MAPPING_REQUIRED` 标记未就绪，实际提交仍拒绝运行，不能静默忽略。
+
+科学设计不以工程执行映射就绪为前提。未映射组使用 `planningOnly=true` 和 `changeDescription` 说明措施/水平；execution保留参照，三个数值控制量必须为null，不套用纪念塔参数。可以新增、保存、预览假设，但不得编译运行。单因素/消融仍只关联一个实际改变的因素，并校验参照存在及无循环。旧工程数值可单独保留为待核对历史草案。`GET /review-plans/{id}/execution` 对未映射返回HTTP200、execution=null及结构化readiness缺项，不把预期的场景未就绪当成数据服务故障。
 
 新执行组统一为 `experimentType=counterfactual`。分析器从全部组及实际控制变化筛选：观察比较全部组；干预取单变量或零差异配对；机制取已声明消融方法且实际只改变一个遵从/延迟模块、具有完整策略参照的组。一个组可被多段分析复用。PC仍仅使用独立F-00样本，不按实验组数量扩充样本。三段分析页面本轮不变。全局终点、模型有效性和真实事件链等能力限制继续适用。
 
@@ -103,6 +111,6 @@ PC 只使用成功的独立 F-00 种子，每次完整运行形成一行；至�
 
 数据集、快照、任务、runs、results 位于 `postanalysis_*`；`post` 索引连接每次运行的明细/轨迹/结果集合。上传原件及编译 manifest/routes 位于 GridFS；轨迹按 sequence 分块，通过 `/runs/{id}/trajectory` 分页；实际事件与校准明细通过 `/runs/{id}` 读取。原始 FCD/tripinfo/日志仍在本机输出目录，未提供统一文件下载 API。报告中分别写明可经 API 取回的证据和仅有文件路径的产物。
 
-读取保留 owner/workspace，按 datasetId/version、reviewPlanVersion、experimentId、planId、sourceGroupId、referenceGroupId、seed、runId、resultId 对齐。结果 API 接受 completed/partial 且有 resultId 的任务；当前真实执行器遇错/取消会停止，尚不产生部分分析封存，也不支持恢复补跑。重启仅标记 interrupted。不得承诺失败批次可自动继续分析、幂等请求能修复全部中间写入或存档已具备完整独立复现能力。
+读取保留 owner/workspace，按 datasetId/version、reviewPlanVersion、experimentId、planId、sourceGroupId、referenceGroupId、seed、runId、resultId 对齐。结果 API 接受 completed/partial 且有 resultId 的任务；当前真实执行器遇错/取消会停止，尚不产生部分分析封存。服务成功绑定监听端口后才将遗留任务标记 interrupted；中断、失败或已取消的实验批次支持用户显式续跑，保留已完成的组/种子记录，使用原批次冻结参数执行剩余运行，未完成单次运行按原种子从头执行。不得承诺单次仿真时间步断点恢复、失败批次可自动继续分析、幂等请求能修复全部中间写入或存档已具备完整独立复现能力。
 
 需要扩展时参照 [SUMO 与后端对接清单](post_sumo_handoff.md)。该清单中的拟新增字段、算法和恢复机制均不属于当前能力。

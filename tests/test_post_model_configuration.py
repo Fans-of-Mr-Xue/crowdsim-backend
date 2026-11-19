@@ -10,7 +10,7 @@ from postanalysis_api.services.application import PostAnalysisApp
 
 
 class PostModelConfigurationTests(unittest.TestCase):
-    def test_agent_defaults_to_glm_and_rejects_removed_qwen(self):
+    def test_agent_defaults_to_glm_and_rejects_unknown_model(self):
         payload = {"choices": [{"message": {"content": '{"assistant_message":"ready"}'}}]}
         with patch.dict("os.environ", {}, clear=True), patch("dialogue_service.post_agent.build_opener") as opener:
             opener.return_value.open.return_value = BytesIO(json.dumps(payload).encode())
@@ -21,8 +21,31 @@ class PostModelConfigurationTests(unittest.TestCase):
             self.assertEqual(3000, body["max_tokens"])
             self.assertEqual(512, body["reasoning_budget_tokens"])
             with self.assertRaises(ValueError):
-                _model_reply([], "Qwen3.8-Flash-Next", 1200)
+                _model_reply([], "unknown", 1200)
             self.assertEqual(1, opener.return_value.open.call_count)
+
+    def test_selected_models_use_their_own_endpoint_model_and_key(self):
+        from data_service.connectors.models import model_configs
+        for identifier in ("Qwen3.8-Flash-Next", "DiffusionGemma"):
+            with self.subTest(model=identifier), patch.dict("os.environ", {}, clear=True), patch("dialogue_service.post_agent.build_opener") as opener:
+                payload = {"choices": [{"message": {"content": '{"assistant_message":"ready"}'}}]}
+                opener.return_value.open.return_value = BytesIO(json.dumps(payload).encode())
+                _model_reply([], identifier, 1200)
+                provider = model_configs()[identifier]
+                request = opener.return_value.open.call_args.args[0]
+                self.assertEqual(provider["base_url"] + "/chat/completions", request.full_url)
+                self.assertEqual(provider["model"], json.loads(request.data)["model"])
+
+    def test_discovered_model_is_checked_and_sent_with_actual_upstream_name(self):
+        payload = {'choices': [{'message': {'content': '{"assistant_message":"ready"}'}}]}
+        with patch.dict('os.environ', {}, clear=True), patch('dialogue_service.post_agent.build_opener') as opener:
+            opener.return_value.open.side_effect = [
+                BytesIO(json.dumps({'data': [{'id': 'Qwen3.6-35B-A3B'}]}).encode()),
+                BytesIO(json.dumps(payload).encode())]
+            _model_reply([], 'DiffusionGemma::Qwen3.6-35B-A3B', 1200)
+            requests = opener.return_value.open.call_args_list
+            self.assertEqual('http://127.0.0.1:8500/v1/models', requests[0].args[0].full_url)
+            self.assertEqual('Qwen3.6-35B-A3B', json.loads(requests[1].args[0].data)['model'])
 
     def test_health_and_agent_share_generic_and_post_specific_configuration(self):
         for overrides, expected_model, expected_token in (

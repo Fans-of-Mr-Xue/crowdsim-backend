@@ -13,7 +13,7 @@ def selected_request_model(request):
     # remain unchanged in model_configs/for_provider for historical tasks.
     identifier = {'GLM-5.3-Flash': 'GLM-5.3-Flash-8800',
                   'GLM-5.3-Flash-Tabby': 'GLM-5.3-Flash'}.get(identifier, identifier)
-    if identifier and identifier not in {item[0] for item in MODEL_SPECS}:
+    if identifier and identifier not in {item[0] for item in MODEL_SPECS} | {'GLM-5.3-Flash'}:
         raise ValueError('请选择已配置的模型')
     return identifier
 
@@ -30,8 +30,7 @@ def register_model_routes(app, *, main_gateway=None, gateway=None):
 
     async def status(request):
         if main_gateway is not None and '/pre/models/' not in request.path:
-            # Keep the remote main contract exactly: one canonical GLM entry.
-            items = [await main_gateway.status()]
+            items = await main_gateway.statuses()
         else:
             items = await gateway.status()
         return web.json_response({'data': items}, headers={'Cache-Control': 'no-store'})

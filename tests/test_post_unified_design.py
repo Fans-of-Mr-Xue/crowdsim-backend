@@ -34,6 +34,92 @@ def fixture():
 
 
 class UnifiedDesignTests(unittest.TestCase):
+    def test_prose_only_group_addition_is_repaired_to_a_real_incremental_update(self):
+        _, plan = fixture()
+        context = {'designSchemaVersion': 2, 'goalConfirmed': True, 'baselineConfirmed': True,
+                   'executionCapabilities': True, 'designOperation': 'add_group',
+                   'counterfactualDesign': plan['counterfactualDesign'], 'variableDefinitions': plan['variableDefinitions']}
+        group = {**deepcopy(plan['counterfactualDesign']['groups'][0]), 'id': 'CF-05', 'name': '新增策略对照'}
+        for reply in (
+            {'assistant_message': '我新增了 CF-05：处置时点提前单因素对照。', 'action': 'answer'},
+            {'assistant_message': '已新增CF-05。', 'repeat_count': 20},
+            {'assistant_message': '请核对', 'group_updates': [{'id': 'CF-01', 'name': '只改旧组'}]},
+            {'assistant_message': '已新增CF-05', 'groups': [group]},
+        ):
+            with self.subTest(reply=reply), self.assertRaises(ValueError):
+                validate_reply('design', reply, context)
+        calls = []
+        def complete(messages, model, budget):
+            calls.append(messages)
+            return ({'assistant_message': '我新增了 CF-05。', 'action': 'answer'} if len(calls) == 1 else
+                    {'assistant_message': '已新增CF-05，请核对', 'action': 'update_design', 'group_updates': [group]})
+        result = respond({'task': 'design', 'context': context, 'messages': [{'role': 'user', 'content': '帮我新增一组反事实'}]}, complete=complete)
+        self.assertEqual(2, len(calls))
+        self.assertTrue(result['responseRepaired'])
+        self.assertEqual('CF-05', result['reply']['group_updates'][0]['id'])
+        self.assertEqual(4, len(context['counterfactualDesign']['groups']))
+        with self.assertRaises(ValueError):
+            validate_reply('design', {'assistant_message': '我新增了CF-05。'}, {**context, 'designOperation': ''})
+        self.assertEqual('answer', validate_reply('design', {'assistant_message': '新增实验组时应保持共同条件一致。'}, {**context, 'designOperation': ''})['action'])
+
+    def test_initial_group_requires_complete_nonzero_numeric_controls_within_the_current_window(self):
+        _, plan = fixture()
+        design = deepcopy(plan['counterfactualDesign'])
+        design.update(groups=design['groups'][:1], durationSeconds=600,
+                      baselineExecution={'startSeconds': 1, 'compliance': 0, 'delaySeconds': 0}, repeatCount=20)
+        context = {'designSchemaVersion': 2, 'executionCapabilities': True, 'designOperation': 'initial_group',
+                   'counterfactualDesign': design, 'variableDefinitions': plan['variableDefinitions']}
+        group = {**deepcopy(design['groups'][0]), 'method': 'ofat', 'factorSymbols': ['Compliance'],
+                 'execution': {'startSeconds': 1, 'compliance': .3, 'delaySeconds': 0, 'referenceDesignId': 'F-00'}}
+        reply = {'assistant_message': 'CF-01由大模型设计，可保留或修改。', 'action': 'update_design', 'group_updates': [group]}
+        self.assertEqual('update_design', validate_reply('design', reply, context)['action'])
+        for change in (
+            {'execution': {**group['execution'], 'compliance': 0}},
+            {'execution': {**group['execution'], 'startSeconds': 13800}},
+            {'factorSymbols': ['T_start', 'Compliance']},
+            {'planningOnly': True, 'changeDescription': '待映射', 'execution': {key: None if key != 'referenceDesignId' else 'F-00' for key in group['execution']}},
+        ):
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                validate_reply('design', {**reply, 'group_updates': [{**group, **change}]}, context)
+        with self.assertRaises(ValueError):
+            validate_reply('design', {**reply, 'group_updates': [{'id': 'CF-01', 'name': '不能继承占位数值'}]}, context)
+
+    def test_unmapped_during_data_can_save_and_append_hypothesis_groups_but_cannot_execute(self):
+        from postanalysis_api.schemas.unified_design import validate_unified_design, validate_unified_execution
+        from postanalysis_api.services.execution_template import execution_readiness
+        from postanalysis_api.api.review_plans import handle
+        from postanalysis_api.api.common import Request
+        dataset, plan = fixture()
+        plan.pop("executionSettings")
+        group = deepcopy(plan["counterfactualDesign"]["groups"][0])
+        group.update(planningOnly=True, changeDescription="相对事实基线提前引导，具体时点待场景映射")
+        group["execution"] = {"startSeconds": None, "compliance": None, "delaySeconds": None, "referenceDesignId": "F-00"}
+        plan["counterfactualDesign"]["groups"] = [group]
+        validate_review_intake(plan)
+        context = {"designSchemaVersion": 2, "executionCapabilities": False, "counterfactualDesign": plan["counterfactualDesign"], "variableDefinitions": plan["variableDefinitions"]}
+        added = {**deepcopy(group), "id": "CF-02", "name": "提前引导单因素对照", "method": "ofat", "factorSymbols": ["T_start"]}
+        reply = validate_reply("design", {"assistant_message": "已追加假设草案", "action": "update_design", "group_updates": [added]}, context)
+        self.assertEqual("update_design", reply["action"])
+        self.assertEqual(1, len(context["counterfactualDesign"]["groups"]))
+        plan["counterfactualDesign"]["groups"].append(added)
+        validate_unified_design(plan["counterfactualDesign"], plan["variableDefinitions"])
+        with self.assertRaises(ApiError):
+            validate_unified_execution(plan)
+        dataset["metadata"] = {"observedEndSeconds": 600, "sourceBinding": {"sourcePhase": "during", "runId": "run-one"}}
+        self.assertFalse(execution_readiness(dataset, plan)["ready"])
+        reviewed = {"datasetId": dataset["id"], "plan": plan}
+        app = SimpleNamespace(repo=SimpleNamespace(get=lambda kind, *args: reviewed if kind == "review_plans" else dataset))
+        status, data, _ = handle(Request("GET", "/review-plans/p1/execution", {}, {}, {"X-CrowdSim-User": "u", "X-CrowdSim-Workspace": "w"}, app))
+        self.assertEqual(200, status)
+        self.assertIsNone(data["execution"])
+        self.assertEqual("FACTUAL_RECONSTRUCTION_REQUIRED", data["readiness"]["code"])
+        self.assertEqual("请补齐运行校验所列的数据。", data["readiness"]["message"])
+        self.assertNotIn("capabilities", data["readiness"]["nextAction"])
+        self.assertNotIn("manifest", str(data["readiness"]["missing"]))
+        invalid = deepcopy(added); invalid["execution"]["startSeconds"] = 13800
+        with self.assertRaises(ValueError):
+            validate_reply("design", {"assistant_message": "不能混入其他场景数值", "group_updates": [invalid]}, context)
+
     def test_one_group_is_enough_without_three_design_confirmations(self):
         _, plan = fixture()
         plan["counterfactualDesign"]["groups"] = plan["counterfactualDesign"]["groups"][:1]
@@ -121,6 +207,23 @@ class UnifiedDesignTests(unittest.TestCase):
             "context": {"designSchemaVersion": 2, "goalConfirmed": True, "baselineConfirmed": True, "executionCapabilities": True,
                 "counterfactualDesign": plan["counterfactualDesign"], "variableDefinitions": plan["variableDefinitions"]}}, complete=complete)
         self.assertEqual("PostAgent", result["agent"])
-        self.assertTrue(seen[0].endswith(UNIFIED_DESIGN_CONTRACT))
+        self.assertIn(UNIFIED_DESIGN_CONTRACT, seen[0])
         self.assertFalse(result["toolsExecuted"])
         self.assertEqual(4, len(result["reply"]["groups"]))
+
+    def test_incremental_group_addition_preserves_the_rest_of_the_pool(self):
+        _, plan = fixture()
+        context = {"designSchemaVersion": 2, "executionCapabilities": True, "counterfactualDesign": deepcopy(plan["counterfactualDesign"]), "variableDefinitions": plan["variableDefinitions"]}
+        new_group = {**deepcopy(context["counterfactualDesign"]["groups"][0]), "id": "CF-05", "name": "新增验证组"}
+        before = deepcopy(context)
+        reply = validate_reply("design", {"assistant_message": "新增验证组", "action": "update_design", "group_updates": [new_group]}, context)
+        self.assertEqual("update_design", reply["action"])
+        self.assertEqual(before, context)
+        validate_reply("design", {"assistant_message": "仅更新时点", "group_updates": [{"id": "CF-02", "execution": {"startSeconds": 13500}}]}, context)
+        self.assertEqual(before, context)
+        with self.assertRaises(ValueError):
+            validate_reply("design", {"assistant_message": "改变参照组导致消融不再单因素", "group_updates": [{"id": "CF-01", "execution": {"startSeconds": 13500}}]}, context)
+        with self.assertRaises(ValueError):
+            validate_reply("design", {"assistant_message": "已新增", "action": "update_design"}, context)
+        with self.assertRaises(ValueError):
+            validate_reply("design", {"assistant_message": "新增", "group_updates": [new_group, new_group]}, context)

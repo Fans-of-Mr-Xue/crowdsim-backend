@@ -8,9 +8,22 @@ from .common import Request, response
 
 
 def handle(request: Request):
-    run_match = re.fullmatch(r"/runs/([A-Za-z0-9_-]+)(?:/(trajectory|archive))?", request.path)
+    if request.path == '/experiments/history' and request.method == 'GET':
+        from postanalysis_api.schemas.common import ApiError
+        try:
+            limit = int((request.query.get('limit') or ['100'])[0])
+        except (ValueError, TypeError):
+            raise ApiError('INVALID_QUERY', '任务记录每页数量无效', 400) from None
+        cursor = (request.query.get('cursor') or [''])[0]
+        if not 1 <= limit <= 100 or len(cursor) > 512:
+            raise ApiError('INVALID_QUERY', '任务记录分页参数无效', 400)
+        return response(request.app.repo.experiment_history(request.user, limit=limit, cursor=cursor))
+    run_match = re.fullmatch(r"/runs/([A-Za-z0-9_-]+)(?:/(trajectory|archive|series))?", request.path)
     if run_match and request.method == "GET":
         run_id, action = run_match.groups()
+        if action == 'series':
+            from postanalysis_api.services.analysis_data import run_series
+            return response(run_series(request.app.repo, run_id, request.user, request.workspace))
         request.app.repo.get("runs", run_id, request.user, request.workspace)
         if action == "trajectory":
             after = int((request.query.get("after") or [-1])[0])
@@ -26,9 +39,17 @@ def handle(request: Request):
             return request.mutation(lambda: (201, request.app.create_experiment(request.user, request.workspace, request.body)))
         if request.method == "GET":
             return response(request.app.repo.list("experiments", request.user, request.workspace))
-    match = re.fullmatch(r"/experiments/([A-Za-z0-9_-]+)(?:/(start|cancel|events|runs|runtime))?", request.path)
+    match = re.fullmatch(r"/experiments/([A-Za-z0-9_-]+)(?:/(start|pause|resume|cancel|events|runs|runtime|knowledge|analysis-data))?", request.path)
     if match:
         item_id, action = match.groups()
+        if request.method == 'GET' and action == 'analysis-data':
+            from postanalysis_api.services.analysis_data import prepare_analysis
+            return response(prepare_analysis(request.app.repo, item_id, request.user, request.workspace))
+        if request.method == 'GET' and action == 'knowledge':
+            from postanalysis_api.services.analysis_knowledge import read_context
+            selected = (request.query.get('libraries') or [''])[0]
+            return response(read_context(request.app.repo, item_id, request.user, request.workspace,
+                                         selected.split(',') if selected else []))
         if request.method == "GET" and not action:
             return response(request.app.repo.get("experiments", item_id, request.user, request.workspace))
         if request.method == "GET" and action == "runtime":
@@ -42,8 +63,8 @@ def handle(request: Request):
             request.app.repo.get("experiments", item_id, request.user, request.workspace)
             items = request.app.repo.runs_for_experiment(item_id, request.user, request.workspace)
             return response({"experimentId": item_id, "runs": items})
-        if request.method == "POST" and action in {"start", "cancel"}:
-            operation = request.app.start if action == "start" else request.app.cancel
-            status = 202 if action == "start" else 200
+        if request.method == "POST" and action in {"start", "pause", "resume", "cancel"}:
+            operation = getattr(request.app, action)
+            status = 202 if action in {'start', 'pause', 'resume'} else 200
             return request.mutation(lambda: (status, operation("experiments", item_id, request.user, request.workspace)))
     return None

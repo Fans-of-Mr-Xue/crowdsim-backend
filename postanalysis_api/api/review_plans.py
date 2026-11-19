@@ -15,8 +15,12 @@ def handle(request: Request):
         reviewed = request.app.repo.get("review_plans", execution_match[1], request.user, request.workspace)
         if request.method == "GET":
             dataset = request.app.repo.get("datasets", reviewed["datasetId"], request.user, request.workspace)
-            return response({"execution": execution_template(dataset, reviewed["plan"]), "requiresConfirmation": True,
-                             "note": "默认数值为可编辑工程测试建议；请逐组核对，未确认不会运行。"})
+            from postanalysis_api.services.execution_validation import validate_execution_input
+            readiness = validate_execution_input(request.app, dataset, reviewed["plan"])
+            if not readiness["ready"]:
+                return response({"execution": None, "readiness": readiness, "requiresConfirmation": False, "note": readiness["message"]})
+            return response({"execution": execution_template(dataset, reviewed["plan"]), "readiness": readiness, "requiresConfirmation": True,
+                             "note": "运行校验通过，确认实验矩阵后即可启动。"})
         if request.method == "POST":
             if set(request.body) != {"execution", "confirmed"} or request.body.get("confirmed") is not True:
                 raise ApiError("EXECUTION_NOT_CONFIRMED", "请显式确认工程执行参数", 422)

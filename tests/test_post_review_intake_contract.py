@@ -44,7 +44,7 @@ class PostReviewIntakeContractTests(unittest.TestCase):
                 validate_reply("baseline_review", {"assistant_message": "已更新", "baseline_updates": {key: "invalid"}}, {})
 
     def test_goal_proposal_is_advice_and_cannot_confirm_the_user_goal(self):
-        validate_reply("goal_review", {"assistant_message": "请补充范围", "proposed_goal": "比较风险", "missing_fields": ["时间窗"]}, {})
+        validate_reply("goal_review", {"assistant_message": "请补充范围", "action": "propose_goal", "proposed_goal": "比较风险", "missing_fields": ["时间窗"]}, {})
         with self.assertRaises(ValueError):
             validate_reply("goal_review", {"assistant_message": "已确认", "goalConfirmed": True}, {})
 

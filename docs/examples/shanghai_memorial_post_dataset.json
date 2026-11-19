@@ -1,7 +1,7 @@
 {
   "name": "上海纪念塔事后完整测试基线（原始合成数据规范化）",
   "sourceKind": "synthetic_reference",
-  "sourceNote": "合成案例按原数据等比例缩放至同一时刻总人数峰值300人，人数及区间进出流量四舍五入为整数；人口占比保留原值。非真实事故监测记录。密度、速度、压力原文缺失，保留 null，由 SUMO 运行测量；取整后的收支残差如实记录。",
+  "sourceNote": "合成案例按原数据等比例缩放至同一时刻总人数峰值300人，人数及区间进出流量四舍五入为整数；人口占比保留原值。非真实事故监测记录。密度、速度、压力原文缺失，保留 null，由 SUMO 运行测量；取整后的收支残差如实记录。 采用事中观测筛选后的规范字段；局部密度、局部速度与边界密度差无原始观测，保留null。",
   "observations": [
     {
       "timeSeconds": 0,
@@ -11,7 +11,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T20:00+08:00",
-      "state": "跨年投影秀预热；A西主入口高承载；B南入口开放；C北应急通道封闭且无人"
+      "state": "跨年投影秀预热；A西主入口高承载；B南入口开放；C北应急通道封闭且无人",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 0,
@@ -21,7 +24,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T20:00+08:00",
-      "state": "跨年投影秀预热；A西主入口高承载；B南入口开放；C北应急通道封闭且无人"
+      "state": "跨年投影秀预热；A西主入口高承载；B南入口开放；C北应急通道封闭且无人",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 0,
@@ -31,7 +37,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T20:00+08:00",
-      "state": "跨年投影秀预热；A西主入口高承载；B南入口开放；C北应急通道封闭且无人"
+      "state": "跨年投影秀预热；A西主入口高承载；B南入口开放；C北应急通道封闭且无人",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 3600,
@@ -41,7 +50,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T21:00+08:00",
-      "state": "外滩方向持续汇入；A入口排队初现；B入口缓慢；C仍封闭"
+      "state": "外滩方向持续汇入；A入口排队初现；B入口缓慢；C仍封闭",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 3600,
@@ -51,7 +63,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T21:00+08:00",
-      "state": "外滩方向持续汇入；A入口排队初现；B入口缓慢；C仍封闭"
+      "state": "外滩方向持续汇入；A入口排队初现；B入口缓慢；C仍封闭",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 3600,
@@ -61,7 +76,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T21:00+08:00",
-      "state": "外滩方向持续汇入；A入口排队初现；B入口缓慢；C仍封闭"
+      "state": "外滩方向持续汇入；A入口排队初现；B入口缓慢；C仍封闭",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 5400,
@@ -71,7 +89,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T21:30+08:00",
-      "state": "纪念塔前快闪表演吸引人群；A入口承载约70%；B约30%；C无有效人流"
+      "state": "纪念塔前快闪表演吸引人群；A入口承载约70%；B约30%；C无有效人流",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 5400,
@@ -81,7 +102,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T21:30+08:00",
-      "state": "纪念塔前快闪表演吸引人群；A入口承载约70%；B约30%；C无有效人流"
+      "state": "纪念塔前快闪表演吸引人群；A入口承载约70%；B约30%；C无有效人流",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 5400,
@@ -91,7 +115,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T21:30+08:00",
-      "state": "纪念塔前快闪表演吸引人群；A入口承载约70%；B约30%；C无有效人流"
+      "state": "纪念塔前快闪表演吸引人群；A入口承载约70%；B约30%；C无有效人流",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 7200,
@@ -101,7 +128,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T22:00+08:00",
-      "state": "倒计时预热；黄浦公园与观景平台人群开始累积；A入口高承载；B入口回流增加"
+      "state": "倒计时预热；黄浦公园与观景平台人群开始累积；A入口高承载；B入口回流增加",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 7200,
@@ -111,7 +141,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T22:00+08:00",
-      "state": "倒计时预热；黄浦公园与观景平台人群开始累积；A入口高承载；B入口回流增加"
+      "state": "倒计时预热；黄浦公园与观景平台人群开始累积；A入口高承载；B入口回流增加",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 7200,
@@ -121,7 +154,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T22:00+08:00",
-      "state": "倒计时预热；黄浦公园与观景平台人群开始累积；A入口高承载；B入口回流增加"
+      "state": "倒计时预热；黄浦公园与观景平台人群开始累积；A入口高承载；B入口回流增加",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 9000,
@@ -131,7 +167,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T22:30+08:00",
-      "state": "平台与通道持续累积；A西入口瓶颈前移；B南入口出现汇流；C北通道仍关闭"
+      "state": "平台与通道持续累积；A西入口瓶颈前移；B南入口出现汇流；C北通道仍关闭",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 9000,
@@ -141,7 +180,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T22:30+08:00",
-      "state": "平台与通道持续累积；A西入口瓶颈前移；B南入口出现汇流；C北通道仍关闭"
+      "state": "平台与通道持续累积；A西入口瓶颈前移；B南入口出现汇流；C北通道仍关闭",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 9000,
@@ -151,7 +193,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T22:30+08:00",
-      "state": "平台与通道持续累积；A西入口瓶颈前移；B南入口出现汇流；C北通道仍关闭"
+      "state": "平台与通道持续累积；A西入口瓶颈前移；B南入口出现汇流；C北通道仍关闭",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 10800,
@@ -161,7 +206,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T23:00+08:00",
-      "state": "人群向纪念塔核心区压缩；A入口高承载；B入口出现逆向人流；C通道基本无人"
+      "state": "人群向纪念塔核心区压缩；A入口高承载；B入口出现逆向人流；C通道基本无人",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 10800,
@@ -171,7 +219,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T23:00+08:00",
-      "state": "人群向纪念塔核心区压缩；A入口高承载；B入口出现逆向人流；C通道基本无人"
+      "state": "人群向纪念塔核心区压缩；A入口高承载；B入口出现逆向人流；C通道基本无人",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 10800,
@@ -181,7 +232,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T23:00+08:00",
-      "state": "人群向纪念塔核心区压缩；A入口高承载；B入口出现逆向人流；C通道基本无人"
+      "state": "人群向纪念塔核心区压缩；A入口高承载；B入口出现逆向人流；C通道基本无人",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 12000,
@@ -191,7 +245,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T23:20+08:00",
-      "state": "台阶口和平台回流形成双向对冲；A与B汇流处速度骤降；C仍未启用"
+      "state": "台阶口和平台回流形成双向对冲；A与B汇流处速度骤降；C仍未启用",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 12000,
@@ -201,7 +258,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T23:20+08:00",
-      "state": "台阶口和平台回流形成双向对冲；A与B汇流处速度骤降；C仍未启用"
+      "state": "台阶口和平台回流形成双向对冲；A与B汇流处速度骤降；C仍未启用",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 12000,
@@ -211,7 +271,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T23:20+08:00",
-      "state": "台阶口和平台回流形成双向对冲；A与B汇流处速度骤降；C仍未启用"
+      "state": "台阶口和平台回流形成双向对冲；A与B汇流处速度骤降；C仍未启用",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 12600,
@@ -221,7 +284,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T23:30+08:00",
-      "state": "局部瓶颈出现停滞；A西入口前密度快速上升；B南入口回堵；C无分流"
+      "state": "局部瓶颈出现停滞；A西入口前密度快速上升；B南入口回堵；C无分流",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 12600,
@@ -231,7 +297,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T23:30+08:00",
-      "state": "局部瓶颈出现停滞；A西入口前密度快速上升；B南入口回堵；C无分流"
+      "state": "局部瓶颈出现停滞；A西入口前密度快速上升；B南入口回堵；C无分流",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 12600,
@@ -241,7 +310,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T23:30+08:00",
-      "state": "局部瓶颈出现停滞；A西入口前密度快速上升；B南入口回堵；C无分流"
+      "state": "局部瓶颈出现停滞；A西入口前密度快速上升；B南入口回堵；C无分流",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 12900,
@@ -251,7 +323,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T23:35+08:00",
-      "state": "局部瓶颈出现停滞和跌倒传播；A/B交汇区压力峰值；C北通道仍封闭"
+      "state": "局部瓶颈出现停滞和跌倒传播；A/B交汇区压力峰值；C北通道仍封闭",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 12900,
@@ -261,7 +336,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T23:35+08:00",
-      "state": "局部瓶颈出现停滞和跌倒传播；A/B交汇区压力峰值；C北通道仍封闭"
+      "state": "局部瓶颈出现停滞和跌倒传播；A/B交汇区压力峰值；C北通道仍封闭",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 12900,
@@ -271,7 +349,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T23:35+08:00",
-      "state": "局部瓶颈出现停滞和跌倒传播；A/B交汇区压力峰值；C北通道仍封闭"
+      "state": "局部瓶颈出现停滞和跌倒传播；A/B交汇区压力峰值；C北通道仍封闭",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 13500,
@@ -281,7 +362,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T23:45+08:00",
-      "state": "信息不明导致反向移动；核心区短时过载；C通道未开放无法分流"
+      "state": "信息不明导致反向移动；核心区短时过载；C通道未开放无法分流",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 13500,
@@ -291,7 +375,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T23:45+08:00",
-      "state": "信息不明导致反向移动；核心区短时过载；C通道未开放无法分流"
+      "state": "信息不明导致反向移动；核心区短时过载；C通道未开放无法分流",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 13500,
@@ -301,7 +388,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T23:45+08:00",
-      "state": "信息不明导致反向移动；核心区短时过载；C通道未开放无法分流"
+      "state": "信息不明导致反向移动；核心区短时过载；C通道未开放无法分流",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 13800,
@@ -311,7 +401,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T23:50+08:00",
-      "state": "应急疏散启动但核心区释放缓慢；A/B仍拥堵；C尚未形成有效通道"
+      "state": "应急疏散启动但核心区释放缓慢；A/B仍拥堵；C尚未形成有效通道",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 13800,
@@ -321,7 +414,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T23:50+08:00",
-      "state": "应急疏散启动但核心区释放缓慢；A/B仍拥堵；C尚未形成有效通道"
+      "state": "应急疏散启动但核心区释放缓慢；A/B仍拥堵；C尚未形成有效通道",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 13800,
@@ -331,7 +427,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2014-12-31T23:50+08:00",
-      "state": "应急疏散启动但核心区释放缓慢；A/B仍拥堵；C尚未形成有效通道"
+      "state": "应急疏散启动但核心区释放缓慢；A/B仍拥堵；C尚未形成有效通道",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 14400,
@@ -341,7 +440,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T00:00+08:00",
-      "state": "倒计时结束；人群集中离场；A/B出口瓶颈加剧；C仍未有效分流"
+      "state": "倒计时结束；人群集中离场；A/B出口瓶颈加剧；C仍未有效分流",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 14400,
@@ -351,7 +453,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T00:00+08:00",
-      "state": "倒计时结束；人群集中离场；A/B出口瓶颈加剧；C仍未有效分流"
+      "state": "倒计时结束；人群集中离场；A/B出口瓶颈加剧；C仍未有效分流",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 14400,
@@ -361,7 +466,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T00:00+08:00",
-      "state": "倒计时结束；人群集中离场；A/B出口瓶颈加剧；C仍未有效分流"
+      "state": "倒计时结束；人群集中离场；A/B出口瓶颈加剧；C仍未有效分流",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 14700,
@@ -371,7 +479,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T00:05+08:00",
-      "state": "现场收到调控信号；广播引导并尝试开放C北侧应急通道；策略刚启动存在滞后"
+      "state": "现场收到调控信号；广播引导并尝试开放C北侧应急通道；策略刚启动存在滞后",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 14700,
@@ -381,7 +492,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T00:05+08:00",
-      "state": "现场收到调控信号；广播引导并尝试开放C北侧应急通道；策略刚启动存在滞后"
+      "state": "现场收到调控信号；广播引导并尝试开放C北侧应急通道；策略刚启动存在滞后",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 14700,
@@ -391,7 +505,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T00:05+08:00",
-      "state": "现场收到调控信号；广播引导并尝试开放C北侧应急通道；策略刚启动存在滞后"
+      "state": "现场收到调控信号；广播引导并尝试开放C北侧应急通道；策略刚启动存在滞后",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 15300,
@@ -401,7 +518,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T00:15+08:00",
-      "state": "引导初期；部分人群转向C但路径不熟；A/B压力仍高"
+      "state": "引导初期；部分人群转向C但路径不熟；A/B压力仍高",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 15300,
@@ -411,7 +531,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T00:15+08:00",
-      "state": "引导初期；部分人群转向C但路径不熟；A/B压力仍高"
+      "state": "引导初期；部分人群转向C但路径不熟；A/B压力仍高",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 15300,
@@ -421,7 +544,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T00:15+08:00",
-      "state": "引导初期；部分人群转向C但路径不熟；A/B压力仍高"
+      "state": "引导初期；部分人群转向C但路径不熟；A/B压力仍高",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 15600,
@@ -431,7 +557,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T00:20+08:00",
-      "state": "C北通道开始分流但滞后明显；A/B密度未即时下降；外围开始限流"
+      "state": "C北通道开始分流但滞后明显；A/B密度未即时下降；外围开始限流",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 15600,
@@ -441,7 +570,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T00:20+08:00",
-      "state": "C北通道开始分流但滞后明显；A/B密度未即时下降；外围开始限流"
+      "state": "C北通道开始分流但滞后明显；A/B密度未即时下降；外围开始限流",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 15600,
@@ -451,7 +583,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T00:20+08:00",
-      "state": "C北通道开始分流但滞后明显；A/B密度未即时下降；外围开始限流"
+      "state": "C北通道开始分流但滞后明显；A/B密度未即时下降；外围开始限流",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 16200,
@@ -461,7 +596,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T00:30+08:00",
-      "state": "调控策略开始生效；C北侧通道分流增加；A/B拥堵缓解"
+      "state": "调控策略开始生效；C北侧通道分流增加；A/B拥堵缓解",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 16200,
@@ -471,7 +609,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T00:30+08:00",
-      "state": "调控策略开始生效；C北侧通道分流增加；A/B拥堵缓解"
+      "state": "调控策略开始生效；C北侧通道分流增加；A/B拥堵缓解",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 16200,
@@ -481,7 +622,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T00:30+08:00",
-      "state": "调控策略开始生效；C北侧通道分流增加；A/B拥堵缓解"
+      "state": "调控策略开始生效；C北侧通道分流增加；A/B拥堵缓解",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 17100,
@@ -491,7 +635,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T00:45+08:00",
-      "state": "人为引导与外围分流共同作用；C承担主要疏散；核心区密度回落"
+      "state": "人为引导与外围分流共同作用；C承担主要疏散；核心区密度回落",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 17100,
@@ -501,7 +648,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T00:45+08:00",
-      "state": "人为引导与外围分流共同作用；C承担主要疏散；核心区密度回落"
+      "state": "人为引导与外围分流共同作用；C承担主要疏散；核心区密度回落",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 17100,
@@ -511,7 +661,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T00:45+08:00",
-      "state": "人为引导与外围分流共同作用；C承担主要疏散；核心区密度回落"
+      "state": "人为引导与外围分流共同作用；C承担主要疏散；核心区密度回落",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 18000,
@@ -521,7 +674,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T01:00+08:00",
-      "state": "人群密度进入可控区间；A/B恢复通行；C继续疏散"
+      "state": "人群密度进入可控区间；A/B恢复通行；C继续疏散",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 18000,
@@ -531,7 +687,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T01:00+08:00",
-      "state": "人群密度进入可控区间；A/B恢复通行；C继续疏散"
+      "state": "人群密度进入可控区间；A/B恢复通行；C继续疏散",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 18000,
@@ -541,7 +700,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T01:00+08:00",
-      "state": "人群密度进入可控区间；A/B恢复通行；C继续疏散"
+      "state": "人群密度进入可控区间；A/B恢复通行；C继续疏散",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 19200,
@@ -551,7 +713,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T01:20+08:00",
-      "state": "基本疏散完成；三处出入口恢复低负荷"
+      "state": "基本疏散完成；三处出入口恢复低负荷",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 19200,
@@ -561,7 +726,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T01:20+08:00",
-      "state": "基本疏散完成；三处出入口恢复低负荷"
+      "state": "基本疏散完成；三处出入口恢复低负荷",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 19200,
@@ -571,7 +739,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T01:20+08:00",
-      "state": "基本疏散完成；三处出入口恢复低负荷"
+      "state": "基本疏散完成；三处出入口恢复低负荷",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 19800,
@@ -581,7 +752,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T01:30+08:00",
-      "state": "基本清场完成；仅少量收尾人员与零星滞留；A/B/C均低负荷"
+      "state": "基本清场完成；仅少量收尾人员与零星滞留；A/B/C均低负荷",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 19800,
@@ -591,7 +765,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T01:30+08:00",
-      "state": "基本清场完成；仅少量收尾人员与零星滞留；A/B/C均低负荷"
+      "state": "基本清场完成；仅少量收尾人员与零星滞留；A/B/C均低负荷",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     },
     {
       "timeSeconds": 19800,
@@ -601,7 +778,10 @@
       "meanSpeed": null,
       "pressureProxy": null,
       "sourceTime": "2015-01-01T01:30+08:00",
-      "state": "基本清场完成；仅少量收尾人员与零星滞留；A/B/C均低负荷"
+      "state": "基本清场完成；仅少量收尾人员与零星滞留；A/B/C均低负荷",
+      "localDensity": null,
+      "localMeanSpeed": null,
+      "boundaryDensityDifference": null
     }
   ],
   "metadata": {
@@ -2028,10 +2208,44 @@
       "missingMetrics": [
         "density",
         "meanSpeed",
-        "pressureProxy"
+        "pressureProxy",
+        "localDensity",
+        "localMeanSpeed",
+        "boundaryDensityDifference"
       ],
       "flowSemantics": "Interval totals, never persons/second; each entrance is a separate observation region.",
       "demographicSemantics": "Age and nationality are independent marginal distributions; no joint distribution is inferred."
-    }
+    },
+    "observationSchemaVersion": 2,
+    "metricDefinitions": {
+      "population": {
+        "source": "observation_global.person_count",
+        "unit": "人"
+      },
+      "density": {
+        "source": "observation_global.density_person_per_m2",
+        "unit": "人/m²"
+      },
+      "meanSpeed": {
+        "source": "observation_global.avg_speed_mps",
+        "unit": "m/s"
+      },
+      "localDensity": {
+        "source": "observation_cells.density_person_per_m2",
+        "aggregation": "同一snapshot_id有效网格最大值",
+        "unit": "人/m²"
+      },
+      "localMeanSpeed": {
+        "source": "observation_cells.avg_speed_mps",
+        "aggregation": "同一snapshot_id有效网格平均速度最小值；空网格无速度观测，保留null",
+        "unit": "m/s"
+      },
+      "boundaryDensityDifference": {
+        "source": "observation_boundaries.absolute_difference_person_per_m2",
+        "aggregation": "同一snapshot_id且status=valid的绝对差最大值",
+        "unit": "人/m²"
+      }
+    },
+    "unmeasuredMetricPolicy": "缺失为null；pressureProxy为兼容字段，没有原始测量时必须为null；不把stress_avg当作压力代理。"
   }
 }

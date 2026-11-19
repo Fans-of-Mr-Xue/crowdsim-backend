@@ -62,11 +62,14 @@ class ModelGatewayHttpTests(unittest.IsolatedAsyncioTestCase):
     async def asyncTearDown(self):
         await self.client.close()
 
-    async def test_status_reports_only_available_glm(self):
+    async def test_status_reports_all_configured_models(self):
         response = await self.client.get("/api/crowdSim/models/status")
         self.assertEqual(200, response.status)
-        self.assertEqual([{"id": "GLM-5.3-Flash", "available": True, "message": "可用", "port": 8800}],
-                         (await response.json())["data"])
+        status = (await response.json())["data"]
+        self.assertEqual(["GLM-5.3-Flash", "Qwen3.8-Flash-Next", "DiffusionGemma"], [item["id"] for item in status[:3]])
+        self.assertEqual([8800, 8800, 8500], [item["port"] for item in status[:3]])
+        self.assertEqual([True, False, False], [item["available"] for item in status[:3]])
+        self.assertTrue(status[3]['available'])
         method, url, kwargs = self.session.calls[0]
         self.assertEqual(("GET", "http://127.0.0.1:8800/v1/models"), (method, url))
         self.assertEqual("Bearer secret", kwargs["headers"]["Authorization"])
@@ -93,9 +96,9 @@ class ModelGatewayHttpTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(200, response.status)
         self.assertEqual("GLM-5.3-Flash", self.session.calls[-1][2]["json"]["model"])
 
-    async def test_qwen_unknown_fields_streaming_and_bad_messages_are_rejected_before_upstream(self):
+    async def test_unknown_fields_streaming_and_bad_messages_are_rejected_before_upstream(self):
         cases = (
-            ("/api/crowdSim/models/Qwen3.8-Flash-Next/chat/completions",
+            ("/api/crowdSim/models/unknown/chat/completions",
              {"messages": [{"role": "user", "content": "x"}]}),
             ("/api/crowdSim/models/GLM-5.3-Flash/chat/completions",
              {"messages": [{"role": "user", "content": "x"}], "stream": True}),
@@ -111,6 +114,35 @@ class ModelGatewayHttpTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(400, response.status)
                 self.assertIn("message", await response.json())
                 self.assertEqual(before, len(self.session.calls))
+
+    async def test_each_model_uses_its_configured_endpoint_and_upstream_id(self):
+        for identifier in ("GLM-5.3-Flash", "Qwen3.8-Flash-Next", "DiffusionGemma"):
+            with self.subTest(identifier=identifier):
+                response = await self.client.post(f"/api/crowdSim/models/{identifier}/chat/completions",
+                    json={"messages": [{"role": "user", "content": "hello"}]})
+                self.assertEqual(200, response.status)
+                provider = self.gateway.providers[identifier]
+                self.assertEqual(identifier, (await response.json())["model"])
+                self.assertEqual(provider["base_url"] + "/chat/completions", self.session.calls[-1][1])
+                self.assertEqual(provider["model"], self.session.calls[-1][2]["json"]["model"])
+
+    async def test_discovers_actual_served_model_and_revalidates_it_before_chat(self):
+        self.session.model_payload = {'data': [{'id': 'Qwen3.6-35B-A3B'}]}
+        status = await self.gateway.statuses()
+        discovered = next(item for item in status if item['id'] == 'DiffusionGemma::Qwen3.6-35B-A3B')
+        self.assertTrue(discovered['available'])
+        self.assertEqual(8500, discovered['port'])
+        response = await self.client.post('/api/crowdSim/models/' + discovered['id'] + '/chat/completions',
+            json={'messages': [{'role': 'user', 'content': 'hello'}]})
+        self.assertEqual(200, response.status)
+        self.assertEqual('http://127.0.0.1:8500/v1/chat/completions', self.session.calls[-1][1])
+        self.assertEqual('Qwen3.6-35B-A3B', self.session.calls[-1][2]['json']['model'])
+        self.session.model_payload = {'data': []}
+        before = sum(call[0] == 'POST' for call in self.session.calls)
+        response = await self.client.post('/api/crowdSim/models/' + discovered['id'] + '/chat/completions',
+            json={'messages': [{'role': 'user', 'content': 'hello'}]})
+        self.assertEqual(400, response.status)
+        self.assertEqual(before, sum(call[0] == 'POST' for call in self.session.calls))
 
     async def test_stateless_route_preserves_during_contract(self):
         response = await self.client.post("/api/crowdSim/llm/chat", json={

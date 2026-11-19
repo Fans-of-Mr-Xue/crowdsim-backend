@@ -13,6 +13,7 @@ from pathlib import Path
 import re
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
+from uuid import uuid4
 from pymongo.errors import PyMongoError
 
 from postanalysis_api.repositories.mongodb import MongoRepository
@@ -22,26 +23,37 @@ from postanalysis_api.schemas.review_intake import validate_review_intake
 from postanalysis_api.schemas.experiments import validate_experiment, validate_simulation
 from postanalysis_api.schemas.metrics import METRICS, catalog
 from postanalysis_api.workers.sumo_batch import SumoBatchExecutor
+from postanalysis_api.workers.batch_state import SupersededExecution, completed_batch_runs, restored_progress, run_matrix
 
 
 class PostAnalysisApp:
-    def __init__(self, data_dir: str | Path, executor=None, *, reconcile=True):
+    def __init__(self, data_dir: str | Path, executor=None, *, reconcile=False):
         # Post-review experiment records must survive outside the local runtime
         # directory. Connection details follow Crowdbackend/.env.example.
         self.repo = MongoRepository()
         try:
             if reconcile:
-                self.repo.reconcile_interrupted()
+                self.recover_interrupted()
+            self.executor = executor or SumoBatchExecutor(self.repo, data_dir)
+        except BaseException:
+            self.repo.close()
+            raise
+
+    def recover_interrupted(self):
+        """Only the server that successfully bound the listener may recover jobs."""
+        try:
+            self.repo.reconcile_interrupted()
         except PyMongoError:
             logging.getLogger("postanalysis_api").warning(
                 "MongoDB is unavailable at startup; post-analysis storage requests will retry"
             )
-        self.executor = executor or SumoBatchExecutor(self.repo, data_dir)
 
     def close(self) -> None:
-        if hasattr(self.executor, "close"):
-            self.executor.close()
-        self.repo.close()
+        try:
+            if hasattr(self.executor, "close"):
+                self.executor.close()
+        finally:
+            self.repo.close()
 
     def capabilities(self) -> dict:
         return {"contractVersion": "post-api/1.0", "simulation": self.executor.capabilities(),
@@ -62,12 +74,26 @@ class PostAnalysisApp:
 
     @staticmethod
     def dataset_metadata(document: dict) -> dict:
-        return {key: value for key, value in document.items() if key != "observations"}
+        result = {key: value for key, value in document.items() if key not in {"observations", "displayObservations"}}
+        if 'displayObservations' in document:
+            result.update(spatialObservationCount=document['observationCount'],
+                          observationCount=len(document['displayObservations']))
+        return result
 
     def create_dataset(self, user: str, workspace: str, body: dict) -> dict:
         raw_file = body.get("rawFile")
         dataset_body = {key: value for key, value in body.items() if key != "rawFile"}
         data = validate_dataset(dataset_body)
+        binding = data.get('metadata', {}).get('sourceBinding', {})
+        if binding.get('sourceKind') == 'mongodb_archive':
+            from .during_archives import DuringArchiveReader
+            from .factual_context import import_archive
+            observations, metadata = import_archive(DuringArchiveReader(self.repo.db), binding, user)
+            data['displayObservations'] = metadata.pop('displayTimeline')
+            # Resolve raw spatial data on the server, avoiding browser/metadata limits.
+            data.update(observations=observations, metadata=metadata)
+        elif data.get('metadata', {}).get('executionProfile', {}).get('inputMode') == 'spatial-distribution/2.0':
+            raise ApiError('DURING_SOURCE_REQUIRED', '同场景事实配置必须由后端读取并核验事中来源。', 422)
         version_input = data["observations"] if not data.get("metadata") else {"observations": data["observations"], "metadata": data["metadata"]}
         fingerprint = hashlib.sha256(json.dumps(version_input, sort_keys=True,
                                                  separators=(",", ":")).encode("utf-8")).hexdigest()
@@ -111,7 +137,9 @@ class PostAnalysisApp:
         offset = integer(int((query.get("offset") or [0])[0]), "offset", 0, 1000000)
         limit = integer(int((query.get("limit") or [500])[0]), "limit", 1, 1000)
         region = (query.get("regionId") or [None])[0]
-        rows = [row for row in dataset["observations"] if start <= row["timeSeconds"] <= end
+        spatial = (query.get('view') or [''])[0] == 'spatial' or region not in (None, 'global')
+        source_rows = dataset['observations'] if spatial else dataset.get('displayObservations', dataset['observations'])
+        rows = [row for row in source_rows if start <= row["timeSeconds"] <= end
                 and (region is None or row["regionId"] == region)]
         return {"datasetId": item_id, "datasetVersion": dataset["version"],
                 "sourceKind": dataset["sourceKind"], "total": len(rows),
@@ -337,28 +365,76 @@ class PostAnalysisApp:
         if dataset["version"] != item["datasetVersion"]:
             raise ApiError("DATASET_VERSION_MISMATCH", "数据集版本与任务创建时不同", 409)
         self._check_start_capability(item)
-        self.repo.transition_task(kind, item_id, user, workspace, "draft", {"status": "queued"})
+        attempt = uuid4().hex
+        self.repo.transition_task(kind, item_id, user, workspace, "draft", {"status": "queued", 'executionAttemptId': attempt})
         self.repo.event(kind, item_id, "queued", user=user, workspace=workspace)
         try:
-            self.executor.submit(item, lambda event: self.record_worker_event(kind, item_id, user, workspace, event))
+            self.executor.submit({**item, 'executionAttemptId': attempt}, lambda event: self.record_worker_event(kind, item_id, user, workspace, event, execution_attempt=attempt))
         except Exception:
             self.repo.transition_task(kind, item_id, user, workspace, "queued", {"status": "draft"})
             self.repo.event(kind, item_id, "submit_rejected", user=user, workspace=workspace)
             raise
         return self.repo.get(kind, item_id, user, workspace)
 
-    def record_worker_event(self, kind: str, item_id: str, user: str, workspace: str, event: dict) -> None:
-        allowed = {"running", "completed", "failed", "cancelled", "partial"}
+    def pause(self, kind: str, item_id: str, user: str, workspace: str) -> dict:
+        item = self.repo.get(kind, item_id, user, workspace)
+        if kind != 'experiments' or item['status'] not in {'queued', 'running'}:
+            raise ApiError('INVALID_TASK_STATE', '只有排队或运行中的实验批次可以暂停。', 409)
+        updated = self.executor.set_paused(item_id, True, lambda: self.repo.transition_execution(
+            kind, item_id, user, workspace, item['status'],
+            {'status': 'pausing', 'pausedFromStatus': item['status']}, execution_attempt=item.get('executionAttemptId')))
+        self.repo.event(kind, item_id, 'pause_requested', user=user, workspace=workspace)
+        return updated
+
+    def resume(self, kind: str, item_id: str, user: str, workspace: str) -> dict:
+        item = self.repo.get(kind, item_id, user, workspace)
+        if kind == 'experiments' and item['status'] == 'paused':
+            status = 'queued' if item.get('pausedFromStatus') == 'queued' else 'running'
+            updated = self.executor.set_paused(item_id, False, lambda: self.repo.transition_execution(
+                kind, item_id, user, workspace, 'paused', {'status': status}, execution_attempt=item.get('executionAttemptId')))
+            self.repo.event(kind, item_id, 'continued', user=user, workspace=workspace)
+            return updated
+        if kind != 'experiments' or item['status'] not in {'interrupted', 'failed', 'cancelled'}:
+            raise ApiError('INVALID_TASK_STATE', '只有中断、失败或已取消的实验批次可以继续。', 409)
+        if self.executor.is_active(item_id):
+            raise ApiError('INVALID_TASK_STATE', '原执行线程仍在收尾，请稍后重试，未重复启动。', 409)
+        dataset = self._dataset(item['datasetId'], user, workspace)
+        if dataset['version'] != item['datasetVersion']:
+            raise ApiError('DATASET_VERSION_MISMATCH', '数据集版本已变化，不能混入原批次续跑。', 409)
+        self._check_start_capability(item)
+        completed = completed_batch_runs(self.repo, item)
+        changes = {'status': 'queued', 'progress': restored_progress(item, completed), 'error': None, 'activeRun': None,
+                   'resultId': None, 'executionAttemptId': uuid4().hex, 'resumeCount': (item.get('resumeCount') or 0) + 1}
+        updated = self.repo.transition_task(kind, item_id, user, workspace, item['status'], changes)
+        attempt = updated['executionAttemptId']
+        try:
+            self.repo.event(kind, item_id, 'resumed', {'previousStatus': item['status'], 'completedRuns': len(completed),
+                            'remainingRuns': len(run_matrix(item)) - len(completed)}, user, workspace)
+            self.executor.submit(updated, lambda event: self.record_worker_event(kind, item_id, user, workspace, event, execution_attempt=attempt))
+        except Exception:
+            self.repo.transition_execution(kind, item_id, user, workspace, 'queued', {key: item.get(key) for key in changes}, execution_attempt=attempt)
+            raise
+        return self.repo.get(kind, item_id, user, workspace)
+
+    def record_worker_event(self, kind: str, item_id: str, user: str, workspace: str, event: dict, *, execution_attempt=None) -> None:
+        allowed = {"running", "paused", "completed", "failed", "cancelled", "partial"}
         if event.get("status") not in allowed:
             raise ApiError("INVALID_WORKER_EVENT", "执行器状态无效", 422)
         task = self.repo.get(kind, item_id, user, workspace)
+        if execution_attempt is not None and task.get('executionAttemptId') != execution_attempt:
+            raise SupersededExecution('原执行尝试已失效，停止旧线程回写。')
         transitions = {"queued": {"running", "failed", "cancelled"},
                        "running": {"running", "completed", "partial", "failed", "cancelled"},
-                       "cancelling": {"running", "cancelled", "failed", "completed", "partial"}}
+                       "pausing": {"running", "paused", "completed", "partial", "failed", "cancelled"},
+                       "paused": {"running", "failed", "cancelled"},
+                       "cancelling": {"running", "paused", "cancelled", "failed", "completed", "partial"}}
         if event["status"] not in transitions.get(task["status"], set()):
             raise ApiError("INVALID_TASK_STATE", "执行器请求的状态转移无效", 409)
-        changes = {"status": "cancelling" if task["status"] == "cancelling" and event["status"] == "running"
-                   else event["status"]}
+        changes = {'status': event['status']}
+        if task['status'] in {'pausing', 'paused', 'cancelling'} and event['status'] == 'running':
+            changes['status'] = task['status']
+        if task['status'] == 'cancelling' and event['status'] == 'paused':
+            changes['status'] = 'cancelling'
         if "activeRun" in event:
             # Only lifecycle boundaries are persisted. Live display frames are
             # held by the post executor, not duplicated in task/event documents.
@@ -396,17 +472,28 @@ class PostAnalysisApp:
         if event["status"] in {"completed", "partial"} and not changes.get("resultId"):
             raise ApiError("RESULT_NOT_READY", "结果封存前不可报告任务完成", 409)
         try:
-            self.repo.transition_task(kind, item_id, user, workspace, task["status"], changes)
+            if execution_attempt is None:
+                self.repo.transition_task(kind, item_id, user, workspace, task['status'], changes)
+            else:
+                self.repo.transition_execution(kind, item_id, user, workspace, task['status'], changes, execution_attempt=execution_attempt)
         except ApiError as exc:
-            # A cancellation can win the compare-and-set after the worker read
-            # its task. Keep that state while retaining actual completed counts.
+            # A control request can win after the worker read its task. Keep
+            # that state while retaining the worker's actual completed counts.
             if exc.code != "INVALID_TASK_STATE":
                 raise
             current = self.repo.get(kind, item_id, user, workspace)
-            if current["status"] != "cancelling":
+            if execution_attempt is not None and current.get('executionAttemptId') != execution_attempt:
+                raise SupersededExecution('原执行尝试已失效，停止旧线程回写。') from None
+            if current['status'] not in {'cancelling', 'pausing', 'paused'} or event['status'] not in transitions[current['status']]:
                 raise
-            retry_changes = {**changes, "status": "cancelling" if event["status"] == "running" else event["status"]}
-            self.repo.transition_task(kind, item_id, user, workspace, "cancelling", retry_changes)
+            retry_status = event['status']
+            if event['status'] == 'running' or current['status'] == 'cancelling' and event['status'] == 'paused':
+                retry_status = current['status']
+            retry_changes = {**changes, 'status': retry_status}
+            if execution_attempt is None:
+                self.repo.transition_task(kind, item_id, user, workspace, current['status'], retry_changes)
+            else:
+                self.repo.transition_execution(kind, item_id, user, workspace, current['status'], retry_changes, execution_attempt=execution_attempt)
         self.repo.event(kind, item_id, event["status"],
                         {key: value for key, value in event.items() if key != "status"}, user, workspace)
 
@@ -415,6 +502,8 @@ class PostAnalysisApp:
         state = self.executor.runtime(item_id) if hasattr(self.executor, "runtime") else None
         state = state or {}
         active = deepcopy(state.get("activeRun") or task.get("activeRun"))
+        if active and task['status'] == 'paused':
+            active['phase'] = 'paused'
         if active and task["status"] in {"interrupted", "cancelled", "failed"}:
             if active.get("phase") != "completed":
                 active["phase"] = task["status"]
@@ -434,9 +523,9 @@ class PostAnalysisApp:
 
     def cancel(self, kind: str, item_id: str, user: str, workspace: str) -> dict:
         item = self.repo.get(kind, item_id, user, workspace)
-        if item["status"] not in {"draft", "queued", "running"}:
+        if item["status"] not in {"draft", "queued", "running", "pausing", "paused"}:
             raise ApiError("INVALID_TASK_STATE", "任务当前状态不可取消", 409)
-        if item["status"] in {"queued", "running"}:
+        if item["status"] in {"queued", "running", "pausing", "paused"}:
             status = "cancelling"
         else:
             status = "cancelled"

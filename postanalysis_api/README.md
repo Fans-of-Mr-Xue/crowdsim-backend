@@ -2,6 +2,10 @@
 
 完整可编辑预设、一键真实运行入口、因果协议及恢复实机验收方法见[事后完整案例工作流](../docs/post_live_case_workflow.md)。
 
+统一设计v2区分可保存的实验假设与可执行的工程矩阵。未映射组使用 `planningOnly=true`、`changeDescription` 和全为null的数值控制字段（保留 `referenceDesignId`）；可以新增、保存和预览，不能启动。`GET /review-plans/{id}/execution` 对未绑定场景返回HTTP200、`execution:null`、`requiresConfirmation:false`及`readiness={ready:false,code,message,missing,nextAction}`。只有当前场景、完整工程输入和组映射均就绪时才返回执行矩阵，不能仅凭时窗数值相同认定可执行。
+
+事实基线重构以逐step、逐路口人数分布为目标，来源最少只需`timeSeconds/regionId/population`，其余观测指标可选。原场景ID、代码commit、模型版本、种子和需求不是重构前提；个体、路线、行为及本次实验配置由事后当前人工社会建立。`GET /datasets/{id}/reconstruction`只检查目标覆盖及缺项，不运行拟合；`inputReady`不等于已完成F-00。执行查询对尚未完成重构返回`FACTUAL_RECONSTRUCTION_REQUIRED`，不再索要原轮输入。可干预动作以当前`GET /capabilities`为准，不能由事中数据中的动作清单定义。
+
 当前执行与分析字段以[事后共同契约](../docs/post_execution_analysis_contract.md)为准；该文件按真实workers执行路径核对，并由事后设计对话加载。待扩展的SUMO/TraCI、测量和后端工作见[对接清单](../docs/post_sumo_handoff.md)，不能视为已经接入。
 
 本目录提供挂载在 SUMO 8765 服务内的 HTTP 接口、字段校验、MongoDB 持久化及真实结果计算。现已接入 `workers/sumo_batch.py`，使用独立SUMO进程执行纪念塔 `memorial-post-test` 的F-00/CF批次，保留现有事中运行时。A→M1、B→M2、C→M3为已确认工程测试映射，M3不是真实北侧通道；其他场景仍须声明能力后才能执行。源数据未观测指标保持null，实际指标来自FCD/tripinfo，未校准误差单独展示。
@@ -62,7 +66,7 @@ python crowdsim_overlay_server.py --host 127.0.0.1 --port 8765
 | `sourceKind` | `synthetic_reference` / `observed` | 细粒度 Markdown 应标为前者，仅供参考曲线与校准 |
 | `sourceNote` | 字符串 1—500 | 来源、生成方法或观测说明 |
 | `observations` | 数组 1—50000 | 标准化时间线；同一区域同一秒不可重复 |
-| `observations[].timeSeconds` | 整数 0—86400 | 从 20:00 起的仿真秒数；可跨午夜 |
+| `observations[].timeSeconds` | 有限数值 0—86400，可为小数 | 保留源数据相对秒；日期/时钟型纪念塔输入按20:00锚点规范化，事中相对时间不改起点 |
 | `observations[].regionId` | 字符串 1—64，字母数字/`_`/`-` | A/B/C 等区域标识 |
 | `observations[].population` | 整数 0—1000000 | 分区在场人数；A/B/C 若互不重叠才可求和 |
 | `observations[].density` | 数值或 `null`，0—1000 | 人/m²；缺失用 `null` |
@@ -215,3 +219,11 @@ services/metric_calculator.py、result_service.py、causal_analysis.py保留另�
 事后PostBackendWorkflow已通过同一8765 HTTP接口载入执行矩阵、保存草稿并显式启动，读取真实进度、轨迹和结果；不通过旧式WebSocket start消息执行批次。前端与后端均核对能力、版本和输入；用户仍需确认工程参数。服务未提供能力时如实停止，不能回退到演示结果。
 
 尚待补齐模型校准与测量有效性、实际控制/机制证据、窗口区域终点、到达口径、软件/文件复现材料，以及后端部分结果和一致性恢复。负责层次、产物及验收标准见[SUMO与后端对接清单](../docs/post_sumo_handoff.md)。
+
+## 从数据库读取事中已完成实验
+
+- `GET /api/v1/post/during-sources`：读取 `during_results` 中 `run_status=completed`、`archive_status=ready`、`data_complete=true` 的来源目录。沿用事后接口的用户与工作区请求头；带所有者的记录仅向对应用户开放，未记录所有者的旧共享归档可只读使用。
+- `GET /api/v1/post/during-sources/{runId}`：核对 GridFS 文件的实验绑定及 SHA-256，读取 `during_result_files` 中的全局、网格、边界观测及采样提交记录。返回人数、全局密度/速度、局部最大密度/最小网格平均速度、有效边界密度绝对差最大值与原始采样时间，保留真实零值；压力代理和未归档随机种子保持为空，不伪造现实日期或区域名称。
+- 读取接口不修改源记录。事后页面在用户选择轮次后再次核验版本与采样，再通过已有数据集接口复制到当前事后工作区，并进入事实基线确认。大体积轨迹和局部网格仍保留在原归档，不在此接口展开。
+- 来源可读取不代表已接入反事实执行器；运行仍须满足实际场景与控制映射的执行校验。
+- 筛选字段、聚合口径、缺测值和浏览器缓存规则见[事后基线观测格式](../docs/post_review_observation_format.md)。旧字段继续兼容；时间统一允许有限非负小数，避免上传原生事中观测时改变采样时间。

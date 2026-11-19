@@ -9,16 +9,71 @@ def review_version(plan):
     return hashlib.sha256(json.dumps(plan, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode("utf-8")).hexdigest()
 
 
+def execution_readiness(dataset, plan=None):
+    """A valid scientific draft may still need a scene-specific execution mapping."""
+    from .population_execution import MODE, prepare_execution_dataset
+    try:
+        dataset = prepare_execution_dataset(dataset)
+    except ApiError as exc:
+        return {'ready': False, 'code': exc.code, 'message': exc.message, 'missing': [exc.message], 'nextAction': '请调整运行输入。'}
+    metadata = dataset.get("metadata") or {}
+    profile = metadata.get("executionProfile")
+    profile = profile if isinstance(profile, dict) else {}
+    missing = []
+    from .factual_context import is_spatial
+    reconstructed = profile.get('inputMode') == MODE or is_spatial(dataset)
+    if metadata.get("durationSeconds") != 19800 and not reconstructed:
+        missing.append("当前纪念塔执行器使用19800秒工程时窗；需提供当前事中场景自身的执行适配，不能拉伸观测时间")
+    if profile.get("scenarioId") != "memorial-post-test":
+        missing.append("场景模型、路网与控制动作映射")
+    if not metadata.get("sourceRecords") and not reconstructed:
+        missing.append("可重建源流量与人员初始化的工程输入；仅有观测曲线不足以重新运行仿真")
+    if not missing:
+        try:
+            from postanalysis_api.workers.memorial_scenario import source_cohorts
+            cohorts = source_cohorts(dataset)
+            if not cohorts or not any(person['depart'] < metadata['durationSeconds'] for person in cohorts):
+                raise ApiError('EXECUTION_INPUT_EMPTY', '运行时窗内需要至少一名行人', 422)
+        except ApiError as exc:
+            return {"ready": False, "code": exc.code, "message": exc.message, "missing": [exc.message],
+                    "nextAction": "修正运行输入后重新校验。"}
+    if missing:
+        from .distribution_targets import distribution_targets
+        targets = distribution_targets(dataset)
+        return {"ready": False, "code": "FACTUAL_RECONSTRUCTION_REQUIRED",
+                "message": "请补齐运行校验所列的数据。",
+                "reconstruction": targets,
+                "missing": targets["missing"] or ["事实基线运行配置"],
+                "nextAction": "补齐后重新校验。"}
+    if plan and plan.get("counterfactualDesign", {}).get("schemaVersion") == 2:
+        try:
+            from postanalysis_api.schemas.unified_design import validate_unified_execution
+            validate_unified_execution(plan)
+        except ApiError as exc:
+            return {"ready": False, "code": exc.code, "message": exc.message, "missing": [exc.message],
+                    "nextAction": "返回需求界定补齐执行参数或模型映射，并重新确认方案。"}
+    return {"ready": True, "code": "READY", "message": "数据与场景输入校验通过。", "missing": [], "nextAction": "确认实验方案并运行。"}
+
+
 def execution_template(dataset, plan=None):
+    from .population_execution import prepare_execution_dataset
+    dataset = prepare_execution_dataset(dataset)
+    from .population_execution import execution_context
+    context = execution_context(dataset)
+    from .factual_context import is_spatial
+    reconstructed = dataset.get('metadata', {}).get('executionProfile', {}).get('inputMode') == 'population-targets/1.0' or is_spatial(dataset)
     duration = dataset.get("metadata", {}).get("durationSeconds")
-    if duration != 19800:
-        raise ApiError("EXECUTION_TEMPLATE_UNSUPPORTED", "默认模板对应纪念塔完整 19800 秒基线；其他时间窗需显式设计执行请求", 422)
+    readiness = execution_readiness(dataset, plan)
+    if not readiness["ready"]:
+        raise ApiError(readiness["code"], readiness["message"] + "；" + "；".join(readiness["missing"]), 422)
     unified = bool(plan and plan.get("counterfactualDesign", {}).get("schemaVersion") == 2)
     if unified:
         from postanalysis_api.schemas.unified_design import validate_unified_execution
         from postanalysis_api.schemas.review_intake import validate_review_intake
         validate_review_intake(plan)
         validate_unified_execution(plan)
+        if reconstructed and plan['counterfactualDesign'].get('baselineExecution') != context['baselineExecution']:
+            raise ApiError('BASELINE_CONTROL_MISMATCH', '请重新载入当前时窗的事实组控制参数。', 422)
     source = {"counterfactual": plan["counterfactualDesign"]["groups"]} if unified else plan["experimentSchemeDesign"] if plan else {
         kind: [{"id": prefix + "-01", "name": label, "hypothesis": hypothesis}]
         for kind, prefix, label, hypothesis in (
@@ -27,7 +82,7 @@ def execution_template(dataset, plan=None):
             ("mechanism", "MEC", "引导响应模块消融", "固定开放时点，取消引导遵从模块后风险变化将减弱"))}
     repeats = (plan or {}).get("counterfactualSettings", {}).get("repeatCount", 6)
     from postanalysis_api.schemas.execution import validate_execution_settings
-    settings = validate_execution_settings(plan["executionSettings"]) if plan and "executionSettings" in plan else None
+    settings = validate_execution_settings(plan["executionSettings"], duration) if plan and "executionSettings" in plan else None
     groups = []
     for kind in source:
         for design in source[kind]:
@@ -36,8 +91,9 @@ def execution_template(dataset, plan=None):
             config = design.get("execution")
             if config:
                 from postanalysis_api.schemas.execution import validate_group_execution
-                validate_group_execution(config)
-            starts = [config["startSeconds"]] if config else [13800, 14100, 14400] if kind == "intervention" else [13800]
+                validate_group_execution(config, duration)
+            default_starts = [int(duration * fraction) for fraction in (.5, .55, .6)] if reconstructed else [13800, 14100, 14400]
+            starts = [config["startSeconds"]] if config else default_starts if kind == "intervention" else [default_starts[0]]
             for start in starts:
                 groups.append({"id": f"CF-{len(groups) + 1:02d}", "name": design["name"] + (f" · {start}s" if len(starts) > 1 else ""),
                     "sourceGroupId": design["id"], "experimentType": kind, "repeatCount": repeats,
@@ -70,6 +126,11 @@ def execution_template(dataset, plan=None):
                             "windowStartSeconds": 16200, "windowEndSeconds": duration, "aggregation": "mean"}]}
     if settings:
         result.update(settings)
+    elif reconstructed:
+        third = max(1, duration // 3)
+        for feature, (start, end) in zip(result['pcFeatures'], ((0, third), (third, third * 2), (third * 2, duration))):
+            start = min(duration - 1, start)
+            feature.update(windowStartSeconds=start, windowEndSeconds=max(start + 1, min(duration, end)))
     from postanalysis_api.schemas.experiments import validate_experiment
     validate_experiment(result)
     return result
