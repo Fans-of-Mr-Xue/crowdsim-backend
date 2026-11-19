@@ -179,6 +179,13 @@ class PostAnalysisApp:
                 raise ApiError("REGION_UNMAPPED", "PC 特征区域尚无 SUMO 映射", 422, "pcFeatures.regionId")
         for group in task.get("groups", []):
             for action in group["interventions"]:
+                from crowdsim.domain.action_contract import ACTION_TYPES
+                if action['actionType'] in {'open_gate', 'guidance'} and capability.get('nativeActionContract'):
+                    raise ApiError('NATIVE_ACTION_MAPPING_REQUIRED', '旧三参数方案须重新映射为事中原生动作。', 422)
+                if action['actionType'] in ACTION_TYPES and capability.get('nativeActionContract'):
+                    from postanalysis_api.workers.native_runtime import native_action
+                    native_action(action)
+                    continue
                 if action["actionType"] not in capability.get("actionTypes", []):
                     raise ApiError("ACTION_UNSUPPORTED", "仿真器不支持此干预动作", 422, "actionType")
                 if action["targetRegionId"] not in region_map:

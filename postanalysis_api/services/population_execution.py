@@ -28,6 +28,13 @@ def population_cohorts(dataset):
 def execution_context(dataset):
     prepared = prepare_execution_dataset(dataset)
     metadata = prepared.get('metadata') or {}
+    from .factual_context import is_spatial
+    if is_spatial(prepared):
+        context = metadata['factualContext']
+        return {'inputMode': metadata['executionProfile']['inputMode'], 'durationSeconds': metadata['durationSeconds'],
+                'nativeActionContract': 'crowdsim.action_contract/1.0', 'baselineExecution': {'actions': []},
+                'nativeTargets': {'guidanceRegionId': context['hotspot']['id']},
+                'controlSource': 'no_additional_control_unless_explicit_native_actions'}
     profile = metadata.get('executionProfile') or {}
     controls = profile.get('baselineControl')
     if not controls:

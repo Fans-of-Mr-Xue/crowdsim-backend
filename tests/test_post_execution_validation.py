@@ -18,16 +18,20 @@ class ExecutionValidationTests(unittest.TestCase):
         root = Path(__file__).resolve().parents[1]
         self.dataset = json.loads((root / 'docs/examples/shanghai_memorial_post_dataset.json').read_text(encoding='utf-8'))
         self.dataset.update(id='ds-one', version='a' * 64)
+        self.legacy_dataset = deepcopy(self.dataset)
+        from test_post_population_execution import population_dataset
+        self.dataset = population_dataset()
+        self.dataset['id'] = 'ds-one'
         self.app = SimpleNamespace(executor=SimpleNamespace(binary='sumo'), _check_start_capability=Mock())
 
     def test_success_compiles_baseline_and_every_control_group_and_checks_native_sumo(self):
         before = deepcopy(self.dataset)
-        with patch('postanalysis_api.services.execution_validation.compile_routes') as compile_, \
+        with patch('postanalysis_api.workers.native_runtime.compile_input') as compile_, \
                 patch('postanalysis_api.services.execution_validation.subprocess.run', return_value=SimpleNamespace(returncode=0)) as run:
             result = validate_execution_input(self.app, self.dataset)
         self.assertTrue(result['ready'])
         self.assertEqual(self.dataset['version'], result['datasetVersion'])
-        self.assertEqual(6, compile_.call_count)  # F-00 and the default five controls.
+        self.assertEqual(1, compile_.call_count)  # F-00 only; no invented default treatments.
         self.app._check_start_capability.assert_called_once()
         self.assertEqual('0.5', run.call_args.args[0][run.call_args.args[0].index('--end') + 1])
         self.assertEqual(before, self.dataset)
@@ -36,8 +40,8 @@ class ExecutionValidationTests(unittest.TestCase):
         for mutate in (lambda d: d['metadata'].pop('sourceRecords'),
                        lambda d: d['metadata']['executionProfile'].update(baselineControl={}),
                        lambda d: d['metadata']['sourceRecords'][0].update(intervalEntered=-1)):
-            data = deepcopy(self.dataset); mutate(data)
-            with self.subTest(mutate=mutate), patch('postanalysis_api.services.execution_validation.compile_routes') as compile_:
+            data = deepcopy(self.legacy_dataset); mutate(data)
+            with self.subTest(mutate=mutate), patch('postanalysis_api.workers.native_runtime.compile_input') as compile_:
                 result = validate_execution_input(self.app, data)
                 self.assertFalse(result['ready'])
                 self.assertTrue(result['missing'])
@@ -49,25 +53,25 @@ class ExecutionValidationTests(unittest.TestCase):
         self.assertFalse(result['ready'])
         self.assertEqual('CAPABILITY_UNAVAILABLE', result['code'])
         self.app._check_start_capability.side_effect = None
-        with patch('postanalysis_api.services.execution_validation.compile_routes', side_effect=ApiError('ROUTE_UNREACHABLE', 'route missing', 422)):
+        with patch('postanalysis_api.workers.native_runtime.compile_input', side_effect=ApiError('ROUTE_UNREACHABLE', 'route missing', 422)):
             self.assertEqual('ROUTE_UNREACHABLE', validate_execution_input(self.app, self.dataset)['code'])
 
     def test_missing_binary_rejected_input_and_native_timeout_fail_before_success(self):
         for outcome in (SimpleNamespace(returncode=1), subprocess.TimeoutExpired('sumo', 20)):
-            with self.subTest(outcome=outcome), patch('postanalysis_api.services.execution_validation.compile_routes'), \
+            with self.subTest(outcome=outcome), patch('postanalysis_api.workers.native_runtime.compile_input'), \
                     patch('postanalysis_api.services.execution_validation.subprocess.run') as run:
                 if isinstance(outcome, Exception): run.side_effect = outcome
                 else: run.return_value = outcome
                 self.assertFalse(validate_execution_input(self.app, self.dataset)['ready'])
         self.app.executor.binary = None
-        with patch('postanalysis_api.services.execution_validation.compile_routes'):
+        with patch('postanalysis_api.workers.native_runtime.compile_input'):
             self.assertEqual('SUMO_BINARY_MISSING', validate_execution_input(self.app, self.dataset)['code'])
 
     def test_validation_endpoint_uses_current_user_workspace_and_dataset_version(self):
         self.app.repo = SimpleNamespace(get=Mock(return_value=self.dataset))
         request = Request('GET', '/datasets/ds-one/validation', {}, {},
                           {'X-CrowdSim-User': 'u', 'X-CrowdSim-Workspace': 'post-c1'}, self.app)
-        with patch('postanalysis_api.services.execution_validation.compile_routes'), \
+        with patch('postanalysis_api.workers.native_runtime.compile_input'), \
                 patch('postanalysis_api.services.execution_validation.subprocess.run', return_value=SimpleNamespace(returncode=0)):
             status, result, _ = handle(request)
         self.assertEqual(200, status)

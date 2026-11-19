@@ -74,18 +74,27 @@ def validate_experiment(payload: dict) -> dict:
         if group_id in used_ids:
             fail(f"{field}.id", "实验组 ID 不得重复")
         used_ids.add(group_id)
-        interventions = array(group.get("interventions"), f"{field}.interventions", 1, 10)
+        interventions = array(group.get("interventions"), f"{field}.interventions", 0, 10)
         actions = []
         used_action_ids = set()
         for action_index, raw_action in enumerate(interventions):
             action_field = f"{field}.interventions[{action_index}]"
             action = object_(raw_action, action_field,
-                             keys={"id", "actionType", "targetRegionId", "atSeconds", "parameters"})
+                             keys={"id", "actionType", "targetRegionId", "target", "atSeconds", "parameters"})
             action_id = text_(action.get("id"), f"{action_field}.id", max_len=64, pattern=IDENTIFIER)
             if action_id in used_action_ids:
                 fail(f"{action_field}.id", "同组干预 ID 不得重复")
             used_action_ids.add(action_id)
             at = integer(action.get("atSeconds"), f"{action_field}.atSeconds", 1, scenario["durationSeconds"] - 1)
+            from crowdsim.domain.action_contract import ACTION_TYPES
+            if action.get('actionType') in ACTION_TYPES:
+                from postanalysis_api.workers.native_runtime import native_action
+                normalized = native_action({**action, 'id': action_id})
+                actions.append({'id': action_id, 'actionType': normalized['actionType'],
+                                'targetRegionId': action.get('targetRegionId', 'global'),
+                                'target': normalized['target'], 'atSeconds': at,
+                                'parameters': normalized['parameters']})
+                continue
             params = object_(action.get("parameters"), f"{action_field}.parameters")
             if len(params) > 20:
                 fail(f"{action_field}.parameters", "参数项最多 20 个")

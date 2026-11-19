@@ -26,18 +26,17 @@ class CausalProtocolTests(unittest.TestCase):
         self.assertEqual({('x', 'y'), ('z', 'y')}, {(edge['source'], edge['target']) for edge in graph['edges'] if edge['orientation'] == 'directed'})
         self.assertEqual('invalid_data', discover(features, runs + [runs[0]])['status'])
 
-    def test_frontend_live_preset_compiles_to_eighteen_valid_bound_runs(self):
+    def test_old_frontend_preset_remains_readable_but_requires_native_action_mapping(self):
         root = Path(__file__).resolve().parents[1]
         plan = json.loads((root / 'docs/examples/shanghai_memorial_post_plan.json').read_text(encoding='utf-8'))
         dataset = json.loads((root / 'docs/examples/shanghai_memorial_post_dataset.json').read_text(encoding='utf-8'))
         dataset.update(id='ds-validation', version='a' * 64)
         plan['factualBaseline'].update(datasetId=dataset['id'], datasetVersion=dataset['version'])
         validate_review_intake(plan)
-        execution = execution_template(dataset, plan)
-        self.assertEqual(19800, execution['scenario']['durationSeconds'])
-        self.assertEqual(18, max(g['repeatCount'] for g in execution['groups']) + sum(g['repeatCount'] for g in execution['groups']))
-        self.assertEqual(['F-00', 'CF-01', 'CF-01', 'CF-01', 'CF-01'], [g['referenceGroupId'] for g in execution['groups']])
-        self.assertTrue(all(g['experimentType'] == 'counterfactual' for g in execution['groups']))
+        from postanalysis_api.schemas.common import ApiError
+        with self.assertRaises(ApiError) as error:
+            execution_template(dataset, plan)
+        self.assertEqual('NATIVE_ACTION_MAPPING_REQUIRED', error.exception.code)
 
     def test_nonfinite_bool_and_unpaired_samples_are_excluded(self):
         runs = [{"seed": seed, "planId": group, "status": "completed", "metrics": {"mean_speed": value}}

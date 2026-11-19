@@ -33,6 +33,27 @@ def fixture():
     return dataset, plan
 
 
+def native_fixture(duration=600):
+    from test_post_population_execution import population_dataset
+    dataset, (_, plan) = population_dataset(duration), fixture()
+    action = {'id': 'guide', 'actionType': 'publish_guidance', 'atSeconds': 10,
+              'target': {'regionId': dataset['metadata']['factualContext']['hotspot']['id']},
+              'parameters': {'message': '请有序疏散', 'command': 'disperse', 'durationSeconds': 120}}
+    limit = {'id': 'limit', 'actionType': 'set_inflow_rate', 'atSeconds': 10,
+             'target': {'entryId': 'monument_m3'}, 'parameters': {'rate': .5, 'durationSeconds': 120}}
+    for index, group in enumerate(plan['counterfactualDesign']['groups']):
+        group['execution'] = {'referenceDesignId': 'F-00' if index == 0 else 'CF-01',
+                              'actions': deepcopy([action, limit] if index != 3 else [limit])}
+        if index == 2:
+            group['execution']['actions'][0]['parameters']['durationSeconds'] = 150
+    plan['counterfactualDesign']['baselineExecution'] = {'actions': []}
+    for feature, window in zip(plan['executionSettings']['pcFeatures'], ((0, 100), (100, 200), (200, duration))):
+        feature.update(windowStartSeconds=window[0], windowEndSeconds=window[1])
+    plan['counterfactualDesign']['executionSettings'] = deepcopy(plan['executionSettings'])
+    plan['factualBaseline'].update(datasetId=dataset['id'], datasetVersion=dataset['version'])
+    return dataset, plan
+
+
 class UnifiedDesignTests(unittest.TestCase):
     def test_prose_only_group_addition_is_repaired_to_a_real_incremental_update(self):
         _, plan = fixture()
@@ -147,7 +168,7 @@ class UnifiedDesignTests(unittest.TestCase):
                 validate_review_intake(invalid)
 
     def test_saved_snapshot_reads_back_and_freezes_the_unified_execution(self):
-        dataset, plan = fixture()
+        dataset, plan = native_fixture()
         stored = {}
         def save(user, workspace, draft_id, data):
             stored.update(id="p1", **deepcopy(data)); return deepcopy(stored)
@@ -174,9 +195,9 @@ class UnifiedDesignTests(unittest.TestCase):
             execution_template(dataset, plan)
 
     def test_analysis_reuses_eligible_groups_across_the_three_sections(self):
-        dataset, plan = fixture()
+        dataset, plan = native_fixture()
         task = execution_template(dataset, plan); task["reviewSnapshot"] = plan
-        runs = [{"id": f"{id_}-{seed}", "planId": id_, "seed": seed, "status": "completed", "metrics": {metric: 1 for metric in task["metricIds"]}}
+        runs = [{"id": f"{id_}-{seed}", "planId": id_, "seed": seed, "status": "completed", "executionProtocol": "post-during-runtime/1.0", "metrics": {metric: 1 for metric in task["metricIds"]}}
                 for id_ in ["F-00", *[group["id"] for group in task["groups"]]] for seed in range(3)]
         result = summarize(task, runs)
         ids = lambda phase: {row["groupId"] for row in result[phase]["experiments"]}

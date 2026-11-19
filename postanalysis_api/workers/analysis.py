@@ -71,6 +71,8 @@ def assess_hypothesis(design, effects):
 
 def summarize(task, runs):
     complete = [run for run in runs if run.get("status") == "completed"]
+    if len({run.get('executionProtocol', 'legacy') for run in complete}) > 1:
+        raise ValueError('不同执行链版本的运行不能混合计算事后效应')
     metric_ids = task["metricIds"]
     ids = ["F-00", *[group["id"] for group in task.get("groups", [])]]
     distributions = []
@@ -96,9 +98,19 @@ def summarize(task, runs):
             from .memorial_scenario import control_schedule
             other = next((item for item in task["groups"] if item["id"] == reference), None)
             factual_controls = next((run.get('controls') for run in complete if run['planId'] == 'F-00' and run.get('controls')), None)
-            left, right = control_schedule(other["interventions"] if other else [], factual_controls), control_schedule(group["interventions"], factual_controls)
-            changed = [key for key in left if left[key] != right[key]]
-            timing_only = set(changed) == {"gateOpenSeconds", "guidanceStartSeconds"} and left["gateOpenSeconds"] - right["gateOpenSeconds"] == left["guidanceStartSeconds"] - right["guidanceStartSeconds"]
+            native = any(run.get('executionProtocol') == 'post-during-runtime/1.0' for run in complete)
+            if native:
+                import json
+                def inputs(actions):
+                    return {action['id']: json.dumps(action, sort_keys=True, ensure_ascii=False) for action in actions}
+                left, right = inputs(other['interventions'] if other else []), inputs(group['interventions'])
+                from .native_runtime import changed_actions
+                changed = changed_actions(other['interventions'] if other else [], group['interventions'])
+                timing_only = False
+            else:
+                left, right = control_schedule(other["interventions"] if other else [], factual_controls), control_schedule(group["interventions"], factual_controls)
+                changed = [key for key in left if left[key] != right[key]]
+                timing_only = set(changed) == {"gateOpenSeconds", "guidanceStartSeconds"} and left["gateOpenSeconds"] - right["gateOpenSeconds"] == left["guidanceStartSeconds"] - right["guidanceStartSeconds"]
             sections["observation"].append(row)
             if len(changed) <= 1 or timing_only:
                 sections["intervention"].append(row)
@@ -111,7 +123,8 @@ def summarize(task, runs):
                 row["placeboCheck"] = {"status": "insufficient_data" if not usable else "passed" if all(item["maxAbsolutePairDifference"] == 0 for item in usable) else "failed",
                                        "checkedMetricCount": len(usable),
                                        "reason": "同控制、同流量、同种子组的可测指标应相同；缺失终点不视为零。"}
-            if design.get("method") == "ablation" and other and len(changed) == 1 and changed[0] in {"compliance", "guidanceDelaySeconds"}:
+            ablated = native and len(changed) == 1 and changed[0] in left and changed[0] not in right
+            if design.get("method") == "ablation" and other and len(changed) == 1 and (ablated or not native and changed[0] in {"compliance", "guidanceDelaySeconds"}):
                 sections["mechanism"].append(row)
         else:
             sections[group.get("experimentType", "observation")].append(row)
@@ -126,7 +139,7 @@ def summarize(task, runs):
                                "primaryEndpointPolicy": "pre-registered per contrast; secondary outcomes descriptive; intervals unadjusted across contrasts"},
             "metrics": {"catalog": {metric: METRICS[metric] for metric in metric_ids},
                         "distributions": distributions, "runs": [{key: run.get(key) for key in
-                ("id", "planId", "seed", "status", "metrics", "archive", "measurement", "executionEvidence")} | {
+                ("id", "planId", "seed", "status", "metrics", "archive", "measurement", "executionEvidence", "executionProtocol", "behaviorEvidence")} | {
                     "calibration": {"populationMAE": run.get("calibration", {}).get("populationMAE"),
                                     "comparisonCount": run.get("calibration", {}).get("observationCount", len(run.get("calibration", {}).get("populationResiduals", []))),
                                     "calibrated": run.get('calibration', {}).get('calibrated', False),

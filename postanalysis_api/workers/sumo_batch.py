@@ -37,10 +37,14 @@ class SumoBatchExecutor:
         if not self.binary:
             return {"ready": False, "reason": self.unavailable}
         regions = geometry()
-        return {"ready": True, "scenarioIds": ["memorial-post-test"], "modelIds": [MODEL_ID],
+        from crowdsim.domain.action_contract import ACTION_TYPES
+        from .native_runtime import VERSION
+        return {"ready": True, "executionProtocol": VERSION, "nativeActionContract": 'crowdsim.action_contract/1.0',
+                "nativeActionTypes": sorted(ACTION_TYPES),
+                "scenarioIds": ["memorial-post-test"], "modelIds": [MODEL_ID],
                 "modelVersions": {MODEL_ID: [MODEL_VERSION]},
                 "geometryVersions": {"memorial-post-test": [geometry_version()]}, "ruleVersions": [RULE_VERSION],
-                "actionTypes": list(ACTION_SCHEMAS), "actionSchemas": deepcopy(ACTION_SCHEMAS),
+                "actionTypes": sorted(ACTION_TYPES), "actionSchemas": {},
                 "regionMap": {key: {"edgeIds": [edge], "cellIds": [f"g_{x}_{y}" for x, y in sorted(region_cells()[key])],
                                     "effectiveAreaM2": regions[key].area} for key, edge in ENTRY_EDGES.items()},
                 "metricIds": METRIC_IDS, "maxParallelism": 1, "maxTotalRuns": 650,
@@ -55,8 +59,9 @@ class SumoBatchExecutor:
         from postanalysis_api.services.population_execution import prepare_execution_dataset
         dataset = prepare_execution_dataset(dataset)
         source_cohorts(dataset)  # Fail synchronously before accepting an invalid job.
-        for group in task.get("groups", []):
-            control_schedule(group["interventions"], dataset.get('metadata', {}).get('executionProfile', {}).get('baselineControl'))
+        from .native_runtime import validate_task
+        previous = self.repo.runs_for_experiment(task['id'], task['ownerId'], task['workspaceId']) if task.get('resumeCount') else []
+        validate_task(task, dataset, [run for run in previous if run.get('status') == 'completed'])
         if task["scenario"]["durationSeconds"] > dataset.get("metadata", {}).get("durationSeconds", 0):
             raise ApiError("EXECUTION_INPUT_INVALID", "运行窗口不得超出已上传基线时间窗", 422)
         with self._lock:
@@ -276,7 +281,9 @@ class SumoBatchExecutor:
             archive = self.repo.begin_archive(run["id"], kind, user, workspace, {**run, "interventions": actions})
             folder.mkdir(parents=True, exist_ok=False)
             routes, fcd, trips = folder / "demand.rou.xml", folder / "fcd.xml", folder / "tripinfo.xml"
-            manifest = compile_routes(dataset, seed, actions, duration, routes)
+            from .native_runtime import compile_input, execute as execute_native, archive_evidence, VERSION
+            manifest = compile_input(dataset, seed, actions, duration, routes)
+            manifest['seed'] = seed
             (folder / "input.json").write_text(json.dumps({"scenario": task["scenario"], "seed": seed,
                 "datasetVersion": task["datasetVersion"], "interventions": actions, **manifest}, ensure_ascii=False, indent=2), encoding="utf-8")
             command = [self.binary, "--net-file", str(NET_FILE), "--route-files", str(routes),
@@ -303,14 +310,15 @@ class SumoBatchExecutor:
                         command.extend([key, value])
             (folder / "command.json").write_text(json.dumps(command, indent=2), encoding="utf-8")
             command += ["--log", str(folder / "sumo.log")]
-            actual_command = [self.binary, "-c", str(folder / "post.sumocfg"), "--start", "--quit-on-end", *command[5:]]
+            actual_command = [self.binary, "-c", str(folder / "bund.post.sumocfg"), "--start", "--quit-on-end", *command[5:]]
             if hasattr(self.repo, "archive_execution_inputs"):
                 self.repo.archive_execution_inputs(archive, (folder / "input.json").read_bytes(), routes.read_bytes(), actual_command)
             publish("running")
             self._checkpoint(task, on_event, cancel)
-            control_events = execute(self.binary, routes, folder, command[5:], manifest, duration, cancel.is_set,
+            native_result = execute_native(self.binary, routes, folder, command[5:], manifest, duration, cancel.is_set,
                                      on_progress=lambda update: publish("running", update),
                                      before_step=lambda: self._checkpoint(task, on_event, cancel))
+            control_events = native_result.pop('measurementControlEvents')
             self._checkpoint(task, on_event, cancel)
             publish("archiving", persist=True)
             if is_spatial(dataset):
@@ -342,7 +350,9 @@ class SumoBatchExecutor:
                     sum(values) / len(values) if feature["aggregation"] == "mean" else values[-1]) if values else None
             output["featureValues"] = feature_values
             output.pop("regionSamples", None)
-            output.update(status="completed", archive=archive, controls=manifest["controls"],
+            output.update(status="completed", archive=archive, controls={}, executionProtocol=VERSION,
+                          behaviorEvidence=archive_evidence(self.repo, archive, native_result),
+                          runtimeActions=actions,
                           controlEvents=control_events,
                           executionEvidence={"assignedExitCounts": dict(Counter(person["exitRegionId"] for person in manifest["cohorts"])),
                                              "actualEventCounts": dict(Counter(event["type"] for event in control_events))},
@@ -356,6 +366,14 @@ class SumoBatchExecutor:
                 # A late lifecycle callback cannot turn an already committed run
                 # into a failed attempt. Resume will recover this group/seed.
                 raise
+            outcome_path = folder / 'runtime_outcome.json'
+            if archive and outcome_path.is_file():
+                try:
+                    from .native_runtime import archive_evidence, VERSION
+                    details = archive_evidence(self.repo, archive, json.loads(outcome_path.read_text(encoding='utf-8')))
+                    self.repo.update('runs', run['id'], user, workspace, {'executionProtocol': VERSION, 'behaviorEvidence': details})
+                except Exception:
+                    logging.getLogger('postanalysis_api.sumo_batch').exception('Could not archive interrupted behavior evidence')
             status = "cancelled" if isinstance(exc, InterruptedError) else "failed"
             if archive:
                 self.repo.finish_archive(archive, status, {"error": str(exc)[:2000], "outputDirectory": str(folder)})

@@ -19,6 +19,22 @@ def validate_execution_settings(value, duration_seconds=86400):
 
 
 def validate_group_execution(value, duration_seconds=86400):
+    if isinstance(value, dict) and 'actions' in value:
+        from .common import array, text_, integer, object_
+        from postanalysis_api.workers.native_runtime import native_action
+        object_(value, 'execution', keys={'actions', 'referenceDesignId'})
+        text_(value.get('referenceDesignId'), 'execution.referenceDesignId', max_len=64)
+        seen = set()
+        previous = 0
+        for action in array(value.get('actions'), 'execution.actions', 0, 10):
+            object_(action, 'execution.actions[]', keys={'id', 'actionType', 'atSeconds', 'target', 'parameters', 'targetRegionId'})
+            text_(action.get('id'), 'action.id', max_len=64, pattern=r'[A-Za-z0-9][A-Za-z0-9_-]*')
+            at = integer(action.get('atSeconds'), 'action.atSeconds', 1, duration_seconds - 1)
+            if action['id'] in seen or at < previous:
+                raise ApiError('EXECUTION_DESIGN_INVALID', '动作编号须唯一且按执行时间排序', 422)
+            native_action(action)
+            seen.add(action['id']); previous = at
+        return value
     keys = {"startSeconds", "compliance", "delaySeconds", "referenceDesignId"}
     valid = isinstance(value, dict) and set(value) == keys
     if valid:

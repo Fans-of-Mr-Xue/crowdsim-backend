@@ -26,6 +26,7 @@ def current_context():
     paths = ['config/experiment.json', 'config/observation_metrics.json', 'config/population_profiles.json',
              'config/crowd_hotspots.json', 'config/during_presets/memorial_tower_v1.json']
     return collector, {'geometry': collector.geometry_metadata(), 'sumo': experiment['sumo'],
+        'decision': experiment['decision'],
         'stepSeconds': experiment['step_length_seconds'],
         'populationProfiles': json.loads((ROOT / paths[2]).read_text(encoding='utf-8')),
         'populationDistributions': preset['requirement']['population']['distributions'],

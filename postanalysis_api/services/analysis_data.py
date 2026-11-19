@@ -7,7 +7,7 @@ from postanalysis_api.schemas.common import ApiError
 FIELDS = ('density', 'meanSpeed', 'pressureProxy', 'population')
 OUTCOMES = ('stable', 'congested', 'unstable', 'recovering')
 RUN_FIELDS = ('id', 'experimentId', 'datasetVersion', 'planId', 'seed', 'status', 'metrics', 'controls',
-              'measurement.arrivedCount', 'executionEvidence.assignedExitCounts')
+              'measurement.arrivedCount', 'executionEvidence.assignedExitCounts', 'executionProtocol', 'runtimeActions', 'behaviorEvidence')
 
 
 def outcome(row, previous):

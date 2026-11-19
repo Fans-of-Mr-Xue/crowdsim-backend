@@ -166,7 +166,7 @@ class PostLiveRuntimeTests(unittest.TestCase):
                 if fail and executor.runtime(task["id"])["activeRun"]["planId"] == fail_plan:
                     raise fail()
             (directory / "tripinfo.xml").write_text("<tripinfos/>", encoding="utf-8")
-            return []
+            return {'measurementControlEvents': []}
 
         def compile_routes(dataset, seed, actions, duration, path):
             path.write_text("<routes/>", encoding="utf-8")
@@ -177,8 +177,9 @@ class PostLiveRuntimeTests(unittest.TestCase):
             if completed_callback_error and event.get('activeRun', {}).get('phase') == 'completed':
                 raise ApiError('INVALID_TASK_STATE', 'late lifecycle write failed', 409)
 
-        with patch("postanalysis_api.workers.sumo_batch.compile_routes", side_effect=compile_routes), \
-                patch("postanalysis_api.workers.sumo_batch.execute", side_effect=execute), \
+        with patch("postanalysis_api.workers.native_runtime.compile_input", side_effect=compile_routes), \
+                patch("postanalysis_api.workers.native_runtime.execute", side_effect=execute), \
+                patch("postanalysis_api.workers.native_runtime.archive_evidence", return_value={}), \
                 patch("postanalysis_api.workers.sumo_batch.measure", return_value={"metrics": {}, "measurement": {}, "regionSamples": {}}), \
                 patch("postanalysis_api.workers.sumo_batch.summarize", return_value={}):
             executor._run(task, {"observations": []}, on_event, threading.Event())

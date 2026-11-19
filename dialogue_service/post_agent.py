@@ -121,10 +121,12 @@ def validate_reply(task, reply, context):
             raise ValueError('必须返回CF-01的完整可执行配置，不得只作文字说明')
         if operation == 'initial_group':
             supplied = proposed_groups
+            native = bool(context.get('nativeActionContract'))
+            execution_keys = {'actions', 'referenceDesignId'} if native else {'startSeconds', 'compliance', 'delaySeconds', 'referenceDesignId'}
             required = {'id', 'name', 'hypothesis', 'method', 'factorSymbols', 'primaryMetricId', 'expectedDirection', 'decisionRule', 'execution'}
             if (len(supplied) != 1 or not required <= set(supplied[0])
                     or not isinstance(supplied[0].get('execution'), dict)
-                    or set(supplied[0]['execution']) != {'startSeconds', 'compliance', 'delaySeconds', 'referenceDesignId'}):
+                    or set(supplied[0]['execution']) != execution_keys):
                 raise ValueError('初始CF-01须由模型完整给出全部字段和数值，不继承占位组配置')
         if "repeat_count" in reply:
             _integer(reply["repeat_count"], "repeat_count", 1, 50)
@@ -166,12 +168,15 @@ def validate_reply(task, reply, context):
                     from postanalysis_api.schemas.unified_design import changed_controls
                     group = trial['groups'][0]
                     duration = trial.get('durationSeconds', 19800)
+                    native = bool(context.get('nativeActionContract'))
+                    from postanalysis_api.schemas.execution import validate_group_execution
+                    validate_group_execution(group['execution'], duration)
                     if (len(trial['groups']) != 1 or group['id'] != 'CF-01' or group.get('planningOnly')
                             or group['execution']['referenceDesignId'] != 'F-00'
-                            or not 1 <= group['execution']['startSeconds'] < duration
-                            or not 0 <= group['execution']['delaySeconds'] <= duration
+                            or not native and not 1 <= group['execution']['startSeconds'] < duration
+                            or not native and not 0 <= group['execution']['delaySeconds'] <= duration
                             or not changed_controls(group, trial['groups'], trial.get('baselineExecution'))
-                            or len(changed_controls(group, trial['groups'], trial.get('baselineExecution'))) != len(group['factorSymbols'])
+                            or not native and len(changed_controls(group, trial['groups'], trial.get('baselineExecution'))) != len(group['factorSymbols'])
                             or trial.get('repeatCount', 0) < 20):
                         raise ValueError('CF-01须有明确数值水平、实际改变的因素和至少20对共同种子，不能返回占位或待映射草案')
             except ApiError as exc:
@@ -477,7 +482,18 @@ def respond(payload, *, complete=None):
                          '禁止只在assistant_message里描述新增CF组却不返回对应结构；前端只会应用经过校验的结构。'
                          'method表示设计类型：ofat是单因素设计，ablation是单模块消融，paired是旧字段保留的组合策略设计。'
                          '所有这些设计都使用共同随机种子的配对比较，因此OFAT和paired统计不是互斥方法。单因素只能改变一个控制量；组合策略可改变多个。')
-        if context.get('designOperation') == 'initial_group':
+        if context.get('nativeActionContract'):
+            instructions += ('\n本次使用事中原生动作契约，此说明覆盖旧三参数示例。execution只能为'
+                '{"referenceDesignId":"F-00或已有组ID","actions":[{"id":"动作编号","actionType":"支持的原生动作",'
+                '"atSeconds":整数,"target":{},"parameters":{}}]}。F-00的actions为空。不得返回startSeconds/compliance/delaySeconds。'
+                '动作只能使用actionCapabilities.nativeActionTypes；发布引导使用publish_guidance，参数message、command、durationSeconds；'
+                'command可为inform/reroute/disperse/evacuate/queue，行为引导target.regionId须使用nativeTargets.guidanceRegionId。'
+                '信息覆盖可在target中设置SUMO米制坐标x/y/radius，缺省为全局。durationSeconds在1到1800之间。'
+                '限流为set_inflow_rate，target.entryId必须来自能力目录的实际道路，parameters为rate(0..1)、durationSeconds。'
+                '动作按atSeconds排序且必须处于当前运行窗口内。保留动作id，OFAT仅改一个参数，消融仅从完整策略组删除一个动作。'
+                'factorSymbols使用当前变量定义。初始CF-01必须返回完整原生动作组、实际不同于F-00且至少20对共同种子；'
+                '微观响应由运行产生，不预设实际遵从率、响应滞后或结果。')
+        elif context.get('designOperation') == 'initial_group':
             instructions += ('\n本轮为人工社会确认后生成初始CF-01。必须返回action=update_design和完整group_updates，恰好一组CF-01；'
                 '结合goal、人工社会、当前durationSeconds和baselineExecution，设计可执行、可检验的对照，数值全部明确，不得planningOnly或待映射。'
                 '优先选择一个有意义且确实不同于F-00的可干预因素，固定其他水平；只使用actionCapabilities支持的动作。'

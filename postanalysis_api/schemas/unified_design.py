@@ -17,8 +17,12 @@ def validate_unified_design(design, variables):
         if not isinstance(design.get(key), str) or not design[key].strip():
             fail("请明确共同控制条件、实验单位和分析范围")
     groups = design.get("groups")
-    baseline = design.get('baselineExecution', BASELINE)
-    if not isinstance(baseline, dict) or set(baseline) != set(CONTROL_FIELDS):
+    native = isinstance(groups, list) and bool(groups) and all(isinstance(g, dict) and isinstance(g.get('execution'), dict) and 'actions' in g['execution'] for g in groups)
+    baseline = design.get('baselineExecution', {'actions': []} if native else BASELINE)
+    if native:
+        if baseline != {'actions': []}:
+            fail('新版F-00不隐式施加额外控制；baselineExecution须为actions空数组')
+    elif not isinstance(baseline, dict) or set(baseline) != set(CONTROL_FIELDS):
         fail('事实组控制参数无效')
     validate_group_execution({**baseline, 'referenceDesignId': 'F-00'})
     if not isinstance(groups, list) or not 1 <= len(groups) <= 12:
@@ -74,6 +78,17 @@ def validate_unified_design(design, variables):
         if any(item.get("planningOnly") and item["id"] == group["execution"]["referenceDesignId"] for item in groups):
             fail("数值执行组不能引用尚未完成工程映射的草案")
         changes = changed_controls(group, groups, baseline)
+        if native:
+            if group['method'] == 'ofat' and len(changes) > 1:
+                fail('原生动作单因素对照只能改变一个参数或一个动作')
+            if group['method'] == 'ablation':
+                reference = next((g['execution'] for g in groups if g['id'] == group['execution']['referenceDesignId']), baseline)
+                left = {a['id']: a for a in reference['actions']}
+                right = {a['id']: a for a in group['execution']['actions']}
+                if (group['execution']['referenceDesignId'] == 'F-00' or len(changes) != 1
+                        or len(left.keys() - right.keys()) != 1 or any(left[k] != right.get(k) for k in right)):
+                    fail('原生消融须从完整策略组删除一个动作，其余动作保持一致')
+            continue
         if any(CONTROL_FIELDS[field] not in group["factorSymbols"] for field in changes):
             fail("实际改变的变量须全部关联到假设")
         if group["method"] == "ofat" and len(changes) > 1:
@@ -85,18 +100,26 @@ def validate_unified_design(design, variables):
 
 def changed_controls(group, groups, baseline=None):
     reference = next((item["execution"] for item in groups if item["id"] == group["execution"]["referenceDesignId"]), baseline or BASELINE)
+    if 'actions' in group['execution']:
+        from postanalysis_api.workers.native_runtime import changed_actions
+        return changed_actions(reference.get('actions', []), group['execution']['actions'])
     return [key for key in CONTROL_FIELDS if reference[key] != group["execution"][key]]
 
 
 def validate_unified_execution(plan):
     """Do not silently ignore custom society changes or unimplemented endpoints."""
+    if plan.get('counterfactualDesign', {}).get('nativeMappingConfirmed') is False:
+        raise ApiError('NATIVE_ACTION_MAPPING_REQUIRED', '历史草案的原生动作映射尚未确认。', 422)
     overrides = plan.get("artificialSociety", {}).get("overrides", {})
     if any(overrides.values()):
         raise ApiError("SOCIETY_MAPPING_REQUIRED", "人工社会修改已保存；当前执行器尚未映射这些模型改动，需对接后运行或明确恢复原配置", 422)
     for group in plan["counterfactualDesign"]["groups"]:
         if group.get("planningOnly"):
             raise ApiError("EXECUTION_MAPPING_REQUIRED", "实验假设已保存，但措施与数值控制尚未映射到执行器；请先完成工程映射", 422)
-        if group["primaryMetricId"] not in METRICS or set(group["factorSymbols"]) - set(CONTROL_FIELDS.values()):
+        native = 'actions' in group.get('execution', {})
+        if not native:
+            raise ApiError('NATIVE_ACTION_MAPPING_REQUIRED', '请将旧三参数设计重新映射为事中原生动作后运行。', 422)
+        if group["primaryMetricId"] not in METRICS:
             raise ApiError("EXECUTION_MAPPING_REQUIRED", "自定义变量或主要终点尚未接入当前执行模型", 422)
         if group["primaryMetricId"] not in plan.get("executionSettings", {}).get("metricIds", []):
             raise ApiError("EXECUTION_MAPPING_REQUIRED", "主要响应指标必须包含在实际输出指标中", 422)

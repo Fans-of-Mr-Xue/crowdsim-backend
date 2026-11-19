@@ -18,13 +18,18 @@ def validate_execution_input(app, dataset, plan=None):
     try:
         dataset = prepare_execution_dataset(dataset)
         task = execution_template(dataset, plan)
+        if plan is None:
+            # Dataset readiness probes F-00, not invented default treatments.
+            task['groups'] = []
         # The same checks guard /experiments/{id}/start.
         app._check_start_capability(task)
         with TemporaryDirectory(prefix="post-input-check-") as folder:
             output = Path(folder) / "demand.rou.xml"
-            compile_routes(dataset, task["seedStart"], [], task["scenario"]["durationSeconds"], output)
+            from postanalysis_api.workers.native_runtime import compile_input, validate_task
+            validate_task(task, dataset)
+            compile_input(dataset, task["seedStart"], [], task["scenario"]["durationSeconds"], output)
             for index, group in enumerate(task["groups"]):
-                compile_routes(dataset, task["seedStart"], group["interventions"],
+                compile_input(dataset, task["seedStart"], group["interventions"],
                                task["scenario"]["durationSeconds"], Path(folder) / f"group-{index}.rou.xml")
             binary = getattr(app.executor, "binary", None)
             if not binary:

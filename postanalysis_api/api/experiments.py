@@ -8,6 +8,12 @@ from .common import Request, response
 
 
 def handle(request: Request):
+    evidence = re.fullmatch(r'/runs/([A-Za-z0-9_-]+)/behavior-evidence', request.path)
+    if evidence and request.method == 'GET':
+        from postanalysis_api.workers.native_runtime import read_evidence
+        return response(read_evidence(request.app.repo, evidence.group(1), request.user, request.workspace,
+            (request.query.get('name') or ['behavior_evidence.jsonl'])[0],
+            int((request.query.get('offset') or [0])[0]), int((request.query.get('limit') or [65536])[0])))
     if request.path == '/experiments/history' and request.method == 'GET':
         from postanalysis_api.schemas.common import ApiError
         try:

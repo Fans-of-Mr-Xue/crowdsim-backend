@@ -72,7 +72,8 @@ def execution_template(dataset, plan=None):
         from postanalysis_api.schemas.review_intake import validate_review_intake
         validate_review_intake(plan)
         validate_unified_execution(plan)
-        if reconstructed and plan['counterfactualDesign'].get('baselineExecution') != context['baselineExecution']:
+        native_design = all('actions' in g.get('execution', {}) for g in plan['counterfactualDesign']['groups'])
+        if reconstructed and not native_design and plan['counterfactualDesign'].get('baselineExecution') != context['baselineExecution']:
             raise ApiError('BASELINE_CONTROL_MISMATCH', '请重新载入当前时窗的事实组控制参数。', 422)
     source = {"counterfactual": plan["counterfactualDesign"]["groups"]} if unified else plan["experimentSchemeDesign"] if plan else {
         kind: [{"id": prefix + "-01", "name": label, "hypothesis": hypothesis}]
@@ -92,6 +93,14 @@ def execution_template(dataset, plan=None):
             if config:
                 from postanalysis_api.schemas.execution import validate_group_execution
                 validate_group_execution(config, duration)
+            if config and 'actions' in config:
+                groups.append({'id': f'CF-{len(groups) + 1:02d}', 'name': design['name'],
+                    'sourceGroupId': design['id'], 'experimentType': kind, 'repeatCount': repeats,
+                    'hypothesis': design['hypothesis'],
+                    'manipulatedFeatureId': design.get('manipulatedFeatureId') or (settings['pcFeatures'][0]['id'] if settings else 'late_density'),
+                    'referenceGroupId': config['referenceDesignId'],
+                    'interventions': [dict(action, targetRegionId=action.get('targetRegionId', 'global')) for action in config['actions']]})
+                continue
             default_starts = [int(duration * fraction) for fraction in (.5, .55, .6)] if reconstructed else [13800, 14100, 14400]
             starts = [config["startSeconds"]] if config else default_starts if kind == "intervention" else [default_starts[0]]
             for start in starts:

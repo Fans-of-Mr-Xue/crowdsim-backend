@@ -69,36 +69,23 @@ class PopulationExecutionTests(unittest.TestCase):
             prepare_execution_dataset(invalid)
 
     def test_current_review_maps_exactly_to_sumo_routes_and_one_factor_references(self):
-        dataset = population_dataset(); _, plan = fixture()
-        context = execution_context(dataset)
-        plan['factualBaseline'].update(datasetId=dataset['id'], datasetVersion=dataset['version'])
-        plan['counterfactualDesign'].update(baselineExecution=context['baselineExecution'], durationSeconds=600)
-        groups = plan['counterfactualDesign']['groups'][:3]
-        for group, values, factors in zip(groups, ((300, .7, 0), (300, 0, 0), (1, .7, 0)),
-                                          (['T_start', 'Compliance', 'Delay'], ['T_start'], ['Compliance'])):
-            group['execution'].update(startSeconds=values[0], compliance=values[1], delaySeconds=values[2], referenceDesignId='F-00')
-            group['factorSymbols'] = factors
-        plan['counterfactualDesign']['groups'] = groups
-        defaults = execution_template(dataset)
-        plan['executionSettings']['pcFeatures'] = defaults['pcFeatures']
-        plan['counterfactualDesign']['executionSettings'] = deepcopy(plan['executionSettings'])
+        from test_post_unified_design import native_fixture
+        from postanalysis_api.workers.native_runtime import compile_input, changed_actions, VERSION
+        dataset, plan = native_fixture()
         task = execution_template(dataset, plan)
         from postanalysis_api.workers.analysis import summarize
-        from postanalysis_api.workers.memorial_scenario import control_schedule
-        base_controls = prepare_execution_dataset(dataset)['metadata']['executionProfile']['baselineControl']
         task['reviewSnapshot'] = plan
         runs = [{'id': 'test-' + group_id, 'planId': group_id, 'seed': 1, 'status': 'completed',
-                 'controls': control_schedule(actions, base_controls), 'metrics': {metric: 1 for metric in task['metricIds']}}
+                 'executionProtocol': VERSION, 'metrics': {metric: 1 for metric in task['metricIds']}}
                 for group_id, actions in [('F-00', []), *[(group['id'], group['interventions']) for group in task['groups']]]]
         analysis = summarize(task, runs)
-        self.assertEqual({'CF-02', 'CF-03'}, {item['groupId'] for item in analysis['intervention']['experiments']})
+        self.assertEqual({'CF-02', 'CF-03', 'CF-04'}, {item['groupId'] for item in analysis['intervention']['experiments']})
         with TemporaryDirectory() as folder:
-            baseline = compile_routes(dataset, 42, [], 600, Path(folder) / 'factual.xml')
-            candidate = compile_routes(dataset, 42, task['groups'][1]['interventions'], 600, Path(folder) / 'earlier.xml')
-            self.assertEqual(1, baseline['controls']['gateOpenSeconds'])
-            self.assertEqual(0, baseline['controls']['guidanceDelaySeconds'])
-            self.assertEqual(300, candidate['controls']['gateOpenSeconds'])
-            self.assertEqual(0, candidate['controls']['compliance'])
+            baseline = compile_input(dataset, 42, [], 600, Path(folder) / 'factual.xml')
+            candidate = compile_input(dataset, 42, task['groups'][1]['interventions'], 600, Path(folder) / 'earlier.xml')
+            self.assertEqual([], baseline['runtimeActions'])
+            self.assertEqual(task['groups'][1]['interventions'], candidate['runtimeActions'])
+            self.assertEqual([], changed_actions(task['groups'][0]['interventions'], task['groups'][1]['interventions']))
             self.assertEqual([p['id'] for p in baseline['cohorts']], [p['id'] for p in candidate['cohorts']])
         plan['executionSettings']['pcFeatures'][0]['windowEndSeconds'] = 601
         with self.assertRaises(ApiError):
