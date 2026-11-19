@@ -1,7 +1,7 @@
 """Synthetic, local 60 × 40 m plaza; never presented as a measured site."""
 from pyproj import CRS, Transformer
 from shapely.geometry import box, mapping
-from shapely.ops import transform
+from .geometry import transform
 
 from .inputs import normalize_settings
 

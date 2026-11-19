@@ -38,6 +38,7 @@ class GameChoice:
     utility: float
     probabilities: dict[str, float]
     reason: str
+    candidate_id: str | None = None
 
 
 @dataclass(frozen=True)

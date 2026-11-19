@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from contextlib import nullcontext
 from dataclasses import asdict
 import json
+import math
 import os
 from pathlib import Path
 import time
+import traceback
 from typing import Any, Callable, Dict, Optional
 
 from aiohttp import WSMsgType, web
@@ -32,6 +35,8 @@ from crowdsim.infrastructure.requirement_repository import (
     RequirementNotFoundError,
     RequirementRepository,
 )
+
+logger = logging.getLogger("crowdsim.websocket")
 
 
 class OverlayServer:
@@ -66,10 +71,22 @@ class OverlayServer:
         app.router.add_get("/", self._aio_websocket_handler)
         app.router.add_get("/api/v1/performance/config", self._performance_config)
         app.router.add_post("/api/v1/requirements", self._requirement_http_handler)
+        self._register_evidence_routes(app)
         self._register_class2_routes(app)
         app.router.add_route("*", "/api/v1/post", self._post_http_handler)
         app.router.add_route("*", "/api/v1/post/{tail:.*}", self._post_http_handler)
         return app
+
+    def _register_evidence_routes(self, app: web.Application) -> None:
+        """Read-only evidence-chain GET endpoints shared by every runtime entry.
+
+        Registered once here so the during-only subclass reuses the same handlers
+        instead of overriding ``create_app`` and leaving these routes unbound.
+        """
+        app.router.add_get("/api/v1/decision-traces", self._decision_traces_http)
+        app.router.add_get("/api/v1/decision-traces/{person_id}", self._decision_trace_http)
+        app.router.add_get("/api/v1/role-summary", self._role_summary_http)
+        app.router.add_get("/api/v1/counterfactual", self._counterfactual_http)
 
     def _register_class2_routes(self, app):
         app.router.add_get('/api/v1/during/class2/preset', self._class2_preset_http)
@@ -116,7 +133,11 @@ class OverlayServer:
             site = web.TCPSite(runner, self.host, self.port)
             await site.start()
             print(f"[CrowdSim] WebSocket and post API listening at {self.host}:{self.port}")
-            await asyncio.Future()
+            from .shutdown_signals import shutdown_signals
+            stop = asyncio.Event()
+            loop = asyncio.get_running_loop()
+            with shutdown_signals(lambda: loop.call_soon_threadsafe(stop.set)):
+                await stop.wait()
         finally:
             try:
                 await runner.cleanup()
@@ -132,6 +153,119 @@ class OverlayServer:
         return web.json_response({'enabled': options.enabled,
                                   'system_enabled': options.enabled and options.system_enabled,
                                   'interval_wall_seconds': options.interval})
+
+    def _trace_store(self):
+        return getattr(self.simulator, "decision_traces", None)
+
+    @staticmethod
+    def _query_time(request: web.Request):
+        raw = request.query.get("timeSeconds")
+        if not raw:
+            return None, None
+        try:
+            return float(raw), None
+        except ValueError:
+            return None, "invalid_time_seconds"
+
+    async def _decision_traces_http(self, request: web.Request) -> web.Response:
+        sim = self.simulator
+        store = self._trace_store()
+        time_seconds, bad = self._query_time(request)
+        if bad is not None:
+            return web.json_response(self._error(bad, "timeSeconds must be a number"), status=400)
+        traces = []
+        if store is not None:
+            traces = store.query(
+                run_id=sim.run_id,
+                person_id=request.query.get("personId") or None,
+                snapshot_id=request.query.get("snapshotId") or None,
+                time_seconds=time_seconds,
+            )
+        return web.json_response({"version": "decision-trace-v1", "run_id": sim.run_id,
+                                  "count": len(traces), "traces": traces})
+
+    async def _decision_trace_http(self, request: web.Request) -> web.Response:
+        sim = self.simulator
+        person_id = request.match_info["person_id"]
+        store = self._trace_store()
+        trace = store.latest(run_id=sim.run_id, person_id=person_id) if store else None
+        if trace is None:
+            return web.json_response(self._error("trace_not_found", f"No decision trace for {person_id}"),
+                                     status=404)
+        return web.json_response(trace)
+
+    async def _role_summary_http(self, request: web.Request) -> web.Response:
+        from crowdsim.infrastructure.role_summary import summarize_traces
+        sim = self.simulator
+        store = self._trace_store()
+        traces = store.query(run_id=sim.run_id) if store is not None else []
+        persons = {}
+        states = getattr(sim.population, "states", {}) or {}
+        for pid in states:
+            try:
+                persons[pid] = sim.profile_for(pid).crowd_role
+            except Exception:
+                continue
+        summary = await asyncio.to_thread(summarize_traces, traces, population_persons=persons)
+        return web.json_response(summary)
+
+    async def _counterfactual_http(self, request: web.Request) -> web.Response:
+        from crowdsim.infrastructure.counterfactual import build_counterfactual, VERSION as CF_VERSION
+        sim = self.simulator
+        person_id = request.query.get("personId")
+        mechanism = request.query.get("mechanism") or ""
+        if not person_id:
+            return web.json_response(self._error("missing_person", "personId is required"), status=400)
+        snapshot_id = request.query.get("snapshotId") or None
+        time_seconds, bad = self._query_time(request)
+        if bad is not None:
+            return web.json_response(self._error(bad, "timeSeconds must be a number"), status=400)
+        try:
+            profile = sim.profile_for(person_id)
+            state = sim.population.state_for(person_id)
+        except Exception as exc:
+            return web.json_response(self._error("unknown_agent", str(exc)), status=404)
+        store = self._trace_store()
+
+        def _historical_unavailable(trace: dict[str, Any] | None) -> dict[str, Any]:
+            return {
+                "version": CF_VERSION,
+                "available": False,
+                "mechanism": mechanism,
+                "run_id": sim.run_id,
+                "person_id": person_id,
+                "snapshot_id": (trace or {}).get("snapshot_id"),
+                "time_seconds": (trace or {}).get("time_seconds"),
+                "reason": "historical_boundary_unavailable",
+            }
+
+        baseline = None
+        if snapshot_id is not None or time_seconds is not None:
+            # Boundary-scoped baseline: pick the trace for the requested frame.
+            rows = store.query(run_id=sim.run_id, person_id=person_id,
+                                snapshot_id=snapshot_id, time_seconds=time_seconds) if store else []
+            if not rows:
+                return web.json_response(self._error("trace_not_found", f"No decision trace for {person_id}"),
+                                         status=404)
+            baseline = rows[-1]
+            trace_snap = baseline.get("snapshot_id")
+            trace_time = baseline.get("time_seconds")
+            is_current = (trace_snap == sim.snapshot_id
+                          and isinstance(trace_time, (int, float)) and math.isfinite(trace_time)
+                          and trace_time == sim.time_seconds)
+            if not is_current:
+                # The runtime has advanced past this frame; its frozen inputs are
+                # not held by a live runtime and cannot be safely cloned or
+                # recomputed. Refuse instead of projecting the current result onto
+                # the historical record.
+                return web.json_response(_historical_unavailable(baseline))
+        else:
+            baseline = store.latest(run_id=sim.run_id, person_id=person_id) if store else None
+
+        before = sim.boundary_before(person_id) if callable(getattr(sim, "boundary_before", None)) else None
+        result = await asyncio.to_thread(build_counterfactual, sim, profile, state, mechanism,
+                                         baseline_trace=baseline, before=before)
+        return web.json_response(result)
 
     async def _post_http_handler(self, request: web.Request) -> web.Response:
         if self.post_app is None:
@@ -597,6 +731,10 @@ class OverlayServer:
                                   "run_id": self.simulator.run_id, "runtime_state": self.simulator.state.value})
             elif action == "get_status":
                 await self._send({"type": "status", "request_id": request_id, **self.simulator.diagnostics()})
+            elif action == "get_snapshot":
+                self._check_run(data, required=True)
+                await self._send({'type': 'runtime_snapshot', 'request_id': request_id,
+                                  'init': self.simulator.init_frame(), 'frame': self.simulator.frame()})
             elif action == "get_state":
                 frame = self.simulator.frame()
                 if data.get("includeClass2Control") is True and getattr(self.simulator, "class2_flows", None) is not None:
@@ -686,7 +824,9 @@ class OverlayServer:
         except (RuntimeError, ValueError) as exc:
             await self._send(self._error("invalid_state", str(exc), request_id))
         except Exception as exc:
-            await self._send(self._error("operation_failed", f"{type(exc).__name__}: {exc}", request_id))
+            diag = self._persist_failure(exc)
+            await self._send({**self._error("operation_failed", diag["message"], request_id),
+                              "error_type": diag["error_type"], "traceback": diag["traceback"]})
 
     async def _run_loop(self) -> None:
         while self.client is not None and not self._loop_stop.is_set():
@@ -725,12 +865,16 @@ class OverlayServer:
                             except asyncio.TimeoutError:
                                 pass
             except Exception as exc:
-                # A failed tick (including a recorder I/O error) must reach the
-                # experiment owner even when no final update frame can be built.
-                # Otherwise the background task ends while the run stays active.
+                # A failed tick (including a recorder I/O error) or a failure
+                # raised outside the runtime main except (frame building, apply
+                # callback) must reach the runtime diagnostics/recorder and the
+                # experiment owner with the full stack, even when no final
+                # update frame can be built. Otherwise the background task ends
+                # while the run stays active.
+                diag = self._persist_failure(exc)
                 try:
                     await self._send({"type": "runtime_error", "run_id": self.simulator.run_id,
-                                      "message": f"{type(exc).__name__}: {exc}"})
+                                      **diag})
                 except Exception:
                     # A lost transport is reported separately by the gateway.
                     pass
@@ -759,6 +903,38 @@ class OverlayServer:
             self._remember_result(result)
         for result in results:
             await self._send(result)
+
+    def _persist_failure(self, exc: BaseException) -> Dict[str, Any]:
+        """Capture a failure at the server boundary, before notifying the owner.
+
+        Delegate to the runtime's own ``_capture_failure`` so the stack reaches
+        the runtime diagnostics/recorder; if the simulator object does not
+        expose it, the diagnostic fields are written defensively. The structured
+        frame and the server log keep the full Python stack (type/message/frames
+        only; no prompt or API key), so a failure raised outside the runtime's
+        main except — e.g. in frame building or an apply callback — is still
+        archived instead of reduced to ``Type: message``. The original exception
+        object is untouched; the caller still decides whether to raise/return.
+        """
+        tb = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+        message = f"{type(exc).__name__}: {exc}"
+        sim = self.simulator
+        capture = getattr(sim, "_capture_failure", None)
+        if callable(capture):
+            capture(exc)
+        elif hasattr(sim, "last_error"):
+            try:
+                sim.last_error = message
+                sim.last_traceback = tb
+            except Exception:
+                pass
+        if getattr(sim, "state", None) is not None and sim.state is not RuntimeState.CLOSED:
+            try:
+                sim.state = RuntimeState.ERROR
+            except Exception:
+                pass
+        logger.exception("CrowdSim runtime failure at server boundary", exc_info=exc)
+        return {"error_type": type(exc).__name__, "message": message, "traceback": tb}
 
     @staticmethod
     def _error(code: str, message: str, request_id: Any = None) -> Dict[str, Any]:

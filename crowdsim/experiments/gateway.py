@@ -79,6 +79,7 @@ class CrowdSimGateway:
 
     def close(self) -> None:
         self._stopping.set()
+        self._reject_pending('gateway_closed')
         loop = self._loop
         websocket = self._websocket
         if loop is not None and websocket is not None:
@@ -239,7 +240,7 @@ class CrowdSimGateway:
         if message_type == "init":
             self.capabilities = deepcopy(payload.get("capabilities") or {})
         request_id = payload.get("request_id") or payload.get("requestId")
-        if request_id is not None and message_type in {"command_result", "error", "init", "status", "speed", "requirement_accepted", "routing_result", "run_closed"}:
+        if request_id is not None and message_type in {"command_result", "error", "init", "status", "speed", "requirement_accepted", "routing_result", "run_closed", "runtime_snapshot"}:
             with self._pending_lock:
                 pending = self._pending.get(str(request_id))
                 if pending is not None:

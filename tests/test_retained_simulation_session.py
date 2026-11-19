@@ -138,6 +138,7 @@ class GuardedRuntime(Runtime):
     def __init__(self):
         super().__init__()
         self._scenario_timeline_end_seconds = None
+        self.generated_demand_spec = None
         self.population.profile_sampler = Mock()
         self.artificial_society_record = None
         self.artificial_society_id = None

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Dict, Optional
 from collections import Counter
+from dataclasses import asdict
 import math
 
 from traci import constants as tc
@@ -11,7 +12,7 @@ from traci._simulation import Stage
 from traci.exceptions import FatalTraCIError
 
 from crowdsim.domain.crowdsim_models import AgentProfile, BehaviorPlan, MotionSnapshot, PlanExecutionResult
-from crowdsim.decision.route_provider import RouteProvider
+from crowdsim.decision.route_provider import RouteProvider, select_candidate, bind_candidates
 from crowdsim.infrastructure.sumo_adapter import SumoAdapter
 from crowdsim.decision.pedestrian_reachability import resolve_position
 
@@ -36,6 +37,7 @@ class PlanExecutor:
         self.flow_hold_reasons: Dict[str, set[str]] = {}
         self.base_limits: Dict[str, float] = {}
         self.results: Dict[str, PlanExecutionResult] = {}
+        self.execution_evidence: dict[str, dict] = {}
         self.route_retry_after: Dict[str, float] = {}
         self.route_failures: Dict[str, int] = {}
         self.counters = Counter({name: 0 for name in (
@@ -63,7 +65,7 @@ class PlanExecutor:
         active = set(person_ids)
         for mapping in (self.strategy_limits, self.hazard_limits, self.environment_limits, self.wait_until,
                         self.activity_hold_until, self.base_limits,
-                        self.results, self.route_retry_after, self.route_failures):
+                        self.results, self.execution_evidence, self.route_retry_after, self.route_failures):
             for person_id in set(mapping) - active:
                 mapping.pop(person_id, None)
         for person_id in set(self.flow_hold_reasons) - active:
@@ -81,7 +83,24 @@ class PlanExecutor:
             self.strategy_limits[person_id] = float(limit)
         self._apply_effective_speed(person_id)
 
-    def validate_plan(self, plan: BehaviorPlan, motion: MotionSnapshot, snapshot_id: str, now: float) -> None:
+    def validate_plan(self, plan: BehaviorPlan, motion: MotionSnapshot, snapshot_id: str, now: float, *, candidates=(), require_candidate=False) -> None:
+        if require_candidate:
+            if plan.proposed_action in {'reroute', 'change_goal'}:
+                candidates = tuple(candidates)
+                rebound = bind_candidates(candidates, plan.person_id, snapshot_id)
+                if candidates != rebound:
+                    raise ValueError('candidate is stale or has been modified')
+                candidate = select_candidate(candidates, candidate_id=plan.candidate_id, target_id=plan.target_id)
+                if candidate is None or (plan.route_edges != candidate.edges or plan.arrival_position != candidate.arrival_position
+                    or plan.selected_entry_edge != (candidate.entry_edge if candidate.target_kind == 'hotspot_route' else None)
+                    or plan.preserve_future_stages != (candidate.target_kind == 'hotspot_route')
+                    or plan.activity_duration != (candidate.activity_duration if plan.proposed_action == 'change_goal' else None)
+                    or plan.next_route_edges != (candidate.next_route_edges if plan.proposed_action == 'change_goal' else ())
+                    or plan.next_arrival_position != (candidate.next_arrival_position if plan.proposed_action == 'change_goal' else None)
+                    or plan.next_target_id != (candidate.next_target_id if plan.proposed_action == 'change_goal' else None)):
+                    raise ValueError('plan differs from selected frozen candidate')
+            elif plan.candidate_id is not None or plan.route_edges or plan.target_id is not None:
+                raise ValueError('non-route plan includes candidate or route')
         if plan.person_id != motion.person_id:
             raise ValueError("plan person_id does not match motion snapshot")
         if plan.snapshot_id != snapshot_id:
@@ -176,11 +195,11 @@ class PlanExecutor:
                 raise ItineraryPartialFailure(f"partial itinerary failure: {exc}; restoration failed: {restore_exc}") from exc
             raise ValueError(f"itinerary rejected and restored: {exc}") from exc
 
-    def apply(self, plan: BehaviorPlan, motion: MotionSnapshot, snapshot_id: str, now: float) -> PlanExecutionResult:
+    def apply(self, plan: BehaviorPlan, motion: MotionSnapshot, snapshot_id: str, now: float, *, candidates=(), require_candidate=False) -> PlanExecutionResult:
         action = plan.proposed_action
         itinerary_applied = False
         try:
-            self.validate_plan(plan, motion, snapshot_id, now)
+            self.validate_plan(plan, motion, snapshot_id, now, candidates=candidates, require_candidate=require_candidate)
             action = plan.proposed_action
             if action == "continue":
                 self.strategy_limits.pop(plan.person_id, None)
@@ -212,6 +231,10 @@ class PlanExecutor:
             applied_action = action if itinerary_applied else ("unknown" if partial else "continue")
             result = PlanExecutionResult(plan.person_id, action, applied_action, status, now, f"{type(exc).__name__}: {exc}")
         self.results[plan.person_id] = result
+        self.execution_evidence[plan.person_id] = {
+            'snapshot_id': snapshot_id, 'time_seconds': now,
+            'plan': asdict(plan), 'receipt': asdict(result),
+        }
         return result
 
     def maintain(self, now: float) -> None:

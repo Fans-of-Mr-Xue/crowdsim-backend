@@ -7,6 +7,7 @@ from contextlib import nullcontext
 from dataclasses import asdict
 import hashlib
 import json
+import math
 from pathlib import Path
 import subprocess
 import shutil
@@ -22,11 +23,16 @@ from crowdsim.infrastructure.performance_probe import timed
 class ExperimentRecorder:
     def __init__(self, run_id: str, config_path: Path, engine: dict, root: Path | None = None) -> None:
         project_root = Path(__file__).resolve().parents[2]
+        self.run_id = run_id
         self.directory = (root or project_root / "runs") / run_id
         self.directory.mkdir(parents=True, exist_ok=True)
         if (self.directory / "manifest.json").exists():
             raise FileExistsError("experiment already exists; start a new run")
         self._seen_profiles = set()
+        self._post_action_registered = False
+        self._runtime_observation_registered = False
+        self._runtime_observation_last = None
+        self._trace_registered = False
         self.observation_writer = None
         self._trajectory_path = self.directory / "trajectory.csv"
         self._metrics_path = self.directory / "metrics.csv"
@@ -65,6 +71,8 @@ class ExperimentRecorder:
         self._write_json(path, payload)
 
     def record_step(self, runtime, result, metrics: dict) -> None:
+        if getattr(runtime, 'learning_controller', None) is not None:
+            self.record_runtime_observations(runtime, result)
         observation = metrics.get("observation")
         extra_fields = ["snapshot_id", "in_observation_scope", "observation_cell_id",
             "behavior_state", "behavior_reason", "crowded", "psychological_state",
@@ -153,6 +161,155 @@ class ExperimentRecorder:
 
     def record_decision(self, plan, result, *, context=None, candidates=()) -> None:
         self.decision_writer.write_record({"context": context, "candidates": list(candidates), "plan": plan, "execution": result})
+
+    def record_decision_trace(self, trace: dict) -> None:
+        """Append the additive per-person decision evidence chain (read-only projection).
+
+        The trace is a separate append-only file; existing decision tables and
+        their manifest layout are unchanged.
+        """
+        if not isinstance(trace, dict) or trace.get("version") != "decision-trace-v1":
+            raise ValueError("invalid decision trace record")
+        path = self.directory / "decision_traces.jsonl"
+        with path.open("a+", encoding="utf-8") as handle:
+            handle.seek(0, 2)
+            position = handle.tell()
+            try:
+                handle.write(json.dumps(trace, ensure_ascii=False, sort_keys=True,
+                                         default=_json_default) + "\n")
+                handle.flush()
+            except Exception:
+                handle.seek(position)
+                handle.truncate()
+                raise
+        if not self._trace_registered:
+            self.update_manifest(decision_trace_log={"version": "decision-trace-v1",
+                                                     "file": "decision_traces.jsonl"})
+            self._trace_registered = True
+
+    def record_post_action(self, transitions) -> None:
+        # Roll back only this append if persistence fails; the journal keeps its
+        # unacknowledged batch for an explicit retry. Never publish partial JSON.
+        lines = ''.join(item.payload_json + '\n' for item in transitions)
+        if not lines:
+            return
+        if not self._post_action_registered:
+            self.update_manifest(post_action={'version':'post-action-evidence-v1',
+                'file':'post_action.jsonl','interval_semantics':'next_physical_step',
+                'reward_status':'not_evaluated','policy_updates':0})
+            self._post_action_registered = True
+        path = self.directory / 'post_action.jsonl'
+        with path.open('a+', encoding='utf-8') as handle:
+            handle.seek(0, 2)
+            position = handle.tell()
+            try:
+                handle.write(lines)
+                handle.flush()
+            except Exception:
+                handle.seek(position)
+                handle.truncate()
+                raise
+
+    def record_runtime_observations(self, runtime, result=None) -> None:
+        """Independent unrounded source observations, never gated by metric selection.
+
+        Only active learners request this stream. No state/metric risk fallback.
+        Last-snapshot guard is bounded; replaying old physical time is refused.
+        Append failure rolls back this batch and does not advance the guard.
+        """
+        result = result if result is not None else runtime.current
+        now = runtime.time_seconds
+        snapshot = runtime.snapshot_id
+        if (runtime.run_id != self.run_id or not isinstance(snapshot, str)
+                or not snapshot.startswith(runtime.run_id + ':')
+                or type(now) not in (int, float) or not math.isfinite(now) or now < 0
+                or getattr(result, 'time_seconds', now) != now):
+            raise ValueError('invalid runtime observation archive boundary')
+        rows = []
+        observations = getattr(runtime, 'observations', {})
+        for pid, motion in sorted(result.persons.items()):
+            raw_motion = asdict(motion)
+            if motion.person_id != pid or motion.time_seconds != now:
+                raise ValueError('runtime observation archive motion binding mismatch')
+            if any(type(raw_motion[k]) not in (int, float) or not math.isfinite(raw_motion[k])
+                   for k in ('time_seconds', 'x', 'y', 'lon', 'lat', 'speed', 'lane_position', 'angle')):
+                raise ValueError('nonfinite runtime observation archive motion')
+            obs = observations.get(pid)
+            status = 'observed'
+            if obs is None:
+                status = 'missing_observation'
+            elif (obs.person_id != pid or obs.snapshot_id != snapshot
+                  or obs.time_seconds != now or obs.own_motion != motion):
+                status = 'observation_binding_mismatch'
+            elif (any(type(getattr(obs, k)) not in (int, float)
+                      or not math.isfinite(getattr(obs, k)) or not 0 <= getattr(obs, k) <= 1
+                      for k in ('perceived_risk', 'perceived_crowding'))
+                  or (obs.objective_density_per_m2 is not None
+                      and (type(obs.objective_density_per_m2) not in (int, float)
+                           or not math.isfinite(obs.objective_density_per_m2)
+                           or obs.objective_density_per_m2 < 0))):
+                status = 'invalid_observation_values'
+            state = runtime.population.states.get(pid)
+            state_matches = state is not None and state.person_id == pid
+            profile = runtime.population.profile_for(pid)
+            if profile.person_id != pid:
+                raise ValueError('runtime observation archive profile binding mismatch')
+            rows.append(dict(version='runtime-observation-source-v1', run_id=runtime.run_id,
+                snapshot_id=snapshot, time_seconds=now, person_id=pid, role_id=profile.crowd_role,
+                status=status, source='runtime.observations', motion=raw_motion,
+                perceived_risk=obs.perceived_risk if status == 'observed' else None,
+                perceived_crowding=obs.perceived_crowding if status == 'observed' else None,
+                objective_density=obs.objective_density_per_m2 if status == 'observed' else None,
+                state={k: getattr(state, k) if state_matches
+                          and type(getattr(state, k)) in (int, float)
+                          and math.isfinite(getattr(state, k)) else None
+                       for k in ('stress', 'fatigue', 'perceived_risk', 'perceived_crowding')}))
+        lines = ''.join(json.dumps(row, ensure_ascii=False, sort_keys=True, allow_nan=False) + '\n'
+                        for row in rows)
+        digest = hashlib.sha256(lines.encode('utf-8')).hexdigest()
+        last = self._runtime_observation_last
+        if last is not None:
+            if (snapshot, now) == last[:2]:
+                if digest != last[2]:
+                    raise ValueError('conflicting same-boundary runtime observations')
+                return
+            if now <= last[1] or snapshot == last[0]:
+                raise ValueError('stale runtime observation archive boundary')
+        if not self._runtime_observation_registered:
+            self.update_manifest(runtime_observations={
+                'version': 'runtime-observation-source-v1', 'file': 'runtime_observations.jsonl',
+                'source': 'runtime.observations', 'precision': 'unrounded',
+                'missing_policy': 'explicit_unavailable_null', 'metric_selection_independent': True})
+            self._runtime_observation_registered = True
+        path = self.directory / 'runtime_observations.jsonl'
+        with path.open('a+', encoding='utf-8') as handle:
+            handle.seek(0, 2)
+            position = handle.tell()
+            try:
+                handle.write(lines)
+                handle.flush()
+            except Exception:
+                handle.seek(position)
+                handle.truncate()
+                raise
+        self._runtime_observation_last = (snapshot, now, digest)
+
+    def record_learning_runtime(self, batch) -> None:
+        # Frozen JSON audit records are acknowledged only after a full append.
+        lines = ''.join(row + '\n' for row in batch)
+        if not lines:
+            return
+        path = self.directory / 'learning_runtime.jsonl'
+        with path.open('a+', encoding='utf-8') as handle:
+            handle.seek(0, 2)
+            position = handle.tell()
+            try:
+                handle.write(lines)
+                handle.flush()
+            except Exception:
+                handle.seek(position)
+                handle.truncate()
+                raise
 
     def record_command(self, command: dict, result: dict) -> None:
         self._append_jsonl("commands.jsonl", [{"command": command, "result": result}])

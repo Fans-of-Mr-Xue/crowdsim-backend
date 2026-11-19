@@ -131,6 +131,36 @@ def test_runtime_presets_accept_requirement_text_without_rewriting_versions(
     assert not gateway.commands  # Preparing and reporting do not start a simulation.
 
 
+def test_presentation_revision_orders_same_time_state_without_editing_raw_frame():
+    import threading
+    from types import SimpleNamespace
+    repo = CrowdSimRepository()
+    gateway = SimpleNamespace(add_listener=lambda fn: None)
+    orchestrator = ExperimentOrchestrator(repo, gateway, ControllerRegistry())
+    active = {'run': {'run_id': 'control'}, 'experiment': {}, 'runtime_run_id': 'runtime',
+              'terminal': threading.Event(), 'accept_frames': True}
+    orchestrator._runtime_view = {'runId': 'control', 'init': {}, 'frame': None}
+    # Stop after publication so this test isolates the actual frame writer.
+    repo.acquire_gateway_lease = lambda *a, **k: False
+    original = {'type': 'update', 'run_id': 'runtime', 'step_seconds': 5,
+                'runtime_state': 'RUNNING', 'pedestrians': [{'id': 'p', 'state': {'stress': .2}}]}
+    running = deepcopy(original)
+    orchestrator._handle_frame(active, running)
+    assert orchestrator._runtime_view['frameVersion']['revision'] == 1
+    assert running == original and 'frameVersion' not in running
+    active['terminal'].clear()
+    orchestrator._handle_frame(active, deepcopy(running))
+    assert orchestrator._runtime_view['frameVersion']['revision'] == 1
+    paused = {**deepcopy(running), 'runtime_state': 'PAUSED'}
+    active['terminal'].clear()
+    orchestrator._handle_frame(active, paused)
+    assert orchestrator._runtime_view['frameVersion']['revision'] == 2
+    assert orchestrator._runtime_view['frame'] == paused
+    active['terminal'].clear()
+    orchestrator._handle_frame(active, {**paused, 'run_id': 'foreign'})
+    assert orchestrator._runtime_view['frameVersion']['revision'] == 2
+
+
 def sample(t, density=2, speed=1):
     return {"time_seconds": t, "metric_ids": ["global-density", "local-density", "global-speed", "local-speed", "boundary-density-difference"],
             "global": {"person_count": 10, "density_person_per_m2": density, "avg_speed_mps": speed},
@@ -369,7 +399,11 @@ def test_three_rounds_accept_real_gateway_close_ack_and_preserve_results(study, 
     assert [r["status"] for r in runs] == ["completed"] * 3
     assert len({r["runtime_run_id"] for r in runs}) == 3
     assert [c["seed"] for c in gateway.commands if c["action"] == "reset"] == list(range(20260908, 20260911))
-    assert sum(c["action"] == "close_run" for c in gateway.commands) == 2
+    # Each completed round releases its own runtime before the next reset; the
+    # three close_run calls match the three bound runtime ids one-for-one.
+    close_run_ids = [c["run_id"] for c in gateway.commands if c["action"] == "close_run"]
+    assert len(close_run_ids) == 3
+    assert sorted(close_run_ids) == sorted(r["runtime_run_id"] for r in runs)
     assert repo.get_experiment("u", "during-check", experiment["experiment_id"])["duringObservation"] == original_binding
     report = ReportService(repo).generate("u", "during-check", experiment["experiment_id"])
     assert report["validRunCount"] == report["expectedRunCount"] == 3

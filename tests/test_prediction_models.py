@@ -167,7 +167,7 @@ class PredictionModelTests(unittest.TestCase):
         self.assertEqual(model['series'][-1]['minute'], 5)
         self.assertEqual(model['series'][-1]['cumulative_arrivals'], 435)
         network = build_network(task, roads, settings)
-        from shapely.ops import transform
+        from data_service.prediction.geometry import transform
         geometry = transform(network['to_wgs84'], network['walkable_geometry']).buffer(1e-10)
         for row in model['series']:
             self.assertEqual(len(row['agents']), row['crowd'])

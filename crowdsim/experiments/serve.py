@@ -43,6 +43,15 @@ class ControlRequestHandler(BaseHTTPRequestHandler):
             path = path[4:]
         return path.rstrip("/") or "/", parse_qs(parsed.query)
 
+    def _page_query(self, query: dict[str, list[str]]) -> tuple[int | None, int | None]:
+        cursor_raw = (query.get("cursor") or [None])[0]
+        page_size_raw = (query.get("pageSize") or [None])[0]
+        cursor = int(cursor_raw) if cursor_raw not in (None, "") else None
+        page_size = int(page_size_raw) if page_size_raw not in (None, "") else None
+        if cursor is not None and cursor < 0:
+            raise ValueError("invalid cursor")
+        return cursor, page_size
+
     def _json_body(self) -> dict[str, Any]:
         length = int(self.headers.get("Content-Length") or 0)
         if length <= 0:
@@ -142,6 +151,9 @@ class ControlRequestHandler(BaseHTTPRequestHandler):
             if match:
                 from .during_observation_reports import interpretation
                 return self._send_json(200, interpretation(self.bundle.repository, user_id, workspace_id, match.group(1), kind=match.group(2)))
+            match = re.fullmatch(rf"{CONTROL_PREFIX}/experiments/([^/]+)/runs/([^/]+)/final-frame", path)
+            if match:
+                return self._send_json(200, self.bundle.orchestrator.final_frame_view(user_id, workspace_id, match.group(1), match.group(2)))
             match = re.fullmatch(rf"{CONTROL_PREFIX}/experiments/([^/]+)/runtime", path)
             if match:
                 if query.get("summary") == ["1"]:
@@ -160,6 +172,40 @@ class ControlRequestHandler(BaseHTTPRequestHandler):
                 if not self.bundle.repository.get_run(user_id, workspace_id, match.group(1)):
                     raise LookupError("RUN_NOT_FOUND")
                 return self._send_json(200, self.bundle.repository.list_records(match.group(2), user_id, workspace_id, match.group(1), limit=100000))
+            match = re.fullmatch(rf"{CONTROL_PREFIX}/runs/([^/]+)/decision-traces/persons", path)
+            if match:
+                runtime_run_id = (query.get("runtimeRunId") or [None])[0]
+                return self._send_json(200, self.bundle.repository.read_archive_person_index(
+                    user_id, workspace_id, match.group(1), runtime_run_id=runtime_run_id))
+            match = re.fullmatch(rf"{CONTROL_PREFIX}/runs/([^/]+)/decision-traces/([^/]+)", path)
+            if match:
+                person_id = match.group(2)
+                snapshot_id = (query.get("snapshotId") or [None])[0]
+                raw_time = (query.get("timeSeconds") or [None])[0]
+                time_seconds = float(raw_time) if raw_time not in (None, "") else None
+                runtime_run_id = (query.get("runtimeRunId") or [None])[0]
+                cursor, page_size = self._page_query(query)
+                return self._send_json(200, self.bundle.repository.read_decision_trace_archive(
+                    user_id, workspace_id, match.group(1), person_id=person_id,
+                    snapshot_id=snapshot_id, time_seconds=time_seconds, runtime_run_id=runtime_run_id,
+                    cursor=cursor, page_size=page_size))
+            match = re.fullmatch(rf"{CONTROL_PREFIX}/runs/([^/]+)/decision-traces", path)
+            if match:
+                person_id = (query.get("personId") or [None])[0]
+                snapshot_id = (query.get("snapshotId") or [None])[0]
+                raw_time = (query.get("timeSeconds") or [None])[0]
+                time_seconds = float(raw_time) if raw_time not in (None, "") else None
+                runtime_run_id = (query.get("runtimeRunId") or [None])[0]
+                cursor, page_size = self._page_query(query)
+                return self._send_json(200, self.bundle.repository.read_decision_trace_archive(
+                    user_id, workspace_id, match.group(1), person_id=person_id,
+                    snapshot_id=snapshot_id, time_seconds=time_seconds, runtime_run_id=runtime_run_id,
+                    cursor=cursor, page_size=page_size))
+            match = re.fullmatch(rf"{CONTROL_PREFIX}/runs/([^/]+)/role-summary", path)
+            if match:
+                runtime_run_id = (query.get("runtimeRunId") or [None])[0]
+                return self._send_json(200, self.bundle.repository.read_archive_role_summary(
+                    user_id, workspace_id, match.group(1), runtime_run_id=runtime_run_id))
             match = re.fullmatch(rf"{CONTROL_PREFIX}/runs/([^/]+)/events", path)
             if match:
                 return self._stream_events(user_id, workspace_id, match.group(1), int((query.get("after") or [self.headers.get("Last-Event-ID") or 0])[0]))
@@ -290,8 +336,10 @@ class ControlHttpServer(ThreadingHTTPServer):
         self.bundle = bundle
 
     def server_close(self) -> None:
-        self.bundle.gateway.close()
-        super().server_close()
+        try:
+            self.bundle.orchestrator.close()
+        finally:
+            super().server_close()
 
 
 def create_server(host: str = "127.0.0.1", port: int = 8766, *, data_dir: str | None = None, gateway_url: str | None = None):
@@ -307,8 +355,13 @@ def main() -> None:
     args = parser.parse_args()
     server = create_server(args.host, args.port, data_dir=args.data_dir, gateway_url=args.gateway_url)
     print(f"CrowdSim control service listening on http://{args.host}:{args.port}{CONTROL_PREFIX}", flush=True)
+    from crowdsim.infrastructure.shutdown_signals import shutdown_signals
+    import threading
+    def stop():
+        threading.Thread(target=server.shutdown, name='control-shutdown', daemon=True).start()
     try:
-        server.serve_forever()
+        with shutdown_signals(stop):
+            server.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:

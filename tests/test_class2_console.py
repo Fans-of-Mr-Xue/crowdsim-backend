@@ -40,6 +40,7 @@ def test_first_class_init_keeps_its_original_geometry_and_payload():
     runtime = SimpleNamespace(
         serializer=SimpleNamespace(build_init=lambda _: deepcopy(original)),
         generated_demand_spec=SimpleNamespace(is_class2_demo=False),
+        class2_flows=None,
         artificial_society_diagnostics=lambda: {'enabled': True},
         performance=SimpleNamespace(metadata=lambda: {'enabled': False}))
     assert SimulationRuntime.init_frame(runtime) == {
@@ -288,6 +289,7 @@ def test_real_memorial_observation_geometry_serializes_through_class_two_init_wi
                 'observation_geometry': geometry}
     runtime = SimpleNamespace(
         network=network, generated_demand_spec=SimpleNamespace(is_class2_demo=True),
+        class2_flows=None,
         serializer=SimpleNamespace(build_init=lambda _: original),
         artificial_society_diagnostics=lambda: {},
         performance=SimpleNamespace(metadata=lambda: {'enabled': False}))

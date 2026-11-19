@@ -32,9 +32,9 @@ class AgentDecisionEngine:
         visible_companions = set(state.companion_ids) & set(observation.neighbour_ids)
         rendezvous = next((item for item in candidates if item.target_id == state.rendezvous_id), None)
         if state.current_plan is None and state.group_id and state.companion_ids and not visible_companions and rendezvous is not None:
-            return BehaviorPlan(**common, proposed_action="change_goal" if rendezvous.target_kind == "activity" else "reroute", target_id=rendezvous.target_id, route_edges=rendezvous.edges, arrival_position=rendezvous.arrival_position, activity_duration=rendezvous.activity_duration, next_route_edges=rendezvous.next_route_edges, next_arrival_position=rendezvous.next_arrival_position, next_target_id=rendezvous.next_target_id, reason="rejoin companions at known rendezvous")
+            return BehaviorPlan(**common, proposed_action="change_goal" if rendezvous.target_kind == "activity" else "reroute", target_id=rendezvous.target_id, candidate_id=rendezvous.candidate_id, route_edges=rendezvous.edges, arrival_position=rendezvous.arrival_position, activity_duration=rendezvous.activity_duration, next_route_edges=rendezvous.next_route_edges, next_arrival_position=rendezvous.next_arrival_position, next_target_id=rendezvous.next_target_id, reason="rejoin companions at known rendezvous")
         if not state.poi_plan_active and goal_candidate is not None and goal_candidate.target_kind == "activity":
-            return BehaviorPlan(**common, proposed_action="change_goal", target_id=goal_candidate.target_id, route_edges=goal_candidate.edges, arrival_position=goal_candidate.arrival_position, activity_duration=goal_candidate.activity_duration, next_route_edges=goal_candidate.next_route_edges, next_arrival_position=goal_candidate.next_arrival_position, next_target_id=goal_candidate.next_target_id, reason="visit-purpose activity plan")
+            return BehaviorPlan(**common, proposed_action="change_goal", target_id=goal_candidate.target_id, candidate_id=goal_candidate.candidate_id, route_edges=goal_candidate.edges, arrival_position=goal_candidate.arrival_position, activity_duration=goal_candidate.activity_duration, next_route_edges=goal_candidate.next_route_edges, next_arrival_position=goal_candidate.next_arrival_position, next_target_id=goal_candidate.next_target_id, reason="visit-purpose activity plan")
         guidance_commands = {
             str(detail.get("command") or "inform")
             for event_id, detail in state.known_events.items()
@@ -42,10 +42,10 @@ class AgentDecisionEngine:
         }
         if guidance_commands & {"reroute", "disperse", "evacuate"} and candidates:
             candidate = min(candidates, key=lambda item: item.estimated_cost_seconds)
-            return BehaviorPlan(**common, proposed_action="reroute", target_id=candidate.target_id, route_edges=candidate.edges, arrival_position=candidate.arrival_position, reason="trusted official guidance requests rerouting")
+            return BehaviorPlan(**common, proposed_action="reroute", target_id=candidate.target_id, candidate_id=candidate.candidate_id, route_edges=candidate.edges, arrival_position=candidate.arrival_position, reason="trusted official guidance requests rerouting")
         if state.perceived_risk >= max(0.35, profile.risk_tolerance) and candidates:
             candidate = min(candidates, key=lambda item: item.estimated_cost_seconds * (1.2 - 0.2 * profile.familiarity))
-            return BehaviorPlan(**common, proposed_action="reroute", target_id=candidate.target_id, route_edges=candidate.edges, arrival_position=candidate.arrival_position, reason="known risk exceeds tolerance")
+            return BehaviorPlan(**common, proposed_action="reroute", target_id=candidate.target_id, candidate_id=candidate.candidate_id, route_edges=candidate.edges, arrival_position=candidate.arrival_position, reason="known risk exceeds tolerance")
         if observation.perceived_crowding >= max(0.45, profile.crowding_tolerance):
             return BehaviorPlan(**common, proposed_action="slow_down", speed_limit=max(0.2, profile.free_walking_speed * profile.mobility * 0.65), reason="perceived crowding exceeds tolerance")
         if state.blocked_duration >= 5.0 and profile.patience < 0.35:
@@ -62,6 +62,7 @@ class AgentDecisionEngine:
                 **common,
                 proposed_action="reroute",
                 target_id=candidate.target_id,
+                candidate_id=candidate.candidate_id,
                 route_edges=candidate.edges,
                 arrival_position=candidate.arrival_position,
                 selected_entry_edge=candidate.entry_edge,

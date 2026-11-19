@@ -428,6 +428,8 @@ def test_execute_run_completes_through_fake_gateway_and_records_actual_runtime_i
                         'metrics': {'during': measured_evidence(through=1)}}
             if action == 'start':
                 orchestrator._active['terminal'] = Terminal()
+            if action == 'close_run':
+                return {'type': 'run_closed', 'run_id': 'runtime-fake', 'runtime_state': 'CLOSED'}
             return {'type': 'command_result', 'status': 'applied'}
 
     gateway = ScriptedGateway()
@@ -440,4 +442,6 @@ def test_execute_run_completes_through_fake_gateway_and_records_actual_runtime_i
     assert saved['status'] == 'completed'
     assert saved['runtime_run_id'] == 'runtime-fake' and saved['requirement_id'] == 'req-fake'
     assert saved['summary']['crowdingOccurred'] is True and saved['summary']['t95Seconds'] == 31.5
-    assert [command['action'] for command in gateway.commands] == ['submit_experiment_requirement', 'reset', 'set_speed', 'start']
+    actions = [command['action'] for command in gateway.commands]
+    assert actions == ['submit_experiment_requirement', 'reset', 'set_speed', 'start', 'close_run']
+    assert gateway.commands[-1]['run_id'] == 'runtime-fake'

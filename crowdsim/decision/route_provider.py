@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from collections import Counter, OrderedDict
-from dataclasses import dataclass, replace
+from dataclasses import asdict, dataclass, replace
+import hashlib
+import json
 import math
 from typing import Iterable
 
@@ -40,6 +42,37 @@ class RouteCandidate:
     entry_density_person_per_m2: float = 0.0
     minimum_savings_seconds: float = 0.0
     switch_cooldown_seconds: float = 0.0
+    candidate_id: str | None = None
+
+
+def bind_candidates(candidates, person_id: str, snapshot_id: str):
+    """Identity includes the entire route/constraint payload and observation scope."""
+    result = []
+    seen = set()
+    for candidate in candidates:
+        payload = asdict(candidate)
+        payload.pop('candidate_id')
+        token = json.dumps([person_id, snapshot_id, payload], sort_keys=True, separators=(',', ':'), allow_nan=False)
+        identity = 'candidate-' + hashlib.sha256(token.encode()).hexdigest()
+        if identity in seen:
+            raise ValueError('duplicate candidate in frozen boundary')
+        seen.add(identity)
+        result.append(replace(candidate, candidate_id=identity))
+    return tuple(result)
+
+
+def select_candidate(candidates, *, candidate_id=None, target_id=None):
+    candidates = tuple(candidates)
+    if any(c.candidate_id is not None for c in candidates):
+        if not candidates or any(not c.candidate_id for c in candidates) or len({c.candidate_id for c in candidates}) != len(candidates):
+            raise ValueError('invalid candidate identities')
+        matches = [c for c in candidates if c.candidate_id == candidate_id]
+        if len(matches) != 1 or (target_id is not None and matches[0].target_id != target_id):
+            raise ValueError('candidate identity outside supplied boundary or target mismatch')
+        return matches[0]
+    if candidate_id is not None:
+        raise ValueError('candidate identity supplied to legacy boundary')
+    return next((c for c in candidates if c.target_id == target_id), None)
 
 
 class RouteProvider:

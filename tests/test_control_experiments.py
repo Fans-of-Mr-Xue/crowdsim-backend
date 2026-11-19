@@ -340,8 +340,9 @@ def test_gateway_submit_from_listener_thread_queues_send_without_blocking():
 
 
 def test_orchestrator_keeps_action_correlation_until_terminal_ack():
-    class Repository:
+    class Repository(CrowdSimRepository):
         def __init__(self):
+            super().__init__()
             self.records = []
 
         def record(self, collection, *args):
@@ -390,7 +391,7 @@ def test_orchestrator_keeps_action_correlation_until_terminal_ack():
 
 
 def test_orchestrator_ignores_frames_after_terminal_state():
-    class Repository:
+    class Repository(CrowdSimRepository):
         def acquire_gateway_lease(self, *_args, **_kwargs):
             raise AssertionError("a trailing frame must not renew the lease")
 
@@ -410,7 +411,7 @@ def test_orchestrator_ignores_frames_after_terminal_state():
 
 
 def test_orchestrator_ignores_trailing_frame_before_new_run_is_armed():
-    class Repository:
+    class Repository(CrowdSimRepository):
         def acquire_gateway_lease(self, *_args, **_kwargs):
             raise AssertionError("a frame received during reset must be ignored")
 

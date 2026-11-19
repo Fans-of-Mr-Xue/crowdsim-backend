@@ -9,6 +9,8 @@ import json
 from typing import Any
 
 from crowdsim.modeling_algorithm.registry import algorithm_catalog
+from crowdsim.modeling_algorithm.runtime_binding import validate_runtime_binding
+from crowdsim.modeling_algorithm.individual_model.module_assembly import validate_assembly
 from crowdsim.modeling_algorithm.rule_model.catalogue import implemented_rule_method, rule_entry
 
 
@@ -70,11 +72,15 @@ class ArtificialSocietySpec:
         _validate_selected_ids(individual.get("roles"), {"pedestrian"} if individual.get("role_contract") == "autonomous-agent-v1" else REQUIRED_ROLE_IDS, "individual_model.roles")
         _validate_profile_parameters(individual.get("profile_parameters"))
         _validate_agent_types(individual.get("agent_types"), distributions["crowd_role"])
+        if 'execution_contract' in individual and individual['execution_contract'] is None:
+            raise ArtificialSocietyValidationError('unsupported individual execution contract')
+        validate_assembly(individual['agent_types'], individual.get('execution_contract'))
         _validate_selected_ids(environment.get("layers"), REQUIRED_LAYER_IDS, "environment_model.layers")
         _validate_environment_structure(environment.get("spatial_structure"))
         _validate_selected_ids(rules.get("rules"), REQUIRED_RULE_IDS, "rule_model.rules")
         _validate_rule_method_entries(rules.get("rules"))
         _validate_runtime_parameters(rules.get("runtime_parameters"))
+        validate_runtime_binding(payload)
 
         binding = _object(environment, "scenario_binding")
         if not isinstance(binding.get("location_id"), str) or not binding["location_id"]:

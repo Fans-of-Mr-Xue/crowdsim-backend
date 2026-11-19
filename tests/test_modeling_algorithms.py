@@ -221,6 +221,7 @@ class ModelingAlgorithmTests(unittest.TestCase):
         profile, state, observation = context()
         candidate = RouteCandidate("safe", "goal", 0, ("e", "goal"), 20)
         model = LLMDrivenDecisionModel()
+        model.qa_local = True
 
         async def request(messages):
             return {"action": "reroute", "target_id": "safe", "reason": "avoid risk", "confidence": 0.9}
@@ -241,6 +242,7 @@ class ModelingAlgorithmTests(unittest.TestCase):
     def test_llm_failure_uses_bounded_rational_fallback(self):
         profile, state, observation = context()
         model = LLMDrivenDecisionModel()
+        model.qa_local = True
 
         async def request(messages):
             raise RuntimeError("offline")

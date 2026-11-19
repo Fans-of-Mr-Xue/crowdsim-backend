@@ -125,6 +125,23 @@ class SimulationLoopTests(unittest.TestCase):
         manifest = json.loads((recorder.directory / "decision_manifest.json").read_text())
         self.assertEqual("aborted", manifest["status"])
 
+    def test_tick_error_persists_summary_without_masking_root(self):
+        # A fatal tick must leave an auditable summary even without a later
+        # close_run; the root message and structured traceback survive intact.
+        self.runtime.start()
+        recorder = self.runtime.recorder
+        with patch.object(self.runtime, "_prepare_boundary", side_effect=ValueError("forced tick error")):
+            with self.assertRaisesRegex(ValueError, "forced tick error"):
+                self.runtime.tick()
+        self.assertEqual("ERROR", self.runtime.state.value)
+        summary_path = recorder.directory / "summary.json"
+        self.assertTrue(summary_path.exists())
+        summary = json.loads(summary_path.read_text())
+        self.assertEqual("ERROR", summary["state"])
+        self.assertIn("forced tick error", summary["last_error"])
+        self.assertIsNotNone(summary["last_traceback"])
+        self.assertIn("simulation_runtime.py", summary["last_traceback"])
+
     def test_initialization_error_closes_created_logger(self):
         runtime = SimulationRuntime(SCENARIO / "scenario.sumocfg", pedestrian_route_files=[SCENARIO / "demand.rou.xml"])
         try:

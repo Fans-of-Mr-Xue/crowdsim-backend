@@ -268,8 +268,13 @@ def main() -> None:
     server = DialogueHttpServer((args.host, args.port))
     logger.info("CrowdSim conversation storage listening on http://%s:%s; log=%s",
                 args.host, args.port, log_path)
+    from crowdsim.infrastructure.shutdown_signals import shutdown_signals
+    import threading
+    def stop():
+        threading.Thread(target=server.shutdown, name='dialogue-shutdown', daemon=True).start()
     try:
-        server.serve_forever()
+        with shutdown_signals(stop):
+            server.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:

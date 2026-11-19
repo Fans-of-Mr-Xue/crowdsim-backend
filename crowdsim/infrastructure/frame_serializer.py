@@ -7,6 +7,7 @@ from copy import deepcopy
 
 from crowdsim.domain.crowdsim_models import AgentState, MotionSnapshot
 from crowdsim.domain.runtime_capabilities import control_capabilities
+from crowdsim.infrastructure.agent_runtime_view import build_agent_runtime_view
 
 
 class FrameSerializer:
@@ -39,6 +40,9 @@ class FrameSerializer:
             pedestrian["state"]["hotspot_activity_phase"] = state.hotspot_activity_phase
         pedestrian["state"].update({key: agent.get(key) for key in
             ("in_scope", "cell_id", "behavior_state", "behavior_reason", "crowded", "psychological_state")})
+        view = build_agent_runtime_view(runtime, profile, state)
+        if view is not None:
+            pedestrian['state']['agent_runtime'] = view
         return pedestrian
 
     @staticmethod

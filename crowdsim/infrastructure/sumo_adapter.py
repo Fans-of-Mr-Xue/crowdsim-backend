@@ -303,6 +303,15 @@ class SumoAdapter:
         self._require_connection()
         return self.connection.person.getStage(person_id)
 
+    def previous_person_stage(self, person_id: str) -> Stage:
+        """Read the last completed stage while the person still exists.
+
+        This is evidence only. Missing history must propagate, never be replaced
+        with a current stage or an inferred successful arrival.
+        """
+        self._require_connection()
+        return self.connection.person.getStage(person_id, -1)
+
     def remaining_stage_count(self, person_id: str) -> int:
         self._require_connection()
         return int(self.connection.person.getRemainingStages(person_id))

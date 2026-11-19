@@ -89,11 +89,27 @@ _ALGORITHMS = [
 ]
 
 
+#: Legacy buffer is reward statistics/action bias only, never an online learning policy.
+#: The configured v2 learners carry their own execution_contract from configured_runtime.
+_LEGACY_SCOPE = {
+    ("individual", "learning", "经验回放"): {
+        "scope": "legacy", "runtime_ready": False, "policy_kind": "reward_stat_buffer",
+    },
+    ("individual", "decision", "LLM-driven"): {
+        "online_ready": False, "connector": "httpx_openai_compatible",
+    },
+}
+
+
 def algorithm_catalog() -> list[dict[str, object]]:
-    return deepcopy([
+    from crowdsim.modeling_algorithm.individual_model.learning.configured_runtime import configured_learning_catalog
+    base = [
         {"model": model, "module": module, "method": method, "module_path": module_path, "implemented": implemented}
         for model, module, method, module_path, implemented in _ALGORITHMS
-    ])
+    ]
+    for item in base:
+        item.update(_LEGACY_SCOPE.get((item["model"], item["module"], item["method"]), {}))
+    return deepcopy(base + configured_learning_catalog())
 
 
 def method_status(method: str) -> dict[str, object] | None:

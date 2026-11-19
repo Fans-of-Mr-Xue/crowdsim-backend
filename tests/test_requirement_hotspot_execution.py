@@ -215,6 +215,7 @@ def runtime(start=300, end=900, time=10, stages=1, edge="ring"):
     instance._hotspot_activity = requirement_hotspot_activity(requirement(start, end))
     instance._hotspot_exit_applied = set()
     instance.run_id, instance.snapshot_index = "fake-run", 2
+    instance.decision_engine = SimpleNamespace(execution_contract=None)
     instance.adapter = Mock()
     instance.route_provider = Mock()
     instance.route_provider.build_candidate.return_value = SimpleNamespace(

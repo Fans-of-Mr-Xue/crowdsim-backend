@@ -13,6 +13,20 @@ class ObservationBuilder:
     def __init__(self, history_size: int = 20) -> None:
         self._history: deque[dict[str, Any]] = deque(maxlen=history_size)
 
+    def restore_history(self, observations, *, run_id):
+        """Restore only validated, strictly ordered observations for this run."""
+        history = []
+        last_time = None
+        for raw in observations:
+            observation = validate_observation(deepcopy(raw))
+            sim_time = observation['simTimeSeconds']
+            if observation['runId'] != run_id or (last_time is not None and sim_time <= last_time):
+                raise ValueError('invalid retained observation history')
+            history.append(observation)
+            last_time = sim_time
+        self._history.clear()
+        self._history.extend(history[-self._history.maxlen:])
+
     @staticmethod
     def _risk(global_metrics: dict[str, Any]) -> float:
         explicit = finite(global_metrics.get("riskIndex"))

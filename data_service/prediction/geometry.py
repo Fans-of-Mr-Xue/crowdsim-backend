@@ -5,8 +5,20 @@ from collections import deque
 import numpy as np
 from pyproj import CRS, Transformer
 from shapely.geometry import LineString, Point, box, mapping, shape
-from shapely.ops import transform, unary_union
+from shapely import transform as transform_coordinates
+from shapely.ops import unary_union
 from ..services.pedestrian_network import surface_feature, pieces
+
+
+def transform(function, geometry):
+    """Project coordinate arrays using the non-deprecated Shapely 2 API.
+
+    Keep the callable-first interface used by this module, including on Shapely
+    2.0 which has no interleaved=False option. pyproj accepts vector arrays.
+    """
+    def project(coordinates):
+        return np.asarray(function(*coordinates.T)).T
+    return transform_coordinates(geometry, project)
 
 
 def build_network(task, roads, settings):

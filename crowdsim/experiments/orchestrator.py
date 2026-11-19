@@ -42,6 +42,10 @@ class ExperimentOrchestrator:
         self._processing = None
         self._request_actions: dict[str, dict[str, Any]] = {}
         self._runtime_view = None
+        self._frame_revision = 0
+        self._presentation_generation = repository.allocate_presentation_generation()
+        self._recovery_attempted = set()
+        self._shutdown = threading.Event()
         self.owner_id = f"crowdsim_{uuid.uuid4().hex}"
         self.gateway.add_listener(self._on_gateway_event)
 
@@ -63,6 +67,8 @@ class ExperimentOrchestrator:
         # HTTP handlers run concurrently. Keep the existence check and entire
         # matrix creation atomic so simultaneous starts cannot enqueue duplicates.
         with self._start_lock:
+            if self._shutdown.is_set():
+                raise RuntimeError('CONTROL_SERVICE_CLOSED')
             return self._start_experiment(user_id, workspace_id, experiment_id, execution_version=execution_version)
 
     def _start_experiment(self, user_id: str, workspace_id: str, experiment_id: str, *, execution_version=None) -> list[dict[str, Any]]:
@@ -160,6 +166,8 @@ class ExperimentOrchestrator:
         experiment = self.repository.get_experiment(user_id, workspace_id, experiment_id)
         if not experiment:
             raise LookupError("EXPERIMENT_NOT_FOUND")
+        if not summary_only:
+            self._recover_observation(user_id, workspace_id, experiment)
         with self._lock:
             view = self._runtime_view
             owned = view and view["scope"] == (str(user_id), str(workspace_id), str(experiment_id))
@@ -173,6 +181,115 @@ class ExperimentOrchestrator:
         data.pop("scope", None)
         return {**data, "experimentId": experiment_id, "status": experiment["status"],
                 "runs": self.repository.list_runs(user_id, workspace_id, experiment_id)}
+
+    def _recover_observation(self, user_id, workspace_id, experiment):
+        """Recover only this persisted C0 observation owner, never reset or start."""
+        if self._shutdown.is_set() or not experiment.get('duringObservation') or experiment.get('stop_requested'):
+            return
+        key = (str(user_id), str(workspace_id), experiment['experiment_id'])
+        with self._start_lock, self._lock:
+            if self._active or self._processing or key in self._recovery_attempted:
+                return
+            runs = self.repository.list_runs(user_id, workspace_id, experiment['experiment_id'])
+            run = next((r for r in runs if r['status'] in {'running', 'paused'} and r.get('runtime_run_id') and not r.get('restartPending')), None)
+            if not run:
+                # Cold current view of a completed group uses its own last archive,
+                # never an archive from another group or a fabricated latest frame.
+                last = next((r for r in reversed(runs) if r['status'] == 'completed' and r.get('finalFrameSha256')), None)
+                if last and experiment['status'] in {'completed', 'completed_with_failures'} and self._runtime_view is None:
+                    view = self.repository.read_final_frame(experiment, last)
+                    if view:
+                        self._frame_revision += 1
+                        self._runtime_view = {**view, 'scope': key, 'frameVersion': {'epoch': self.owner_id,
+                            'revision': self._frame_revision, 'generation': self._presentation_generation}}
+                return
+            if run['method_id'] != 'C0':
+                return
+            self._recovery_attempted.add(key)
+            self._queue.put({'user_id': user_id, 'workspace_id': workspace_id, 'experiment': experiment, 'run': run, 'recover': True})
+            for pending in runs:
+                if pending['status'] in {'draft', 'queued'} and not pending.get('restartPending'):
+                    self._queue.put({'user_id': user_id, 'workspace_id': workspace_id, 'experiment': experiment, 'run': pending})
+            self._ensure_worker()
+
+    def _restore_observation_run(self, item):
+        user_id, workspace_id, experiment, run = (item[k] for k in ('user_id', 'workspace_id', 'experiment', 'run'))
+        if not self.repository.acquire_gateway_lease(self.owner_id, ttl_seconds=90):
+            raise RuntimeError('SIMULATOR_BUSY')
+        if not self.gateway.start(wait_seconds=10):
+            raise RuntimeError('CROWDSIM_UNAVAILABLE')
+        request = self.gateway.submit({'action': 'get_snapshot', 'run_id': run['runtime_run_id']})
+        try:
+            snapshot = self.gateway.wait_for_ack(request, timeout=20)
+        finally:
+            self.gateway.forget_request(request)
+        if not snapshot or snapshot.get('type') != 'runtime_snapshot':
+            raise RuntimeError('retained runtime snapshot is unavailable; no reset was issued')
+        init, frame = snapshot['init'], snapshot['frame']
+        speed = frame.get('speed_factor', init.get('speedFactor'))
+        if type(speed) not in (int, float) or not math.isfinite(speed) or not .05 <= speed <= 3:
+            raise RuntimeError('retained runtime speed is unavailable; no reset was issued')
+        from .during_observation import verify_initialization
+        evidence = verify_initialization(experiment['duringObservation'], init)
+        if (init.get('run_id') != run['runtime_run_id'] or frame.get('run_id') != run['runtime_run_id']
+                or evidence['geometryFingerprint'] != (run.get('observationBinding') or {}).get('geometryFingerprint')):
+            raise RuntimeError('retained runtime binding mismatch; no reset was issued')
+        observations = self.repository.list_records('observations', user_id, workspace_id, run['run_id'], limit=100000)
+        last = observations[-1].get('payload', observations[-1]) if observations else None
+        builder = ObservationBuilder()
+        builder.restore_history([row.get('payload', row) for row in observations], run_id=run['run_id'])
+        controller = self.registry.create('C0', run['config'])
+        controller.reset({'runId': run['run_id'], 'seed': run['seed'], 'userId': user_id, 'workspaceId': workspace_id})
+        active = {'user_id': user_id, 'workspace_id': workspace_id, 'experiment': experiment, 'run': run,
+            'controller': controller, 'builder': builder, 'last_observation_time': last.get('simTimeSeconds') if last else None,
+            'last_observation': last, 'last_decision': None, 'last_effect': None, 'pending_evaluations': [],
+            'terminal': threading.Event(), 'failure': None, 'accept_frames': True, 'runtime_run_id': run['runtime_run_id']}
+        with self._lock:
+            self._active = active
+            self._runtime_view = {'scope': (str(user_id), str(workspace_id), experiment['experiment_id']),
+                'runId': run['run_id'], 'init': deepcopy(init), 'frame': None, 'speedFactor': float(speed)}
+        # Disconnect retained the real runtime paused. Reattach observes it only;
+        # explicit Resume is required before any future physics step.
+        status = {'PAUSED': 'paused', 'READY': 'paused', 'RUNNING': 'running', 'FINISHED': 'running'}.get(frame.get('runtime_state'))
+        if status is None:
+            raise RuntimeError('retained runtime cannot resume')
+        self.repository.update_run(user_id, workspace_id, run['run_id'], {'status': status, 'shutdownInterrupted': False})
+        self._handle_frame(active, frame)
+        if not active['terminal'].wait(float(experiment['scenario'].get('wallTimeoutSeconds', 7200))):
+            raise TimeoutError('recovered runtime exceeded wallTimeoutSeconds')
+        if active.get('shutdown_requested'):
+            self.repository.update_run(user_id, workspace_id, run['run_id'], {'status': 'paused', 'shutdownInterrupted': True})
+            return
+        if active['failure']:
+            raise RuntimeError(active['failure'])
+        with self._lock:
+            current = self.repository.get_run(user_id, workspace_id, run['run_id'])
+            if current['status'] == 'cancelled':
+                return
+            summary = summarize_observations(self.repository.list_records('observations', user_id, workspace_id, run['run_id'], limit=100000))
+            digest = self.repository.save_final_frame(experiment, current, self._runtime_view)
+            self.repository.update_run(user_id, workspace_id, run['run_id'], {'status': 'completed',
+                'completed_at': datetime.now(timezone.utc), 'summary': summary, 'finalFrameSha256': digest,
+                'controller_state': controller.snapshot_state()})
+
+    def final_frame_view(self, user_id, workspace_id, experiment_id, run_id):
+        """Read only the addressed completed attempt; never connect to SUMO."""
+        with self._lock:
+            experiment = self.repository.get_experiment(user_id, workspace_id, experiment_id)
+            run = self.repository.get_run(user_id, workspace_id, run_id)
+            if not experiment or not run or run['experiment_id'] != experiment_id:
+                raise LookupError('RUN_NOT_FOUND')
+            if not experiment.get('duringObservation'):
+                raise ContractError('逐轮最终帧仅用于第一类平行实验。')
+            if run['status'] != 'completed' or run.get('restartPending'):
+                raise ContractError('只能查看已完成轮次的最终帧。')
+            data = self.repository.read_final_frame(experiment, run) if run.get('finalFrameSha256') else None
+            return {**(data or {}), 'experimentId': experiment_id, 'runId': run_id,
+                    'runtimeRunId': run.get('runtime_run_id'), 'restartCount': run.get('restartCount', 0),
+                    'status': 'completed', 'runs': self.repository.list_runs(user_id, workspace_id, experiment_id),
+                    'displayMode': 'final_frame', 'frameAvailable': data is not None,
+                    'binding': {k: experiment['duringObservation'].get(k) for k in
+                                ('conversationId', 'snapshotId', 'requirementId', 'requirementFingerprint', 'modelId', 'modelFingerprint')}}
 
     def stop_experiment(self, user_id, workspace_id, experiment_id):
         """Cancel this group's queued runs as well as its current run."""
@@ -412,8 +529,31 @@ class ExperimentOrchestrator:
         self.events.publish("action_queued", queued, run_id=run_id)
         return queued
 
+    def close(self, *, timeout=35.0) -> None:
+        """Stop this owner and drain its worker; never cancel other owners' runs."""
+        with self._start_lock, self._lock:
+            self._shutdown.set()
+            active = self._active
+            if active:
+                active['accept_frames'] = False
+                active['shutdown_requested'] = True
+                active['terminal'].set()
+            self._queue.put(None)
+        # Close the transport after interrupting the terminal wait. Pending ACK
+        # waits wake as rejected; the worker cannot start another queued run.
+        self.gateway.close()
+        worker = self._worker
+        if worker and worker is not threading.current_thread():
+            worker.join(timeout=timeout)
+            if worker.is_alive():
+                raise TimeoutError('experiment worker did not stop')
+        self.gateway.remove_listener(self._on_gateway_event)
+        self.repository.release_gateway_lease(self.owner_id)
+
     def _ensure_worker(self) -> None:
         with self._lock:
+            if self._shutdown.is_set():
+                raise RuntimeError('CONTROL_SERVICE_CLOSED')
             if self._worker is None or not self._worker.is_alive():
                 self._worker = threading.Thread(target=self._worker_loop, name="crowdsim-experiment-worker", daemon=True)
                 self._worker.start()
@@ -430,15 +570,25 @@ class ExperimentOrchestrator:
                     item = self._queue.get_nowait()
                 except queue.Empty:
                     continue
-                if item is None:
+                if item is None or self._shutdown.is_set():
                     self._queue.task_done()
-                    return
+                    if item is None:
+                        return
+                    continue
                 with self._lock:
                     self._processing = item
             finish = True
             try:
-                self._execute_run(item)
+                if item.get('recover'):
+                    self._restore_observation_run(item)
+                else:
+                    self._execute_run(item)
             except Exception as exc:
+                if self._shutdown.is_set():
+                    self.repository.update_run(item['user_id'], item['workspace_id'], item['run']['run_id'],
+                        {'status': 'paused', 'shutdownInterrupted': True})
+                    finish = False
+                    continue
                 run = item["run"]
                 current = self.repository.get_run(item["user_id"], item["workspace_id"], run["run_id"])
                 if current and current["status"] == "cancelled":
@@ -460,6 +610,12 @@ class ExperimentOrchestrator:
                 })
                 self.events.publish("run_failed", {"error": f"{type(exc).__name__}: {exc}"}, run_id=run["run_id"])
                 self.logger.exception("CrowdSim run failed")
+                with self._lock:
+                    active = self._active
+                if (active and active["user_id"] == item["user_id"]
+                        and active["workspace_id"] == item["workspace_id"]
+                        and active["run"]["run_id"] == run["run_id"]):
+                    self._graceful_close_owned_runtime(active, reason="failed")
             finally:
                 self.repository.release_gateway_lease(self.owner_id)
                 close_gateway = False
@@ -472,7 +628,7 @@ class ExperimentOrchestrator:
                     self._active = None
                     self._queue.task_done()
                     current = self.repository.get_run(item["user_id"], item["workspace_id"], item["run"]["run_id"])
-                    if item["experiment"].get("duringObservation") and current and current.get("restartPending"):
+                    if not self._shutdown.is_set() and item["experiment"].get("duringObservation") and current and current.get("restartPending"):
                         experiment = self.repository.get_experiment(item["user_id"], item["workspace_id"], item["experiment"]["experiment_id"])
                         try:
                             self._schedule_observation_restart(item["user_id"], item["workspace_id"], experiment, current)
@@ -492,6 +648,8 @@ class ExperimentOrchestrator:
 
     def _execute_run(self, item: dict[str, Any]) -> None:
         user_id, workspace_id, experiment, run = item["user_id"], item["workspace_id"], item["experiment"], item["run"]
+        if self._shutdown.is_set():
+            return
         if self.repository.get_run(user_id, workspace_id, run["run_id"])["status"] == "cancelled":
             return
         if not self.repository.acquire_gateway_lease(self.owner_id, ttl_seconds=90):
@@ -620,6 +778,11 @@ class ExperimentOrchestrator:
         max_wall = float(experiment["scenario"].get("wallTimeoutSeconds", 7200))
         if not active["terminal"].wait(max_wall):
             raise TimeoutError("CrowdSim run exceeded wallTimeoutSeconds")
+        if active.get('shutdown_requested'):
+            self.repository.update_run(user_id, workspace_id, run['run_id'], {
+                'status': 'paused', 'shutdownInterrupted': True,
+            })
+            return
         if active["failure"]:
             raise RuntimeError(active["failure"])
         with self._lock:
@@ -628,11 +791,46 @@ class ExperimentOrchestrator:
                 return
             observations = self.repository.list_records("observations", user_id, workspace_id, run["run_id"], limit=100000)
             summary = summarize_observations(observations)
+            final_frame = {}
+            frame = (self._runtime_view or {}).get('frame') or {}
+            # Older gateway frames have no snapshot contract and are not archived.
+            # Never reconstruct it, and never make a legacy completed run fail.
+            if experiment.get('duringObservation') and frame.get('runtime_state') == 'FINISHED' and frame.get('snapshot_id'):
+                final_frame['finalFrameSha256'] = self.repository.save_final_frame(experiment, current, self._runtime_view)
             self.repository.update_run(user_id, workspace_id, run["run_id"], {
                 "status": "completed", "completed_at": datetime.now(timezone.utc), "summary": summary,
-                "controller_state": controller.snapshot_state(),
+                "controller_state": controller.snapshot_state(), **final_frame,
             })
         self.events.publish("run_completed", {"summary": summary}, run_id=run["run_id"])
+        self._graceful_close_owned_runtime(active, reason="completed")
+
+    def _graceful_close_owned_runtime(self, active: dict[str, Any], *, reason: str) -> None:
+        """Release this run's simulator after its final frame/archive are persisted.
+
+        ``close_run`` is addressed only to the runtime bound to this active run,
+        and the ``run_closed`` acknowledgement must carry the same runtime id. A
+        mismatch, missing acknowledgement or transport failure is logged only:
+        it is never retried against an unbound run and never masks the saved
+        completed/failed status. Explicitly paused, cancelled or restart-pending
+        runs stay attached so a resume or round handover can still reach them.
+        """
+        runtime_run_id = active.get("runtime_run_id")
+        if not runtime_run_id:
+            return
+        user_id, workspace_id, run = active["user_id"], active["workspace_id"], active["run"]
+        current = self.repository.get_run(user_id, workspace_id, run["run_id"])
+        if (current is None or current.get("restartPending")
+                or current.get("status") in {"cancelled", "paused"}):
+            return
+        try:
+            request_id = self.gateway.submit({"action": "close_run", "run_id": runtime_run_id})
+            ack = self.gateway.wait_for_ack(request_id, timeout=30)
+        except Exception:
+            self.logger.warning("Could not gracefully close runtime after %s", reason, exc_info=True)
+            return
+        if not ack or ack.get("type") != "run_closed" or ack.get("run_id") != runtime_run_id:
+            self.logger.warning("close_run did not release runtime %s after %s: %s",
+                                runtime_run_id, reason, ack)
 
     def _prepare_reset_payload(self, scenario: dict[str, Any], seed: int) -> dict[str, Any]:
         """Derive an immutable experiment requirement before changing its population."""
@@ -729,7 +927,13 @@ class ExperimentOrchestrator:
             return
         with self._lock:
             if self._runtime_view and self._runtime_view["runId"] == active["run"]["run_id"]:
-                self._runtime_view["frame"] = deepcopy(frame)
+                # A presentation revision orders HTTP copies, including state-only
+                # updates at the same physical snapshot. Never modify the SUMO frame.
+                if self._runtime_view.get("frame") != frame:
+                    self._frame_revision += 1
+                    self._runtime_view["frameVersion"] = {"epoch": self.owner_id, "revision": self._frame_revision,
+                                                          "generation": self._presentation_generation}
+                    self._runtime_view["frame"] = deepcopy(frame)
         if not self.repository.acquire_gateway_lease(self.owner_id, ttl_seconds=90):
             active["failure"] = "CrowdSim gateway lease was lost"
             active["terminal"].set()
@@ -758,7 +962,7 @@ class ExperimentOrchestrator:
             if terminal and isinstance(completion, dict):
                 self.repository.update_run(active["user_id"], active["workspace_id"], run["run_id"],
                                            {"completion": deepcopy(completion)})
-            if sim_time == last_time:
+            if sim_time == last_time and not terminal:
                 return
         if experiment["scenario"].get("presetId"):
             during = (frame.get("metrics") or {}).get("during") or {}
@@ -771,7 +975,7 @@ class ExperimentOrchestrator:
         # Fixed replay schedules are checked on every received simulation frame,
         # independent of the regular report sampling interval.
         scheduled = run["method_id"] == "D2" and active["controller"].due(sim_time)
-        if last_time is None or sim_time - last_time >= interval or terminal or scheduled:
+        if (last_time != sim_time or not experiment.get('duringObservation')) and (last_time is None or sim_time - last_time >= interval or terminal or scheduled):
             observation = active["builder"].build(
                 frame, run_id=run["run_id"], last_decision=active["last_decision"], last_effect=active["last_effect"],
             )

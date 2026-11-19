@@ -41,7 +41,7 @@ class CrowdSimRepository:
 
     COLLECTIONS = (
         "experiments", "runs", "observations", "decisions", "acks",
-        "evaluations", "metrics", "llm", "reports", "leases",
+        "evaluations", "metrics", "llm", "reports", "leases", "presentation_epochs",
     )
     APPEND_ONLY = {"observations", "decisions", "acks", "evaluations", "metrics", "llm"}
 
@@ -52,6 +52,56 @@ class CrowdSimRepository:
         if self._root is not None:
             self._root.mkdir(parents=True, exist_ok=True)
             self._load()
+        from .final_frame_archive import FinalFrameArchive
+        self.final_frames = FinalFrameArchive(self._root / 'final_frames' if self._root is not None else None)
+
+    def allocate_presentation_generation(self):
+        """Allocate a durable epoch even if separate instances start together."""
+        from contextlib import nullcontext
+        import os
+        with self._lock:
+            lock = (self._root / 'presentation_epochs.lock').open('a+b') if self.persistent else nullcontext(None)
+            with lock as handle:
+                if handle is not None:
+                    if os.name == 'nt':
+                        import msvcrt
+                        handle.seek(0, 2)
+                        if handle.tell() == 0:
+                            handle.write(b'0'); handle.flush()
+                        handle.seek(0)
+                        msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+                    else:
+                        import fcntl
+                        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+                old = self._memory['presentation_epochs']
+                try:
+                    current = old
+                    if handle is not None and self._path('presentation_epochs').exists():
+                        current = json.loads(self._path('presentation_epochs').read_text(encoding='utf-8'))
+                    if not isinstance(current, list) or any(type(r.get('generation')) is not int or r['generation'] < 1 for r in current):
+                        raise ValueError('invalid persisted presentation generation')
+                    generation = max((r['generation'] for r in current), default=0) + 1
+                    self._memory['presentation_epochs'] = [{'generation': generation}]
+                    self._flush('presentation_epochs')
+                    return generation
+                except Exception:
+                    self._memory['presentation_epochs'] = old
+                    raise
+                finally:
+                    if handle is not None:
+                        if os.name == 'nt':
+                            handle.seek(0)
+                            msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+                        else:
+                            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+    def save_final_frame(self, experiment, run, view):
+        with self._lock:
+            return self.final_frames.save(experiment, run, view)
+
+    def read_final_frame(self, experiment, run):
+        with self._lock:
+            return self.final_frames.read(experiment, run, expected_sha256=run.get('finalFrameSha256'))
 
     @property
     def persistent(self) -> bool:
@@ -295,6 +345,131 @@ class CrowdSimRepository:
         with self._lock:
             docs = [deepcopy(item) for item in self._memory[kind] if all(item.get(k) == v for k, v in query.items())]
         return [_serialize(item) for item in docs[:max(1, int(limit))]]
+
+    def _resolve_owned_runtime(self, user_id: str, workspace_id: str, run_id: str,
+                               runtime_run_id: str | None):
+        run = self.get_run(user_id, workspace_id, run_id)
+        if not run:
+            raise LookupError("RUN_NOT_FOUND")
+        current_runtime_run_id = run.get("runtime_run_id")
+        history_runtime_run_ids = list(run.get("previous_runtime_run_ids") or [])
+        allowed_runtime_run_ids = [item for item in
+                                   (current_runtime_run_id, *history_runtime_run_ids) if item]
+        selected_runtime_run_id = runtime_run_id or current_runtime_run_id
+        if (selected_runtime_run_id is not None
+                and selected_runtime_run_id not in allowed_runtime_run_ids):
+            raise LookupError("RUNTIME_RUN_ID_NOT_OWNED")
+        return run, current_runtime_run_id, history_runtime_run_ids, selected_runtime_run_id
+
+    def read_decision_trace_archive(self, user_id: str, workspace_id: str, run_id: str,
+                                     *, person_id: str | None = None,
+                                     snapshot_id: str | None = None,
+                                     time_seconds: float | None = None,
+                                     runtime_run_id: str | None = None,
+                                     cursor: int | None = None,
+                                     page_size: int | None = None):
+        """Read-only back-read of the runtime ``decision_traces.jsonl`` for a run.
+
+        Traces live in the runtime archive, not the control envelope collections,
+        so this never inserts or appends. A run without a runtime id, a missing
+        archive, or an empty file returns explicit ``missing`` reasons rather
+        than fabricated rows.
+
+        ``runtime_run_id`` selects one owned runtime archive: the current one or
+        an earlier one recorded in ``previous_runtime_run_ids``. Archives are
+        never merged across runs; a runtime id that does not belong to this run
+        is rejected rather than read.
+
+        When ``cursor``/``page_size`` is supplied the response is a bounded page
+        with ``total`` and ``next_cursor``; the full archive is not truncated.
+        The paginated path does not attach ``role_summary`` (that still scans
+        the whole archive) and must be fetched from the role-summary endpoint.
+        """
+        from crowdsim.infrastructure.decision_trace_archive import (
+            load_archive_traces, archive_summary, page_archive_traces)
+
+        run, current_runtime_run_id, history_runtime_run_ids, selected_runtime_run_id = \
+            self._resolve_owned_runtime(user_id, workspace_id, run_id, runtime_run_id)
+        base = {
+            "run_id": run["run_id"],
+            "runtime_run_id": current_runtime_run_id,
+            "selected_runtime_run_id": selected_runtime_run_id,
+            "previous_runtime_run_ids": history_runtime_run_ids,
+            "mixed_run": False,
+            "trace_file": "decision_traces.jsonl",
+        }
+        if cursor is not None or page_size is not None:
+            traces, total, next_cursor, missing = page_archive_traces(
+                selected_runtime_run_id, person_id=person_id, snapshot_id=snapshot_id,
+                time_seconds=time_seconds, cursor=cursor, page_size=page_size)
+            return {
+                **base,
+                "missing": missing,
+                "traces": [_serialize(row) for row in traces],
+                "total": total,
+                "next_cursor": next_cursor,
+                "role_summary": None,
+            }
+        traces, missing = load_archive_traces(
+            selected_runtime_run_id, person_id=person_id, snapshot_id=snapshot_id, time_seconds=time_seconds)
+        return {
+            **base,
+            "missing": missing,
+            "traces": [_serialize(row) for row in traces],
+            "role_summary": archive_summary(traces) if time_seconds is None and snapshot_id is None else None,
+        }
+
+    def read_archive_person_index(self, user_id: str, workspace_id: str, run_id: str,
+                                  *, runtime_run_id: str | None = None):
+        """Lightweight per-person rollup for the history list page.
+
+        Reads only the index boundary fields; trace bodies are not loaded.
+        Owned-run validation mirrors :meth:`read_decision_trace_archive`.
+        """
+        from crowdsim.infrastructure.decision_trace_archive import list_archive_persons
+
+        run, current_runtime_run_id, history_runtime_run_ids, selected_runtime_run_id = \
+            self._resolve_owned_runtime(user_id, workspace_id, run_id, runtime_run_id)
+        persons, total, missing = list_archive_persons(selected_runtime_run_id)
+        return {
+            "run_id": run["run_id"],
+            "runtime_run_id": current_runtime_run_id,
+            "selected_runtime_run_id": selected_runtime_run_id,
+            "previous_runtime_run_ids": history_runtime_run_ids,
+            "mixed_run": False,
+            "trace_file": "decision_traces.jsonl",
+            "missing": missing,
+            "total": total,
+            "persons": persons,
+        }
+
+    def read_archive_role_summary(self, user_id: str, workspace_id: str, run_id: str,
+                                  *, runtime_run_id: str | None = None):
+        """Role summary from the streaming reducer cache; no full archive decode on warm hit.
+
+        Owned-run validation mirrors :meth:`read_decision_trace_archive`. The
+        reducer folds deduplicated accumulators once per archive identity; the
+        response carries no full trace list.
+        """
+        from crowdsim.infrastructure.decision_trace_archive import archive_role_summary
+
+        run, current_runtime_run_id, history_runtime_run_ids, selected_runtime_run_id = \
+            self._resolve_owned_runtime(user_id, workspace_id, run_id, runtime_run_id)
+        summary, warming, missing = archive_role_summary(selected_runtime_run_id)
+        return {
+            "run_id": run["run_id"],
+            "runtime_run_id": current_runtime_run_id,
+            "selected_runtime_run_id": selected_runtime_run_id,
+            "previous_runtime_run_ids": history_runtime_run_ids,
+            "mixed_run": False,
+            "trace_file": "decision_traces.jsonl",
+            "missing": missing,
+            "traces": [],
+            "total": 0,
+            "next_cursor": None,
+            "warming": warming,
+            "role_summary": summary,
+        }
 
     def save_report(self, user_id, workspace_id, experiment_id, report):
         query = {"user_id": str(user_id), "workspace_id": str(workspace_id), "experiment_id": str(experiment_id)}

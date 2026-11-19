@@ -147,6 +147,8 @@ class BehaviorPlan:
     next_target_id: Optional[str] = None
     selected_entry_edge: Optional[str] = None
     preserve_future_stages: bool = False
+    candidate_id: Optional[str] = None
+    scheduling_source: Optional[str] = None
 
 
 @dataclass(frozen=True)

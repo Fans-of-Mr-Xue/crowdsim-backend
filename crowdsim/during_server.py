@@ -13,6 +13,7 @@ class DuringOverlayServer(OverlayServer):
         app.router.add_get("/", self._aio_websocket_handler)
         app.router.add_get("/api/v1/performance/config", self._performance_config)
         app.router.add_post("/api/v1/requirements", self._requirement_http_handler)
+        self._register_evidence_routes(app)
         self._register_class2_routes(app)
         async def health(_):
             return web.json_response({"service": "crowdsim-during-simulator", "databaseRequired": False})

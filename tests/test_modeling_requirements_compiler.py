@@ -59,6 +59,8 @@ def requirement_payload(location_id="memorial-tower"):
 
 def configured_modeling(requirement):
     modeling = default_modeling_requirements(requirement)
+    # Existing fixtures intentionally exercise the preserved legacy contract.
+    modeling['individual'].pop('execution_contract', None)
     modeling["environment"]["candidates"] = environment_candidates(requirement)
     modeling["environment"]["selected_environment_model_id"] = "env-memorial-tower-v1"
     agent = modeling["individual"]["agent_types"][0]
@@ -88,6 +90,19 @@ def confirm_modeling(modeling):
 
 
 class ModelingRequirementsCompilerTests(unittest.TestCase):
+    def test_new_draft_selects_executable_chain_without_changing_legacy_model(self):
+        requirement = requirement_payload()
+        draft = default_modeling_requirements(requirement)
+        self.assertEqual('candidate-decision-v1', draft['individual']['execution_contract'])
+        draft['environment']['selected_environment_model_id'] = 'env-memorial-tower-v1'
+        draft['rules']['accepted_recommended_rule_ids'] = draft['rules']['recommended_rule_ids']
+        compiled = compile_artificial_society({'requirement': requirement, 'requirement_id': 'req-new',
+                                              'fingerprint': 'sha256:test'}, confirm_modeling(draft))
+        self.assertEqual('candidate-decision-v1', compiled['individual_model']['execution_contract'])
+        old = compile_artificial_society({'requirement': requirement, 'requirement_id': 'req-old',
+                                         'fingerprint': 'sha256:test'}, configured_modeling(requirement))
+        self.assertNotIn('execution_contract', old['individual_model'])
+
     def test_full_agent_architecture_requires_desire_before_goal(self):
         requirement = requirement_payload()
         modeling = configured_modeling(requirement)
@@ -301,6 +316,9 @@ class ModelingRequirementsCompilerTests(unittest.TestCase):
             }, "during-check", requirements=requirements, models=models)
             self.assertEqual("READY", result["execution_manifest"]["status"])
             self.assertEqual(result["model_id"], result["execution_manifest"]["modelId"])
+            self.assertEqual(result['artificial_society']['runtime_binding']['configuration_fingerprint'],
+                             result['execution_manifest']['runtimeConfigurationFingerprint'])
+            self.assertEqual('confirmed-configuration-v1', result['execution_manifest']['runtimeBindingVersion'])
             self.assertRegex(result["execution_manifest"]["experimentConfigId"], r"^exp-config-[0-9a-f]{16}$")
             self.assertEqual(["validate", "individual", "environment", "rules", "manifest"], [step["id"] for step in result["build_steps"]])
             self.assertTrue(all(step["status"] == "completed" for step in result["build_steps"]))

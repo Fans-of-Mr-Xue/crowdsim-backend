@@ -14,6 +14,8 @@ from crowdsim.domain.crowd_visual_state import CrowdVisualPolicy
 from crowdsim.infrastructure.artificial_society_repository import ArtificialSocietyRepository
 from crowdsim.infrastructure.requirement_repository import RequirementRepository
 from crowdsim.modeling_algorithm.registry import algorithm_catalog
+from crowdsim.modeling_algorithm.runtime_binding import build_runtime_binding
+from crowdsim.modeling_algorithm.individual_model.module_assembly import validate_assembly
 from crowdsim.modeling_algorithm.rule_model.catalogue import (
     STRONG_RULES,
     default_rule_methods,
@@ -200,6 +202,7 @@ def default_modeling_requirements(requirement: dict[str, Any]) -> dict[str, Any]
         "decisions": {section: {"status": "pending", "fingerprint": "", "source": ""}
                       for section in ("individual", "environment", "rules")},
         "individual": {
+            "execution_contract": "candidate-decision-v1",
             "agent_types": [{
                 "id": str(row.get("code") or row.get("id") or f"crowd-{index + 1}"),
                 "name": str(row.get("label") or f"人群类型 {index + 1}"),
@@ -259,8 +262,14 @@ def validate_modeling_requirements(requirement: dict[str, Any], raw: Any) -> dic
     expected_ids = {str(row.get("code") or row.get("id")) for row in expected}
     if {str(agent.get("id")) for agent in agents if isinstance(agent, dict)} != expected_ids:
         raise ModelingRequirementsError("agent types must match the confirmed crowd roles")
-    methods = {(str(item["module"]), str(item["method"])) for item in executable_catalog()
+    methods = {(str(item["module"]), str(item["method"])): item for item in executable_catalog()
                if item["model"] == "individual"}
+    configured_v2 = draft['individual'].get('execution_contract') == 'heterogeneous-learning-v2'
+    if 'execution_contract' in draft['individual'] and draft['individual']['execution_contract'] is None:
+        raise ModelingRequirementsError('unsupported individual execution contract')
+    validate_assembly(agents, draft['individual'].get('execution_contract'))
+    if draft['individual'].get('execution_contract') == 'heterogeneous-learning-v2' and requirement.get('research',{}).get('problem_type') != 1:
+        raise ModelingRequirementsError('configured learning contract currently requires first-class modeling path')
     for agent in agents:
         capabilities = agent.get("capabilities") or {}
         architecture = [item for item in agent.get("architecture") or [] if item.get("selected") is not False]
@@ -294,8 +303,11 @@ def validate_modeling_requirements(requirement: dict[str, Any], raw: Any) -> dic
                     or not bounds["floor"] <= lo <= hi <= bounds["ceiling"]):
                 raise ModelingRequirementsError(f"{key} bounds are invalid")
         for module, method in configured.items():
-            if (module, method) not in methods:
+            entry = methods.get((module, method))
+            if entry is None:
                 raise ModelingRequirementsError(f"algorithm is not executable: {module}.{method}")
+            if configured_v2 and module == "learning" and entry.get("execution_contract") != "heterogeneous-learning-v2":
+                raise ModelingRequirementsError("configured learning contract requires a v2 learner, not the legacy replay buffer")
     environment = draft.get("environment") or {}
     selected = str(environment.get("selected_environment_model_id") or "")
     candidates = {item["environment_model_id"]: item for item in environment_candidates(requirement)}
@@ -379,6 +391,9 @@ def _compile_agent(agent: dict[str, Any]) -> dict[str, Any]:
         "capabilities": deepcopy(agent.get("capabilities") or {}),
         "emotionState": deepcopy(agent.get("emotionState") or {}),
         "architecture": architecture,
+        **({'algorithm_parameters': deepcopy(agent['algorithm_parameters'])} if 'algorithm_parameters' in agent else {}),
+        **({'learning_config': deepcopy(agent['learning_config'])} if 'learning_config' in agent else {}),
+        **({'learning_runtime': deepcopy(agent['learning_runtime'])} if 'learning_runtime' in agent else {}),
     }
 
 
@@ -455,6 +470,9 @@ def compile_artificial_society(requirement_record: dict[str, Any], modeling: dic
                                    "visual_state": policy},
         },
     }
+    if 'execution_contract' in modeling['individual']:
+        payload['individual_model']['execution_contract'] = modeling['individual']['execution_contract']
+    payload['runtime_binding'] = build_runtime_binding(payload['individual_model'])
     ArtificialSocietySpec.parse(payload)
     return payload
 
@@ -496,6 +514,8 @@ def build_artificial_society(payload: dict[str, Any], workspace_id: str,
         "environmentModelId": compiled["environment_model"]["environment_model_id"],
         "environmentModelVersion": compiled["environment_model"]["environment_model_version"],
         "experimentConfigId": experiment_config_id,
+        "runtimeBindingVersion": compiled['runtime_binding']['version'],
+        "runtimeConfigurationFingerprint": compiled['runtime_binding']['configuration_fingerprint'],
         "status": "READY",
     }
     canonical = json.dumps(execution_payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))

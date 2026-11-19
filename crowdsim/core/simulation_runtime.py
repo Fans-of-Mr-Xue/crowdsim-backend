@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from copy import deepcopy
 from enum import Enum
 import hashlib
 import json
@@ -10,6 +11,7 @@ import math
 import os
 from pathlib import Path
 from typing import Any, Iterable, Optional
+import traceback
 import uuid
 import xml.etree.ElementTree as ET
 
@@ -17,7 +19,7 @@ from crowdsim.decision.agent_decision import AgentDecisionEngine
 from crowdsim.decision.decision_scheduler import DecisionScheduler
 from crowdsim.decision.hotspot_route_choice import HotspotRouteChoice
 from crowdsim.decision.plan_executor import PlanExecutor
-from crowdsim.decision.route_provider import RouteProvider
+from crowdsim.decision.route_provider import RouteProvider, bind_candidates
 from crowdsim.control.inflow_meter import InflowMeter
 from crowdsim.domain.crowdsim_models import AgentProfile, BehaviorPlan, GroupRecord
 from crowdsim.domain.crowd_visual_state import CrowdVisualPolicy, STATE_COLORS
@@ -33,6 +35,7 @@ from crowdsim.environment.information_model import InformationModel
 from crowdsim.environment.intervention_executor import InterventionExecutor
 from crowdsim.environment.hotspot_catalog import HotspotCatalog
 from crowdsim.environment.poi_catalog import PoiCatalog
+from crowdsim.infrastructure.decision_trace import DecisionTraceStore, build_decision_trace
 from crowdsim.infrastructure.experiment_recorder import ExperimentRecorder
 from crowdsim.infrastructure.frame_serializer import FrameSerializer
 from crowdsim.infrastructure.metrics import MetricsCollector
@@ -48,6 +51,7 @@ from crowdsim.domain.requirement_spec import RequirementSpec
 from crowdsim.domain.hotspot_activity import requirement_hotspot_activity, activity_phase
 from crowdsim.infrastructure.performance_probe import PerformanceOptions, PerformanceProbe, timed
 from crowdsim.modeling_algorithm.individual_model.pipeline import IndividualModelingEngine
+from crowdsim.modeling_algorithm.individual_model.learning.post_action import PostActionJournal
 from crowdsim.scenarios.generated_hotspot_demand import HotspotDemandSpec
 from crowdsim.scenarios.generated_network_demand import NetworkDemandSpec
 from traci import constants as tc
@@ -123,6 +127,19 @@ class SimulationRuntime:
         ):
             raise ValueError("generated demand cannot be combined with an explicit route-file override")
         self.run_id = f"run-{uuid.uuid4().hex}"
+        self._decision_epoch = uuid.uuid4().hex
+        self._async_tick_inflight = None
+        self.discarded_decision_batches = 0
+        self.post_action_journal = PostActionJournal(self.run_id)
+        self.learning_controller = None
+        self._learning_scores = {}
+        # Pre-decision light snapshots frozen per boundary: state/observation/
+        # candidate set captured before any plan is resolved or applied, so the
+        # trace boundary segment and the read-only counterfactual contrast can
+        # project the genuine decision-before state instead of the post-execution
+        # state. Identity (snapshot/time/epoch) is validated before reuse.
+        self._boundary_before: dict[str, dict[str, Any]] = {}
+        self.decision_traces = DecisionTraceStore()
         self.performance_options = performance_options or PerformanceOptions()
         self.performance = PerformanceProbe(
             self.run_id, enabled=self.performance_options.enabled,
@@ -147,6 +164,7 @@ class SimulationRuntime:
         self.current: SumoStepResult | None = None
         self.snapshot_index = 0
         self.last_error: str | None = None
+        self.last_traceback: str | None = None
         self._close_complete = False
         self.close_errors: list[dict] = []
         self.sim_speed_factor = 1.0
@@ -416,6 +434,10 @@ class SimulationRuntime:
                 pedestrian_route_files=[str(path) for path in self.population.route_files],
             )
             self.state = RuntimeState.READY
+            if self.decision_engine.execution_contract == 'heterogeneous-learning-v2':
+                from crowdsim.modeling_algorithm.individual_model.learning.configured_runtime import validate_configured_roles
+                settings, capacity = validate_configured_roles(self.artificial_society_record['artificial_society']['individual_model']['agent_types'])
+                self.attach_learning_controller(settings, capacity=capacity)
             if self.observation_collector is not None:
                 self.recorder.record_step(self, self.current, self.latest_metrics)
             if getattr(self.generated_demand_spec, 'is_class2_demo', False):
@@ -432,7 +454,7 @@ class SimulationRuntime:
             self.recorder.update_manifest(system_performance_measurement=self.performance.system_metadata())
             return self.current
         except Exception as exc:
-            self.last_error = f"{type(exc).__name__}: {exc}"
+            self._capture_failure(exc)
             self.state = RuntimeState.ERROR
             self._abort_resources()
             raise
@@ -463,6 +485,17 @@ class SimulationRuntime:
             )
         self._refresh_visual_states()
 
+    def _capture_failure(self, exc: BaseException) -> None:
+        """Persist the error message and a structured traceback without swallowing it.
+
+        The original exception is still raised by the caller; this only records the
+        type/message and the Python stack so a failed run can be diagnosed from its
+        archived diagnostics instead of an unattributed ``NoneType`` message.
+        """
+        self.last_error = f"{type(exc).__name__}: {exc}"
+        self.last_traceback = "".join(
+            traceback.format_exception(type(exc), exc, exc.__traceback__))
+
     def start(self) -> None:
         if self.state not in {RuntimeState.READY, RuntimeState.PAUSED}:
             raise RuntimeError(f"start is invalid in state {self.state.value}")
@@ -473,7 +506,7 @@ class SimulationRuntime:
                     self._record_observation_lifecycle()
             self.state = RuntimeState.RUNNING
         except Exception as exc:
-            self.last_error = f"{type(exc).__name__}: {exc}"
+            self._capture_failure(exc)
             self.state = RuntimeState.ERROR
             self._abort_resources()
             raise
@@ -482,8 +515,13 @@ class SimulationRuntime:
         if self.state != RuntimeState.RUNNING:
             raise RuntimeError(f"pause is invalid in state {self.state.value}")
         self.state = RuntimeState.PAUSED
+        self._decision_epoch = uuid.uuid4().hex
+        self._boundary_before = {}
+        self.decision_scheduler.invalidate()
 
     def tick(self) -> SumoStepResult:
+        if self._async_tick_inflight is not None:
+            raise RuntimeError('another async decision boundary is in flight')
         if self.state != RuntimeState.RUNNING:
             raise RuntimeError(f"tick is invalid in state {self.state.value}")
         try:
@@ -492,7 +530,7 @@ class SimulationRuntime:
                 plans = self.decision_scheduler.resolve_rule(due, self.population.profiles, self.population.states, self.observations, self.decision_candidates)
             return self._step_after_plans(plans)
         except Exception as exc:
-            self.last_error = f"{type(exc).__name__}: {exc}"
+            self._capture_failure(exc)
             self.state = RuntimeState.ERROR
             self._abort_resources()
             raise
@@ -500,18 +538,35 @@ class SimulationRuntime:
     async def tick_async(self) -> SumoStepResult:
         if self.state != RuntimeState.RUNNING:
             raise RuntimeError(f"tick is invalid in state {self.state.value}")
+        if self._async_tick_inflight is not None:
+            raise RuntimeError('another async decision boundary is in flight')
+        inflight = object()
+        self._async_tick_inflight = inflight
+        token = (self.run_id, self.snapshot_id, self._decision_epoch)
         try:
             due = self._prepare_boundary()
+            token = (self.run_id, self.snapshot_id, self._decision_epoch)
+            scheduler = self.decision_scheduler
+            discarded_before = scheduler.discarded_batches
+            def is_current():
+                return self.state == RuntimeState.RUNNING and token == (self.run_id, self.snapshot_id, self._decision_epoch)
             with self.performance.measure('decision_resolve'):
-                plans = await self.decision_scheduler.resolve(due, self.population.profiles, self.population.states, self.observations, use_llm=self.use_llm, candidates=self.decision_candidates)
-            if self.state != RuntimeState.RUNNING:
+                plans = await scheduler.resolve(due, self.population.profiles, self.population.states, self.observations, use_llm=self.use_llm, candidates=self.decision_candidates, candidate_scores=getattr(self, '_learning_scores', None), is_current=is_current)
+            if not is_current() or scheduler.discarded_batches != discarded_before:
+                if self._async_tick_inflight is inflight:
+                    self.discarded_decision_batches += 1
                 return self.current
             return self._step_after_plans(plans)
         except Exception as exc:
-            self.last_error = f"{type(exc).__name__}: {exc}"
+            if token != (self.run_id, self.snapshot_id, self._decision_epoch):
+                return self.current
+            self._capture_failure(exc)
             self.state = RuntimeState.ERROR
             self._abort_resources()
             raise
+        finally:
+            if self._async_tick_inflight is inflight:
+                self._async_tick_inflight = None
 
     @timed('boundary_total')
     def _prepare_boundary(self) -> list[str]:
@@ -545,10 +600,63 @@ class SimulationRuntime:
                     base_speed = (self.class2_flows.speeds[person_id] if self.class2_flows is not None
                                   else profile.free_walking_speed * profile.mobility)
                     self.plan_executor.set_hazard_limit(person_id, self.hazards.speed_limit_for(motion, base_speed))
+        self.decision_engine.retain_active_people(self.observations)
         due = self.decision_scheduler.collect_due(self.population.states, self.observations, self.time_seconds)
         with self.performance.measure('route_context'):
             self._refresh_agent_context(due)
+        if self.decision_engine.execution_contract in {'candidate-decision-v1', 'heterogeneous-learning-v2'}:
+            for person_id in due:
+                self.decision_candidates[person_id] = self.decision_engine.prepare_decision_boundary(
+                    self.population.profile_for(person_id), self.population.states[person_id], self.observations[person_id],
+                    self.decision_candidates.get(person_id, ()))
+        learning = getattr(self, 'learning_controller', None)
+        self._learning_scores = {}
+        if learning is not None:
+            for person_id in due:
+                try:
+                    self._learning_scores[person_id] = learning.boundary_scores(self, person_id)
+                except ValueError:
+                    self._learning_scores[person_id] = {}
+        # Freeze the pre-decision boundary light copy after candidates are bound,
+        # before the scheduler resolves or applies any plan. Rebuilt on every
+        # boundary; identity below is validated so a stale frame cannot be
+        # projected as the current decision boundary.
+        self._boundary_before = {}
+        boundary_epoch = self._decision_epoch
+        boundary_snapshot = self.snapshot_id
+        boundary_time = self.time_seconds
+        for person_id in due:
+            state = self.population.states.get(person_id)
+            obs = self.observations.get(person_id)
+            if state is None or obs is None:
+                continue
+            self._boundary_before[person_id] = {
+                "snapshot_id": boundary_snapshot,
+                "time_seconds": boundary_time,
+                "epoch": boundary_epoch,
+                "state": deepcopy(state),
+                "observation": deepcopy(obs),
+                "candidates": deepcopy(self.decision_candidates.get(person_id, ())),
+            }
         return due
+
+    def boundary_before(self, person_id: str) -> dict[str, Any] | None:
+        """Return the validated pre-decision boundary copy for this person.
+
+        The copy is only handed out when its snapshot, time and decision epoch
+        match the current runtime boundary; otherwise ``None`` so an older frame
+        can never be used as a post-execution substitute.
+        """
+        record = self._boundary_before.get(person_id)
+        if record is None:
+            return None
+        if (record.get("snapshot_id") != self.snapshot_id
+                or record.get("epoch") != self._decision_epoch
+                or not isinstance(record.get("time_seconds"), (int, float))
+                or not math.isfinite(record.get("time_seconds"))
+                or record.get("time_seconds") != self.time_seconds):
+            return None
+        return record
 
     def queue_command(self, action: str, payload: dict, request_id=None) -> dict:
         command = RuntimeCommand(
@@ -662,6 +770,15 @@ class SimulationRuntime:
             and result.time_seconds + 1e-9 >= self.timeline_end_seconds
         )
         finished = reached_timeline_end or self.adapter.min_expected_number <= 0
+        self.post_action_journal.advance(snapshot_id=self.snapshot_id, now=self.time_seconds,
+            observations=self.observations if self.environment is not None else {},
+            states=self.population.states, ledger=self.population.ledger,
+            timeline_end=reached_timeline_end, constraints={pid: self._post_action_constraints(pid) for pid in result.persons})
+        self._flush_post_action()
+        learning = getattr(self, 'learning_controller', None)
+        if learning is not None:
+            learning.advance(self, timeline_end=reached_timeline_end)
+            self._flush_learning()
         self._measure_during(finished=finished)
         if finished:
             reason = "timeline_end" if reached_timeline_end else "no_expected_entities"
@@ -720,13 +837,30 @@ class SimulationRuntime:
             return
         for person_id in person_ids:
             observation = self.observations[person_id]
+            engine = getattr(self, 'decision_engine', None)
+            goal_engine = engine if getattr(engine, 'execution_contract', None) in {'desire-goal-v1', 'candidate-decision-v1', 'heterogeneous-learning-v2'} else None
+            state = self.population.states[person_id]
+            profile = self.population.profile_for(person_id)
+            frozen_candidates = goal_engine.prepared_goal_candidates(profile, observation) if goal_engine else None
+            if frozen_candidates is not None:
+                self.decision_candidates[person_id] = frozen_candidates
+                self.observations[person_id] = replace(observation, available_goal_ids=tuple(c.target_id for c in frozen_candidates))
+                continue
             if person_id in self.population.locked_itinerary_ids:
+                if goal_engine:
+                    goal_engine.prepare_goal_intent(profile, state, observation, (), locked=True)
+                    goal_engine.finalize_goal_context(profile, state, observation, ())
                 # This person already has an explicit walking/waiting/walking
                 # itinerary in the demand file.  Autonomous POI selection must
                 # not overwrite that externally declared scenario treatment.
                 continue
             hotspot_id = getattr(self.population, "goal_locked_hotspot_ids", {}).get(person_id)
+            if hotspot_id is not None and goal_engine:
+                goal_engine.prepare_goal_intent(profile, state, observation, (), locked=True,
+                                                allow_local_actions=True)
             if hotspot_id is not None and self._refresh_hotspot_route_context(person_id, hotspot_id, observation):
+                if goal_engine:
+                    goal_engine.finalize_goal_context(profile, state, observation, self.decision_candidates.get(person_id, ()))
                 continue
             if self.activity_planner is None or self.poi_catalog is None:
                 continue
@@ -754,13 +888,20 @@ class SimulationRuntime:
             available = tuple(item["id"] for item in self.poi_catalog.available(self.time_seconds, known_ids))
             order = {target_id: index for index, target_id in enumerate(state.activity_plan)}
             available = tuple(sorted(available, key=lambda target_id: order.get(target_id, len(order))))
+            intent = goal_engine.prepare_goal_intent(profile, state, observation,
+                tuple(self.poi_catalog.pois[target_id] for target_id in available)) if goal_engine else None
+            if intent:
+                available = intent.target_ids
             candidates = []
+            route_failures = {}
             last_error = None
             for target_id in available:
                 target = self.poi_catalog.pois[target_id]
                 if target.get("kind") == "activity":
                     index = state.activity_plan.index(target_id) if target_id in state.activity_plan else -1
                     onward = [item for item in state.activity_plan[index + 1:] if item != target_id and item in available]
+                    if not onward:
+                        route_failures[target_id] = 'activity has no available onward target'
                 else:
                     onward = [None]
                 for next_id in onward:
@@ -771,19 +912,24 @@ class SimulationRuntime:
                         break
                     except ValueError as exc:
                         last_error = str(exc)
+                        route_failures[target_id] = last_error
                     except Exception as exc:
                         # Retry transport failures later; don't poison topology cache.
                         last_error = f"{type(exc).__name__}: {exc}"
+                        route_failures[target_id] = last_error
                         break
-            if candidates and not state.poi_plan_active and not any(item.target_id == state.current_goal for item in candidates):
+            if intent and candidates and not intent.locked and not intent.local_action:
+                state.current_goal = candidates[0].target_id
+            if candidates and not state.poi_plan_active and not (intent and intent.local_action) and not any(item.target_id == state.current_goal for item in candidates):
                 # Skip an inaccessible/closed preferred POI, rather than retrying
                 # the same goal every decision period or cycling back to it.
                 state.current_goal = candidates[0].target_id
                 self.route_provider.counters["goal_fallbacks"] += 1
             if not candidates and available:
                 self.plan_executor.defer_route(person_id, self.time_seconds, last_error or "no reachable onward POI")
-            self.decision_candidates[person_id] = tuple(candidates)
-            self.observations[person_id] = replace(observation, available_goal_ids=tuple(item.target_id for item in candidates))
+            self.decision_candidates[person_id] = (goal_engine.finalize_goal_context(profile, state, observation, candidates, route_failures)
+                                                   if intent else tuple(candidates))
+            self.observations[person_id] = replace(observation, available_goal_ids=tuple(item.target_id for item in self.decision_candidates[person_id]))
 
     def _refresh_hotspot_route_context(self, person_id, hotspot_id, observation) -> bool:
         rule_parameters = (self.artificial_society_record or {}).get("artificial_society", {}).get("rule_model", {}).get("runtime_parameters", {})
@@ -961,8 +1107,12 @@ class SimulationRuntime:
             except (ValueError, IndexError) as exc:
                 self.plan_executor.defer_route(person_id, now, str(exc))
                 continue
+            if self.decision_engine.execution_contract in {'candidate-decision-v1', 'heterogeneous-learning-v2'}:
+                candidate = bind_candidates((candidate,), person_id, self.snapshot_id)[0]
+                self.decision_candidates[person_id] = (candidate,)
             plan = BehaviorPlan(person_id, self.snapshot_id, "change_goal", target_id=candidate.target_id,
                                 route_edges=candidate.edges, arrival_position=candidate.arrival_position,
+                                candidate_id=getattr(candidate, 'candidate_id', None), scheduling_source='runtime_activity',
                                 reason="hotspot activity ended; proceed to external exit", source="rule", decided_at=now)
             result = self.apply_plan(plan)
             if result.status == "partial_failure":
@@ -974,6 +1124,15 @@ class SimulationRuntime:
 
     def _abort_resources(self) -> None:
         self._cleanup_resources()
+        # Persist the failure archive even when the gateway never issues
+        # close_run after a fatal tick. The original error message and
+        # traceback remain the root cause; a summary write problem is recorded
+        # separately and must not replace that stack.
+        if self.recorder is not None:
+            try:
+                self.recorder.write_summary(self)
+            except Exception as exc:
+                self._record_close_error("summary", exc)
 
     def _record_close_error(self, stage, exc) -> None:
         message = f"{type(exc).__name__}: {exc}"
@@ -987,6 +1146,8 @@ class SimulationRuntime:
         errors = []
         # Each cleanup is attempted even if the previous one fails.
         for stage, cleanup in (
+            ("learning", self._close_learning),
+            ("post_action", self._close_post_action),
             ("system_performance", self.performance.close_system),
             ("engine", self.adapter.close),
             ("decision_log", lambda: self.recorder.close_logs(self) if self.recorder is not None else None),
@@ -1004,6 +1165,9 @@ class SimulationRuntime:
         return errors
 
     def close(self) -> None:
+        self._decision_epoch = uuid.uuid4().hex
+        self._boundary_before = {}
+        self.decision_scheduler.invalidate()
         if self._close_complete:
             return
         self.performance.flush(self, force=True)
@@ -1097,16 +1261,34 @@ class SimulationRuntime:
             raise ValueError("artificial society model does not match configured requirement")
         if record == self.artificial_society_record:
             return
-        self.clear_artificial_society()
+        if self.state not in {RuntimeState.CREATED, RuntimeState.CLOSED, RuntimeState.ERROR}:
+            raise ValueError("changing artificial society requires a runtime reset")
+        # Prepare every fallible component before changing the live binding.
+        # Invalid replacements must retain the previous model, engine and ranges.
+        if 'runtime_binding' in model or 'execution_contract' in model.get('individual_model', {}):
+            from crowdsim.domain.artificial_society_spec import ArtificialSocietySpec
+            spec = ArtificialSocietySpec.parse(model)
+            if record.get('fingerprint') != f'sha256:{spec.fingerprint}':
+                raise ValueError('artificial society fingerprint mismatch')
+        prepared_record = json.loads(json.dumps(record, ensure_ascii=False, allow_nan=False))
         individual = model.get("individual_model", {})
         agent_types = list(individual.get("agent_types") or [])
-        self.population.profile_sampler.configure_active_attributes(
-            dict(individual.get("profile_parameters") or {})
-        )
-        self.population.profile_sampler.configure_agent_types(agent_types)
-        self.decision_engine.configure(agent_types)
-        if self.decision_engine.enabled:
-            self.use_llm = True
+        prepared_sampler = deepcopy(self.population.profile_sampler)
+        prepared_sampler.config = deepcopy(self._base_profile_config)
+        prepared_sampler.configure_active_attributes(dict(individual.get("profile_parameters") or {}))
+        prepared_sampler.configure_agent_types(agent_types)
+        prepared_engine = IndividualModelingEngine(self.decision_engine.fallback_engine)
+        prepared_engine.configure(agent_types, execution_contract=individual.get('execution_contract'))
+        is_v2_learning = individual.get('execution_contract') == 'heterogeneous-learning-v2'
+        # A global LLM runtime (external decision skill / --mode llm) is distinct
+        # from a role-level cooperative LLM assembly the v2 contract allows. The
+        # latter is gated per-role by its own connector (validate_configured_roles)
+        # and must not be promoted to a global LLM runtime.
+        global_llm = self._base_use_llm or (False if is_v2_learning else prepared_engine.enabled)
+        prepared_use_llm = global_llm
+        if is_v2_learning:
+            if global_llm or getattr(self.generated_demand_spec, 'is_class2_demo', False):
+                raise ValueError('configured learning requires first-class rule runtime without global LLM')
         environment_model = model.get("environment_model", {})
         binding = dict(environment_model.get("scenario_binding") or {})
         if binding.get("location_id") != self.location_id:
@@ -1121,7 +1303,7 @@ class SimulationRuntime:
             raise ValueError("runtime environment requires density and flow factors")
         if not {"density-feedback", "capacity-feedback"}.issubset(responses):
             raise ValueError("runtime environment requires density and capacity responses")
-        self.environment_model_binding = {
+        prepared_environment = {
             "environment_model_id": environment_model.get("environment_model_id"),
             "environment_model_version": environment_model.get("environment_model_version"),
             "location_id": binding.get("location_id"),
@@ -1136,16 +1318,24 @@ class SimulationRuntime:
             "interior_edges": list(structure.get("interior_edges", [])),
         }
         runtime_parameters = model.get("rule_model", {}).get("runtime_parameters", {})
-        decision_period = float(runtime_parameters.get("decision_period_seconds", self.decision_scheduler.period_seconds))
-        if decision_period <= 0:
-            raise ValueError("decision period must be positive")
-        self.decision_scheduler.period_seconds = decision_period
+        decision_period = float(runtime_parameters.get("decision_period_seconds", self._base_decision_period))
+        if not math.isfinite(decision_period) or decision_period <= 0:
+            raise ValueError("decision period must be positive and finite")
         visual_state = runtime_parameters.get("visual_state")
-        if isinstance(visual_state, dict):
-            self.visual_policy = CrowdVisualPolicy(**visual_state)
-            self.state_updater.visual_policy = self.visual_policy
+        prepared_visual = CrowdVisualPolicy(**visual_state) if isinstance(visual_state, dict) else self._base_visual_policy
         self._bind_strong_rules(model.get("rule_model", {}).get("rules"))
-        self.artificial_society_record = json.loads(json.dumps(record, ensure_ascii=False))
+        # No validation or external effects after this commit point.
+        sampler = self.population.profile_sampler
+        sampler.config = prepared_sampler.config
+        sampler.agent_type_attributes = prepared_sampler.agent_type_attributes
+        self.decision_engine = prepared_engine
+        self.decision_scheduler.engine = prepared_engine
+        self.decision_scheduler.period_seconds = decision_period
+        self.use_llm = prepared_use_llm
+        self.visual_policy = prepared_visual
+        self.state_updater.visual_policy = prepared_visual
+        self.environment_model_binding = prepared_environment
+        self.artificial_society_record = prepared_record
         self.artificial_society_id = str(record.get("model_id") or "") or None
 
     def _bind_strong_rules(self, rows: Any) -> None:
@@ -1303,7 +1493,27 @@ class SimulationRuntime:
         motion = self.current.persons.get(plan.person_id)
         if motion is None:
             raise ValueError(f"person is not active: {plan.person_id}")
-        result = self.plan_executor.apply(plan, motion, self.snapshot_id, self.time_seconds)
+        learning = getattr(self, 'learning_controller', None)
+        learning_prepared = None
+        if learning is not None:
+            if learning.tracks_source(self, plan.person_id, plan.scheduling_source):
+                plan = learning.refine(self, plan)
+            learning_prepared = learning.prepare(self, plan)
+        prepared = None
+        journal = getattr(self, 'post_action_journal', None)
+        assembly = getattr(self.decision_engine, 'assemblies', {}).get(self.population.profile_for(plan.person_id).crowd_role)
+        if journal is not None and getattr(self.decision_engine, 'execution_contract', None) in {'candidate-decision-v1', 'heterogeneous-learning-v2'} and assembly is not None and assembly.learning_requested:
+            prepared = journal.prepare(plan, self.population.profile_for(plan.person_id),
+                self.population.states[plan.person_id], self.observations.get(plan.person_id),
+                self.decision_candidates.get(plan.person_id, ()), snapshot_id=self.snapshot_id,
+                now=self.time_seconds, model_id=self.artificial_society_id,
+                model_fingerprint=(self.artificial_society_record or {}).get('fingerprint'),
+                contract=self.decision_engine.execution_contract,
+                constraints=self._post_action_constraints(plan.person_id),
+                affect={'goal_preparation': self.decision_engine.goal_trace(plan.person_id)})
+        result = self.plan_executor.apply(plan, motion, self.snapshot_id, self.time_seconds,
+                    candidates=self.decision_candidates.get(plan.person_id, ()),
+                    require_candidate=self.decision_engine.execution_contract in {'candidate-decision-v1', 'heterogeneous-learning-v2'})
         if result.status == "partial_failure":
             self.last_error = result.reason
             self.state = RuntimeState.ERROR
@@ -1323,6 +1533,10 @@ class SimulationRuntime:
                 state.planned_wait_until = None
             hold_until = plan.wait_until or (self.time_seconds + self.decision_scheduler.period_seconds)
             state.next_decision_time = max(state.next_decision_time, hold_until)
+        if prepared is not None:
+            journal.accept_receipt(prepared, result)
+        if learning is not None:
+            learning.accept(self, learning_prepared, result)
         if self.observation_collector is not None:
             self.observation_collector.record_execution(plan, result,
                 self.population.states[plan.person_id], self.observations.get(plan.person_id))
@@ -1335,10 +1549,104 @@ class SimulationRuntime:
                         "profile": self.population.profile_for(plan.person_id),
                         "state": self.population.states.get(plan.person_id),
                         "observation": self.observations.get(plan.person_id),
+                        **({'goal_preparation': self.decision_engine.goal_trace(plan.person_id)}
+                           if getattr(self.decision_engine, 'execution_contract', None) in {'desire-goal-v1', 'candidate-decision-v1', 'heterogeneous-learning-v2'} else {}),
                     },
                     candidates=self.decision_candidates.get(plan.person_id, ()),
                 )
+        if prepared is not None:
+            self._flush_post_action()
+        # Record the boundary trace before the learning batch is acknowledged and
+        # drained, so this boundary's selection/sample/update events are still in
+        # the controller ready queue. Persistence and ack happen right after; the
+        # observe/update/choose mechanics are unchanged.
+        self._record_decision_trace(plan)
+        if learning is not None:
+            self._flush_learning()
         return result
+
+    def _record_decision_trace(self, plan) -> None:
+        pid = plan.person_id
+        profile = self.population.profile_for(pid)
+        state = self.population.states.get(pid)
+        before = self.boundary_before(pid)
+        trace = build_decision_trace(self, profile, state,
+                                     candidates=self.decision_candidates.get(pid, ()),
+                                     before=before)
+        self.decision_traces.record(trace)
+        if self.recorder is not None:
+            self.recorder.record_decision_trace(trace)
+
+    def _post_action_constraints(self, person_id):
+        executor = self.plan_executor
+        if executor is None:
+            return {}
+        now = self.time_seconds
+        return {
+            'flow_hold': sorted(executor.flow_hold_reasons.get(person_id, ())),
+            'activity_hold': person_id in executor.activity_hold_until and (
+                executor.activity_hold_until[person_id] is None or executor.activity_hold_until[person_id] > now),
+            'policy_wait': executor.wait_until.get(person_id, 0) > now,
+            'strategy_limit': executor.strategy_limits.get(person_id),
+            'hazard_limit': executor.hazard_limits.get(person_id),
+            'environment_limit': executor.environment_limits.get(person_id),
+            'control_limits': {key: values[person_id] for key, values in self._control_speed_limits.items() if person_id in values},
+            'low_speed_threshold': self.visual_policy.low_speed_threshold_mps,
+        }
+
+    def _flush_post_action(self):
+        journal = getattr(self, 'post_action_journal', None)
+        if journal is None or self.recorder is None:
+            return
+        batch = journal.batch()
+        if batch:
+            self.recorder.record_post_action(batch)
+            journal.acknowledge(batch)
+
+    def attach_learning_controller(self, role_settings, *, capacity):
+        """Explicit Python adapter, before first decision. Product gate remains closed."""
+        if self.state != RuntimeState.READY or self._async_tick_inflight is not None:
+            raise RuntimeError('learning attachment requires idle READY runtime')
+        if self.learning_controller is not None:
+            raise RuntimeError('learning controller already attached; reset required')
+        if self.recorder is None or self.class2_flows is not None:
+            raise ValueError('learning attachment requires recorder and non-class2 runtime')
+        from crowdsim.modeling_algorithm.individual_model.learning.runtime_controller import RoleLearningController
+        record = self.artificial_society_record or {}
+        fingerprint = record.get('fingerprint')
+        controller = RoleLearningController(role_settings, capacity=capacity)
+        if self.decision_engine.execution_contract == 'heterogeneous-learning-v2':
+            from crowdsim.modeling_algorithm.individual_model.learning.configured_runtime import validate_configured_roles
+            expected, expected_capacity = validate_configured_roles(record['artificial_society']['individual_model']['agent_types'])
+            if role_settings != expected or capacity != expected_capacity:
+                raise ValueError('learning attachment differs from confirmed model')
+        controller.attach(self, model_fingerprint=fingerprint)
+        self.recorder.update_manifest(learning_controller={
+            **controller.diagnostics(), 'config': json.loads(controller.settings_json),
+            'file': 'learning_runtime.jsonl', 'interface': 'confirmed_model' if controller.product_contract_ready else 'explicit_python_attachment'})
+        self.recorder.record_runtime_observations(self)
+        self.learning_controller = controller
+        return controller.diagnostics()
+
+    def _flush_learning(self):
+        controller = getattr(self, 'learning_controller', None)
+        if controller is not None and self.recorder is not None:
+            batch = controller.batch()
+            if batch:
+                self.recorder.record_learning_runtime(batch)
+                controller.acknowledge(batch)
+
+    def _close_learning(self):
+        controller = getattr(self, 'learning_controller', None)
+        if controller is not None:
+            controller.close(self)
+            self._flush_learning()
+
+    def _close_post_action(self):
+        journal = getattr(self, 'post_action_journal', None)
+        if journal is not None:
+            journal.interrupt(self.time_seconds, 'runtime_error' if self.last_error else 'runtime_closed')
+            self._flush_post_action()
 
     @property
     def decision_diagnostics(self) -> dict:
@@ -1532,6 +1840,13 @@ class SimulationRuntime:
                     preserve_future_stages=False,
                 )
                 result = self.plan_executor.apply(plan, motion, self.snapshot_id, self.time_seconds)
+                if result.status in {'applied', 'partial_failure'}:
+                    self.post_action_journal.interrupt(self.time_seconds, 'external_control', person_ids=[person_id])
+                    self._flush_post_action()
+                    learning = getattr(self, 'learning_controller', None)
+                    if learning is not None:
+                        learning.interrupt(self, 'external_control', person_ids=[person_id])
+                        self._flush_learning()
                 applied += result.status == "applied"
                 failed += result.status != "applied"
             except (RuntimeError, ValueError):
@@ -1729,10 +2044,16 @@ class SimulationRuntime:
             "snapshot_index": self.snapshot_index,
             "time_seconds": self.time_seconds,
             "last_error": self.last_error,
+            "last_traceback": self.last_traceback,
             "close_errors": list(self.close_errors),
             "engine": self.adapter.diagnostics,
+            "discarded_decision_batches": self.discarded_decision_batches,
+            "post_action": self.post_action_journal.diagnostics(),
+            "learning_controller": self.learning_controller.diagnostics() if self.learning_controller else None,
             "decision_engine": self.decision_diagnostics,
             "decision_log": self.recorder.decision_log_diagnostics if self.recorder else None,
+            "decision_traces": {"records": len(self.decision_traces.query(run_id=self.run_id)),
+                                "version": "decision-trace-v1"},
             "performance": {"enabled": self.performance.enabled, "error": self.performance.error,
                             "system": self.performance.system_metadata()},
             "population": self.population.diagnostics(),
@@ -1810,6 +2131,7 @@ class SimulationRuntime:
             "capabilities": self.artificial_society_record.get("capabilities", {}),
             "environment_model": dict(self.environment_model_binding),
             "modeling_algorithms": self.decision_engine.diagnostics(),
+            "runtime_binding": deepcopy(self.artificial_society_record.get('artificial_society', {}).get('runtime_binding')),
         }
 
     def __enter__(self) -> "SimulationRuntime":
