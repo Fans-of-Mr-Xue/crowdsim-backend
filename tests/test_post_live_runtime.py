@@ -180,6 +180,7 @@ class PostLiveRuntimeTests(unittest.TestCase):
         with patch("postanalysis_api.workers.native_runtime.compile_input", side_effect=compile_routes), \
                 patch("postanalysis_api.workers.native_runtime.execute", side_effect=execute), \
                 patch("postanalysis_api.workers.native_runtime.archive_evidence", return_value={}), \
+                patch("postanalysis_api.workers.source_analysis.complete_analysis", side_effect=lambda repo, task, runs, result, **kwargs: result), \
                 patch("postanalysis_api.workers.sumo_batch.measure", return_value={"metrics": {}, "measurement": {}, "regionSamples": {}}), \
                 patch("postanalysis_api.workers.sumo_batch.summarize", return_value={}):
             executor._run(task, {"observations": []}, on_event, threading.Event())

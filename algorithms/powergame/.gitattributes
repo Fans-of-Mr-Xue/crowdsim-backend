@@ -1,0 +1,2 @@
+# Preserve verified upstream bytes regardless of the checkout's core.autocrlf.
+*.py -text whitespace=cr-at-eol

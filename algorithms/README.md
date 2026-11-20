@@ -1,6 +1,6 @@
 # 事后阶段通用算法库
 
-本目录提供不依赖前端页面、HTTP、SUMO 或特定案例数据的 Python 计算函数。本轮只建立后端算法库；现有事后页面仍使用原有 JavaScript 实现，尚未调用这里的函数。
+本目录提供不依赖前端页面、HTTP、SUMO 或特定案例数据的 Python 计算函数。事后执行链已复用其中的配对、OFAT、消融、PC、数值与图汇总入口，并补入源仓库缺失的分析内核；审计对应及实际调用见 [`post_source_analysis.md`](../docs/post_source_analysis.md)。
 
 新增实现以 [`Crowd_Counterfactual_Formulas_Algorithms.md`](Crowd_Counterfactual_Formulas_Algorithms.md) 的公式和伪代码为准，仍不绑定具体场景。`metrics.py` 汇总影响因素、响应指标与配对指标效应；每种实验或发现算法分别在独立文件中：
 

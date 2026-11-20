@@ -154,6 +154,7 @@ class SumoBatchExecutor:
         archive = None
         acquired = False
         runs = []
+        analysis_artifacts, analysis_sealed = [], False
         progress = deepcopy(task["progress"])
         try:
             completed = completed_batch_runs(self.repo, task) if task.get('resumeCount') else {}
@@ -205,11 +206,20 @@ class SumoBatchExecutor:
                 on_event({"status": "running", "progress": deepcopy(progress), "activePlanId": plan_id, "runId": run["id"]})
             self._checkpoint(task, on_event, cancel)
             result = summarize(task, runs)
+            if any(run.get('executionProtocol') == 'post-during-runtime/1.0' for run in runs):
+                from .source_analysis import complete_analysis
+                def analysis_progress(phase, detail):
+                    self._checkpoint(task, on_event, cancel)
+                    self._publish(task['id'], analysisPhase=phase, analysisProgress=detail)
+                result = complete_analysis(self.repo, task, runs, result, cancelled=cancel.is_set,
+                                           progress=analysis_progress, caller=getattr(self, 'analysis_caller', None))
+                analysis_artifacts = result.get('analysisPipeline', {}).get('artifacts', [])
             if cancel.is_set():
                 raise InterruptedError()
             result.update(datasetId=task["datasetId"], datasetVersion=task["datasetVersion"],
                           experimentId=task["id"], archive=archive)
             document = self.repo.create("results", user, workspace, result)
+            analysis_sealed = True
             self.repo.finish_archive(archive, "completed", result)
             on_event({"status": "completed", "progress": progress, "resultId": document["id"]})
             self._publish(task["id"], status="completed")
@@ -237,6 +247,13 @@ class SumoBatchExecutor:
             except Exception:
                 logging.getLogger("postanalysis_api.sumo_batch").exception("Could not persist terminal state")
         finally:
+            if not analysis_sealed:
+                from bson import ObjectId
+                for artifact in analysis_artifacts:
+                    try:
+                        self.repo.files.delete(ObjectId(artifact['fileId']))
+                    except Exception:
+                        logging.getLogger('postanalysis_api.sumo_batch').exception('Could not remove unsealed analysis artifact')
             if acquired:
                 self._slot.release()
             with self._lock:

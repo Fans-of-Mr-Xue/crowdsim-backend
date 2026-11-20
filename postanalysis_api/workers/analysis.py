@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import math
-import random
 import logging
 from statistics import mean, stdev
 
@@ -14,7 +13,7 @@ def finite(value):
     return type(value) in (int, float) and math.isfinite(value)
 
 
-def paired_effect(runs, reference, candidate, metric):
+def paired_effect(runs, reference, candidate, metric, design_method='paired', replacement='declared candidate replacement'):
     def values(group):
         result, seen = {}, set()
         for run in runs:
@@ -37,9 +36,27 @@ def paired_effect(runs, reference, candidate, metric):
               "maxAbsolutePairDifference": max(map(abs, delta)) if delta else None,
               "direction": "candidate_minus_reference", "method": "paired_seed_bootstrap"}
     if len(seeds) >= 2:
-        rng = random.Random(20261023)
-        boot = sorted(mean(rng.choices(delta, k=len(delta))) for _ in range(2000))
-        result["ci95"] = [boot[49], boot[1949]]
+        def stored(policy, seed):
+            return {metric: (left if policy == reference else right)[seed]}
+        if design_method == 'ofat':
+            from algorithms.ofat import ofat_scan
+            analysis = ofat_scan(lambda config, seed: stored(config['policy'], seed), {'policy': reference},
+                                 {'policy': [candidate]}, seeds, [metric], seed=20261023)
+            summary = analysis['rows'][0]['effects'][metric]
+            result['algorithm'] = 'algorithms.ofat.ofat_scan'
+        elif design_method == 'ablation':
+            from algorithms.mechanism_ablation import mechanism_ablation
+            analysis = mechanism_ablation([left[seed] for seed in seeds], {candidate: [right[seed] for seed in seeds]},
+                                          {candidate: replacement}, seed=20261023)
+            summary = analysis['effects'][candidate]['effect']
+            result['algorithm'] = 'algorithms.mechanism_ablation.mechanism_ablation'
+        else:
+            from algorithms.paired_mc import paired_monte_carlo
+            summary = paired_monte_carlo(stored, reference, candidate, seeds, [metric], seed=20261023)['effects'][metric]
+            result['algorithm'] = 'algorithms.paired_mc.paired_monte_carlo'
+        result['ci95'] = list(summary['ci'])
+        result['ciMethod'] = summary['ci_method']
+        result['standardError'] = summary['se']
     result["inferenceStatus"] = "descriptive_only" if len(seeds) < 20 else "paired_seed_estimate"
     result["referenceValidCount"], result["candidateValidCount"] = len(left), len(right)
     result["excludedUnpairedCount"] = len(left.keys() ^ right.keys())
@@ -90,7 +107,10 @@ def summarize(task, runs):
     unified = any(group.get("experimentType") == "counterfactual" for group in task.get("groups", []))
     for group in task.get("groups", []):
         reference = group.get("referenceGroupId", "F-00")
-        effects = [paired_effect(complete, reference, group["id"], metric) for metric in metric_ids]
+        design = next((item for item in designs if item['id'] == group.get('sourceGroupId')), {})
+        method = design.get('method') or {'intervention': 'ofat', 'mechanism': 'ablation'}.get(group.get('experimentType'), 'paired')
+        effects = [paired_effect(complete, reference, group["id"], metric, method,
+                                 group.get('hypothesis') or 'declared candidate replacement') for metric in metric_ids]
         comparison.extend(effects)
         row = {"groupId": group["id"], "name": group["name"], "hypothesis": group["hypothesis"],
                "sourceGroupId": group.get("sourceGroupId"), "referenceGroupId": reference, "interventions": group["interventions"], "effects": effects}

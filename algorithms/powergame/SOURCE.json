@@ -1,0 +1,36 @@
+{
+  "backendCommit": "25489c09f2a6a4d87f5ea14c311a41f204e28ebf",
+  "frontendCommit": "db18e9131fdd0fd9ae4282eb98eb0517e98d423e",
+  "files": {
+    "analysis.py": {
+      "source": "simulation/scene/powerGame/service/horizontal_analysis/analysis.py",
+      "sha256": "fbb1f81ddfea8892b54c448be28a63304d83df426e8dbeaa1157e554d9d0449d",
+      "adaptation": "none"
+    },
+    "contract.py": {
+      "source": "simulation/scene/powerGame/service/horizontal_analysis/contract.py",
+      "sha256": "2083f39fd805c1725e9123486f2e97d579c461ff46c966f3881561d075aad8b5",
+      "adaptation": "none"
+    },
+    "dynamic_catalog.py": {
+      "source": "simulation/scene/powerGame/service/horizontal_analysis/dynamic_catalog.py",
+      "sha256": "ce9c3831aed7ad1e15eb6a7373df006a3097fe5efdfa815dd1edb45f90e0d3f0",
+      "adaptation": "none"
+    },
+    "extraction.py": {
+      "source": "simulation/scene/powerGame/service/horizontal_analysis/extraction.py",
+      "sha256": "09570783eb82b536782c9a7c2d68fbf037990be3aaf783c17ab92d33c7f875b3",
+      "adaptation": "none"
+    },
+    "outcome_forecast.py": {
+      "source": "simulation/scene/powerGame/service/observation_analysis/outcome_forecast.py",
+      "sha256": "0e080ca3e988bd8ff8183b009a6c2f220c19017d2c5d579350e2062b1bd09294",
+      "adaptation": "none"
+    },
+    "trajectory_statistics.py": {
+      "source": "simulation/scene/powerGame/service/AnalysisSimulationService.py:TrajectoryAnalysisService",
+      "sha256": "13856ab4930100fd8bb5cb71c36a23eb17e10c9cc5ab0bffee6512f504589df3",
+      "adaptation": "dependency-free class, logic unchanged"
+    }
+  }
+}
