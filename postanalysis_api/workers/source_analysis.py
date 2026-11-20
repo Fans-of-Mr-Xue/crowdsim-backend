@@ -19,14 +19,11 @@ from algorithms.powergame.extraction import GuardedLLMExtractor, ExtractionError
 from .analysis_inputs import trajectory_groups, horizontal_input, crowd_design, finite
 from .analysis_model import AnalysisModel, ForecastClient, AnalysisCancelled
 
-VERSION = 'crowd-source-analysis/1.0'
+VERSION = 'crowd-source-analysis/1.1'
 SOURCE = {'backend': '25489c09f2a6a4d87f5ea14c311a41f204e28ebf', 'frontend': 'db18e9131fdd0fd9ae4282eb98eb0517e98d423e'}
-FORECAST_OUTCOMES = [
-    {'key': 'stable', 'label': '稳定通行', 'definition': '本次复盘运行窗口结束时，密度较低，人员可持续通行；不是事故概率为零的声明。'},
-    {'key': 'congested', 'label': '局部拥堵', 'definition': '运行窗口结束时存在局部密度积累和低速受阻，但尚未持续扩大为高密拥堵。'},
-    {'key': 'unstable', 'label': '高密拥堵', 'definition': '运行窗口结束时，高密度、低速受阻或压力代理持续积累；不等同于必然发生踩踏。'},
-    {'key': 'recovering', 'label': '疏散恢复', 'definition': '运行窗口结束时，先前拥堵的密度和低速受阻明显缓解；仍需检查局部密度与风险暴露。'},
-]
+# The owner selected the source's first-definitive-outcome target. Crowd
+# terminal conditions still need definition; do not substitute window-end states.
+FORECAST_OUTCOMES = ()
 
 
 def _metric_comparison(baseline, candidate):
@@ -53,7 +50,7 @@ def _micro_macro(groups):
     """Descriptive associations only. No force/threshold is inferred from r."""
     micro = ['agent_moving_samples', 'agent_stopped_samples', 'agent_accelerating_samples',
              'agent_decelerating_samples', 'trusted_messages', 'applied_decisions']
-    macro = ['density', 'speed', 'pressure_proxy']
+    macro = ['density', 'local_peak_density', 'speed', 'pressure_proxy']
     graphs = []
     for group in groups:
         for world in group['trajectories']:
@@ -78,22 +75,31 @@ def _micro_macro(groups):
                 'graph': graph, 'keyNodes': compute_key_nodes(graph), 'lagEffects': list_lag_effects(graph), 'loops': format_loops(graph)})
     return {'status': 'descriptive_only' if graphs else 'missing_behavior_evidence', 'worlds': graphs,
             'effectMeaning': 'within-run window correlation; not a physical force or causal coefficient',
-            'independentSampleCount': len(graphs), 'windowSamplesAreIndependent': False,
+            'independentSampleCount': len({row['seed'] for row in graphs}),
+            'sampleCountByGroup': {group['group_id']: len({row['seed'] for row in graphs if row['groupId'] == group['group_id']}) for group in groups},
+            'seedPairing': 'same seed across strategies is a paired world, not another independent seed',
+            'windowSamplesAreIndependent': False,
             'roundGateStatus': 'requires_explicit_model_driver_weights_and_thresholds',
             'limitations': ['同一运行的时间窗相关不能证明微观行为造成宏观拥堵。',
                            '相关系数只供既有图摘要计算，不进入do传播或原机制阈值门控。',
                            '没有实际响应事件证据时不估计引导响应滞后，也不预编反馈回路。']}
 
 
-def _contrasts_for_references(task, groups, catalog):
+def _contrasts_for_references(task, groups, catalog, canonical_data=None):
     by_id = {group['group_id']: group for group in groups}
+    canonical_data = canonical_data or normalize(horizontal_input(task, groups))
+    canonical_worlds = {world['trajectory']['world_id']: world for world in canonical_data['worlds']}
     contrasts = []
     for group in task.get('groups', []):
         reference = group.get('referenceGroupId', 'F-00')
         pair = [by_id[reference], by_id[group['id']]]
         payload = horizontal_input(task, pair)
         records = {}
-        rows = _contrasts(normalize(payload), records, catalog)
+        pair_data = normalize(payload)
+        # Pair normalization renumbers g/w addresses. Keep the canonical full
+        # batch addresses so every citation resolves through worldBindings.
+        pair_data['worlds'] = [canonical_worlds[world['trajectory']['world_id']] for world in pair_data['worlds']]
+        rows = _contrasts(pair_data, records, catalog)
         contrasts.append({'groupId': group['id'], 'referenceGroupId': reference, 'edges': rows,
                           'evidence_records': records, 'comparisonUnit': 'declared strategy; actual reference preserved'})
     return contrasts
@@ -112,7 +118,8 @@ def _forecast_timelines(forecasts, groups):
                     buckets[point['tick_idx']].append(point['probabilities'])
                     times[point['tick_idx']].append(clock[point['tick_idx']])
         result.append({'groupId': group['group_id'], 'points': [
-            {'tick_idx': tick, 'timeSeconds': mean(times[tick]), 'validWorldCount': len(rows),
+            {'tick_idx': tick, 'timeSeconds': max(times[tick]), 'earliestEvidenceSeconds': min(times[tick]),
+             'validWorldCount': len(rows),
              'totalWorldCount': len(group['trajectories']),
              'probabilities': {category['key']: mean(row[category['key']] for row in rows)
                                for category in forecasts['categories']}}
@@ -120,7 +127,7 @@ def _forecast_timelines(forecasts, groups):
     return result
 
 
-def complete_analysis(repository, task, runs, result, *, cancelled=lambda: False, progress=None, caller=None):
+def complete_analysis(repository, task, runs, result, *, cancelled=lambda: False, progress=None, caller=None, outcome_categories=None):
     """Called by the existing owned batch worker after SUMO, before result sealing."""
     def checkpoint():
         if cancelled():
@@ -146,14 +153,20 @@ def complete_analysis(repository, task, runs, result, *, cancelled=lambda: False
             checkpoint()
             return response
         update('forecasting')
-        forecasts = estimate_world_outcome_forecasts(groups, FORECAST_OUTCOMES,
-            '依据当前人群仿真及原生动作，预测本次复盘运行窗口结束时的拥堵状态；不推断历史事故必然性。',
-            lambda: ForecastClient(bounded_call))
-        analyse_forecast_key_points(forecasts, groups, '同一人群观测时窗与完整真实轨迹摘要', lambda: ForecastClient(bounded_call))
+        categories = FORECAST_OUTCOMES if outcome_categories is None else outcome_categories
+        if categories:
+            forecasts = estimate_world_outcome_forecasts(groups, categories,
+                '依据当前人群仿真及原生动作，预测从起始事件起首先达到的明确人群终局；不推断历史事故必然性。',
+                lambda: ForecastClient(bounded_call))
+            analyse_forecast_key_points(forecasts, groups, '同一人群首次明确终局与完整轨迹摘要', lambda: ForecastClient(bounded_call))
+        else:
+            forecasts = {'categories': [], 'worlds': {}, 'reason': '已选择首次明确终局；人群终局条件尚待确定，未使用窗口末四态代替。'}
         valid = sum(point['probabilities'] is not None for world in forecasts['worlds'].values() for point in world['points'])
         total = sum(len(world['points']) for world in forecasts['worlds'].values())
         keypoint_errors = sum('key_points_error' in world for world in forecasts['worlds'].values())
-        forecasts['status'] = 'computed' if total and valid == total and not keypoint_errors else 'partial' if valid else 'model_unavailable_or_invalid'
+        forecasts['status'] = ('terminal_definition_required' if not categories else
+            'computed' if total and valid == total and not keypoint_errors else 'partial' if valid else 'model_unavailable_or_invalid')
+        forecasts['target'] = 'first_definitive_outcome'
         forecasts['validPointCount'], forecasts['totalPointCount'] = valid, total
         forecasts['keyPointErrorCount'] = keypoint_errors
         forecasts['groupTimelines'] = _forecast_timelines(forecasts, groups)
@@ -163,7 +176,7 @@ def complete_analysis(repository, task, runs, result, *, cancelled=lambda: False
         conditional = []
         try:
             catalog = build_catalog(data, crowd_design(), [])
-            conditional = _contrasts_for_references(task, groups, catalog)
+            conditional = _contrasts_for_references(task, groups, catalog, data)
             actions, attempts = discover_actions(data, bounded_call)
             catalog = build_catalog(data, crowd_design(), actions)
             extractor = GuardedLLMExtractor(bounded_call, nodes=catalog['nodes'], synthetic=False)
@@ -180,7 +193,7 @@ def complete_analysis(repository, task, runs, result, *, cancelled=lambda: False
             'worldBindings': {world['world_ref']: {'runId': world['trajectory']['world_id'],
                 'seed': world['trajectory']['seed'], 'groupId': groups[world['group_index']]['group_id'],
                 'behaviorEvidenceStatus': world['trajectory']['behaviorEvidenceStatus']} for world in data['worlds']},
-            'inputContract': {'worldUnit': 'one independent run/seed', 'windowLimit': 8,
+            'inputContract': {'worldUnit': 'one run per strategy/seed; independent across distinct seeds, paired across strategies', 'windowLimit': 8,
                               'temporalAggregation': 'all individual records counted; last real macro observation per interval',
                               'bodyEvidence': 'verified GridFS source, never UI controls or geopolitical presets'},
             'observation': {'groupSummaries': facts, 'comparisons': comparisons, 'forecasts': forecasts},
@@ -223,7 +236,10 @@ def complete_analysis(repository, task, runs, result, *, cancelled=lambda: False
         # Large per-world graphs live in GridFS. Counts never masquerade as effects.
         result['mechanism']['sourceAnalysis'] = {'status': micro_macro['status'],
             'worldCount': len(micro_macro['worlds']), 'effectMeaning': micro_macro['effectMeaning'],
+            'independentSampleCount': micro_macro['independentSampleCount'],
             'roundGateStatus': micro_macro['roundGateStatus'], 'artifact': artifact,
+            'roundUnit': 'population response phase following one guidance',
+            'roundBoundaryStatus': 'requires_response_end_rule',
             'pathCandidates': {'status': horizontal['status'], 'nodes': horizontal['nodes'], 'edges': edges, 'paths': horizontal['paths']}}
         return result
     except AnalysisCancelled:

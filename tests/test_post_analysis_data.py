@@ -9,6 +9,13 @@ from postanalysis_api.services.analysis_data import prepare_analysis, run_series
 
 
 class PostAnalysisDataTests(unittest.TestCase):
+    def test_prepared_curves_preserve_local_peak_separately_from_global_average(self):
+        self.add('F-00', 1, [{'timeSeconds': 0, 'density': .05, 'peakDensity': 4.2, 'population': 20}])
+        self.add('F-00', 2, [{'timeSeconds': 0, 'density': .07, 'peakDensity': 5.2, 'population': 30}])
+        row = prepare_analysis(self.repo, 'exp_one', 'u', 'w')['prepared']['rowsByGroup']['F-00'][0]
+        self.assertAlmostEqual(.06, row['density'])
+        self.assertAlmostEqual(4.7, row['peakDensity'])
+
     def setUp(self):
         self.repo = MongoRepository.__new__(MongoRepository)
         self.repo.db = mongomock.MongoClient().db

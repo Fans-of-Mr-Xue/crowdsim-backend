@@ -10,7 +10,7 @@ from bson.errors import InvalidId
 from gridfs.errors import NoFile
 from postanalysis_api.schemas.metrics import METRICS
 
-FIELDS = {'density': 'density', 'meanSpeed': 'speed', 'pressureProxy': 'pressure_proxy', 'population': 'population'}
+FIELDS = {'density': 'density', 'peakDensity': 'local_peak_density', 'meanSpeed': 'speed', 'pressureProxy': 'pressure_proxy', 'population': 'population'}
 BEHAVIORS = ('moving', 'stopped', 'accelerating', 'decelerating')
 
 
@@ -166,6 +166,7 @@ def crowd_design():
         ('agent_moving_samples', '个体移动样本'), ('agent_stopped_samples', '个体停止样本'),
         ('agent_accelerating_samples', '个体加速样本'), ('agent_decelerating_samples', '个体减速样本'),
         ('delivered_messages', '引导消息送达'), ('trusted_messages', '引导消息可信'),
-        ('applied_decisions', '实际执行决策'), ('density', '区域密度'), ('speed', '平均速度'),
-        ('pressure_proxy', '人群压力代理'), ('population', '区域人数'))},
+        ('applied_decisions', '实际执行决策'), ('density', '全域平均密度（人/m²）'),
+        ('local_peak_density', '最拥挤网格密度（人/m²）'), ('speed', '全域平均速度（m/s）'),
+        ('pressure_proxy', '网格峰值压力代理'), ('population', '全域人数'))},
         'rv_binding': {key: {'unit': value['unit']} for key, value in METRICS.items()}}

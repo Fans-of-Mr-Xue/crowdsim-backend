@@ -18,9 +18,16 @@ from algorithms._inference import paired_summary
 from algorithms.mechanism_graph import compute_round_plays, compute_key_nodes
 from postanalysis_api.repositories.mongodb import MongoRepository
 from postanalysis_api.workers.analysis import summarize, paired_effect
-from postanalysis_api.workers.source_analysis import complete_analysis, read_artifact
-from postanalysis_api.workers.analysis_inputs import world_input
+from postanalysis_api.workers.source_analysis import complete_analysis, read_artifact, _forecast_timelines, _micro_macro, _contrasts_for_references
+from postanalysis_api.workers.analysis_inputs import world_input, trajectory_groups, horizontal_input, crowd_design
 from postanalysis_api.workers.analysis_model import AnalysisModel, AnalysisCancelled
+
+TEST_OUTCOMES = [
+    {'key': 'stable', 'label': 'test terminal A', 'definition': 'test-only first definitive outcome A'},
+    {'key': 'congested', 'label': 'test terminal B', 'definition': 'test-only first definitive outcome B'},
+    {'key': 'unstable', 'label': 'test terminal C', 'definition': 'test-only first definitive outcome C'},
+    {'key': 'recovering', 'label': 'test terminal D', 'definition': 'test-only first definitive outcome D'},
+]
 
 
 class RecordedModel:
@@ -82,6 +89,51 @@ def fixture():
 
 
 class SourceAnalysisTests(unittest.TestCase):
+    def test_nonbaseline_reference_citations_keep_canonical_world_addresses(self):
+        from algorithms.powergame.contract import normalize
+        from algorithms.powergame.dynamic_catalog import build_catalog
+        repo, task, runs = fixture()
+        task['groups'].append({**deepcopy(task['groups'][0]), 'id': 'CF-02', 'referenceGroupId': 'CF-01'})
+        # Reverse run order to also catch accidental world-index renumbering.
+        for run in reversed([row for row in runs if row['planId'] == 'CF-01']):
+            runs.append({**deepcopy(run), 'id': run['id'] + '-second', 'planId': 'CF-02', 'metrics': {'peak_density': .5}})
+        groups = trajectory_groups(repo, task, runs, lambda: None)
+        data = normalize(horizontal_input(task, groups))
+        catalog = build_catalog(data, crowd_design(), [])
+        rows = _contrasts_for_references(task, groups, catalog)
+        bindings = {world['world_ref']: world['trajectory']['world_id'] for world in data['worlds']}
+        by_id = {run['id']: run for run in runs}
+        for reference in rows:
+            for evidence in reference['evidence_records'].values():
+                actual = by_id[bindings[evidence['world_ref']]]
+                self.assertEqual(evidence['input']['strategy'], actual['planId'])
+                self.assertEqual(actual['metrics'][evidence['field'].removeprefix('rv_values.')], evidence['value'])
+
+    def test_group_forecast_timestamp_never_precedes_any_constituent_evidence(self):
+        groups = [{'group_id': 'F-00', 'trajectories': [
+            {'world_id': 'a', 'ticks': [{'tick_idx': 0, 'timeSeconds': 10}]},
+            {'world_id': 'b', 'ticks': [{'tick_idx': 0, 'timeSeconds': 12}]}]}]
+        distribution = {'stable': 1}
+        forecasts = {'categories': [{'key': 'stable'}], 'worlds': {
+            key: {'points': [{'tick_idx': 0, 'probabilities': distribution}]} for key in ('a', 'b')}}
+        point = _forecast_timelines(forecasts, groups)[0]['points'][0]
+        self.assertEqual(12, point['timeSeconds'])
+        self.assertEqual(10, point['earliestEvidenceSeconds'])
+
+    def test_paired_worlds_are_not_counted_as_independent_seed_samples(self):
+        repo, task, runs = fixture()
+        result = _micro_macro(trajectory_groups(repo, task, runs, lambda: None))
+        self.assertEqual(4, len(result['worlds']))
+        self.assertEqual(2, result['independentSampleCount'])
+
+    def test_local_peak_density_is_preserved_separately_from_global_average(self):
+        repo, task, runs = fixture()
+        for row in runs[0]['timeline']:
+            row['density'], row['peakDensity'] = .05, 4.2
+        world = world_input(repo, task, runs[0], lambda: None)
+        self.assertEqual(.05, world['ticks'][0]['world_state']['density'])
+        self.assertEqual(4.2, world['ticks'][0]['world_state']['local_peak_density'])
+
     @unittest.skipUnless(os.environ.get('SUMO_BINARY'), 'set SUMO_BINARY for real SUMO batch verification')
     def test_real_batch_automatically_analyzes_and_serves_all_three_result_sections(self):
         from test_post_population_execution import population_dataset
@@ -111,7 +163,7 @@ class SourceAnalysisTests(unittest.TestCase):
             try:
                 executor._run(task, data, event, threading.Event())
                 self.assertEqual('completed', events[-1]['status'], events[-1])
-                self.assertGreater(executor.analysis_caller.calls, 4)
+                self.assertGreaterEqual(executor.analysis_caller.calls, 3)
             finally:
                 executor.close()
         app = PostAnalysisApp.__new__(PostAnalysisApp)
@@ -127,6 +179,7 @@ class SourceAnalysisTests(unittest.TestCase):
         stored = repo.get('results', events[-1]['resultId'], 'u', 'w')
         self.assertEqual({'verified': 2}, stored['analysisPipeline']['behaviorEvidenceQuality'])
         self.assertEqual(2, stored['mechanism']['sourceAnalysis']['worldCount'])
+        self.assertEqual('terminal_definition_required', stored['observation']['sourceAnalysis']['status'])
         import traci
         self.assertFalse(traci.connection._connections)
 
@@ -176,7 +229,7 @@ class SourceAnalysisTests(unittest.TestCase):
     def test_forecasts_paths_actual_references_and_full_artifact_roundtrip(self):
         repo, task, runs = fixture()
         before = deepcopy(runs)
-        result = complete_analysis(repo, task, runs, summarize(task, runs), caller=RecordedModel())
+        result = complete_analysis(repo, task, runs, summarize(task, runs), caller=RecordedModel(), outcome_categories=TEST_OUTCOMES)
         self.assertEqual(before, runs)
         self.assertEqual('computed', result['analysisPipeline']['status'])
         self.assertEqual(4, result['mechanism']['sourceAnalysis']['worldCount'])
@@ -204,9 +257,21 @@ class SourceAnalysisTests(unittest.TestCase):
         repo, task, runs = fixture()
         def offline(*args, **kwargs):
             raise ConnectionError('test offline')
-        result = complete_analysis(repo, task, runs, summarize(task, runs), caller=offline)
+        result = complete_analysis(repo, task, runs, summarize(task, runs), caller=offline, outcome_categories=TEST_OUTCOMES)
         self.assertEqual('partial', result['analysisPipeline']['status'])
         self.assertEqual([], result['intervention']['sourceAnalysis']['paths'])
+        self.assertEqual(-1, result['comparison']['effects'][0]['estimate'])
+
+    def test_undefined_first_terminal_conditions_never_use_legacy_window_end_forecasts(self):
+        repo, task, runs = fixture()
+        with patch('postanalysis_api.workers.source_analysis.estimate_world_outcome_forecasts', side_effect=AssertionError('undefined terminal')):
+            result = complete_analysis(repo, task, runs, summarize(task, runs), caller=RecordedModel())
+        source = result['observation']['sourceAnalysis']
+        self.assertEqual('terminal_definition_required', source['status'])
+        self.assertEqual({}, source['forecasts']['worlds'])
+        self.assertEqual('first_definitive_outcome', source['forecasts']['target'])
+        self.assertEqual('partial', result['analysisPipeline']['status'])
+        self.assertTrue(result['intervention']['sourceAnalysis']['paths'])
         self.assertEqual(-1, result['comparison']['effects'][0]['estimate'])
 
     def test_missing_response_metrics_remain_partial_without_failing_the_batch(self):
